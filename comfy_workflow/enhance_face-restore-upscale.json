@@ -1,0 +1,95 @@
+{
+  "1": {
+    "inputs": {
+      "image": "example.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "1. Load Image"
+    }
+  },
+  "2": {
+    "inputs": {
+      "model_name": "SELECT_YOUR_MODEL"
+    },
+    "class_type": "FaceRestoreModelLoader",
+    "_meta": {
+      "title": "2. Load Face Restore Model"
+    }
+  },
+  "3": {
+    "inputs": {
+      "facedetection": "retinaface_resnet50",
+      "codeformer_fidelity": 0.7,
+      "facerestore_model": [
+        "2",
+        0
+      ],
+      "image": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "FaceRestoreCFWithModel",
+    "_meta": {
+      "title": "2. Face Restore"
+    }
+  },
+  "4": {
+    "inputs": {
+      "model_name": "SELECT_YOUR_MODEL"
+    },
+    "class_type": "UpscaleModelLoader",
+    "_meta": {
+      "title": "3. Load Upscale Model"
+    }
+  },
+  "5": {
+    "inputs": {
+      "upscale_model": [
+        "4",
+        0
+      ],
+      "image": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "ImageUpscaleWithModel",
+    "_meta": {
+      "title": "3. Upscale"
+    }
+  },
+  "6": {
+    "inputs": {
+      "filename_prefix": "enhance/output",
+      "images": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "4. Save Image"
+    }
+  },
+  "7": {
+    "inputs": {
+      "method": "mkl",
+      "strength": 1,
+      "multithread": true,
+      "image_target": [
+        "3",
+        0
+      ],
+      "image_ref": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "ColorMatchV2",
+    "_meta": {
+      "title": "ColorMatchV2"
+    }
+  }
+}

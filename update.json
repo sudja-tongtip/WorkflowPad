@@ -1,0 +1,32 @@
+{
+  "story_generator": {
+    "name": "Story Generator",
+    "version": "0.1.0",
+    "download_url": "",
+    "notes": "Initial release"
+  },
+  "prompt_lab": {
+    "name": "Prompt Lab",
+    "version": "0.1.0",
+    "download_url": "",
+    "notes": "Initial release"
+  },
+  "image_editor": {
+    "name": "Image Editor",
+    "version": "0.1.0",
+    "download_url": "",
+    "notes": "Initial release"
+  },
+  "gallery_generator": {
+    "name": "Gallery Generator",
+    "version": "0.1.0",
+    "download_url": "",
+    "notes": "Initial release"
+  },
+  "batch_editor": {
+    "name": "Batch Editor",
+    "version": "0.1.0",
+    "download_url": "",
+    "notes": "Initial release"
+  }
+}

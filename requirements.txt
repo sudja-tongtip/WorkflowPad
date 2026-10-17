@@ -1,0 +1,28 @@
+# WorkflowPad v0.9 Beta — Python dependencies
+# Tested on Python 3.14.6 / Windows 11. Python 3.11+ is expected to work.
+#
+#   pip install -r requirements.txt
+
+flet>=0.85,<0.86
+Pillow>=10.0
+
+# Optional: enables the syntax-highlighting editor in the Image Editor.
+# Without it the app falls back to a plain text field.
+# flet-code-editor
+
+# Not installed by pip — ComfyUI must be running separately.
+# Default server: 127.0.0.1:8188
+
+# Lets the PIL narration box find people and faces so it never covers them (YOLO). It pulls in PyTorch
+# (CPU build on Windows, a few hundred MB). The model files (yolov8n.pt, yolov8n-pose.pt, ~13 MB) are not
+# installed by pip: use Settings → Detection → Detection Models… (or the prompt before a PIL narration
+# render) to download them into %LOCALAPPDATA%\WorkflowPad\models. A models/ folder next to the app is still read.
+# Without ultralytics the app still works: the box is placed by image analysis alone, faces less reliably.
+ultralytics
+
+# Thai word segmentation for the PIL narration box (Thai has no spaces, so without it a Thai sentence is one
+# unbreakable line and the card gets very wide). Pure Python, small. Optional: without it Thai breaks at syllables.
+pythainlp
+
+# Build the portable EXE release only (not needed to run from source):  python make_release.py
+# pyinstaller

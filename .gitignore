@@ -1,0 +1,55 @@
+# Temp & generated files
+.editor_temp/
+projects/
+__pycache__/
+*.pyc
+*.pyo
+
+# Large binary/image files in stories
+stories/*/images/
+stories/*/*.png
+stories/*/*.jpg
+stories/*/*.jpeg
+stories/*/*.webp
+
+# Saved state (user-specific)
+saved_*.json
+llm_chat_config.json
+
+# Backups
+Backup/
+*_backup_*.py
+
+# YOLO weights (downloaded once / shipped by make_release.py, not tracked)
+models/
+
+# Source assets (large)
+source/
+
+# Logs
+*.log
+
+# Release build output
+dist/
+
+# DEV only — ผลวินิจฉัยจาก fill_ab_test (ลบพร้อมกันได้)
+debug/
+
+# PyInstaller work/output (make_release.py)
+build_exe/
+build_exe*.txt
+
+# Developer-only: audits, release logs, scratch notes
+audit_reports/
+release_log.txt
+grok1.md
+
+# Your own ComfyUI API exports (Export (API)) live in comfy_apis/<kind>/ - user data, never tracked. The README.txt files stay.
+comfy_apis/*/*.json
+
+# Stories are the user's own work (the programs keep them in %APPDATA%\WorkflowPad\stories)
+stories/
+
+# Local tooling and retired code (not part of the public source)
+.claude/
+archive_unused/
