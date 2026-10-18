@@ -27,7 +27,7 @@ Which file goes where
   enhance_face-restore-upscale.json   comfy_apis\enhance\            face restore / upscale (Image Editor: Enhance, Scale & Export)
   enhance_flux_fill_outpaint.json     comfy_apis\enhance\            extend a picture beyond its edges / outpaint (Image Editor: Extend; needs a Pad Image for Outpainting node)
   caption_joycaption.json             comfy_apis\caption\            image -> prompt (Image Editor, Story Generator)
-  llm_gemma.json                      comfy_apis\llm\                chat / text writing (Story Generator, Prompt Lab)
+  gemma_llm.json                      comfy_apis\llm\                chat / text writing (Story Generator, Prompt Lab)
 
 You can give your exported file any name (keep the .json). For comfy_apis\llm\ the name must end with _llm.json
 (for example my_gemma_llm.json), because Prompt Lab lists only those.
@@ -56,7 +56,7 @@ Custom nodes you may need to install in ComfyUI
   enhance_face-restore-...    face restore nodes (FaceRestoreModelLoader, FaceRestoreCFWithModel), ColorMatchV2
   enhance_flux_fill_outpaint  ComfyUI-GGUF (LoaderGGUF) for the Flux Fill model
   caption_joycaption.json     JoyCaption GGUF nodes (JC_GGUF_adv, JC_ExtraOptions), ComfyUI-Custom-Scripts (ShowText/SaveText)
-  llm_gemma.json              LLMSessionChatNode (a ComfyUI custom node for local GGUF chat)
+  gemma_llm.json              LLMSessionChatNode (a ComfyUI custom node for local GGUF chat)
 
 The image examples are built with Subgraphs, so they need a ComfyUI version recent enough to open them (the Subgraph feature).
 Install them from ComfyUI-Manager (search the node name). Models are separate downloads, for example from Hugging Face
