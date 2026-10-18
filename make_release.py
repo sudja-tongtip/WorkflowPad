@@ -1,14 +1,14 @@
 """Build the Windows portable release: PyInstaller one-folder EXEs + resources + notices -> folder + ZIP.
 
 Usage:
-    python make_release.py                # build EXEs, validate, stage dist/WorkflowPad-v0.1.2-Beta, zip
+    python make_release.py                # build EXEs, validate, stage dist/WorkflowPad-v0.1.3-Beta, zip
     python make_release.py --skip-build   # re-stage from the last dist/_build/dist output (no PyInstaller run)
     python make_release.py --no-zip       # stage the folder only
 
 Pipeline:  environment check -> PyInstaller (WorkflowPad.spec) -> stage -> validate -> zip.
 It only writes dist/ (dist/_build holds PyInstaller's work files); project source files are never modified or deleted.
 
-What ships: WorkflowPad.exe (Story Generator), ImageEditor.exe, PromptLab.exe, BatchEditor.exe, GalleryGenerator.exe, _internal/ (runtime), comfy_workflow/ (example ComfyUI workflows + README), comfy_apis/ (empty: image, llm, caption, enhance), icons/,
+What ships: StoryGenerator.exe (Story Generator), ImageEditor.exe, PromptLab.exe, BatchEditor.exe, GalleryGenerator.exe, _internal/ (runtime), comfy_workflow/ (example ComfyUI workflows + README), comfy_apis/ (empty: image, llm, caption, enhance), icons/,
 README.txt, THIRD_PARTY_NOTICES.txt and licenses/. YOLO .pt models are NEVER shipped — users install them from the app.
 The resource copy is allowlist-based on purpose: a new file in the working tree is left out until it is added here.
 """
@@ -23,10 +23,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-RELEASE_NAME = "WorkflowPad-v0.1.2-Beta"
+RELEASE_NAME = "WorkflowPad-v0.1.3-Beta"
 BUILD_DIR = ROOT / "dist" / "_build"
 BUILT = BUILD_DIR / "dist" / "WorkflowPad"          # PyInstaller COLLECT output (name set in WorkflowPad.spec)
-EXES = ("WorkflowPad.exe", "ImageEditor.exe", "PromptLab.exe", "BatchEditor.exe", "GalleryGenerator.exe")
+EXES = ("StoryGenerator.exe", "ImageEditor.exe", "PromptLab.exe", "BatchEditor.exe", "GalleryGenerator.exe")
 
 # ── Read-only resources placed next to the EXEs (apps resolve them relative to the EXE: constants.APP_ROOT) ──
 # (folder, glob) — only matching files are copied

@@ -1,32 +1,32 @@
 {
   "story_generator": {
     "name": "Story Generator",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "download_url": "",
-    "notes": "Fix: LLM workflow dropdowns list every .json in comfy_apis/llm"
+    "notes": "Fix: LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
   },
   "prompt_lab": {
     "name": "Prompt Lab",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "download_url": "",
-    "notes": "Fix: LLM workflow dropdowns list every .json in comfy_apis/llm"
+    "notes": "Fix: LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
   },
   "image_editor": {
     "name": "Image Editor",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "download_url": "",
-    "notes": "Fix: LLM workflow dropdowns list every .json in comfy_apis/llm"
+    "notes": "Fix: LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
   },
   "gallery_generator": {
     "name": "Gallery Generator",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "download_url": "",
-    "notes": "Fix: LLM workflow dropdowns list every .json in comfy_apis/llm"
+    "notes": "Fix: LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
   },
   "batch_editor": {
     "name": "Batch Editor",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "download_url": "",
-    "notes": "Fix: LLM workflow dropdowns list every .json in comfy_apis/llm"
+    "notes": "Fix: LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
   }
 }

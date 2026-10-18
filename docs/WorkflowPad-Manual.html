@@ -25,7 +25,7 @@ footer{margin-top:4em;padding-top:1em;border-top:1px solid var(--line);color:var
 </style></head><body><div class="wrap"><nav><b>WorkflowPad manual</b><a class="" href="#start">Start here</a><a class="" href="#sg">Story Generator</a><a class="sub" href="#sg-flow">From story to images</a><a class="sub" href="#sg-screen">The main screen</a><a class="sub" href="#sg-dialogs">Dialogs</a><a class="sub" href="#sg-settings">Settings</a><a class="" href="#ie">Image Editor</a><a class="" href="#pl">Prompt Lab</a><a class="" href="#be">Batch Editor</a><a class="" href="#gg">Gallery Generator</a><a class="" href="#data">Where your data is</a><a class="" href="#trouble">Troubleshooting</a><a class="" href="#lic">License</a></nav><main><h1>WorkflowPad manual</h1>
 <p class="lead">Five desktop programs that turn a story, a prompt or a folder of pictures into images through <b>your own ComfyUI</b>. Version 0.1.0 Beta.</p>
 <table><tr><th>Program</th><th>Use it to</th></tr>
-<tr><td><b>Story Generator</b> (<code>WorkflowPad.exe</code>)</td><td>Write a story, let an AI plan the shots, write the image prompts and render the pictures.</td></tr>
+<tr><td><b>Story Generator</b> (<code>StoryGenerator.exe</code>)</td><td>Write a story, let an AI plan the shots, write the image prompts and render the pictures.</td></tr>
 <tr><td><b>Image Editor</b> (<code>ImageEditor.exe</code>)</td><td>Open a folder of pictures and edit, extend, enhance or caption them with ComfyUI workflows.</td></tr>
 <tr><td><b>Prompt Lab</b> (<code>PromptLab.exe</code>)</td><td>Keep a list of prompts, chat with an LLM about them and test them against a workflow.</td></tr>
 <tr><td><b>Batch Editor</b> (<code>BatchEditor.exe</code>)</td><td>Edit images with one workflow and one prompt.</td></tr>
@@ -41,7 +41,7 @@ footer{margin-top:4em;padding-top:1em;border-top:1px solid var(--line);color:var
 </ul>
 <h3>First run in four steps</h3>
 <ol class="steps">
-<li><b>Extract</b> the ZIP to any folder and start <code>WorkflowPad.exe</code>. If Windows shows a SmartScreen warning because the program is not code-signed, choose <i>More info &rarr; Run anyway</i>.</li>
+<li><b>Extract</b> the ZIP to any folder and start <code>StoryGenerator.exe</code>. If Windows shows a SmartScreen warning because the program is not code-signed, choose <i>More info &rarr; Run anyway</i>.</li>
 <li><b>Start ComfyUI</b> and keep it running. If it is not on <code>127.0.0.1:8188</code>, change the address in <i>Settings &rarr; Connection</i> (every program has it).</li>
 <li><b>Put your workflows in <code>comfy_apis/image_create</code></b> (pictures from text), <code>comfy_apis/image_edit</code> (editing a picture), <code>comfy_apis/llm</code> (LLM chat), <code>comfy_apis/caption</code> (image &rarr; prompt) and <code>comfy_apis/enhance</code> (face restore, upscale). They appear in the programs' workflow lists; use the small refresh button next to a list to rescan.</li>
 <li><b>Open a program</b> and follow its chapter below.</li>

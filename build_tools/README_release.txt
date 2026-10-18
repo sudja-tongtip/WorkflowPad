@@ -2,7 +2,7 @@ WorkflowPad — Windows portable (extract & run)
 =============================================
 
 1. Extract this ZIP to any folder. Your stories and settings are saved in %APPDATA%\WorkflowPad, not in this folder.
-2. Double-click WorkflowPad.exe (Story Generator). The other programs are separate EXEs in the same folder:
+2. Double-click StoryGenerator.exe (Story Generator). The other programs are separate EXEs in the same folder:
      ImageEditor.exe      Image Editor (also opens from inside Story Generator)
      PromptLab.exe        Prompt Lab
      BatchEditor.exe      Batch Editor

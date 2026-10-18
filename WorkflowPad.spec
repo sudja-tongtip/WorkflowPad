@@ -1,12 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller one-folder build: WorkflowPad.exe (Story Generator), ImageEditor.exe, PromptLab.exe, BatchEditor.exe and
+"""PyInstaller one-folder build: StoryGenerator.exe (Story Generator), ImageEditor.exe, PromptLab.exe, BatchEditor.exe and
 GalleryGenerator.exe in ONE shared folder.
 
     python make_release.py            # runs this spec, validates, stages and zips (the normal way)
     python -m PyInstaller WorkflowPad.spec --noconfirm --distpath dist/_build/dist --workpath dist/_build/work
 
 Both EXEs are collected into a single COLLECT, so the Python runtime / Flet / Pillow files they share are stored once
-in _internal/. Only WorkflowPad.exe gets PyTorch + Ultralytics (Image Editor does not use them).
+in _internal/. Only StoryGenerator.exe gets PyTorch + Ultralytics (Image Editor does not use them).
 Read-only resources (APIs/, llm/, enhance/, icons/, helper/) are NOT bundled here: make_release.py places them next to
 the EXEs, because the apps resolve them relative to the EXE (constants.APP_ROOT) and users add their own workflows.
 YOLO .pt models are never bundled (downloaded by the user via the in-app Install Models dialog).
@@ -51,7 +51,7 @@ a_sg = Analysis(
 )
 pyz_sg = PYZ(a_sg.pure)
 exe_sg = EXE(
-    pyz_sg, a_sg.scripts, [], exclude_binaries=True, name="WorkflowPad", console=CONSOLE,
+    pyz_sg, a_sg.scripts, [], exclude_binaries=True, name="StoryGenerator", console=CONSOLE,
     icon=str(ROOT / "icons" / "story_generator.ico"), contents_directory="_internal",
 )
 

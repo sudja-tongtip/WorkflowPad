@@ -18,7 +18,7 @@ An illustrated user manual for all five programs: [`docs/WorkflowPad-Manual.html
 
 ## Download (Windows)
 
-Portable build, no Python needed: see the **Releases** page of this repository. Extract the ZIP, run `WorkflowPad.exe` (Story Generator); the other programs are separate EXEs in the same folder.
+Portable build, no Python needed: see the **Releases** page of this repository. Extract the ZIP, run `StoryGenerator.exe` (Story Generator); the other programs are separate EXEs in the same folder.
 
 ## Run from source
 
