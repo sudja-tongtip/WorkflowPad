@@ -24,9 +24,9 @@ APP_VERSION = "0.1.0"   # SemVer; see RELEASE.md
 
 # ── Config ────────────────────────────────────────────────────────────
 COMFY_HOST   = "127.0.0.1:8188"
-# Folder with comfy_apis/ (image, llm, caption, enhance), icons/: the project folder, or (PyInstaller) the folder next to the EXE.
+# Folder with comfy_apis/ (image_create, image_edit, llm, caption, enhance), icons/: the project folder, or (PyInstaller) the folder next to the EXE.
 APP_ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
-API_DIR      = APP_ROOT / "comfy_apis" / "image"
+API_DIR      = APP_ROOT / "comfy_apis" / "image_create"      # text-to-image workflows
 ENHANCE_DIR  = APP_ROOT / "comfy_apis" / "enhance"
 # Scratch files go to LOCALAPPDATA, never next to the source: an installed copy
 # may sit in a read-only folder.

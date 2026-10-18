@@ -23,9 +23,9 @@ except ImportError:
 
 # ── Config ───────────────────────────────────────────────────────────
 COMFY_HOST = "127.0.0.1:8188"
-# Folder with comfy_apis/ (image, llm, caption, enhance), icons/: the project folder, or (PyInstaller) the folder next to the EXE.
+# Folder with comfy_apis/ (image_create, image_edit, llm, caption, enhance), icons/: the project folder, or (PyInstaller) the folder next to the EXE.
 APP_ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
-API_DIR = APP_ROOT / "comfy_apis" / "image"         # Folder containing the .json workflow files (exported with Export (API))
+API_DIR = APP_ROOT / "comfy_apis" / "image_edit"         # Folder containing the .json workflow files (exported with Export (API))
 APP_ID      = "batch_editor"
 APP_NAME    = "Batch Editor"
 APP_VERSION = "0.1.0"   # SemVer; see RELEASE.md
@@ -40,7 +40,7 @@ except OSError:
 
 
 def scan_api_files() -> list[str]:
-    """Return the list of .json filenames in the comfy_apis/image folder (excluding saved_prompt.json)"""
+    """Return the list of .json filenames in the comfy_apis/image_edit folder (excluding saved_prompt.json)"""
     files = sorted(
         p.name for p in API_DIR.glob("*.json")
         if p.name != PROMPT_SAVE_PATH.name
@@ -185,9 +185,11 @@ def detect_workflow_mapping(wf: dict) -> dict:
     seed_node = seed_field = None
 
     # ── 1. image input ──────────────────────────────────────────────
+    image_rank = len(_IMAGE_INPUT_CLASSES)        # the best class wins (LoadImage before LoadImageMask ...); among equals the first one, as before
     for nid, node in wf.items():
         ct = node.get("class_type", "")
-        if ct in _IMAGE_INPUT_CLASSES:
+        if ct in _IMAGE_INPUT_CLASSES and _IMAGE_INPUT_CLASSES.index(ct) < image_rank:
+            image_rank = _IMAGE_INPUT_CLASSES.index(ct)
             inputs = node.get("inputs", {})
             # Use the "image" field first; if unavailable, use the first non-list field
             if "image" in inputs:
@@ -197,8 +199,7 @@ def detect_workflow_mapping(wf: dict) -> dict:
                     if not isinstance(v, list):   # list = linked node
                         image_node, image_field = nid, k
                         break
-            if image_node:
-                break
+            # no early break: a later node of a better class (LoadImage after a LoadImageMask) still wins
 
     # ── 2. prompt / text nodes ──────────────────────────────────────
     # Collect all candidates first, then sort by priority
@@ -243,10 +244,10 @@ def detect_workflow_mapping(wf: dict) -> dict:
 
         # Infer the role from the title meta
         role = "unknown"
-        if any(h in title for h in _POSITIVE_HINTS):
-            role = "positive"
-        elif "neg" in title:
+        if "neg" in title:                                  # 'Negative Prompt' contains 'prompt': negative is checked first
             role = "negative"
+        elif any(h in title for h in _POSITIVE_HINTS):
+            role = "positive"
 
         candidates.append((prio, nid, text_field, role))
 
@@ -497,13 +498,14 @@ async def main(page: ft.Page):
                         badge_ctrl,
                     ], spacing=4),
                     padding=po(left=8, right=8, top=6, bottom=6),
+                    height=34,
                 ),
             ], spacing=0),
             bgcolor="#FFFFFF",
             border_radius=br(6),
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
             shadow=card_shadow(),
-            width=200,
+            width=200, height=144,
             border=ft.Border(
                 top=ft.BorderSide(2, "#27AE60"), right=ft.BorderSide(2, "#27AE60"),
                 bottom=ft.BorderSide(2, "#27AE60"), left=ft.BorderSide(2, "#27AE60"),
@@ -539,6 +541,22 @@ async def main(page: ft.Page):
         thumb_stack = card.content.controls[0].content
         if isinstance(thumb_stack, ft.Stack) and len(thumb_stack.controls) > 1:
             thumb_stack.controls.pop()
+
+    def reset_card_state(card: ft.Container, src: str):
+        """Back to the input look (the original picture, its name, an INPUT badge, no green / red frame): a new run starts clean, the DONE / ERR of the last run is gone."""
+        thumb_stack = card.content.controls[0].content
+        if isinstance(thumb_stack, ft.Stack):
+            del thumb_stack.controls[2:]                  # a spinner left over from an interrupted run
+            thumb_stack.controls[0].src = src
+            if len(thumb_stack.controls) > 1:
+                thumb_stack.controls[1].visible = False   # the check mark
+        footer_row = card.content.controls[1].content
+        footer_row.controls[0].value = Path(src).name
+        badge = footer_row.controls[1]
+        badge.content.value = "INPUT"
+        badge.bgcolor = "#555"
+        badge.visible = True
+        card.border = None
 
 
     # ── RIGHT PANEL ───────────────────────────────────────────────────
@@ -866,7 +884,12 @@ async def main(page: ft.Page):
         save_settings(prompt_text, str(out_dir),
                       selected_api[0] if selected_api else "",
                       add_to_history=True)
-        total      = len(selected_files)
+        run_files  = [p_ for p_ in selected_files if p_ in _sel] if _sel else list(selected_files)      # the selection, or everything when nothing is selected
+        total      = len(run_files)
+        for p_ in run_files:                              # the DONE / ERR of an earlier run disappears before this one starts
+            _c = card_map.get(p_)
+            if _c: reset_card_state(_c, p_)
+        page.update()
         done_count = 0
         job_times: list[float] = []   # Store each job time (seconds)
         eta_task: list[asyncio.Task] = []
@@ -916,7 +939,7 @@ async def main(page: ft.Page):
                 bottom=ft.BorderSide(2, "#E53935"), left=ft.BorderSide(2, "#E53935"),
             )
 
-        for idx, path in enumerate(selected_files):
+        for idx, path in enumerate(run_files):
             if _stop_event.is_set():
                 break
             remaining = total - idx
@@ -987,7 +1010,7 @@ async def main(page: ft.Page):
         run_btn.disabled = False
         run_btn.visible = True
         stop_btn.visible = False
-        run_label.value = "▶  Start Run"
+        _update_counts()
         page.update()
 
     async def stop_batch(e):
@@ -1052,7 +1075,7 @@ async def main(page: ft.Page):
                     mapping_info,
                     ft.Row([
                         refresh_lbl,
-                        ft.Text("Loaded from the comfy_apis/image folder",
+                        ft.Text("Loaded from the comfy_apis/image_edit folder",
                                 size=9, color="#999"),
                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                        vertical_alignment=ft.CrossAxisAlignment.CENTER),
@@ -1115,19 +1138,176 @@ async def main(page: ft.Page):
         border=ft.Border(left=ft.BorderSide(1, "#D8D8D8")),
     )
 
-    # ── CENTER (same as before, just with card_map added) ───────────────────────
-    preview_wrap = ft.Column(
-        scroll=ft.ScrollMode.AUTO, spacing=0, expand=True, visible=False,
+    # ── CENTER: the picture cards. Click / Ctrl / Shift / drag-box selection like Image Editor and Gallery Generator ──
+    _IMG_EXT = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".tif"}
+    _CARD_W, _CARD_H, _GAP, _PAD_X, _PAD_Y, _RIGHT_W = 200, 144, 10, 16, 8, 260
+    _TILE_W, _TILE_H = _CARD_W + 8, _CARD_H + 8          # the card + 2px padding + 2px frame on each side
+    _sel: set = set()
+    _sel_anchor: list = [None]
+    _mods = {"ctrl": False, "shift": False}
+    _typing: set = set()                                  # text fields that have focus (they keep Ctrl+A / Delete / Esc)
+    _tiles: dict = {}                                     # path -> the framed tile (a Container around the card)
+    _rects: dict = {}                                     # path -> (x, y, w, h) in grid content coordinates
+    _scroll = [0.0]
+    _last_down: list = [None, 0.0]
+    _mq = {"on": False, "x0": 0.0, "y0": 0.0, "x": 0.0, "y": 0.0, "base": set(), "last_vy": 0.0, "down": None}
+    _kb_listener: list = [None]
+    _laid_cols: list = [0]                                # the column count the current rows were planned for
+
+    preview_wrap = ft.Column(scroll=ft.ScrollMode.AUTO, spacing=0, expand=True)
+    marquee = ft.Container(
+        left=0, top=0, width=0, height=0, visible=False,
+        bgcolor=ft.Colors.with_opacity(0.14, "#2979FF"),
+        border=ft.Border.all(1, "#2979FF"), border_radius=br(2),
     )
-    drop_hint = ft.Column([
-        ft.Icon(ft.Icons.FOLDER_OPEN_OUTLINED, size=56, color="#BBBBBB"),
-        ft.Text(
-            "Drag and drop images or\nfolder to start editing",
-            size=14, weight=ft.FontWeight.W_600, color="#999",
-            text_align=ft.TextAlign.CENTER,
-        ),
-        ft.Text("OR", size=12, color="#BBBBBB"),
-    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=12, visible=True)
+
+    def _busy() -> bool:
+        return bool(stop_btn.visible)                     # a run is in progress
+
+    def _cols() -> int:
+        try: pw = float(page.width or page.window.width or 1280)
+        except Exception: pw = 1280.0
+        return max(1, int((pw - _RIGHT_W - 2 * _PAD_X + _GAP) // (_TILE_W + _GAP)))
+
+    def _style_tile(path: str):
+        t = _tiles.get(path)
+        if t is None: return
+        on = path in _sel
+        t.border = ft.Border.all(2, "#2979FF" if on else "#00000000")
+        t.bgcolor = ft.Colors.with_opacity(0.10, "#2979FF") if on else None
+
+    def _update_counts():
+        n = len(selected_files); k = len(_sel)
+        top_bar_row.controls[0].value = (f"{n} image(s)" + (f"  ·  {k} selected" if k else "")) if n else ""
+        remove_btn.visible = bool(k) and not _busy()
+        if not _busy():
+            run_label.value = f"▶  Start Run ({k} selected)" if k else "▶  Start Run"
+
+    def _selection_changed(old: set):
+        for pth in old ^ _sel: _style_tile(pth)
+        _update_counts(); page.update()
+
+    def _select_only(path: str):
+        old = set(_sel); _sel.clear(); _sel.add(path); _sel_anchor[0] = path; _selection_changed(old)
+
+    def _toggle(path: str):
+        old = set(_sel)
+        if path in _sel: _sel.discard(path)
+        else: _sel.add(path)
+        _sel_anchor[0] = path; _selection_changed(old)
+
+    def _select_range(path: str, additive: bool):
+        anchor = _sel_anchor[0] if _sel_anchor[0] in selected_files else path
+        i0, i1 = selected_files.index(anchor), selected_files.index(path)
+        rng = selected_files[min(i0, i1): max(i0, i1) + 1]
+        old = set(_sel)
+        if not additive: _sel.clear()
+        _sel.update(rng); _selection_changed(old)
+
+    def _select_all():
+        old = set(_sel); _sel.clear(); _sel.update(selected_files); _selection_changed(old)
+
+    def _clear_selection():
+        if not _sel: return
+        old = set(_sel); _sel.clear(); _sel_anchor[0] = None; _selection_changed(old)
+
+    async def _focus_anchor():
+        try:                                              # take keyboard focus off any text field
+            if _kb_listener[0] is not None: await _kb_listener[0].focus()
+        except Exception:
+            pass
+
+    def _on_tile_down(e, path: str):
+        """Pointer down = select at once (no double-click delay); the second press of a double click is ignored so a Ctrl double-click does not toggle twice."""
+        now = time.time()
+        second = _last_down[0] == path and (now - _last_down[1]) < 0.45
+        _last_down[0], _last_down[1] = (None, 0.0) if second else (path, now)
+        ctrl_held, shift_held = _mods["ctrl"], _mods["shift"]
+        if not second:
+            if shift_held: _select_range(path, additive=ctrl_held)
+            elif ctrl_held: _toggle(path)
+            else: _select_only(path)
+        page.run_task(_focus_anchor)
+
+    def _tile_for(path: str) -> ft.Control:
+        if path not in _tiles:
+            card = card_map[path]
+            _tiles[path] = ft.Container(content=card, width=_TILE_W, height=_TILE_H, padding=2, border=ft.Border.all(2, "#00000000"), border_radius=br(8))
+        _style_tile(path)
+        def _secondary_down(e, p_=path):
+            """Right-press: like a file browser, a card outside the selection becomes the selection; a card inside a multi-selection keeps it, so the menu acts on all of them."""
+            if p_ not in _sel: _select_only(p_)
+            page.run_task(_focus_anchor)
+        gd = ft.GestureDetector(content=_tiles[path], on_tap_down=lambda e, p_=path: _on_tile_down(e, p_), on_secondary_tap_down=_secondary_down)
+        return ft.ContextMenu(content=gd, secondary_items=[
+            ft.PopupMenuItem(content=ft.Text("Remove from list", size=12, color="#E53935"), icon=ft.Icons.DELETE_OUTLINE_ROUNDED, on_click=lambda e: _request_remove()),
+        ], tertiary_trigger=None)
+
+    def _relayout():
+        """Rows are laid out here with fixed sizes, so the rectangle of every card is known (that is what the drag box needs)."""
+        cols = _cols(); _laid_cols[0] = cols
+        preview_wrap.controls.clear(); _rects.clear()
+        preview_wrap.controls.append(ft.Container(height=_PAD_Y))
+        for r, start in enumerate(range(0, len(selected_files), cols)):
+            chunk = selected_files[start:start + cols]
+            preview_wrap.controls.append(ft.Container(content=ft.Row([_tile_for(pth) for pth in chunk], spacing=_GAP), padding=po(left=_PAD_X, bottom=_GAP)))
+            for c, pth in enumerate(chunk):
+                _rects[pth] = (_PAD_X + c * (_TILE_W + _GAP), _PAD_Y + r * (_TILE_H + _GAP), _TILE_W, _TILE_H)
+
+    def _show_list(on: bool):
+        grid_box.visible = on
+        drop_hint.visible = not on
+        browse_btn.visible = not on
+
+    def _set_paths(paths: list, append: bool):
+        """Browse replaces the list, a drop adds to it. Existing cards (and their results) are kept."""
+        if not append:
+            selected_files.clear(); card_map.clear(); _tiles.clear(); _sel.clear(); _sel_anchor[0] = None
+        for pth in paths:
+            if pth in selected_files: continue
+            selected_files.append(pth)
+            card_map[pth] = make_card(pth, Path(pth).name, badge="INPUT")        # keep the ref: the border turns green when the job is done
+        if not selected_files:
+            return
+        _relayout(); _show_list(True); _update_counts(); page.update()
+
+    _confirm_open = [False]
+
+    def _request_remove(e=None):
+        """Ask first. The pictures only leave the list; the files on disk are never touched. A fresh dialog per request (Flet keeps a closed dialog until the client reports it)."""
+        if _busy() or not _sel or _confirm_open[0]: return
+        n = len(_sel)
+
+        def _close(run: bool):
+            if not _confirm_open[0]: return
+            _confirm_open[0] = False
+            page.pop_dialog()
+            if run: _remove_selected()
+
+        dlg = ft.AlertDialog(
+            modal=True, bgcolor="#FFFFFF",
+            title=ft.Text("Remove this picture from the list?" if n == 1 else f"Remove {n} pictures from the list?", size=14, weight=ft.FontWeight.W_700, color="#1A1A1A"),
+            content=ft.Container(width=360, content=ft.Text("The picture files stay where they are; they are only taken out of this list.", size=12, color="#555")),
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda e: _close(False), style=ft.ButtonStyle(color="#555")),
+                ft.FilledButton("Remove", on_click=lambda e: _close(True), bgcolor="#E53935", style=ft.ButtonStyle(color="#FFFFFF")),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+            on_dismiss=lambda e: _confirm_open.__setitem__(0, False),
+        )
+        _confirm_open[0] = True
+        page.show_dialog(dlg)
+
+    def _remove_selected():
+        if _busy() or not _sel: return
+        for pth in list(_sel):
+            if pth in selected_files: selected_files.remove(pth)
+            card_map.pop(pth, None); _tiles.pop(pth, None)
+        _sel.clear(); _sel_anchor[0] = None
+        if selected_files:
+            _relayout(); _update_counts(); page.update()
+        else:
+            clear_all(None)
 
     async def browse_click(e):
         fp = ft.FilePicker()
@@ -1141,34 +1321,30 @@ async def main(page: ft.Page):
         paths = [f.path for f in files if f.path]
         if not paths:
             return
+        _set_paths(paths, append=False)
 
-        selected_files.clear()
-        selected_files.extend(paths)
-        card_map.clear()
-        preview_wrap.controls.clear()
+    def _on_file_drop(e):
+        if _busy(): return
+        found = []
+        for f in (e.files or []):
+            fp_ = Path(str(getattr(f, "path", f)))
+            if fp_.is_dir():
+                found.extend(str(x) for x in sorted(fp_.iterdir()) if x.suffix.lower() in _IMG_EXT)
+            elif fp_.suffix.lower() in _IMG_EXT:
+                found.append(str(fp_))
+        if found:
+            _set_paths(found, append=True)
+    page.on_file_drop = _on_file_drop
 
-        row: list[ft.Control] = []
-        for i, path in enumerate(paths):
-            c = make_card(path, Path(path).name, badge="INPUT")
-            card_map[path] = c          # Store the ref to switch the border to green
-            row.append(c)
-            if len(row) == 3 or i == len(paths) - 1:
-                preview_wrap.controls.append(
-                    ft.Container(
-                        content=ft.Row(row, spacing=10,
-                                       wrap=False,
-                                       scroll=ft.ScrollMode.AUTO),
-                        padding=po(left=16, right=16, top=8, bottom=8),
-                    )
-                )
-                row = []
-
-        drop_hint.visible = False
-        browse_btn.visible = False
-        preview_wrap.visible = True
-        top_bar_row.controls[0].value = f"{len(paths)} file(s) selected"
-        clear_btn.visible = True
-        page.update()
+    drop_hint = ft.Column([
+        ft.Icon(ft.Icons.FOLDER_OPEN_OUTLINED, size=56, color="#BBBBBB"),
+        ft.Text(
+            "Drag and drop images or\nfolder to start editing",
+            size=14, weight=ft.FontWeight.W_600, color="#999",
+            text_align=ft.TextAlign.CENTER,
+        ),
+        ft.Text("OR", size=12, color="#BBBBBB"),
+    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=12, visible=True)
 
     browse_btn = ft.FilledButton(
         content=ft.Row([
@@ -1182,30 +1358,130 @@ async def main(page: ft.Page):
 
     def clear_all(e):
         selected_files.clear()
-        card_map.clear()
+        card_map.clear(); _tiles.clear(); _rects.clear(); _sel.clear(); _sel_anchor[0] = None
         preview_wrap.controls.clear()
-        preview_wrap.visible = False
-        drop_hint.visible = True
-        browse_btn.visible = True
-        clear_btn.visible = False
+        _show_list(False)
         top_bar_row.controls[0].value = ""
+        remove_btn.visible = False
         output_col.controls.clear()
         status_text.value = ""
+        _update_counts()
         page.update()
 
-    clear_btn = ft.IconButton(
-        icon=ft.Icons.CLEAR_ALL_ROUNDED,
-        tooltip="Clear list",
-        on_click=clear_all,
+    remove_btn = ft.IconButton(
+        icon=ft.Icons.DELETE_OUTLINE_ROUNDED,
+        tooltip="Remove the selected pictures from the list (Delete)",
+        on_click=lambda e: _request_remove(),
         visible=False,
         icon_color="#888",
         icon_size=20,
     )
     top_bar_row = ft.Row([
         ft.Text("", size=11, color="#666"),
-        clear_btn,
+        remove_btn,
     ], alignment=ft.MainAxisAlignment.END,
        vertical_alignment=ft.CrossAxisAlignment.CENTER)
+
+    # Drag-box selection: the rectangle is drawn in grid coordinates; the scroll offset converts pointer positions.
+    def _marquee_apply():
+        x0, x1 = sorted((_mq["x0"], _mq["x"]))
+        y0, y1 = sorted((_mq["y0"], _mq["y"]))
+        marquee.left, marquee.top = x0, y0 - _scroll[0]
+        marquee.width, marquee.height = max(1.0, x1 - x0), max(1.0, y1 - y0)
+        marquee.visible = True
+        hits = {pth for pth, (rx, ry, rw, rh) in _rects.items() if rx < x1 and rx + rw > x0 and ry < y1 and ry + rh > y0}
+        new = set(_mq["base"]) | hits
+        old = set(_sel)
+        if new != old:
+            _sel.clear(); _sel.update(new)
+            for pth in old ^ new: _style_tile(pth)
+            _update_counts()
+        page.update()
+
+    def _on_grid_scroll(e):
+        try: _scroll[0] = float(e.pixels)
+        except Exception: return
+        if _mq["on"]:
+            _mq["y"] = _mq["last_vy"] + _scroll[0]
+            _marquee_apply()
+    preview_wrap.on_scroll = _on_grid_scroll
+
+    async def _autoscroll(dy: float):
+        try: await preview_wrap.scroll_to(delta=dy, duration=0)
+        except Exception: pass
+
+    def _pan_down(e):
+        _mq["down"] = (float(e.local_position.x), float(e.local_position.y))        # the press point, not where the drag was recognised
+
+    def _pan_start(e):
+        _mq["on"] = True
+        dx, dy = _mq.get("down") or (float(e.local_position.x), float(e.local_position.y))
+        _mq["x0"] = _mq["x"] = dx
+        _mq["y0"] = _mq["y"] = dy + _scroll[0]; _mq["last_vy"] = dy
+        _mq["base"] = set(_sel) if (_mods["ctrl"] or _mods["shift"]) else set()
+        if not _mq["base"] and _sel:                      # a plain drag replaces the old selection
+            old = set(_sel); _sel.clear()
+            for pth in old: _style_tile(pth)
+        page.run_task(_focus_anchor)
+
+    def _pan_update(e):
+        if not _mq["on"]: return
+        _mq["x"] = float(e.local_position.x)
+        vy = float(e.local_position.y)
+        _mq["last_vy"] = vy; _mq["y"] = vy + _scroll[0]
+        _marquee_apply()
+        try: vh = float(page.height or page.window.height or 720) - 46 - 40
+        except Exception: vh = 600.0
+        if vy < 28: page.run_task(_autoscroll, -40.0)
+        elif vy > vh - 28: page.run_task(_autoscroll, 40.0)
+
+    def _pan_end(e):
+        if not _mq["on"]: return
+        _mq["on"] = False; marquee.visible = False
+        _update_counts(); page.update()
+
+    def _background_tap(e):
+        """A click on empty space (not on a card) clears the selection, like a file browser."""
+        if not (_mods["ctrl"] or _mods["shift"]) and _sel:
+            _clear_selection()
+
+    grid_area = ft.GestureDetector(
+        content=ft.Stack([ft.Container(content=preview_wrap, left=0, top=0, right=0, bottom=0), marquee], expand=True),
+        on_pan_down=_pan_down, on_pan_start=_pan_start, on_pan_update=_pan_update, on_pan_end=_pan_end,
+        on_tap=_background_tap, drag_interval=30, expand=True,
+    )
+    grid_box = ft.Container(content=grid_area, left=0, top=0, right=0, bottom=0, visible=False)
+
+    # keyboard: Ctrl / Shift held state for the clicks, Ctrl+A, Delete, Esc (never while a text field has focus)
+    def _set_mod(key: str, down: bool):
+        k = (key or "").lower()
+        if "shift" in k: _mods["shift"] = down
+        elif "control" in k or "ctrl" in k or "meta" in k or "super" in k or "command" in k: _mods["ctrl"] = down
+
+    def _on_key_down(e): _set_mod(getattr(e, "key", ""), True)
+    def _on_key_up(e): _set_mod(getattr(e, "key", ""), False)
+
+    def _on_keyboard(e: ft.KeyboardEvent):
+        _mods["ctrl"] = bool(e.ctrl or e.meta); _mods["shift"] = bool(e.shift)          # heals a missed key-up
+        if _typing or not selected_files or _confirm_open[0]: return
+        k = e.key
+        if (e.ctrl or e.meta) and k.lower() == "a": _select_all()
+        elif k == "Delete": _request_remove()
+        elif k == "Escape": _clear_selection()
+    page.on_keyboard_event = _on_keyboard
+
+    def _field_focus(field, on: bool):
+        (_typing.add if on else _typing.discard)(id(field))
+    prompt_field.on_focus = lambda e: _field_focus(prompt_field, True)
+    prompt_field.on_blur = lambda e: (_field_focus(prompt_field, False), _mods.update(ctrl=False, shift=False))
+
+    _kb_listener[0] = ft.KeyboardListener(content=ft.Container(width=1, height=1), on_key_down=_on_key_down, on_key_up=_on_key_up, autofocus=True)
+    header.content.controls.append(_kb_listener[0])
+
+    def _on_resize(e):
+        if selected_files and not _busy() and _cols() != _laid_cols[0]:
+            _relayout(); page.update()
+    page.on_resize = _on_resize
 
     center_zone = ft.Container(
         content=ft.Column([
@@ -1215,14 +1491,14 @@ async def main(page: ft.Page):
                 height=40,
             ),
             ft.Container(
-                content=ft.Column([
-                    drop_hint,
-                    browse_btn,
-                    preview_wrap,
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                   spacing=16, expand=True),
+                content=ft.Stack([
+                    ft.Container(
+                        content=ft.Column([drop_hint, browse_btn], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=16),
+                        alignment=ft.Alignment(0, 0), left=0, top=0, right=0, bottom=0,
+                    ),
+                    grid_box,
+                ], expand=True),
                 expand=True,
-                alignment=ft.Alignment(0, 0),
             ),
         ], spacing=0, expand=True),
         expand=True,

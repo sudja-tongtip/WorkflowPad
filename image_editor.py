@@ -17,9 +17,18 @@ APP_VERSION = "0.1.0"   # SemVer; see RELEASE.md
 
 # ── Config ────────────────────────────────────────────────────────────
 COMFY_HOST  = "127.0.0.1:8188"
-# Folder with comfy_apis/ (image, llm, caption, enhance), icons/: the project folder, or (PyInstaller) the folder next to the EXE.
+# Folder with comfy_apis/ (image_create, image_edit, llm, caption, enhance), icons/: the project folder, or (PyInstaller) the folder next to the EXE.
 APP_ROOT    = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
-API_DIR     = APP_ROOT / "comfy_apis" / "image"
+API_DIR     = APP_ROOT / "comfy_apis" / "image_edit"      # edit workflows (they need a source image)
+CREATE_DIR  = APP_ROOT / "comfy_apis" / "image_create"    # text-to-image workflows (the New image dialog)
+
+
+def _wf_file(api_fn: str) -> Path:
+    """A workflow by name: the edit folder first, then the create folder (a picture made with New is processed again with the same file)."""
+    for d in (API_DIR, CREATE_DIR):
+        if (d / api_fn).is_file():
+            return d / api_fn
+    return API_DIR / api_fn
 CAPTION_DIR = APP_ROOT / "comfy_apis" / "caption"      # image -> prompt workflows (JoyCaption, Florence2)
 CAPTION_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -288,7 +297,7 @@ def find_steps_target(wf:dict)->dict:
 
 def read_workflow_steps(api_fn:str)->dict:
     try:
-        with open(API_DIR/api_fn,encoding="utf-8") as f: return find_steps_target(json.load(f))
+        with open(_wf_file(api_fn),encoding="utf-8") as f: return find_steps_target(json.load(f))
     except Exception as ex:
         return {"target":None,"value":None,"reason":f"Cannot read workflow ({ex})"}
 
@@ -301,7 +310,7 @@ def inject_steps(wf:dict,steps:int)->bool:
 def build_wf(api_fn:str,prompt:str,img_path:str|None=None,
              mask_path:str|None=None,mask_local_path:str|None=None,
              width:int|None=None,height:int|None=None,steps:int|None=None)->dict:
-    with open(API_DIR/api_fn,encoding="utf-8") as f: wf=json.load(f)
+    with open(_wf_file(api_fn),encoding="utf-8") as f: wf=json.load(f)
     m=detect(wf)
 
     print(f"\n[DEBUG] build_wf: {api_fn}")
@@ -372,6 +381,37 @@ def build_wf(api_fn:str,prompt:str,img_path:str|None=None,
 def scan_apis()->list[str]:
     return sorted(p.name for p in API_DIR.glob("*.json") if "project" not in p.name and "editor" not in p.name)
 
+def auto_extend_plan(iw: int, ih: int, left: int, right: int, top: int, bottom: int, feather: int = 0, block: int = 8) -> dict | None:
+    """Extend 'Auto' resize: scale the picture and the four extensions together so that the EXTENDED canvas has the size of the original picture (rounded to a multiple of `block` = 8, the
+    step ComfyUI rounds to). Meant for a locked aspect ratio, where both axes need almost the same factor; each axis uses its own factor so the result is exactly the target size.
+    Returns None when there is nothing to extend. scale is the share of the original the picture is reduced to (<= 1)."""
+    if left + right + top + bottom <= 0 or iw <= 0 or ih <= 0:
+        return None
+    tw = max(block, round(iw / block) * block)
+    th = max(block, round(ih / block) * block)
+    sx = min(1.0, tw / (iw + left + right))
+    sy = min(1.0, th / (ih + top + bottom))
+    pl, pr = int(round(left * sx)), int(round(right * sx))
+    pt, pb = int(round(top * sy)), int(round(bottom * sy))
+    sw, sh = max(64, tw - pl - pr), max(64, th - pt - pb)
+    return {"out_w": sw + pl + pr, "out_h": sh + pt + pb, "src_w": sw, "src_h": sh, "left": pl, "right": pr, "top": pt, "bottom": pb,
+            "feather": int(round(feather * (sx + sy) / 2)), "scale": min(sw / iw, sh / ih)}
+
+def _extend_log(msg: str) -> None:
+    """Console + a small log file (%LOCALAPPDATA%\\WorkflowPad\\debug\\extend_log.txt) so a surprising Extend result can be checked against what was really sent."""
+    print(msg)
+    try:
+        d = APP_DATA / "debug"
+        d.mkdir(parents=True, exist_ok=True)
+        with open(d / "extend_log.txt", "a", encoding="utf-8") as f:
+            f.write(time.strftime("%Y-%m-%d %H:%M:%S ") + msg + "\n")
+    except Exception:
+        pass
+
+def scan_create_apis()->list[str]:
+    """Text-to-image workflows (comfy_apis/image_create) for the New image dialog."""
+    return sorted(p.name for p in CREATE_DIR.glob("*.json") if "project" not in p.name and "editor" not in p.name)
+
 _MASK_NODE_CLASSES = ["LoadImageMask", "ImageToMask", "MaskFromImage",
                        "InpaintModelConditioning", "VAEEncodeForInpaint"]
 
@@ -380,6 +420,29 @@ ENHANCE_DIR.mkdir(parents=True, exist_ok=True)
 
 def scan_enhance_apis() -> list[str]:
     return sorted(p.name for p in ENHANCE_DIR.glob("*.json"))
+
+def _enhance_nodes_of(name: str) -> set:
+    try:
+        wf = json.loads((ENHANCE_DIR / name).read_text(encoding="utf-8"))
+        return {n.get("class_type") for n in wf.values() if isinstance(n, dict)}
+    except Exception:
+        return set()
+
+def scan_face_upscale_apis() -> list[str]:
+    """Workflows in comfy_apis/enhance that run_enhance can drive: they contain a Face Restore and/or an Upscale node (an outpaint workflow, for example, does not)."""
+    return [p.name for p in sorted(ENHANCE_DIR.glob("*.json")) if _enhance_nodes_of(p.name) & {"FaceRestoreCFWithModel", "ImageUpscaleWithModel"}]
+
+def scan_outpaint_apis() -> list[str]:
+    """Workflows in comfy_apis/enhance that can extend a picture: they contain a Pad Image for Outpainting node (run_outpaint sets its four sides)."""
+    found = []
+    for p in sorted(ENHANCE_DIR.glob("*.json")):
+        try:
+            wf = json.loads(p.read_text(encoding="utf-8"))
+            if isinstance(wf, dict) and any(isinstance(n, dict) and n.get("class_type") == "ImagePadForOutpaint" for n in wf.values()):
+                found.append(p.name)
+        except Exception:
+            continue
+    return found
 
 async def _run_wf_and_save(wf: dict, on_progress=None) -> str | None:
     """Queue workflow and wait for result via polling (no websocket)"""
@@ -530,6 +593,21 @@ async def run_outpaint(api_fn, img_path, prompt, left=0, top=0, right=0, bottom=
         if not isinstance(node, dict): continue
         if "seed" in node.get("inputs", {}):
             node["inputs"]["seed"] = int(uuid.uuid4().int % (2**32)); break
+
+    # log what is really sent (the uploaded file's own pixel size, not what the dialog planned)
+    try:
+        from PIL import Image as _PI
+        with _PI.open(img_path) as _im:
+            sw, sh = _im.size
+        tw, th = sw + left + right, sh + top + bottom
+        _msg = (f"[EXTEND] SENT workflow={api_fn} | source {sw}x{sh} ({Path(img_path).name}) + pads L{left} R{right} T{top} B{bottom} feather {feathering}"
+                f" -> canvas {tw}x{th} = {tw*th/1e6:.2f} MP" + ("" if tw % 8 == 0 and th % 8 == 0 else " (not a multiple of 8: ComfyUI rounds it)"))
+        _extend_log(_msg)
+        if on_progress:
+            try: on_progress(f"⏳ Extend: sending {tw}×{th} ({tw*th/1e6:.2f} MP)...")
+            except Exception: pass
+    except Exception as _ex:
+        _extend_log(f"[EXTEND] could not log the sent size: {_ex}")
 
     return await _run_wf_and_save(wf, on_progress)
 
@@ -1574,7 +1652,7 @@ async def main(page:ft.Page):
         )
 
     # ── New image dialog ───────────────────────────────────────────────
-    new_api_dd  = _dlg_dd([ft.dropdown.Option(f) for f in scan_apis()],"Select workflow")
+    new_api_dd  = _dlg_dd([ft.dropdown.Option(f) for f in scan_create_apis()],"Select workflow")
     new_size_dd = ft.Dropdown(
         value=_DEFAULT_SIZE,
         options=[ft.dropdown.Option(lbl) for lbl,*_ in _ALL_SIZES],
@@ -1692,7 +1770,7 @@ async def main(page:ft.Page):
     _favorites: set = set()          # set of item["id"] that are favorites
     _selected_ids: set = set()       # multi-select
     _gen_count: list[int] = [0]      # generation round counter
-    _last_api: dict = {"new": None, "edit": None, "mask": None}
+    _last_api: dict = {"new": None, "edit": None, "mask": None, "extend": None, "enhance": None, "caption": None, "scale": None}
     _last_prompt: dict = {"new": "", "edit": "", "mask": ""}
 
     def _mk_batch_ctrl():
@@ -1838,6 +1916,7 @@ async def main(page:ft.Page):
     # ── Edit overlay ───────────────────────────────────────────────────
     edit_api_dd  = _dlg_dd([ft.dropdown.Option(f) for f in scan_apis()], "Select workflow")
     edit_prompt  = _prompt_editor()
+    edit_prompt.hint_text = "Describe the change, for example: Change the color of the shirt to red. Keep the face and everything else unchanged."      # shown while the box is empty
     edit_api_dd.expand = True                 # fill the row like the prompt below it
     edit_src_lbl = ft.Text("", size=10, color=C["text3"], italic=True)
     edit_status  = ft.Text("", size=11, color=C["red"], italic=True)
@@ -1961,8 +2040,10 @@ async def main(page:ft.Page):
         if f is None: return TEMP_DIR
         d = ws_path(f, MASKS_DIRNAME); d.mkdir(parents=True, exist_ok=True); return d
 
+    _pick_overlays: list = []             # the small "choose a workflow" dialogs (Prompt, Scale & Export)
+
     def _close_modals():
-        for ov in (new_overlay, edit_overlay, enhance_overlay, extend_overlay, mask_inpaint_overlay, fs_overlay):
+        for ov in (new_overlay, edit_overlay, enhance_overlay, extend_overlay, mask_inpaint_overlay, fs_overlay, *_pick_overlays):
             ov.visible = False
         mask_draw_dlg.open = False; hist_sel_dlg.open = False
         _mask_cancel()
@@ -2689,10 +2770,40 @@ async def main(page:ft.Page):
     enh_restore_chk=ft.Checkbox(label="Restore Face (CodeFormer)",value=True,
         fill_color={ft.ControlState.SELECTED:"#8B5CF6"},check_color="#111827",
         label_style=ft.TextStyle(size=13,color=C["text1"]))
-    enh_upscale_chk=ft.Checkbox(label="Upscale",value=True,
+    enh_upscale_chk=ft.Checkbox(label="Upscale",value=False,
         fill_color={ft.ControlState.SELECTED:"#8B5CF6"},check_color="#111827",
         label_style=ft.TextStyle(size=13,color=C["text1"]))
     enh_status=ft.Text("",size=11,color=C["red"],italic=True)
+    enh_info_lbl=ft.Text("",size=11,color=C["text3"],italic=True)          # which image / how many are going to be enhanced
+    enh_status.visible=False
+    def _enh_msg(text):
+        enh_status.value=text; enh_status.visible=bool(text); page.update()
+    enh_api_dd=_dlg_dd([ft.dropdown.Option(f) for f in scan_face_upscale_apis()],"Select workflow")
+    _enh_dd_sel=enh_api_dd.on_select
+    def _enh_api_changed(e):
+        if _enh_dd_sel: _enh_dd_sel(e)
+        _last_api["enhance"]=enh_api_dd.value
+    enh_api_dd.on_select=_enh_api_changed
+    enh_api_dd.expand=True
+
+    def _default_enhance_api(need=("FaceRestoreCFWithModel","ImageUpscaleWithModel")):
+        """The workflow to use without asking: the one chosen last, else face_restore_upscale.json, else the first workflow with a node of the kind that is needed."""
+        opts=[f for f in scan_face_upscale_apis() if _enhance_nodes_of(f)&set(need)]
+        if _last_api["enhance"] in opts: return _last_api["enhance"]
+        if "face_restore_upscale.json" in opts: return "face_restore_upscale.json"
+        return opts[0] if opts else None
+
+    def _show_enhance_dialog():
+        opts=scan_face_upscale_apis()
+        enh_api_dd.options=[ft.dropdown.Option(f) for f in opts]
+        enh_api_dd.value=_default_enhance_api()
+        enh_status.value="" if opts else "⚠ No Face Restore / Upscale workflow found in comfy_apis/enhance"
+        enh_status.visible=bool(enh_status.value)
+        enh_restore_chk.value=True; enh_upscale_chk.value=False                  # the same defaults every time
+        _cur_item=cur()
+        enh_info_lbl.value=(f"{len(_pending_enhance_items)} selected images" if _pending_enhance_items
+                            else (Path(_cur_item["path"]).name if _cur_item else ""))
+        enhance_overlay.visible=True; page.update()
     _pending_enhance_items: list = []
 
     def close_enhance(e=None):
@@ -2700,17 +2811,18 @@ async def main(page:ft.Page):
         enhance_overlay.visible=False; page.update()
 
     async def do_enhance(e):
-        api="face_restore_upscale.json"
-        if not (ENHANCE_DIR/api).exists(): enh_status.value=f"⚠ Not found: {api}"; page.update(); return
+        api=enh_api_dd.value
+        if not api: _enh_msg("⚠ Select a workflow first"); return
+        if not (ENHANCE_DIR/api).exists(): _enh_msg(f"⚠ Not found: {api}"); return
         restore=enh_restore_chk.value; upscale=enh_upscale_chk.value
-        if not restore and not upscale: enh_status.value="⚠ Select at least one"; page.update(); return
+        if not restore and not upscale: _enh_msg("⚠ Select at least one option"); return
         close_enhance()
 
         # batch mode if there are pending items
         if _pending_enhance_items:
             items_to_run = list(_pending_enhance_items)
             _pending_enhance_items.clear()
-            asyncio.create_task(_do_batch_enhance(items_to_run, api))
+            asyncio.create_task(_do_batch_enhance(items_to_run, api, restore, upscale))
             return
 
         # single mode
@@ -2734,52 +2846,108 @@ async def main(page:ft.Page):
             import traceback; traceback.print_exc()
             _hide_progress(); show_snack(f"⚠ {ex}",C["red"])
 
+    def _enh_option(chk, title_hint):
+        return ft.Container(
+            content=ft.Column([chk, ft.Container(content=ft.Text(title_hint, size=11, color=C["text3"]), padding=po(left=34))], spacing=0),
+            bgcolor="#F5F3FF", border_radius=br(10), border=ft.Border(top=ft.BorderSide(1, "#E4DDFB"), bottom=ft.BorderSide(1, "#E4DDFB"), left=ft.BorderSide(1, "#E4DDFB"), right=ft.BorderSide(1, "#E4DDFB")),
+            padding=po(left=14, right=14, top=8, bottom=10),
+        )
+
     enhance_overlay=ft.Container(
         content=ft.Container(
             content=ft.Column([
                 _panel_header(ft.Icons.AUTO_FIX_HIGH_ROUNDED,"Enhance image","#8B5CF6",close_enhance),
                 ft.Container(
                     content=ft.Column([
-                        ft.Row([ft.Icon(ft.Icons.FOLDER_OUTLINED,size=13,color=C["text3"]),
-                                enh_status],spacing=6),
-                        ft.Container(height=8),
-                        _section("Options"),
-                        ft.Container(
-                            content=ft.Column([
-                                enh_restore_chk,
-                                ft.Text("  Restore face with CodeFormer",size=10,color=C["text3"],italic=True),
-                                ft.Container(height=8),
-                                enh_upscale_chk,
-                                ft.Text("  Upscale with Upscale Model",size=10,color=C["text3"],italic=True),
-                            ],spacing=4),
-                            bgcolor="#EEF2FF",border_radius=br(8),
-                            padding=po(left=16,right=16,top=12,bottom=12),
-                        ),
-                    ],spacing=8,expand=True),
-                    expand=True,padding=po(left=20,right=20,top=16,bottom=8),
+                        enh_info_lbl,
+                        ft.Text("Workflow", size=13, weight=ft.FontWeight.W_700, color=C["text1"]),
+                        ft.Row([enh_api_dd]),
+                        enh_status,
+                        ft.Container(height=4),
+                        ft.Text("Options", size=13, weight=ft.FontWeight.W_700, color=C["text1"]),
+                        _enh_option(enh_restore_chk, "Repair and sharpen faces with CodeFormer"),
+                        _enh_option(enh_upscale_chk, "Enlarge the picture with the upscale model"),
+                    ], spacing=10, tight=True),
+                    padding=po(left=20,right=20,top=16,bottom=18),
                 ),
                 _panel_actions(
                     ft.TextButton("Cancel",on_click=close_enhance,style=ft.ButtonStyle(color=C["text2"])),
                     ft.FilledButton("✓ Enhance",on_click=do_enhance,bgcolor="#8B5CF6"),
                 ),
-            ],spacing=0,expand=True),
-            bgcolor=C["surface"],border_radius=br(12),width=460,expand=True,
+            ],spacing=0,tight=True),
+            bgcolor=C["surface"],border_radius=br(12),width=480,
+            border=ft.Border(top=ft.BorderSide(1,C["border"]),bottom=ft.BorderSide(1,C["border"]),left=ft.BorderSide(1,C["border"]),right=ft.BorderSide(1,C["border"])),
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
         ),
-        bgcolor="#00000044",expand=True,alignment=ft.Alignment(0,0),
-        visible=False,padding=po(left=80,right=80,top=60,bottom=60),
+        bgcolor="#00000055",expand=True,alignment=ft.Alignment(0,0),
+        visible=False,padding=po(left=40,right=40,top=40,bottom=40),
     )
     page.overlay.append(enhance_overlay)
+
+    def _make_pick_dialog(icon, title, color, ok_label, controls, on_ok):
+        """A small modal that fits its content: header, the given controls, Cancel / OK. Returns (overlay, close)."""
+        def _close(e=None):
+            ov.visible = False; page.update()
+        card = ft.Container(
+            content=ft.Column([
+                _panel_header(icon, title, color, _close),
+                ft.Container(content=ft.Column(controls, spacing=10, tight=True), padding=po(left=20, right=20, top=16, bottom=18)),
+                _panel_actions(
+                    ft.TextButton("Cancel", on_click=_close, style=ft.ButtonStyle(color=C["text2"])),
+                    ft.FilledButton(ok_label, on_click=on_ok, bgcolor=color),
+                ),
+            ], spacing=0, tight=True),
+            bgcolor=C["surface"], border_radius=br(12), width=480,
+            border=ft.Border(top=ft.BorderSide(1, C["border"]), bottom=ft.BorderSide(1, C["border"]), left=ft.BorderSide(1, C["border"]), right=ft.BorderSide(1, C["border"])),
+            clip_behavior=ft.ClipBehavior.HARD_EDGE,
+        )
+        ov = ft.Container(content=card, bgcolor="#00000055", expand=True, alignment=ft.Alignment(0, 0), visible=False, padding=po(left=40, right=40, top=40, bottom=40))
+        page.overlay.append(ov); _pick_overlays.append(ov)
+        return ov, _close
+
+    def _wf_dropdown(key):
+        """A Workflow dropdown that remembers the last choice in _last_api[key]."""
+        dd = _dlg_dd([], "Select workflow")
+        _sel = dd.on_select
+        def _changed(e):
+            if _sel: _sel(e)
+            _last_api[key] = dd.value
+        dd.on_select = _changed
+        dd.expand = True
+        return dd
+
+    # ── Image to prompt: which caption workflow ──
+    i2p_info = ft.Text("", size=11, color=C["text3"], italic=True)
+    i2p_dd = _wf_dropdown("caption")
+    i2p_status = ft.Text("", size=11, color=C["red"], italic=True, visible=False)
+    _i2p_item: list = [None]
+
+    def _i2p_ok(e):
+        api = i2p_dd.value
+        if not api:
+            i2p_status.value = "⚠ Select a workflow first"; i2p_status.visible = True; page.update(); return
+        _close_i2p()
+        asyncio.create_task(_run_img2prompt(_i2p_item[0], api))
+
+    i2p_overlay, _close_i2p = _make_pick_dialog(ft.Icons.AUTO_AWESOME_ROUNDED, "Image to prompt", "#EC4899", "✓ Analyze", [
+        i2p_info,
+        ft.Text("Workflow", size=13, weight=ft.FontWeight.W_700, color=C["text1"]),
+        ft.Row([i2p_dd]), i2p_status,
+    ], _i2p_ok)
 
     def _open_img2prompt(e=None):
         item = cur()
         if not item: show_snack("⚠ An image is required first", C["red"]); return
-        # prefer joycaption first; if unavailable, use the first one found
+        # the list: every workflow in comfy_apis/caption (joycaption ones first); the one used last is selected
         all_apis = sorted(p.name for p in CAPTION_DIR.glob("*.json"))
         apis = sorted(all_apis, key=lambda x: (0 if "joycaption" in x.lower() else 1))
         if not apis:
             show_snack("⚠ Florence2/Image2Prompt workflow not found", C["red"]); return
-        asyncio.create_task(_run_img2prompt(item, apis[0]))
+        i2p_dd.options = [ft.dropdown.Option(f) for f in apis]
+        i2p_dd.value = _last_api["caption"] if _last_api["caption"] in apis else apis[0]
+        i2p_info.value = Path(item["path"]).name
+        i2p_status.visible = False; _i2p_item[0] = item
+        i2p_overlay.visible = True; page.update()
 
     async def _run_img2prompt(item, api):
         _show_progress("", "⏳ Analyzing image...")
@@ -2799,7 +2967,7 @@ async def main(page:ft.Page):
         """Generate a new image from the prompt immediately — using the workflow and API from new_api_dd"""
         api = new_api_dd.value
         if not api:
-            apis = scan_apis()
+            apis = scan_create_apis()
             if not apis: show_snack("⚠ Workflow not found", C["red"]); return
             api = apis[0]
         resolved = resolve_wildcards(prompt)
@@ -2891,6 +3059,34 @@ async def main(page:ft.Page):
     _ext_preview_img = ft.Image(src="", fit=ft.BoxFit.CONTAIN)
     _ext_status = ft.Text("", size=11, color=C["red"], italic=True)
     _ext_img_size: list = [1, 1]  # [w, h] of the actual image
+    ext_size_lbl = ft.Text("", size=11, color=C["text2"], italic=True)
+    ext_dims_lbl = ft.Text("", size=11, color=C["text2"], text_align=ft.TextAlign.RIGHT, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS)    # Original / Extended sizes above the preview
+    _ext_canvas_size: list = [660, 320]          # [w, h] of the preview area, set by _fit_extend_dialog
+
+    def _update_ext_label():
+        """What the current resize option will produce (same arithmetic as do_extend)."""
+        iw, ih = _ext_img_size
+        L, R, T, B = _ext_vals["left"], _ext_vals["right"], _ext_vals["top"], _ext_vals["bottom"]
+        sel = _ext_resize[0]
+        color = C["text2"]
+        if sel == 0 and _ext_ratio_lock[0]:
+            plan = auto_extend_plan(iw, ih, L, R, T, B, _ext_vals["feathering"])
+            if plan is None:
+                text = "Auto: set an extension above to see the result size."
+            else:
+                pctv = round(plan["scale"] * 100)
+                text = f"Auto \u2192 result {plan['out_w']}\u00d7{plan['out_h']} (the size of the original); the original picture is reduced to {pctv}% ({plan['src_w']}\u00d7{plan['src_h']})."
+                if plan["scale"] < 0.4:
+                    text += " That is a lot: the existing part loses detail. A smaller extension (or Enhance afterwards) keeps more."
+                    color = C["amber"]
+        else:
+            pctv = 100 if sel == 0 else sel
+            nw, nh = (max(64, int(iw * pctv / 100)), max(64, int(ih * pctv / 100))) if pctv < 100 else (iw, ih)
+            ow = nw + int(L * pctv / 100) + int(R * pctv / 100)
+            oh = nh + int(T * pctv / 100) + int(B * pctv / 100)
+            text = f"{pctv}% \u2192 result {ow}\u00d7{oh} (original {iw}\u00d7{ih})."
+        ext_size_lbl.value = text
+        ext_size_lbl.color = color
 
     # Canvas preview — shows the image and the colored overlay that will be expanded
     _ext_canvas = ft.Stack(clip_behavior=ft.ClipBehavior.HARD_EDGE)
@@ -2901,9 +3097,10 @@ async def main(page:ft.Page):
         L = _ext_vals["left"]; R = _ext_vals["right"]
         T = _ext_vals["top"];  B = _ext_vals["bottom"]
         total_w = iw + L + R; total_h = ih + T + B
+        _update_ext_label()
         if total_w <= 0 or total_h <= 0: return
 
-        CW, CH = 660, 320
+        CW, CH = _ext_canvas_size
         scale = min(CW/total_w, CH/total_h)
         disp_w = total_w * scale; disp_h = total_h * scale
         ox = (CW - disp_w) / 2;  oy = (CH - disp_h) / 2
@@ -2916,7 +3113,7 @@ async def main(page:ft.Page):
 
         controls = [
             # Full canvas background
-            ft.Container(width=CW, height=CH, bgcolor="#E5E7EB"),
+            ft.Container(width=CW, height=CH, bgcolor="#2B333B"),
         ]
 
         # Left expansion area
@@ -2932,7 +3129,7 @@ async def main(page:ft.Page):
                     bottom=ft.BorderSide(1,"#16A34A44"),
                     left=ft.BorderSide(1,"#16A34A66"),
                 ),
-                content=ft.Text(f"+{L}px", size=8, color="#15803D",
+                content=ft.Text(f"+{L}px", size=11, color="#15803D",
                     text_align=ft.TextAlign.CENTER),
                 alignment=ft.Alignment(0,0),
             ))
@@ -2949,7 +3146,7 @@ async def main(page:ft.Page):
                     bottom=ft.BorderSide(1,"#16A34A44"),
                     right=ft.BorderSide(1,"#16A34A66"),
                 ),
-                content=ft.Text(f"+{R}px", size=8, color="#15803D",
+                content=ft.Text(f"+{R}px", size=11, color="#15803D",
                     text_align=ft.TextAlign.CENTER),
                 alignment=ft.Alignment(0,0),
             ))
@@ -2962,7 +3159,7 @@ async def main(page:ft.Page):
                     colors=["#DCFCE7", "#BBF7D088"]
                 ),
                 border=ft.Border(top=ft.BorderSide(1,"#16A34A66")),
-                content=ft.Text(f"+{T}px", size=8, color="#15803D",
+                content=ft.Text(f"+{T}px", size=11, color="#15803D",
                     text_align=ft.TextAlign.CENTER),
                 alignment=ft.Alignment(0,0),
             ))
@@ -2975,7 +3172,7 @@ async def main(page:ft.Page):
                     colors=["#BBF7D088", "#DCFCE7"]
                 ),
                 border=ft.Border(bottom=ft.BorderSide(1,"#16A34A66")),
-                content=ft.Text(f"+{B}px", size=8, color="#15803D",
+                content=ft.Text(f"+{B}px", size=11, color="#15803D",
                     text_align=ft.TextAlign.CENTER),
                 alignment=ft.Alignment(0,0),
             ))
@@ -2994,25 +3191,16 @@ async def main(page:ft.Page):
                 left=ft.BorderSide(1,"#11182788"), right=ft.BorderSide(1,"#11182788"),
             ),
         ))
-        # info label
-        # Actual size that ComfyUI will round to a multiple of 8
+        # sizes: the extended canvas that ComfyUI will round to a multiple of 8 (header above the preview)
         real_w = (total_w // 8) * 8
         real_h = (total_h // 8) * 8
-        controls.append(ft.Container(
-            content=ft.Text(
-                f"{int(real_w)}×{int(real_h)}  (input {int(total_w)}×{int(total_h)})",
-                size=9, color="#111827BB",
-            ),
-            left=2, top=2,
-            bgcolor="#00000077", border_radius=br(4),
-            padding=po(left=4,right=4,top=2,bottom=2),
-        ))
+        ext_dims_lbl.value = f"Original {iw}\u00d7{ih} px   \u00b7   Extended {int(real_w)}\u00d7{int(real_h)} px (input {int(total_w)}\u00d7{int(total_h)})   \u00b7   L {L}  R {R}  T {T}  B {B}"
 
         _ext_canvas.controls = controls
         page.update()
 
-    _ext_lock: list[bool] = [False]
-    _ext_ratio_lock: list[bool] = [False]
+    _ext_lock: list[bool] = [False]            # "Lock all 4 sides equally" (its checkbox is hidden; the logic stays)
+    _ext_ratio_lock: list[bool] = [True]       # default: lock the original aspect ratio (Auto resize needs it)
     _ext_slider_refs: dict = {}   # key → (slider, val_lbl)
 
     def _mk_slider_ctrl(label, key, max_val=500):
@@ -3061,6 +3249,7 @@ async def main(page:ft.Page):
                             s, l = _ext_slider_refs.get(k, (None,None))
                             if s: s.value = min(float(val), 500.0)
                             if l: l.value = str(val)
+            _update_ext_label()
             page.update()
         def _on_end(e):
             _update_ext_preview()
@@ -3073,6 +3262,16 @@ async def main(page:ft.Page):
             ft.Text("px", size=10, color=C["text3"], width=18),
         ], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER)
 
+    ext_api_dd = _dlg_dd([ft.dropdown.Option(f) for f in scan_outpaint_apis()], "Select outpaint workflow")
+    def _on_ext_api_sel(e):
+        _last_api["extend"] = ext_api_dd.value
+    _ext_dd_sel = ext_api_dd.on_select
+    def _ext_api_changed(e):
+        if _ext_dd_sel: _ext_dd_sel(e)
+        _on_ext_api_sel(e)
+    ext_api_dd.on_select = _ext_api_changed
+    ext_api_dd.expand = True                  # fill the row like the other dialogs
+
     ext_prompt = ft.TextField(
         value="extend the background, seamless continuation, matching lighting, color, and style of the original image",
         multiline=True, min_lines=3, max_lines=5,
@@ -3081,43 +3280,53 @@ async def main(page:ft.Page):
         content_padding=po(left=10,right=10,top=8,bottom=8),
     )
 
-    _ext_resize: list[int] = [100]  # 25/50/75/100
+    _ext_auto_dropped: list[bool] = [False]   # True when Auto was switched to 100% only because the ratio lock was turned off
+    _ext_resize: list[int] = [0]  # 0 = Auto (result = size of the original), else 25/50/75/100 (% of the picture and of the extensions)
+
+    def _style_resize_btns():
+        sel = _ext_resize[0]
+        for rb in _resize_btns:
+            rb.style = ft.ButtonStyle(
+                color="#06B6D4" if rb.data==sel else C["text2"],
+                side=ft.BorderSide(1,"#06B6D4" if rb.data==sel else C["border"]),
+                padding=ft.Padding(8,4,8,4),
+            )
 
     def _mk_resize_btn(pct):
-        btn = ft.OutlinedButton(
-            f"{pct}%",
-            style=ft.ButtonStyle(
-                color="#06B6D4" if pct==100 else C["text2"],
-                side=ft.BorderSide(1, "#06B6D4" if pct==100 else C["border"]),
-                padding=ft.Padding(8,4,8,4),
-            ),
-            height=30,
-        )
+        btn = ft.OutlinedButton("Auto" if pct == 0 else f"{pct}%", height=30)
         def _on_click(e, p=pct, b=btn):
             _ext_resize[0] = p
-            for rb in _resize_btns:
-                rb.style = ft.ButtonStyle(
-                    color="#06B6D4" if rb.data==p else C["text2"],
-                    side=ft.BorderSide(1,"#06B6D4" if rb.data==p else C["border"]),
-                    padding=ft.Padding(8,4,8,4),
-                )
+            _ext_auto_dropped[0] = False
+            _style_resize_btns()
+            _update_ext_label()
             page.update()
         btn.on_click = _on_click
         btn.data = pct
         return btn
 
-    _resize_btns = [_mk_resize_btn(p) for p in [25,50,75,100]]
-    ext_resize_row = ft.Row([
-        ft.Text("Resize before sending:", size=11, color=C["text2"]),
-        *_resize_btns,
-        ft.Text("(Save generation time)", size=10, color=C["text3"], italic=True),
-    ], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+    _resize_btns = [_mk_resize_btn(p) for p in [0,25,50,75,100]]
+    _style_resize_btns()
+    _resize_btns[0].visible = _ext_ratio_lock[0]        # Auto only exists while the aspect ratio is locked
+    ext_resize_row = ft.Row([*_resize_btns], spacing=8, run_spacing=8, wrap=True)
+
+    def _sync_auto_option():
+        """Auto exists only while the aspect ratio is locked: hide it and fall back to 100% otherwise (and bring it back when the lock returns)."""
+        _resize_btns[0].visible = _ext_ratio_lock[0]
+        if not _ext_ratio_lock[0] and _ext_resize[0] == 0:
+            _ext_resize[0] = 100                  # Auto needs the locked ratio: back to 100%
+            _ext_auto_dropped[0] = True
+            _style_resize_btns()
+        elif _ext_ratio_lock[0] and _ext_auto_dropped[0]:
+            _ext_resize[0] = 0                    # the lock is back: Auto again (it was only dropped because of the unlock)
+            _ext_auto_dropped[0] = False
+            _style_resize_btns()
 
     def _on_lock_change(e):
         _ext_lock[0] = e.control.value
         if _ext_lock[0]:
             _ext_ratio_lock[0] = False
             ext_ratio_chk.value = False
+            _sync_auto_option()
             v = _ext_vals["left"]
             for k in ("right","top","bottom"):
                 _ext_vals[k] = v
@@ -3132,26 +3341,27 @@ async def main(page:ft.Page):
         if _ext_ratio_lock[0]:
             _ext_lock[0] = False
             ext_lock_chk.value = False
-            page.update()
+        _sync_auto_option()
+        _update_ext_label()
+        page.update()
 
     ext_lock_chk = ft.Checkbox(
-        label="Lock all 4 sides equally", value=False,
+        label="Lock all 4 sides equally", value=False, visible=False,
         fill_color={ft.ControlState.SELECTED: "#06B6D4"},
         check_color="#111827",
         label_style=ft.TextStyle(size=12, color=C["text2"]),
         on_change=_on_lock_change,
     )
     ext_ratio_chk = ft.Checkbox(
-        label="Lock original aspect ratio", value=False,
-        fill_color={ft.ControlState.SELECTED: "#8B5CF6"},
+        label="Lock original aspect ratio", value=True,
+        fill_color={ft.ControlState.SELECTED: "#06B6D4"},
         check_color="#111827",
         label_style=ft.TextStyle(size=12, color=C["text2"]),
         on_change=_on_ratio_change,
     )
 
     pad_ctrls = ft.Column([
-        ft.Row([ext_lock_chk, ft.Container(width=16), ext_ratio_chk],
-               alignment=ft.MainAxisAlignment.END),
+        ft.Column([ext_lock_chk, ext_ratio_chk], spacing=0),
         _mk_slider_ctrl("← Left",   "left"),
         _mk_slider_ctrl("→ Right",  "right"),
         _mk_slider_ctrl("↑ Top",    "top"),
@@ -3165,16 +3375,43 @@ async def main(page:ft.Page):
     async def do_extend(e):
         item = cur()
         if not item: _ext_status.value="⚠ An image is required first"; page.update(); return
-        api = "flux_fill_outpaint.json"
+        api = ext_api_dd.value
+        if not api: _ext_status.value="⚠ Select an outpaint workflow first (comfy_apis/enhance)"; page.update(); return
         if not (ENHANCE_DIR/api).exists(): _ext_status.value=f"⚠ Not found: {api}"; page.update(); return
         prompt = (ext_prompt.value or "").strip()
         if not prompt: _ext_status.value="⚠ Enter a prompt first"; page.update(); return
+        pct = _ext_resize[0]
+        auto_plan = None
+        if pct == 0 and _ext_ratio_lock[0]:                         # Auto: the result keeps the size of the original picture
+            try:
+                from PIL import Image as PI
+                _aw, _ah = PI.open(item["path"]).size
+            except Exception:
+                _aw, _ah = _ext_img_size
+            auto_plan = auto_extend_plan(_aw, _ah, _ext_vals["left"], _ext_vals["right"], _ext_vals["top"], _ext_vals["bottom"], _ext_vals["feathering"])
+            if auto_plan is None:
+                _ext_status.value = "⚠ Set an extension first (Left / Right / Top / Bottom)"; page.update(); return
+        elif pct == 0:
+            pct = 100                                               # Auto without the locked ratio does not exist: as 100%
         close_extend()
         _gen_count[0] += 1
-        # Resize the image first if a value below 100% is selected
+        # Resize the image first if a value below 100% is selected (Auto: to the size that makes the extended canvas the original size)
         src_path = item["path"]
-        pct = _ext_resize[0]
-        if pct < 100:
+        if auto_plan:
+            try:
+                from PIL import Image as PI
+                im = PI.open(src_path)
+                im_r = im.resize((auto_plan["src_w"], auto_plan["src_h"]), PI.LANCZOS)
+                tmp = Path(TEMP_DIR) / f"ext_resize_{uuid.uuid4().hex[:8]}.jpg"
+                im_r.save(tmp, quality=92)
+                src_path = str(tmp)
+                _show_progress(prompt, f"⏳ Extend (Auto: {auto_plan['out_w']}×{auto_plan['out_h']}, picture {round(auto_plan['scale']*100)}%)...")
+                print(f"[EXTEND] auto: picture {auto_plan['src_w']}×{auto_plan['src_h']}, result {auto_plan['out_w']}×{auto_plan['out_h']}")
+            except Exception as ex:
+                print(f"[EXTEND] auto resize failed: {ex}")
+                _show_progress(prompt, "⏳ Extend...")
+                auto_plan = None
+        elif pct < 100:
             try:
                 from PIL import Image as PI
                 import tempfile
@@ -3199,7 +3436,18 @@ async def main(page:ft.Page):
         scaled_top    = max(0, int(_ext_vals["top"]    * scale_factor))
         scaled_bottom = max(0, int(_ext_vals["bottom"] * scale_factor))
         scaled_feather= max(0, int(_ext_vals["feathering"] * scale_factor))
+        if auto_plan:                                               # Auto: the extensions that go with the resized picture
+            scaled_left, scaled_right, scaled_top, scaled_bottom = auto_plan["left"], auto_plan["right"], auto_plan["top"], auto_plan["bottom"]
+            scaled_feather = auto_plan["feather"]
         print(f"[EXTEND] scaled pad: L={scaled_left} R={scaled_right} T={scaled_top} B={scaled_bottom} F={scaled_feather}")
+        _opt = "Auto" if auto_plan else f"{pct}%"
+        try:
+            from PIL import Image as _PI0
+            with _PI0.open(item["path"]) as _o: _ow, _oh = _o.size
+        except Exception:
+            _ow, _oh = _ext_img_size
+        _extend_log(f"[EXTEND] REQUEST option={_opt} ratio_lock={_ext_ratio_lock[0]} | original {_ow}x{_oh} | dialog pads L{_ext_vals['left']} R{_ext_vals['right']} T{_ext_vals['top']} B{_ext_vals['bottom']} feather {_ext_vals['feathering']}"
+                    f" | planned pads L{scaled_left} R{scaled_right} T{scaled_top} B{scaled_bottom} feather {scaled_feather}")
         def _p(t): _update_progress(t)
         try:
             result = await run_outpaint(
@@ -3222,44 +3470,91 @@ async def main(page:ft.Page):
             import traceback; traceback.print_exc()
             _hide_progress(); show_snack(f"⚠ {ex}", C["red"])
 
-    extend_overlay = ft.Container(
-        content=ft.Container(
-            content=ft.Column([
-                _panel_header(ft.Icons.OPEN_WITH_ROUNDED, "Extend image", "#06B6D4", close_extend),
-                ft.Container(
-                    content=ft.Column([
-                        # Full-width preview
-                        ft.Container(
-                            content=_ext_canvas,
-                            bgcolor=C["bg"], border_radius=br(8),
-                            clip_behavior=ft.ClipBehavior.HARD_EDGE,
-                            expand=True, height=320,
-                        ),
-                        ft.Container(height=8),
-                        # Sliders
-                        pad_ctrls,
-                        ft.Container(height=8),
-                        _section("Prompt"),
-                        ext_prompt,
-                        ext_resize_row,
-                        _ext_status,
-                    ], spacing=6, expand=True),
-                    expand=True, padding=po(left=20,right=20,top=16,bottom=8),
-                ),
-                _panel_actions(
-                    ft.TextButton("Cancel", on_click=close_extend,
-                                 style=ft.ButtonStyle(color=C["text2"])),
-                    ft.FilledButton("✓ Extend", on_click=do_extend, bgcolor="#06B6D4"),
-                ),
-            ], spacing=0, expand=True),
-            bgcolor=C["surface"], border_radius=br(12),
-            width=700, expand=True,
-            clip_behavior=ft.ClipBehavior.HARD_EDGE,
-        ),
-        bgcolor="#00000044", expand=True,
-        alignment=ft.Alignment(0,0), visible=False,
-        padding=po(left=40,right=40,top=40,bottom=40),
+    # ── Layout: header | preview 70% + controller 30% | footer ─────────────────────────────────────────────
+    ext_prompt.expand = True
+    def _ext_section(title, *controls):
+        return ft.Column([ft.Text(title, size=13, weight=ft.FontWeight.W_700, color=C["text1"]), *controls], spacing=8)
+
+    ext_canvas_box = ft.Container(
+        content=_ext_canvas, width=660, height=320, bgcolor="#2B333B", border_radius=br(10),
+        clip_behavior=ft.ClipBehavior.HARD_EDGE, alignment=ft.Alignment(0, 0),
     )
+    ext_left = ft.Container(
+        content=ft.Column([
+            ft.Row([ft.Text("Image Preview", size=14, weight=ft.FontWeight.W_700, color=C["text1"]), ext_dims_lbl], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            ext_canvas_box,
+            ft.Text("Original image + extended canvas preview", size=11, color=C["text3"]),
+        ], spacing=10, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+        padding=po(left=20, right=20, top=16, bottom=16), expand=7,
+    )
+    ext_right_col = ft.Column([
+        _ext_section("Canvas Extension", pad_ctrls),
+        ft.Divider(height=1, color=C["border"]),
+        _ext_section("Generation Settings",
+                     ft.Text("Workflow", size=11, color=C["text2"]), ft.Row([ext_api_dd]),
+                     ft.Text("Prompt", size=11, color=C["text2"]), ft.Row([ext_prompt])),
+        ft.Divider(height=1, color=C["border"]),
+        _ext_section("Output Resolution",
+                     ft.Text("Resize before sending (saves generation time)", size=11, color=C["text3"], italic=True),
+                     ext_resize_row, ext_size_lbl),
+        _ext_status,
+    ], spacing=12, scroll=ft.ScrollMode.AUTO, expand=True)
+    ext_right = ft.Container(
+        content=ext_right_col, padding=po(left=20, right=20, top=16, bottom=12), expand=3,
+        border=ft.Border(left=ft.BorderSide(1, C["border"])),
+    )
+    ext_body = ft.Container(expand=True)
+    ext_dlg_box = ft.Container(
+        content=ft.Column([
+            _panel_header(ft.Icons.OPEN_WITH_ROUNDED, "Extend Image", "#06B6D4", close_extend),
+            ext_body,
+            _panel_actions(
+                ft.TextButton("Cancel", on_click=close_extend,
+                              style=ft.ButtonStyle(color=C["text2"])),
+                ft.FilledButton("✓ Extend", on_click=do_extend, bgcolor="#06B6D4"),
+            ),
+        ], spacing=0, expand=True),
+        bgcolor=C["surface"], border_radius=br(12), width=1100, height=700,
+        border=ft.Border(top=ft.BorderSide(1, C["border"]), bottom=ft.BorderSide(1, C["border"]), left=ft.BorderSide(1, C["border"]), right=ft.BorderSide(1, C["border"])),
+        clip_behavior=ft.ClipBehavior.HARD_EDGE,
+    )
+
+    def _fit_extend_dialog(e=None):
+        """Size the dialog to the window (about 90%, capped for a desktop) and the preview to its pane. Wide window: preview 70% | controller 30%; a narrow one stacks them and scrolls the body."""
+        try: pw = float(page.width or 1400); ph = float(page.height or 900)
+        except Exception: pw, ph = 1400.0, 900.0
+        W = max(560.0, min(pw * 0.9, 1700.0)); H = max(460.0, min(ph * 0.94, 1000.0))
+        ext_dlg_box.width = W; ext_dlg_box.height = H
+        body_h = H - 124                                           # header + footer
+        if W >= 900:
+            cw = int(W * 0.7) - 44; ch = int(body_h - 100)
+            ext_left.expand = 7; ext_right.expand = 3
+            ext_right.height = None
+            ext_right_col.scroll = ft.ScrollMode.AUTO; ext_right_col.expand = True
+            ext_right.border = ft.Border(left=ft.BorderSide(1, C["border"]))
+            ext_body.content = ft.Row([ext_left, ext_right], spacing=0, vertical_alignment=ft.CrossAxisAlignment.STRETCH, expand=True)
+        else:
+            cw = int(W) - 44; ch = int(max(200, min(360, body_h * 0.4)))
+            ext_left.expand = False; ext_right.expand = False
+            ext_right_col.scroll = None; ext_right_col.expand = False
+            ext_right.border = ft.Border(top=ft.BorderSide(1, C["border"]))
+            ext_body.content = ft.Column([ext_left, ext_right], spacing=0, scroll=ft.ScrollMode.AUTO, expand=True)
+        cw = max(240, cw); ch = max(160, ch)
+        ext_canvas_box.width = cw; ext_canvas_box.height = ch
+        _ext_canvas.width = cw; _ext_canvas.height = ch
+        _ext_canvas_size[0] = cw; _ext_canvas_size[1] = ch
+
+    def _on_extend_resize(e=None):
+        if extend_overlay.visible:
+            _fit_extend_dialog(); _update_ext_preview()
+
+    extend_overlay = ft.Container(
+        content=ext_dlg_box,
+        bgcolor="#00000055", expand=True,
+        alignment=ft.Alignment(0, 0), visible=False,
+        padding=po(left=20, right=20, top=20, bottom=20),
+    )
+    _fit_extend_dialog()
     page.overlay.append(extend_overlay)
 
     def _open_extend(e=None):
@@ -3274,22 +3569,58 @@ async def main(page:ft.Page):
             _ext_preview_img.fit = ft.BoxFit.FILL
         except: pass
         _ext_status.value = ""
+        _opts = scan_outpaint_apis()
+        ext_api_dd.options = [ft.dropdown.Option(f) for f in _opts]
+        if _last_api["extend"] in _opts: ext_api_dd.value = _last_api["extend"]
+        elif "flux_fill_outpaint.json" in _opts: ext_api_dd.value = "flux_fill_outpaint.json"
+        else: ext_api_dd.value = _opts[0] if _opts else None
+        if not _opts: _ext_status.value = "⚠ No outpaint workflow found: put one with a Pad Image for Outpainting node in comfy_apis/enhance"
         extend_overlay.visible = True
+        _fit_extend_dialog()
         page.update()
         _update_ext_preview()
 
     def _open_enhance(e=None):
-        """Enhance the current image — restore face only, without opening a dialog"""
+        """Enhance the current image: the dialog asks for the workflow and the options (Restore Face / Upscale)."""
         item=cur()
         if not item: show_snack("⚠ An image is required first",C["red"]); return
-        apis=scan_enhance_apis()
-        if not apis: show_snack("⚠ No workflow found in enhance/",C["red"]); return
-        asyncio.create_task(_run_single_enhance(item, apis[0]))
+        _pending_enhance_items.clear()
+        _show_enhance_dialog()
+
+    # ── Scale & Export: which upscale workflow ──
+    scale_info = ft.Text("", size=11, color=C["text3"], italic=True)
+    scale_dd = _wf_dropdown("scale")
+    scale_status = ft.Text("", size=11, color=C["red"], italic=True, visible=False)
+    _pending_scale_items: list = []
+
+    async def _scale_ok(e):
+        api = scale_dd.value
+        if not api:
+            scale_status.value = "⚠ Select a workflow first"; scale_status.visible = True; page.update(); return
+        items = list(_pending_scale_items); _pending_scale_items.clear()
+        _close_scale()
+        await _scale_export_run(items, api)
+
+    scale_overlay, _close_scale = _make_pick_dialog(ft.Icons.OPEN_IN_FULL_ROUNDED, "Scale & Export", "#10B981", "✓ Choose folder & export", [
+        scale_info,
+        ft.Text("Workflow", size=13, weight=ft.FontWeight.W_700, color=C["text1"]),
+        ft.Row([scale_dd]), scale_status,
+    ], _scale_ok)
 
     async def _scale_export(items: list):
+        """Scale & Export: the dialog asks for the upscale workflow, then the export runs."""
+        if not items: show_snack("⚠ An image is required first", C["red"]); return
+        opts = [f for f in scan_face_upscale_apis() if "ImageUpscaleWithModel" in _enhance_nodes_of(f)]
+        if not opts: show_snack("⚠ No upscale workflow found in comfy_apis/enhance", C["red"]); return
+        scale_dd.options = [ft.dropdown.Option(f) for f in opts]
+        scale_dd.value = _last_api["scale"] if _last_api["scale"] in opts else _default_enhance_api(("ImageUpscaleWithModel",))
+        _pending_scale_items[:] = items
+        scale_info.value = (f"{len(items)} images" if len(items) > 1 else Path(items[0]["path"]).name) + " will be upscaled and saved to a folder you choose"
+        scale_status.visible = False
+        scale_overlay.visible = True; page.update()
+
+    async def _scale_export_run(items: list, api: str):
         """Upscale and save directly to a folder without showing it in history"""
-        api = "face_restore_upscale.json"
-        if not (ENHANCE_DIR/api).exists(): show_snack(f"⚠ Not found: {api}", C["red"]); return
         # Select a folder first
         fp = ft.FilePicker()
         dst_ref: list = [None]
@@ -3417,7 +3748,7 @@ async def main(page:ft.Page):
 
     # ── Toolbar ────────────────────────────────────────────────────────
     def _open_new(e):
-        files = scan_apis()
+        files = scan_create_apis()
         new_api_dd.options = [ft.dropdown.Option(f) for f in files]
         if _last_api["new"]: new_api_dd.value = _last_api["new"]
         last_p = next((
@@ -3436,19 +3767,9 @@ async def main(page:ft.Page):
         files = scan_apis()
         edit_api_dd.options = [ft.dropdown.Option(f) for f in files]
         edit_src_lbl.value = f"Edit from: {Path(item['path']).name}" if item else "No image yet"
-        last_p = next((
-            (e["text"] if isinstance(e,dict) else e)
-            for e in prompt_hists["edit"]
-            if not (e["text"] if isinstance(e,dict) else e).startswith("[")
-        ), "")
-        if item:
-            p = item.get("prompt", "")
-            if p and not p.startswith("["): edit_prompt.value = p
-            else: edit_prompt.value = _last_prompt["edit"] or last_p
-            if item.get("api") and item["api"] in [o.key for o in edit_api_dd.options]:
-                edit_api_dd.value = item["api"]
-        else:
-            edit_prompt.value = _last_prompt["edit"] or last_p
+        edit_prompt.value = ""        # the Edit box always opens empty (the example hint shows); an earlier prompt is one click away in Prompt History
+        if item and item.get("api") and item["api"] in [o.key for o in edit_api_dd.options]:
+            edit_api_dd.value = item["api"]
         edit_status.value = ""
         _fit_compact_all()
         edit_overlay.visible = True; page.update()
@@ -3463,6 +3784,8 @@ async def main(page:ft.Page):
         prompt=item.get("prompt","")
         if not api or not prompt or prompt=="(imported)":
             show_snack("⚠ Missing API or previous prompt data",C["red"]); return
+        if prompt.startswith("["):                          # "[Enhance] ...", "[Extend] ...": made by a tool whose settings are not kept with the picture
+            show_snack("⚠ Again works for pictures made with New / Edit. Run Enhance, Extend or Mask again from the original picture.",C["amber"]); return
         # Use the original source of this item (parent if present, otherwise itself)
         if item.get("parent_id"):
             src_item=next((h for h in history if h["id"]==item["parent_id"]),None)
@@ -4010,18 +4333,17 @@ async def main(page:ft.Page):
     def _on_batch_enhance_click(e=None):
         sel_items=[h for h in history if h["id"] in _selected_ids]
         if not sel_items: show_snack("⚠ Select images first",C["red"]); return
-        apis=scan_enhance_apis()
-        if not apis: show_snack("⚠ No workflow found in enhance/",C["red"]); return
-        asyncio.create_task(_do_batch_enhance(sel_items,apis[0]))
+        _pending_enhance_items[:]=sel_items
+        _show_enhance_dialog()
 
-    async def _do_batch_enhance(items_to_enhance,api):
+    async def _do_batch_enhance(items_to_enhance,api,restore=True,upscale=False):
         _gen_count[0]+=1; total=len(items_to_enhance)
         done=failed=0; stopped=False                   # counted from real outcomes (an output was saved), never from len(selection)
         for i,src_item in enumerate(items_to_enhance):
             _show_progress("",f"⏳ Restore Face {i+1}/{total}: {Path(src_item['path']).name}")
             def _p(t): _update_progress(t)
             try:
-                result=await run_enhance(api,src_item["path"],restore_face=True,upscale=False,on_progress=_p)
+                result=await run_enhance(api,src_item["path"],restore_face=restore,upscale=upscale,on_progress=_p)
                 _hide_progress()
                 if result:
                     ni={"id":uuid.uuid4().hex,"path":result,"prompt":"[Enhance] restore face",
@@ -4082,6 +4404,7 @@ async def main(page:ft.Page):
         files = scan_apis()
         edit_api_dd.options = [ft.dropdown.Option(f) for f in files]
         edit_src_lbl.value = f"Batch Edit {len(sel_items)} image(s)"
+        edit_prompt.value = ""
         edit_status.value = ""
         _fit_compact_all()
         edit_overlay.visible = True
@@ -4252,7 +4575,7 @@ async def main(page:ft.Page):
             show_snack(f"✓ Imported {added} image(s)", C["green"])
 
     page.on_file_drop = _on_file_drop
-    page.on_resize = lambda e: (_apply_density(e), _fit_new_dialog(), _fit_compact_all(), _on_resize_toolbar())
+    page.on_resize = lambda e: (_apply_density(e), _fit_new_dialog(), _fit_compact_all(), _on_resize_toolbar(), _on_extend_resize())
     _apply_density()
 
 

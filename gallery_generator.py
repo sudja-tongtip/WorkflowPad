@@ -26,9 +26,9 @@ APP_VERSION = "0.1.0"   # SemVer; see RELEASE.md
 
 # ── Config ────────────────────────────────────────────────────────────
 COMFY_HOST = "127.0.0.1:8188"
-# Folder with comfy_apis/ (image, llm, caption, enhance), icons/: the project folder, or (PyInstaller) the folder next to the EXE.
+# Folder with comfy_apis/ (image_create, image_edit, llm, caption, enhance), icons/: the project folder, or (PyInstaller) the folder next to the EXE.
 APP_ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
-API_DIR    = APP_ROOT / "comfy_apis" / "image"
+API_DIR    = APP_ROOT / "comfy_apis" / "image_create"
 USER_CONFIG_DIR = Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming") / "WorkflowPad"     # user data: never next to the program
 SAVE_PATH  = USER_CONFIG_DIR / "saved_gallery.json"
 try:
@@ -158,7 +158,7 @@ def detect_mapping(wf: dict) -> dict:
                        if f in inp and isinstance(inp[f], str)), None)
             if tf is None: tf = next((k for k, v in inp.items() if isinstance(v, str) and v), "text")
             t = _title(nid, wf)
-            role = "positive" if any(h in t for h in _POS_HINTS) else ("negative" if "neg" in t else "unknown")
+            role = "negative" if "neg" in t else ("positive" if any(h in t for h in _POS_HINTS) else "unknown")      # 'Negative Prompt' contains 'prompt': negative first
             candidates.append((prio, nid, tf, role))
     candidates.sort(key=lambda x: (x[0], 0 if x[3] == "positive" else 1))
     prompt_nodes = []; seen = False
