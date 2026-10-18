@@ -153,7 +153,7 @@ def _props_to_str(v) -> str:
 
 import flet as ft
 
-from .constants  import (APP_ROOT, APP_ID, APP_NAME, APP_VERSION, C, STYLE_MAP, _SIZE_MAP, _ALL_SIZES, TEMP_DIR, API_DIR,
+from .constants  import (APP_ROOT, APP_ID, APP_NAME, APP_VERSION, C, STYLE_MAP, _SIZE_MAP, _ALL_SIZES, TEMP_DIR, API_DIR, IMAGE_EDIT_DIR,
                           LLM_DIR, CAPTION_DIR, GENRE_MAP, DIALOGUE_STYLE_MAP, DIALOGUE_LANG_MAP,
                           LANG_MAP, style_string_for_scale)
 from .comfy_api  import run_one, run_identity_pass, apply_dialogue_overlay, apply_dual_text_overlay, run_joycaption, run_img2img, pick_reference_image
@@ -438,6 +438,7 @@ def main(page: ft.Page):
     _grok_temperature  : list[float] = [saved.get("grok_temperature", 0.7)]
     _llm_debug_logging : list[bool] = [bool(saved.get("llm_debug_logging", False))]
     _llm_use_program   : list[bool] = [saved.get("llm_settings_source", "program") != "workflow"]      # True = the program's tested LLM values, False = the workflow file's own (llm_overrides)
+    _caption_wf        : list[str] = [saved.get("caption_workflow", "")]      # "" = Auto: a JoyCaption workflow in comfy_apis/caption (the short one first)
     # apply saved settings to modules
     _comfy_api_mod.set_comfy_host(_comfy_host[0])
     set_llm_params(_llm_tokens_outline[0], _llm_tokens_fill[0],
@@ -650,6 +651,11 @@ def main(page: ft.Page):
                       if "story" not in p.name and "saved" not in p.name
                       and "llm" not in p.name.lower())
 
+    def scan_edit_apis() -> list[str]:
+        """Workflows that need a source image (comfy_apis/image_edit): Inpaint / Img2Img and the Identity Pass."""
+        return sorted(p.name for p in IMAGE_EDIT_DIR.glob("*.json")
+                      if "story" not in p.name and "saved" not in p.name and "llm" not in p.name.lower())
+
     _api_list = scan_apis()
     _api_init = selected_api[0] if selected_api[0] in _api_list else (_api_list[0] if _api_list else None)
     if _api_init: selected_api[0] = _api_init
@@ -773,6 +779,7 @@ def main(page: ft.Page):
             "grok_temperature": _grok_temperature[0],
             "llm_debug_logging": _llm_debug_logging[0],
             "llm_settings_source": "program" if _llm_use_program[0] else "workflow",
+            "caption_workflow": _caption_wf[0],
             "num_shots": _safe_num_shots(),
         })
 
@@ -1178,8 +1185,8 @@ def main(page: ft.Page):
             id_ref_preview.visible = True; _save_state(); page.update()
 
     id_wf_dd = ft.Dropdown(
-        value=_id_workflow[0] if _id_workflow[0] in scan_apis() else None,
-        options=[ft.dropdown.Option(a) for a in scan_apis()],
+        value=_id_workflow[0] if _id_workflow[0] in scan_edit_apis() else None,
+        options=[ft.dropdown.Option(a) for a in scan_edit_apis()],
         hint_text="Identity Workflow", text_size=10, height=36,
         border_color=C["border"], focused_border_color=C["purple"],
         bgcolor=C["surface"],
@@ -1225,8 +1232,8 @@ def main(page: ft.Page):
 
     # ── Inpaint Mode UI (ใช้รูปก่อนหน้าเป็น reference แทน text-to-image ทั้งหมด) ──────
     inpaint_wf_dd = ft.Dropdown(
-        value=_inpaint_workflow[0] if _inpaint_workflow[0] in scan_apis() else None,
-        options=[ft.dropdown.Option(a) for a in scan_apis()],
+        value=_inpaint_workflow[0] if _inpaint_workflow[0] in scan_edit_apis() else None,
+        options=[ft.dropdown.Option(a) for a in scan_edit_apis()],
         hint_text="Inpaint/Img2Img Workflow", text_size=10, height=36,
         border_color=C["border"], focused_border_color=C["purple"],
         bgcolor=C["surface"],
@@ -2694,10 +2701,13 @@ def main(page: ft.Page):
         if not llm_wf:
             status_lbl.value = "⚠ Select LLM workflow first"; page.update(); return
         # เลือก joycaption workflow — prefer short version (JoyCaption รันโลคอลเสมอ ไม่เกี่ยวกับ llm_wf/Grok)
-        _jc_all = sorted(CAPTION_DIR.glob("*joycaption*.json"), key=lambda p: p.name)
-        _jc_short = [p for p in _jc_all if "short" in p.name.lower()]
-        joycaption_wf = (_jc_short[0] if _jc_short else (_jc_all[0] if _jc_all else None))
-        joycaption_wf = joycaption_wf.name if joycaption_wf else None
+        if _caption_wf[0] and (CAPTION_DIR / _caption_wf[0]).is_file():             # the workflow chosen in Settings > LLM
+            joycaption_wf = _caption_wf[0]
+        else:                                                                         # Auto
+            _jc_all = sorted(CAPTION_DIR.glob("*joycaption*.json"), key=lambda p: p.name)
+            _jc_short = [p for p in _jc_all if "short" in p.name.lower()]
+            joycaption_wf = (_jc_short[0] if _jc_short else (_jc_all[0] if _jc_all else None))
+            joycaption_wf = joycaption_wf.name if joycaption_wf else None
         if not joycaption_wf:
             status_lbl.value = "⚠ JoyCaption workflow not found in comfy_apis/caption/"; page.update(); return
 
@@ -9062,15 +9072,14 @@ def main(page: ft.Page):
 
     # ── Grok API tab ──────────────────────────────────────────────────
     grok_key_field = ft.TextField(
-        value="",
-        hint_text=(f"(saved — {len(_grok_api_key[0])} chars — leave blank to keep)"
-                   if _grok_api_key[0] else "xai-xxxxxxxx..."),
+        value=_grok_api_key[0],                      # the saved key, masked, with the eye to show it (as in Prompt Lab)
+        label="Grok API Key", hint_text="xai-xxxxxxxx...",
         password=True, can_reveal_password=True, text_size=11,
         border_color=C["border"], focused_border_color=C["accent"], bgcolor=C["surface"],
         content_padding=po(left=8, right=8, top=6, bottom=6), expand=True,
     )
     grok_model_dd = ft.Dropdown(
-        value=_grok_model[0],
+        value=_grok_model[0], label="Grok Model",
         options=[ft.dropdown.Option(m) for m in [
             "grok-4-latest", "grok-4.6", "grok-4.5", "grok-3-latest", "grok-3-mini-latest",
         ]],
@@ -9078,6 +9087,7 @@ def main(page: ft.Page):
         bgcolor=C["surface"], content_padding=po(left=8, right=4, top=0, bottom=0),
     )
     grok_temp_field = _sfield("0.0 – 2.0", value=str(_grok_temperature[0]), width=100)
+    grok_temp_field.label = "Temperature"
     custom_sys_field = ft.TextField(
         value=_custom_sys[0], multiline=True, min_lines=3, max_lines=6,
         hint_text="Appended to the end of every Grok system prompt (Story Editor, Outline, Image Prompt, Chat, ...)",
@@ -9085,12 +9095,25 @@ def main(page: ft.Page):
         bgcolor=C["surface"], content_padding=po(left=8, right=8, top=6, bottom=6),
     )
 
+    _CAPTION_AUTO = "__auto__"
+    caption_wf_dd = ft.Dropdown(
+        options=[ft.dropdown.Option(_CAPTION_AUTO, "Auto (a JoyCaption workflow, the short one first)")],
+        value=_CAPTION_AUTO, text_size=11, height=38, width=420,
+        border_color=C["border"], focused_border_color=C["accent"], bgcolor=C["surface"],
+        content_padding=po(left=8, right=4, top=0, bottom=0),
+    )
+
+    def _refresh_caption_dd():
+        files = sorted(p.name for p in CAPTION_DIR.glob("*.json"))
+        caption_wf_dd.options = [ft.dropdown.Option(_CAPTION_AUTO, "Auto (a JoyCaption workflow, the short one first)")] + [ft.dropdown.Option(f) for f in files]
+        caption_wf_dd.value = _caption_wf[0] if _caption_wf[0] in files else _CAPTION_AUTO
+
     llm_source_switch = ft.Switch(
         value=_llm_use_program[0], active_color=C["accent"],
         label="Use the program's LLM settings",
         label_text_style=ft.TextStyle(size=11, color=C["text2"]),
-        tooltip="ON (default) = the program sets the LLM values it was tested with (for example repeat penalty 1.0 for Shot List and Page List). "
-                "OFF = the program leaves those values alone and every call uses the workflow file's own.",
+        tooltip="ON (default) = the program sets the LLM values it was tested with (for example repeat penalty 1.0 for Shot List and Page List, the context size of long conversations). "
+                "OFF = the program leaves the temperature, repeat penalty and context size alone and every call uses the workflow file's own.",
     )
 
     llm_debug_switch = ft.Switch(
@@ -9129,6 +9152,7 @@ def main(page: ft.Page):
         except ValueError: pass
         _llm_debug_logging[0] = bool(llm_debug_switch.value)
         _llm_use_program[0] = bool(llm_source_switch.value)
+        _caption_wf[0] = "" if (caption_wf_dd.value or _CAPTION_AUTO) == _CAPTION_AUTO else caption_wf_dd.value
         _llm_overrides.set_mode(_llm_overrides.PROGRAM if _llm_use_program[0] else _llm_overrides.WORKFLOW)
         set_llm_params(_llm_tokens_outline[0], _llm_tokens_fill[0],
                        _llm_timeout[0], _grok_temperature[0], _llm_tokens_groom[0],
@@ -9137,11 +9161,11 @@ def main(page: ft.Page):
         set_llm_debug_logging(_llm_debug_logging[0])
         _outline_refresh_b_visibility()
         # Grok
-        if grok_key_field.value.strip():
-            _grok_api_key[0] = grok_key_field.value.strip()
-            save_credentials({"grok_api_key": _grok_api_key[0]})
-            grok_key_field.value = ""
-            grok_key_field.hint_text = f"(saved — {len(_grok_api_key[0])} chars — leave blank to keep)"
+        _new_key = grok_key_field.value.strip()           # what is in the field is the key (clearing it removes the saved key)
+        if _new_key != _grok_api_key[0]:
+            _grok_api_key[0] = _new_key
+            save_credentials({"grok_api_key": _new_key})
+        grok_key_field.value = _grok_api_key[0]
         if grok_model_dd.value: _grok_model[0] = grok_model_dd.value
         _custom_sys[0] = custom_sys_field.value or ""
         set_llm_params(grok_custom_sys=_custom_sys[0])
@@ -9174,20 +9198,22 @@ def main(page: ft.Page):
             ),
             _shint("Story Editor = rewrite the story · Outline = plan shots (Shot List) · Image Prompt = write prompts · Timeout = local LLM only"),
             _shint("Chat = edit the outline in conversation · Story Pass = pass A (character/scene/props/events) — a lower cap is fine because the output is short"),
+            ft.Text("Image-to-text workflow (vision Check / Direct)", size=11, color=C["text2"]),
+            caption_wf_dd,
+            _shint("The workflow that describes the pictures for the vision Check and Direct buttons: any workflow in comfy_apis/caption. Auto = a JoyCaption workflow (the short one first)."),
             llm_source_switch,
             _shint("ON = the program's tested LLM values are used (default). OFF = the workflow file's own values are used; max tokens and session handling stay program-controlled, and some stages "
-                   "may fail or cut their answers short with other values. Currently covers: repeat penalty of Shot List and Page List; more stages follow."),
+                   "may fail or cut their answers short with other values. Covers every stage: repeat penalty (Shot List, Page List), temperature and context size (checks, visual direction, Story Editor, chat, Image Prompts, Story Bible). Timeouts and the conversation history settings stay with the program."),
             llm_debug_switch,
             _shint("OFF = production (no extra prompt, no debug files). ON = save raw request/response + a short decision report under %LOCALAPPDATA%\\WorkflowPad\\debug for every Story Editor, Outline, Image Prompt, Consistency Check, and Visual Direction call."),
         ),
         _tab_col(
-            _slabel("API Key"),
             grok_key_field,
-            _shint("Get your key at console.x.ai — leave blank to keep the saved key"),
+            _shint("Get your key at console.x.ai · the key is shared with Prompt Lab (%APPDATA%\\StoryGenerator\\credentials.json)"),
             ft.Container(height=4),
             _srow(
-                ft.Column([_slabel("Model"),       grok_model_dd],   spacing=4, expand=True),
-                ft.Column([_slabel("Temperature"), grok_temp_field], spacing=4),
+                ft.Column([grok_model_dd],   spacing=4, expand=True),
+                ft.Column([grok_temp_field], spacing=4),
             ),
             _shint("Temperature: 0.0 = deterministic · 1.0 = default · 2.0 = max creative"),
             ft.Container(height=8),
@@ -9274,6 +9300,8 @@ def main(page: ft.Page):
     page.overlay.append(sys_dialog)
 
     def _open_sys_dialog(e):
+        grok_key_field.value = _grok_api_key[0]
+        _refresh_caption_dd()
         llm_source_switch.value = _llm_use_program[0]
         llm_debug_switch.value = _llm_debug_logging[0]
         sys_dialog.open = True; page.update()

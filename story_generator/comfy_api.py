@@ -6,7 +6,7 @@ __version__ = "20260726_1907"
 import asyncio, json, random, time, urllib.parse, urllib.request, urllib.error, uuid
 from pathlib import Path
 
-from .constants import COMFY_HOST as _DEFAULT_COMFY_HOST, API_DIR, clean_overlay_text
+from .constants import COMFY_HOST as _DEFAULT_COMFY_HOST, API_DIR, IMAGE_EDIT_DIR, clean_overlay_text
 
 _comfy_host = _DEFAULT_COMFY_HOST
 
@@ -101,15 +101,17 @@ def _title(nid, wf):
 
 def detect_mapping(wf: dict) -> dict:
     img_node = img_field = seed_node = seed_field = None
+    img_rank = len(_IMG_CLASSES)        # the image-input node of the best class wins (LoadImage before LoadImageMask ...); among equals the last one, as before
     candidates = []
     for nid, node in wf.items():
         if not isinstance(node, dict): continue
         ct = node.get("class_type", ""); inp = node.get("inputs", {})
-        if ct in _IMG_CLASSES:
-            if "image" in inp: img_node, img_field = nid, "image"
-            elif not img_node:
+        if ct in _IMG_CLASSES and _IMG_CLASSES.index(ct) <= img_rank:
+            if "image" in inp:
+                img_node, img_field, img_rank = nid, "image", _IMG_CLASSES.index(ct)
+            elif not img_node or _IMG_CLASSES.index(ct) < img_rank:
                 for k, v in inp.items():
-                    if not isinstance(v, list): img_node, img_field = nid, k; break
+                    if not isinstance(v, list): img_node, img_field, img_rank = nid, k, _IMG_CLASSES.index(ct); break
         prio = next((i for i, c in enumerate(_PROMPT_CLASSES) if c == ct), None)
         if prio is None and "clip" in ct.lower() and "encode" in ct.lower(): prio = len(_PROMPT_CLASSES)
         if prio is None:
@@ -120,7 +122,7 @@ def detect_mapping(wf: dict) -> dict:
                        if f in inp and isinstance(inp[f], str)), None)
             if tf is None: tf = next((k for k, v in inp.items() if isinstance(v, str) and v), "text")
             t = _title(nid, wf)
-            role = "positive" if any(h in t for h in _POS_HINTS) else ("negative" if "neg" in t else "unknown")
+            role = "negative" if "neg" in t else ("positive" if any(h in t for h in _POS_HINTS) else "unknown")      # 'Negative Prompt' contains 'prompt': negative is checked first
             candidates.append((prio, nid, tf, role))
     candidates.sort(key=lambda x: (x[0], 0 if x[3] == "positive" else 1))
     prompt_nodes = []; seen = False
@@ -187,12 +189,21 @@ def _with_anatomy_guard(prompt_text: str) -> str:
     return f"{prompt_text}\n\n{ANATOMY_GUARD}" if (prompt_text or "").strip() else prompt_text
 
 
+def _image_workflow_path(name: str, edit_first: bool = False) -> Path:
+    """A workflow file by name: image_create/ and image_edit/ are both searched (the file may be a text-to-image or an edit workflow); edit_first for the edit-only callers."""
+    dirs = (IMAGE_EDIT_DIR, API_DIR) if edit_first else (API_DIR, IMAGE_EDIT_DIR)
+    for d in dirs:
+        if (d / name).is_file():
+            return d / name
+    return dirs[0] / name
+
+
 def build_workflow(api_filename: str, prompt_text: str,
                    width: int = 0, height: int = 0,
                    fixed_seed: int = -1,
                    override_steps: int = -1) -> dict:
     prompt_text = _with_anatomy_guard(prompt_text)
-    with open(API_DIR / api_filename, encoding="utf-8") as f: wf = json.load(f)
+    with open(_image_workflow_path(api_filename), encoding="utf-8") as f: wf = json.load(f)
     m = detect_mapping(wf)
     for ph in m["prompt_nodes"]:
         if ph["role"] in ("positive", "unknown"):
@@ -409,7 +420,7 @@ async def run_identity_pass(base_image: str, ref_image: str,
                              index: int = 0,
                              stop_event: asyncio.Event | None = None) -> str | None:
     loop = asyncio.get_event_loop()
-    wf_path = API_DIR / id_wf_file
+    wf_path = _image_workflow_path(id_wf_file, edit_first=True)
     if not wf_path.exists(): return None
     with open(wf_path, encoding="utf-8") as f: wf = json.load(f)
     try:

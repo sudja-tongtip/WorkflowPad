@@ -24,6 +24,7 @@ import urllib.request
 import uuid
 
 from .constants import LLM_DIR
+from . import llm_overrides as _overrides
 from .comfy_api import comfy_queue, comfy_history
 from .visual_direction import visual_direction_for_preset
 
@@ -325,8 +326,7 @@ async def _call_local_text(wf_template: dict, system_prompt: str, user_prompt: s
         inputs["session_id"] = session_id
         inputs["reset_session"] = True
         inputs["max_tokens"] = max_tokens
-        if n_ctx:
-            inputs["n_ctx"] = int(n_ctx)               # per-call copy of the workflow: the shared template is not modified
+        _overrides.apply(inputs, n_ctx=int(n_ctx) if n_ctx else None)      # per-call copy of the workflow: the shared template is not modified; Workflow mode keeps the workflow's n_ctx
         hit = True
     if not hit:
         if on_log:

@@ -18,6 +18,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from .constants import LLM_DIR, DEBUG_DIR, GENRE_MAP, lang_prompt_name
+from . import llm_overrides as _overrides
 from .constants import dialogue_authoring_text as _dialogue_authoring_text
 
 NSFW_GENRES = {"erotic", "dark_erotic", "manga_hentai"}
@@ -2153,10 +2154,7 @@ async def _call_llm_node(wf_template: dict, system_prompt: str,
             # n_ctx: ทับได้ก็ต่อเมื่อผู้ใช้ตั้งค่าไว้เอง (_llm_n_ctx > 0) — ค่าเริ่มต้น 0 = ปล่อยตาม
             # workflow เพราะโมเดลที่โหลดด้วย ctx สั้นกว่าจะ queue ไม่ขึ้นหรือพังตอนรัน
             _nc = n_ctx if n_ctx is not None else _llm_n_ctx
-            if _nc and _nc > 0:
-                wf[nid]["inputs"]["n_ctx"] = _nc
-            if temperature is not None:
-                wf[nid]["inputs"]["temperature"] = temperature
+            _overrides.apply(wf[nid]["inputs"], n_ctx=(_nc if _nc and _nc > 0 else None), temperature=temperature)      # Program mode: the Settings / caller values; Workflow mode: the workflow's own
             local_model = (wf[nid].get("inputs") or {}).get("model")
             node_params = {
                 "max_tokens": wf[nid]["inputs"].get("max_tokens"),
@@ -7116,9 +7114,7 @@ async def run_llm_chat(user_text: str, wf_template: dict | None, session_id: str
             wf[nid]["inputs"]["session_id"]      = session_id
             wf[nid]["inputs"]["reset_session"]   = reset
             wf[nid]["inputs"]["max_tokens"]      = max_tokens
-            wf[nid]["inputs"]["n_ctx"]           = 32768
-            wf[nid]["inputs"]["temperature"]     = 0.7
-            wf[nid]["inputs"]["repeat_penalty"]  = 1.1
+            _overrides.apply(wf[nid]["inputs"], n_ctx=32768, temperature=0.7, repeat_penalty=1.1)      # Project Assistant chat: Program mode writes these, Workflow mode keeps the workflow's
 
     cid = uuid.uuid4().hex
     if on_log:

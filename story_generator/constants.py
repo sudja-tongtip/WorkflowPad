@@ -17,7 +17,8 @@ APP_VERSION = "0.1.0"   # SemVer; see RELEASE.md
 # not Path(__file__), which then points inside the bundle.
 APP_ROOT     = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent.parent
 COMFY_HOST   = "127.0.0.1:8188"
-API_DIR      = APP_ROOT / "comfy_apis" / "image"  # folder where workflow .json files are stored (Export (API) from ComfyUI)
+API_DIR      = APP_ROOT / "comfy_apis" / "image_create"  # text-to-image workflows (Export (API) from ComfyUI)
+IMAGE_EDIT_DIR = APP_ROOT / "comfy_apis" / "image_edit"  # workflows that need a source image: img2img / inpaint / identity pass
 LLM_DIR      = APP_ROOT / "comfy_apis" / "llm"
 CAPTION_DIR  = APP_ROOT / "comfy_apis" / "caption"    # image -> prompt workflows (JoyCaption, Florence2)
 # ── User data lives in the user's profile, never next to the program (the program folder may be read-only, and an update must not touch it) ──

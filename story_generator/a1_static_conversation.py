@@ -33,6 +33,7 @@ import uuid
 from .constants import lang_prompt_name
 from . import llm_engine_a1_static as _S
 from . import fill_conversation as _FC
+from . import llm_overrides as _ov
 from .llm_engine_a1 import GROK_MARKER, _CHAR_FIELDS, _CHAR_TAG_RE, _strip_code_fence
 
 __version__ = "20261102_a1_static_conversation_v1"
@@ -381,7 +382,7 @@ class _Conversation:
             wf = copy.deepcopy(wf)
             for node in wf.values():
                 if isinstance(node, dict) and node.get("class_type") == "LLMSessionChatNode":
-                    node.setdefault("inputs", {})["n_ctx"] = int(self.n_ctx)
+                    _ov.apply(node.setdefault("inputs", {}), n_ctx=int(self.n_ctx))      # Workflow mode keeps the workflow's n_ctx
         raw = await _S._call_local_text(wf, self.system, sent, max_tokens=tokens, session_id=self.session_id, on_log=self.on_log, reset=True)
         return raw or "", len(sent)
 
@@ -393,7 +394,7 @@ class _Conversation:
     async def _send_session(self, step: str, request: str, working: list[dict], tokens: int) -> tuple[str, int]:
         """Local, one real session. Same session: only the new message goes (a retry sends just the correction: the node's history holds the rejected reply). A new session:
         the system prompt and the rebuilt conversation go once, reset_session=True."""
-        n_ctx = max(int(self.n_ctx or 0), _FC.FILL_N_CTX)
+        n_ctx = _ov.effective_n_ctx(self.wf_template, max(int(self.n_ctx or 0), _FC.FILL_N_CTX))      # what the budget is planned against
         budget = min(max(_FC.BUDGET_CTX, n_ctx // 2), n_ctx)
         reason, self._rotate_reason = self._rotate_reason, ""
         if self._sess is None:

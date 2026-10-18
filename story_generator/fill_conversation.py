@@ -31,6 +31,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .comfy_api import comfy_queue, comfy_history
+from . import llm_overrides as _ov
 from .conversation_debug import ConversationDebugLog
 
 FILL_N_CTX = 32768                 # the n_ctx this mode runs the local model with (workflow copy)
@@ -279,7 +280,8 @@ async def call_session(wf_template: dict, system_prompt: str, user_text: str, *,
             continue
         inp = node.setdefault("inputs", {})
         inp.update({"user_text": user_text, "system_prompt": system_prompt, "session_id": session_id, "reset_session": bool(reset), "max_tokens": int(max_tokens),
-                    "n_ctx": int(n_ctx), "max_turns": MAX_TURNS, "summarize_old_history": False})
+                    "max_turns": MAX_TURNS, "summarize_old_history": False})            # session plumbing: the conversation mode needs the full history, whatever the switch says
+        _ov.apply(inp, n_ctx=int(n_ctx))                                                    # Program mode: the mode's context; Workflow mode: the workflow's own
         hit = True
     if not hit:
         if on_log:
@@ -335,7 +337,7 @@ class FillConversation:
         self.system = system_prompt
         self.sheet = sheet
         self.on_log = on_log
-        self.n_ctx = n_ctx                              # what the model really runs with
+        self.n_ctx = _ov.effective_n_ctx(wf_template, n_ctx)     # what the model really runs with (the workflow's own n_ctx in Workflow mode)
         self.budget_ctx = budget_ctx or BUDGET_CTX           # what Python plans against (tests make it smaller; never larger than n_ctx)
         self.budget_ctx = min(self.budget_ctx, self.n_ctx)
         self.counter = counter or TokenCounter(wf_template)
