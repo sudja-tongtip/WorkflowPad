@@ -3,14 +3,14 @@ comfy_workflow - set up ComfyUI for WorkflowPad
 
 WorkflowPad does not generate images by itself. It sends work to YOUR ComfyUI. The files in this folder are
 example ComfyUI workflows. You open one in ComfyUI, point it at the models you own, test it, then export it
-for WorkflowPad. The files do not contain any model: every model field says SELECT_YOUR_MODEL.
+for WorkflowPad. The files do not contain any model; the model names in them are only hints for what the author used. Pick models you have.
 
 
 The 4 steps
 -----------
 1. Open ComfyUI (Desktop) and drag one of the .json files in this folder onto the canvas.
    (If ComfyUI asks about missing nodes, install them with ComfyUI-Manager first: see "Custom nodes" below.)
-2. In every loader node that says SELECT_YOUR_MODEL, choose a model you have. Press Run once.
+2. In every loader node, check the model name and choose a model you have. Press Run once.
    If it makes an image (or text), the workflow works.
 3. Menu: Workflow > Export (API). Save the file. Use the plain "Export (API)", not "Save".
 4. Put the exported file in the matching folder of comfy_apis\ (see the table), then start WorkflowPad.

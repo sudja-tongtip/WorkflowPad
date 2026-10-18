@@ -117,7 +117,7 @@
       "widgets_values": [
         "",
         "default",
-        "SELECT_YOUR_MODEL",
+        "GGUF/Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf",
         "(Auto-detect)",
         "",
         1024,
@@ -148,7 +148,7 @@
       "widgets_values_named": {
         "user_text": "",
         "session_id": "default",
-        "model": "SELECT_YOUR_MODEL",
+        "model": "GGUF/Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf",
         "mmproj": "(Auto-detect)",
         "system_prompt": "",
         "max_tokens": 1024,

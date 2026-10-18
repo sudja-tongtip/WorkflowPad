@@ -35,7 +35,7 @@ The other programs start the same way (`python image_editor.py`, `python prompt_
 
 The programs read ComfyUI workflows exported in **API format**. You make them yourself:
 
-1. Open an example from [`comfy_workflow/`](comfy_workflow) in ComfyUI and choose the models you own (every model field says `SELECT_YOUR_MODEL`).
+1. Open an example from [`comfy_workflow/`](comfy_workflow) in ComfyUI and choose the models you own (the names in the examples are only hints).
 2. Press Run once to check that it works.
 3. In ComfyUI use **Workflow → Export (API)**.
 4. Put the exported file in the matching folder of `comfy_apis/`.

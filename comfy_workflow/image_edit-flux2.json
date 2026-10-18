@@ -295,20 +295,20 @@
       },
       "widgets_values": [
         "",
-        "SELECT_YOUR_MODEL",
-        "SELECT_YOUR_MODEL",
-        "SELECT_YOUR_MODEL",
+        "flux2Klein_9bBase.safetensors",
+        "qwen_3_8b.safetensors",
+        "flux2-vae.safetensors",
         true,
-        "SELECT_YOUR_MODEL",
+        "Flux_2-Turbo-LoRA_comfyui.safetensors",
         3848511069819
       ],
       "widgets_values_named": {
         "text": "",
-        "unet_name": "SELECT_YOUR_MODEL",
-        "clip_name": "SELECT_YOUR_MODEL",
-        "vae_name": "SELECT_YOUR_MODEL",
+        "unet_name": "flux2Klein_9bBase.safetensors",
+        "clip_name": "qwen_3_8b.safetensors",
+        "vae_name": "flux2-vae.safetensors",
         "value": true,
-        "lora_name": "SELECT_YOUR_MODEL",
+        "lora_name": "Flux_2-Turbo-LoRA_comfyui.safetensors",
         "noise_seed": 3848511069819
       }
     }
@@ -742,10 +742,10 @@
               }
             },
             "widgets_values": [
-              "SELECT_YOUR_MODEL"
+              "flux2-vae.safetensors"
             ],
             "widgets_values_named": {
-              "vae_name": "SELECT_YOUR_MODEL"
+              "vae_name": "flux2-vae.safetensors"
             }
           },
           {
@@ -894,12 +894,12 @@
               }
             },
             "widgets_values": [
-              "SELECT_YOUR_MODEL",
+              "qwen_3_8b.safetensors",
               "flux2",
               "default"
             ],
             "widgets_values_named": {
-              "clip_name": "SELECT_YOUR_MODEL",
+              "clip_name": "qwen_3_8b.safetensors",
               "type": "flux2",
               "device": "default"
             }
@@ -1148,11 +1148,11 @@
               }
             },
             "widgets_values": [
-              "SELECT_YOUR_MODEL",
+              "flux2Klein_9bBase.safetensors",
               "default"
             ],
             "widgets_values_named": {
-              "unet_name": "SELECT_YOUR_MODEL",
+              "unet_name": "flux2Klein_9bBase.safetensors",
               "weight_dtype": "default"
             }
           },
@@ -1598,11 +1598,11 @@
               }
             },
             "widgets_values": [
-              "SELECT_YOUR_MODEL",
+              "Flux_2-Turbo-LoRA_comfyui.safetensors",
               1
             ],
             "widgets_values_named": {
-              "lora_name": "SELECT_YOUR_MODEL",
+              "lora_name": "Flux_2-Turbo-LoRA_comfyui.safetensors",
               "strength_model": 1
             }
           },

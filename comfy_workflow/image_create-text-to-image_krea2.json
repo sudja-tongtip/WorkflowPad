@@ -175,9 +175,9 @@
         1296,
         1015998274383883,
         8,
-        "SELECT_YOUR_MODEL",
-        "SELECT_YOUR_MODEL",
-        "SELECT_YOUR_MODEL"
+        "krea2Turbo_v10_2951489.safetensors",
+        "Huihui-Qwen3-VL-4B-Instruct-abliterated-fp8_scaled.safetensors",
+        "krea2RealVae_v10.safetensors"
       ],
       "widgets_values_named": {
         "text": "",
@@ -185,9 +185,9 @@
         "height": 1296,
         "seed": 1015998274383883,
         "steps": 8,
-        "unet_name": "SELECT_YOUR_MODEL",
-        "clip_name": "SELECT_YOUR_MODEL",
-        "vae_name": "SELECT_YOUR_MODEL"
+        "unet_name": "krea2Turbo_v10_2951489.safetensors",
+        "clip_name": "Huihui-Qwen3-VL-4B-Instruct-abliterated-fp8_scaled.safetensors",
+        "vae_name": "krea2RealVae_v10.safetensors"
       }
     }
   ],
@@ -410,10 +410,10 @@
               }
             },
             "widgets_values": [
-              "SELECT_YOUR_MODEL"
+              "krea2RealVae_v10.safetensors"
             ],
             "widgets_values_named": {
-              "vae_name": "SELECT_YOUR_MODEL"
+              "vae_name": "krea2RealVae_v10.safetensors"
             }
           },
           {
@@ -656,11 +656,11 @@
               }
             },
             "widgets_values": [
-              "SELECT_YOUR_MODEL",
+              "redcraft23INT8INT4FP8_30Krea2.safetensors",
               "default"
             ],
             "widgets_values_named": {
-              "unet_name": "SELECT_YOUR_MODEL",
+              "unet_name": "redcraft23INT8INT4FP8_30Krea2.safetensors",
               "weight_dtype": "default"
             }
           },
@@ -724,12 +724,12 @@
               }
             },
             "widgets_values": [
-              "SELECT_YOUR_MODEL",
+              "Huihui-Qwen3-VL-4B-Instruct-abliterated-fp8_scaled.safetensors",
               "krea2",
               "default"
             ],
             "widgets_values_named": {
-              "clip_name": "SELECT_YOUR_MODEL",
+              "clip_name": "Huihui-Qwen3-VL-4B-Instruct-abliterated-fp8_scaled.safetensors",
               "type": "krea2",
               "device": "default"
             }

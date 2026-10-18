@@ -56,14 +56,14 @@
         }
       },
       "widgets_values": [
-        "SELECT_YOUR_MODEL",
-        "SELECT_YOUR_MODEL",
+        "clip_l.safetensors",
+        "t5xxl_fp16.safetensors",
         "flux",
         "default"
       ],
       "widgets_values_named": {
-        "clip_name1": "SELECT_YOUR_MODEL",
-        "clip_name2": "SELECT_YOUR_MODEL",
+        "clip_name1": "clip_l.safetensors",
+        "clip_name2": "t5xxl_fp16.safetensors",
         "type": "flux",
         "device": "default"
       }
@@ -114,10 +114,10 @@
         }
       },
       "widgets_values": [
-        "SELECT_YOUR_MODEL"
+        "ae.safetensors"
       ],
       "widgets_values_named": {
-        "vae_name": "SELECT_YOUR_MODEL"
+        "vae_name": "ae.safetensors"
       }
     },
     {
@@ -583,10 +583,10 @@
         }
       },
       "widgets_values": [
-        "SELECT_YOUR_MODEL"
+        "flux1-fill-dev-Q4_K_S.gguf"
       ],
       "widgets_values_named": {
-        "gguf_name": "SELECT_YOUR_MODEL"
+        "gguf_name": "flux1-fill-dev-Q4_K_S.gguf"
       }
     },
     {
@@ -734,11 +734,11 @@
         }
       },
       "widgets_values": [
-        "SELECT_YOUR_MODEL",
+        "diffusion_pytorch_model.safetensors",
         1
       ],
       "widgets_values_named": {
-        "lora_name": "SELECT_YOUR_MODEL",
+        "lora_name": "diffusion_pytorch_model.safetensors",
         "strength_model": 1
       }
     },

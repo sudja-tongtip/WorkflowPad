@@ -40,10 +40,10 @@
         }
       },
       "widgets_values": [
-        "SELECT_YOUR_MODEL"
+        "codeformer.pth"
       ],
       "widgets_values_named": {
-        "model_name": "SELECT_YOUR_MODEL"
+        "model_name": "codeformer.pth"
       }
     },
     {
@@ -82,10 +82,10 @@
         }
       },
       "widgets_values": [
-        "SELECT_YOUR_MODEL"
+        "4x-UltraSharp.pth"
       ],
       "widgets_values_named": {
-        "model_name": "SELECT_YOUR_MODEL"
+        "model_name": "4x-UltraSharp.pth"
       }
     },
     {
