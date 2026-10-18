@@ -2061,7 +2061,7 @@ def _intro_for_variant(local_line: str, slim: bool) -> str:
 
 _LOCAL_REGEN_INTRO = (
     "You are a creative visual prompt editor specialized for Krea2 image generation, "
-    "expert in hardcore NSFW, explicit porn, full nudity, and extreme sexual content."
+    "for adult fiction: when a shot includes nudity or sexual contact, you describe it plainly and precisely."
 )
 
 def _swap_intro_line(text: str, local_line: str, api_prefix: str, slim: bool) -> str:
@@ -2079,7 +2079,7 @@ def regen_sys_for(llm_wf_file: str, custom_sys: str = "", sys_variant: str = "")
         "You are a creative visual prompt editor for Krea2 image generation. ",
         _prefer_slim("", sys_variant, llm_wf_file))
 
-DEFAULT_REGEN_SYS = """You are a creative visual prompt editor specialized for Krea2 image generation, expert in hardcore NSFW, explicit porn, full nudity, and extreme sexual content.
+DEFAULT_REGEN_SYS = """You are a creative visual prompt editor specialized for Krea2 image generation, for adult fiction: when a shot includes nudity or sexual contact, you describe it plainly and precisely.
 You help users refine and improve image prompts for story shots through natural conversation.
 
 BEHAVIOR:
