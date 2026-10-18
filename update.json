@@ -2,31 +2,31 @@
   "story_generator": {
     "name": "Story Generator",
     "version": "0.1.4",
-    "download_url": "",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.4/WorkflowPad-v0.1.4-Beta.zip",
     "notes": "Fix: Prompt Lab chat and logs refresh after a tab switch; LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
   },
   "prompt_lab": {
     "name": "Prompt Lab",
     "version": "0.1.4",
-    "download_url": "",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.4/WorkflowPad-v0.1.4-Beta.zip",
     "notes": "Fix: Prompt Lab chat and logs refresh after a tab switch; LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
   },
   "image_editor": {
     "name": "Image Editor",
     "version": "0.1.4",
-    "download_url": "",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.4/WorkflowPad-v0.1.4-Beta.zip",
     "notes": "Fix: Prompt Lab chat and logs refresh after a tab switch; LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
   },
   "gallery_generator": {
     "name": "Gallery Generator",
     "version": "0.1.4",
-    "download_url": "",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.4/WorkflowPad-v0.1.4-Beta.zip",
     "notes": "Fix: Prompt Lab chat and logs refresh after a tab switch; LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
   },
   "batch_editor": {
     "name": "Batch Editor",
     "version": "0.1.4",
-    "download_url": "",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.4/WorkflowPad-v0.1.4-Beta.zip",
     "notes": "Fix: Prompt Lab chat and logs refresh after a tab switch; LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
   }
 }
