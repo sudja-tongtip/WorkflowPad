@@ -16,23 +16,29 @@ Steps (one user request = one kind of result; the source is sent inside the firs
   8 CONTINUITY   <continuity_notes>, summarised from the macro events that were really written
 The result is the unchanged A1 dict (seven fields), so A2 consumes it as before.
 
-History: Grok receives the real message list (system, user, assistant, ...). Local (ComfyUI LLMSessionChatNode): the workflow keeps only the last
-max_turns turns and summarises older ones into a rolling 1500-character summary (and n_ctx is small), so a shared session id can NOT be trusted to keep the
-source and earlier answers. Python therefore sends the stored conversation itself inside every request (fresh session each call, reset_session=True).
+History: Grok receives the real message list (system, user, assistant, ...). Local (ComfyUI LLMSessionChatNode), _SESSION_MODE = True (default): ONE real session. The
+system prompt goes once, with the first request (which carries the source); every later request is only the new message and the node keeps the history. The workflow COPY of
+each call forces n_ctx, a large max_turns and summarize_old_history=False (fill_conversation.call_session), Python counts tokens before every call and opens a NEW session when
+the history would not fit, after a retry (a rejected reply must not stay in the history), after an empty reply, or when the node's history file is not what Python expects;
+the new session is rebuilt from the accepted answers (the source + the latest accepted answer of every step: _transcript). _SESSION_MODE = False = the old behaviour: a fresh
+session per call (reset_session=True) with the stored conversation sent inside every request.
 A rejected answer is corrected inside the working conversation; only the accepted request/answer pair is committed to the history.
 """
 
+import os
 import re
 import time
 import uuid
 
 from .constants import lang_prompt_name
 from . import llm_engine_a1_static as _S
+from . import fill_conversation as _FC
 from .llm_engine_a1 import GROK_MARKER, _CHAR_FIELDS, _CHAR_TAG_RE, _strip_code_fence
 
 __version__ = "20261102_a1_static_conversation_v1"
 
 MAX_ATTEMPTS = 3                     # first answer + two corrections per step
+_SESSION_MODE = os.environ.get("WP_A1_SESSION_MODE", "1") != "0"      # env WP_A1_SESSION_MODE=0 (old-path tests) / Local: one real session (system prompt once, then only the new message); False = a fresh session per call with the history sent inside every request
 _EVENTS_PER_STEP = True              # EXPERIMENT: STORY EVENTS is written one call per arc step (step 1 from the source, every later step continues the story with a new pose / expression / mood, a change of place allowed); False = one call for all paragraphs
 _MAX_EVENT_STEPS = 12
 _PLAN_STAGE = False                 # False: the STORY EVENTS paragraphs ARE the story - no STORY PLAN / PLAN CHECK call; every later step reads the events. True (or _EVENTS_FIRST False) = the plan flow
@@ -320,6 +326,8 @@ class _Conversation:
         self.grok_api_key, self.grok_model, self.on_log, self.cap = grok_api_key, grok_model, on_log, cap
         self.source = ""
         self.history: list[dict] = []          # committed pairs: {"role","content","step"[,"short"]}
+        self._sess: dict | None = None         # Local session mode: {"id", "tokens" (user + assistant, system excluded), "turns"} = what Python believes the node's history holds
+        self._rotate_reason = ""               # set when the NEXT call must open a new session
         self.records: list[dict] = []          # every call (also rejected ones), for debugging
         self._dbg = None                       # conversation_debug.ConversationDebugLog, created on the first call (active only while LLM Debug Logging is ON)
 
@@ -333,11 +341,11 @@ class _Conversation:
         self._dbg.write({"meta": {k: self.cap.get(k) for k in ("route", "mode", "outline_style", "backend", "llm_wf_file", "grok_model", "n_ctx", "cast")} | {"arc": (self.cap.get("arc") or {}).get("id")},
                          "system_prompt": self.system, "source": self.source, "calls": self.records})
 
-    def _transcript(self, step: str, working: list[dict], request: str) -> str:
+    def _transcript(self, step: str, working: list[dict], request: str, all_kinds: bool = False) -> str:
         """Local only: the stored conversation written into one user message (the node's own session memory is not relied upon).
         The workflow's context (n_ctx) is small, so a request carries the SOURCE plus the accepted ANSWERS the step depends on (_LOCAL_NEEDS), each with the short
         label of the request it answered; a rejected attempt in this step is carried in full. Nothing is summarised or rewritten."""
-        needed = self.needs.get(step, list(_KIND.values()))
+        needed = list(_KIND.values()) if all_kinds else self.needs.get(step, list(_KIND.values()))      # all_kinds: the rebuild of a new session carries every accepted step
         pairs = [(self.history[i], self.history[i + 1]) for i in range(0, len(self.history), 2)]
         pick: dict[str, int] = {}
         for idx, (u, a) in enumerate(pairs):
@@ -364,6 +372,8 @@ class _Conversation:
             hist = [{"role": m["role"], "content": m["content"]} for m in self.history + working]
             raw = await _S._call_grok_text(self.system, request, api_key=self.grok_api_key, model=self.grok_model, max_tokens=tokens, on_log=self.on_log, history=hist or None)
             return raw or "", len(hist) + 1
+        if _SESSION_MODE:
+            return await self._send_session(step, request, working, tokens)
         sent = request if (step == "CHARACTERS" and not working) else self._transcript(step, working, request)
         wf = self.wf_template or {}
         if self.n_ctx:                                           # a copy with the larger context; the shared workflow template is never modified
@@ -374,6 +384,49 @@ class _Conversation:
                     node.setdefault("inputs", {})["n_ctx"] = int(self.n_ctx)
         raw = await _S._call_local_text(wf, self.system, sent, max_tokens=tokens, session_id=self.session_id, on_log=self.on_log, reset=True)
         return raw or "", len(sent)
+
+    def _need_tokens(self, new_text: str, reserve: int) -> int:
+        """tokens(system + the session's history + the new message) + overhead + the output reserve + the safety margin; ESTIMATED (over-counts, the safe side)."""
+        return (_FC.BASE_OVERHEAD + _FC.estimate_tokens(self.system) + (self._sess["tokens"] if self._sess else 0) + _FC.estimate_tokens(new_text) + _FC.PER_MESSAGE_OVERHEAD
+                + int(reserve) + _FC.NODE_MARGIN + _FC.SAFETY_MARGIN_ESTIMATED)
+
+    async def _send_session(self, step: str, request: str, working: list[dict], tokens: int) -> tuple[str, int]:
+        """Local, one real session. Same session: only the new message goes (a retry sends just the correction: the node's history holds the rejected reply). A new session:
+        the system prompt and the rebuilt conversation go once, reset_session=True."""
+        n_ctx = max(int(self.n_ctx or 0), _FC.FILL_N_CTX)
+        budget = min(max(_FC.BUDGET_CTX, n_ctx // 2), n_ctx)
+        reason, self._rotate_reason = self._rotate_reason, ""
+        if self._sess is None:
+            reason = reason or "first request"
+        elif not reason and self._need_tokens(request, tokens) > budget:
+            reason = f"context budget: {self._need_tokens(request, tokens)} tokens needed > {budget}"
+        sent, reset = request, False
+        if reason:
+            reset = True
+            fresh = not self.history and not working and step == "CHARACTERS"            # the very first request already contains the source
+            sent = request if fresh else self._transcript(step, working, request, all_kinds=True)
+            self._sess = {"id": uuid.uuid4().hex[:8], "tokens": 0, "turns": 0}
+            if self._need_tokens(sent, tokens) > budget and not fresh:
+                lighter = self._transcript(step, working, request)                      # the steps this request depends on only (the old table)
+                if self._need_tokens(lighter, tokens) < self._need_tokens(sent, tokens):
+                    sent = lighter
+            if self.on_log:
+                await self.on_log(f"ℹ Story Bible (static conversation): new session {self._sess['id']} for {step} ({reason}); the system prompt is sent once"
+                                  + ("" if fresh else f", with {len([m for m in self.history if m['role'] == 'user'])} accepted step(s) rebuilt"))
+                await self.on_log(f"📋 Story Bible SYSTEM:\n{self.system}")
+        raw = await _FC.call_session(self.wf_template or {}, self.system, sent, session_id=self._sess["id"], reset=reset, max_tokens=tokens, n_ctx=n_ctx, on_log=self.on_log)
+        raw = raw or ""
+        if not raw.strip():
+            self._rotate_reason = "the call returned no text (the session history is unknown)"
+            return "", len(sent)
+        self._sess["tokens"] += _FC.estimate_tokens(sent) + _FC.estimate_tokens(raw) + 2 * _FC.PER_MESSAGE_OVERHEAD
+        self._sess["turns"] += 1
+        h = _FC.read_history(self.wf_template or {}, self._sess["id"])
+        if h is not None and len(h.get("turns") or []) != self._sess["turns"]:
+            self._rotate_reason = f"history file has {len(h.get('turns') or [])} turns, Python expected {self._sess['turns']}"
+            if self.on_log:
+                await self.on_log(f"⚠ Story Bible (static conversation): {self._rotate_reason}; the next request opens a new session")
+        return raw, len(sent)
 
     def _publish_turns(self, step: str, working: list[dict], cur_request: str, raw: str, attempt: int, ok: bool) -> None:
         """cap["turns"] = the accepted pairs, then this step's rejected attempts (labelled) and the attempt just made."""
@@ -400,7 +453,7 @@ class _Conversation:
             transport_notes = transport_notes + dup_notes
             parsed, problems = validate(raw) if raw.strip() else (None, ["the reply was empty"])
             rec = {"step": step, "attempt": attempt, "backend": self.backend, "model": self.grok_model if self.backend == "grok" else self.cap.get("llm_wf_file"),
-                   "arc": (self.cap.get("arc") or {}).get("id"), "session": "grok messages" if self.backend == "grok" else f"{self.session_id} (fresh each call; history sent by Python)",
+                   "arc": (self.cap.get("arc") or {}).get("id"), "session": ("grok messages" if self.backend == "grok" else (f"{self._sess['id']} (one session; system prompt sent once)" if _SESSION_MODE and self._sess else f"{self.session_id} (fresh each call; history sent by Python)")),
                    "system_prompt": self.system, "user_prompt": cur_request, "raw_response": raw_original, "transport_notes": transport_notes, "parsed": parsed, "validation": problems, "ok": not problems,
                    "retry_count": attempt - 1, "elapsed_s": elapsed, "context_size": ctx, "history_messages": len(self.history) + len(working)}
             self.records.append(rec)
@@ -411,6 +464,8 @@ class _Conversation:
                 await self.on_log(f"{'ℹ' if not problems else '⚠'} Story Bible (static conversation) {step} attempt {attempt}: "
                                   + ("accepted" if not problems else "; ".join(problems[:4])) + f" ({elapsed}s)" + (" [" + "; ".join(transport_notes) + "]" if transport_notes else ""))
             if not problems:
+                if attempt > 1 and _SESSION_MODE and self.backend != "grok":
+                    self._rotate_reason = "a rejected reply is in the session history"     # the next request opens a clean session rebuilt from the accepted answers
                 self.history += [{"role": "user", "content": request, "step": step, "short": _short(request)}, {"role": "assistant", "content": raw, "step": step}]
                 self.cap["turns"] = [{"stage": m["step"], "system_prompt": self.system, "user_prompt": u["content"], "raw_response": m["content"]}
                                      for u, m in zip(self.history[0::2], self.history[1::2])]
