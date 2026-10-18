@@ -48,7 +48,7 @@ Each folder holds one kind of workflow, and each program lists in its dialogs th
 | `comfy_apis/image_edit/` | workflows that need a source picture: edit, img2img, inpaint / mask edit | Image Editor (Edit, Mask), Batch Editor, Story Generator (Inpaint / Img2Img mode) |
 | `comfy_apis/enhance/` | face restore / upscale, and outpaint (a Pad Image for Outpainting node) | Image Editor (Enhance, Scale & Export, Extend) |
 | `comfy_apis/caption/` | picture → text workflows (JoyCaption, Florence2) | Image Editor (Prompt), Story Generator (vision Check / Direct) |
-| `comfy_apis/llm/` | LLM chat workflows (a `LLMSessionChatNode`); file names end with `_llm.json` | Story Generator, Prompt Lab |
+| `comfy_apis/llm/` | LLM chat workflows (a `LLMSessionChatNode`) | Story Generator, Prompt Lab |
 
 The example workflows use Subgraphs, so ComfyUI needs to be recent enough to open them. Details, the list of custom nodes and what a workflow must contain: [`comfy_workflow/README.txt`](comfy_workflow/README.txt).
 

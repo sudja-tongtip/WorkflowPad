@@ -168,7 +168,7 @@ footer{margin-top:4em;padding-top:1em;border-top:1px solid var(--line);color:var
 
 <h2 id="trouble">Troubleshooting</h2>
 <table><tr><th>Problem</th><th>Try this</th></tr>
-<tr><td>A workflow is missing from a list</td><td>Check that it was saved with <i>Export (API)</i>, that it is in the right <code>comfy_apis</code> folder (<code>image_create</code> for drawing, <code>image_edit</code> for editing a picture) and that it is a <code>.json</code> file. Press the refresh button next to the list. LLM workflows must have a name ending in <code>_llm.json</code> to appear in Prompt Lab.</td></tr>
+<tr><td>A workflow is missing from a list</td><td>Check that it was saved with <i>Export (API)</i>, that it is in the right <code>comfy_apis</code> folder (<code>image_create</code> for drawing, <code>image_edit</code> for editing a picture) and that it is a <code>.json</code> file. Press the refresh button next to the list.</td></tr>
 <tr><td>Nothing happens when I render or run</td><td>Make sure ComfyUI is running and the address in <i>Settings &rarr; Connection</i> is right. Open the same workflow in ComfyUI and run it once there; if ComfyUI reports a missing model or node, fix that first.</td></tr>
 <tr><td><i>Enter Grok API Key first</i></td><td>Add your key in <i>Settings &rarr; Grok API</i>, or choose a local LLM under <i>AI Model</i>.</td></tr>
 <tr><td>The AI answers in the wrong format or a step fails</td><td>Open <i>AI Logs</i> to see what was sent and received, and run the step again. You can also edit the text yourself in the project.</td></tr>

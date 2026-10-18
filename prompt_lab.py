@@ -790,7 +790,7 @@ def main(page: ft.Page):
     # scan comfy_apis/llm/*.json to create model tabs
     def _scan_llm_models() -> list[str]:
         if LLM_DIR.exists():
-            return sorted(p.stem for p in LLM_DIR.glob("*_llm.json"))
+            return sorted(p.stem for p in LLM_DIR.glob("*.json"))
         return ["gemma4_llm"]
 
     _LLM_MODELS = _scan_llm_models()
@@ -1157,7 +1157,7 @@ def main(page: ft.Page):
         _label("Session"),
         cfg_dir_field,
         ft.Text(
-            "💡 LLM workflow files (*_llm.json) must be in the comfy_apis/llm/ folder next to this file",
+            "💡 LLM workflow files (*.json) must be in the comfy_apis/llm/ folder next to this file",
             size=10, color=C["text3"], italic=True,
         ),
     ], spacing=6, tight=True, scroll=ft.ScrollMode.AUTO, expand=True)

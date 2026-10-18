@@ -2042,7 +2042,7 @@ def _debug_strip_content(raw_content: str | None) -> tuple[str | None, dict | No
 # ── LLM helpers (เหมือน prompt_tester) ───────────────────────────────
 def scan_llm_workflows() -> list[str]:
     if LLM_DIR.exists():
-        return sorted(p.stem for p in LLM_DIR.glob("*_llm.json"))
+        return sorted(p.stem for p in LLM_DIR.glob("*.json"))
     return []
 
 # ── Default system prompt template ──────────────────────────────────

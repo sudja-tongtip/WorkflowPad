@@ -40,7 +40,7 @@ TREES = [
 COMFY_APIS = {
     "image_create": "Image-creation workflows (text-to-image only: they must not need a source image). Put the file you made with ComfyUI > Export (API) here.",
     "image_edit":   "Image-edit workflows (they need a source image: edit, img2img, inpaint, mask edit, identity pass). Put the file you made with ComfyUI > Export (API) here.",
-    "llm":     "LLM chat workflows. Put the file name ending in _llm.json here (for example gemma4_llm.json). It needs the LLMSessionChatNode.",
+    "llm":     "LLM chat workflows. Put the exported .json file here (any name, for example gemma4_llm.json). It needs the LLMSessionChatNode.",
     "caption": "Image-to-prompt workflows (for example JoyCaption or Florence2). Put the exported file here.",
     "enhance": "Enhance workflows (face restore, upscale, outpaint). Put the exported file here.",
 }

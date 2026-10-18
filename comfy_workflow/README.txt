@@ -29,8 +29,7 @@ Which file goes where
   caption_joycaption.json             comfy_apis\caption\            image -> prompt (Image Editor, Story Generator)
   gemma_llm.json                      comfy_apis\llm\                chat / text writing (Story Generator, Prompt Lab)
 
-You can give your exported file any name (keep the .json). For comfy_apis\llm\ the name must end with _llm.json
-(for example my_gemma_llm.json), because Prompt Lab lists only those.
+You can give your exported file any name (keep the .json). Every .json file in a folder is listed.
 
 
 What WorkflowPad needs inside a workflow
