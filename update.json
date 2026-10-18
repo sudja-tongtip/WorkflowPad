@@ -1,32 +1,32 @@
 {
   "story_generator": {
     "name": "Story Generator",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "download_url": "",
-    "notes": "Workflow folders image_create / image_edit, selectable workflows, LLM settings switch, Batch Editor selection"
+    "notes": "Fix: LLM workflow dropdowns list every .json in comfy_apis/llm"
   },
   "prompt_lab": {
     "name": "Prompt Lab",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "download_url": "",
-    "notes": "Workflow folders image_create / image_edit, selectable workflows, LLM settings switch, Batch Editor selection"
+    "notes": "Fix: LLM workflow dropdowns list every .json in comfy_apis/llm"
   },
   "image_editor": {
     "name": "Image Editor",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "download_url": "",
-    "notes": "Workflow folders image_create / image_edit, selectable workflows, LLM settings switch, Batch Editor selection"
+    "notes": "Fix: LLM workflow dropdowns list every .json in comfy_apis/llm"
   },
   "gallery_generator": {
     "name": "Gallery Generator",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "download_url": "",
-    "notes": "Workflow folders image_create / image_edit, selectable workflows, LLM settings switch, Batch Editor selection"
+    "notes": "Fix: LLM workflow dropdowns list every .json in comfy_apis/llm"
   },
   "batch_editor": {
     "name": "Batch Editor",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "download_url": "",
-    "notes": "Workflow folders image_create / image_edit, selectable workflows, LLM settings switch, Batch Editor selection"
+    "notes": "Fix: LLM workflow dropdowns list every .json in comfy_apis/llm"
   }
 }

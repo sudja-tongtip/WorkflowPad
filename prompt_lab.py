@@ -20,7 +20,7 @@ if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
 # ── App metadata ──────────────────────
 APP_ID      = "prompt_lab"
 APP_NAME    = "Prompt Lab"
-APP_VERSION = "0.1.1"   # SemVer; see RELEASE.md
+APP_VERSION = "0.1.2"   # SemVer; see RELEASE.md
 
 # ── Config ────────────────────────────────────────────────────────────
 COMFY_HOST   = "127.0.0.1:8188"
