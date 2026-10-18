@@ -137,6 +137,12 @@ def _b_manga_max_tokens(micro_beats: list[dict]) -> int:
     return max(7000, min(28000, int(material_size * 2.2) + 5000))
 
 
+# B Manga Local only: the sampler's repeat penalty. 12 macros x 2 rounds (alien2): every macro was accepted at once with both values, but 1.0 was 18-21% faster, wrote 9-13% fewer
+# output tokens and needed fewer geometry repairs than the workflow's 1.12 (B Normal: 1.12 cut the eight blocks of later shots short). Applied to the workflow COPY below only: the
+# workflow file and every other stage keep their own value.
+_B_MANGA_LOCAL_REPEAT_PENALTY = 1.0
+
+
 async def _call_local_text(
     wf_template: dict,
     system_prompt: str,
@@ -157,6 +163,7 @@ async def _call_local_text(
         inputs["session_id"] = session_id
         inputs["reset_session"] = True
         inputs["max_tokens"] = max_tokens
+        inputs["repeat_penalty"] = _B_MANGA_LOCAL_REPEAT_PENALTY
         hit = True
     if not hit:
         if on_log:
@@ -334,6 +341,82 @@ def _fit_region(text: str) -> list | None:
     return [int(v) if v == int(v) else v for v in (x, y, w, h)]
 
 
+# ── page-level geometry ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+# The documented region_pct is x,y,width,height. Gemma often writes corners x1,y1,x2,y2 (e.g. "0,50,100,100" = from y 50 down to y 100), which read as x,y,w,h puts the panel outside the
+# page, and the per-panel clamp of _fit_region then stretches or keeps panels so that neighbours overlap. The two readings are tested for the WHOLE page, by numbers only: one consistent
+# reading per page, never a mixture, no grid, no panel moved, added or reordered. Touching edges are not an overlap.
+_OVERLAP_EPS = 1e-9
+
+
+def _rect_overlap_area(a: list, b: list) -> float:
+    """Intersection area of two [x,y,w,h] rectangles in % of the page area; 0 when they only touch."""
+    ix = min(a[0] + a[2], b[0] + b[2]) - max(a[0], b[0])
+    iy = min(a[1] + a[3], b[1] + b[3]) - max(a[1], b[1])
+    return round(ix * iy / 100.0, 4) if ix > _OVERLAP_EPS and iy > _OVERLAP_EPS else 0.0
+
+
+def _page_overlaps(rects: list) -> list[tuple[int, int, float]]:
+    """[(panel i, panel j, % of page)] for every overlapping pair (1-based, reading order); rectangles that are None are skipped."""
+    out = []
+    for i in range(len(rects)):
+        for j in range(i + 1, len(rects)):
+            if rects[i] is not None and rects[j] is not None:
+                a = _rect_overlap_area(rects[i], rects[j])
+                if a > 0:
+                    out.append((i + 1, j + 1, a))
+    return out
+
+
+def _corners_to_xywh(nums: list | None) -> list | None:
+    if nums is None or len(nums) != 4:
+        return None
+    x1, y1, x2, y2 = (float(n) for n in nums)
+    return [int(v) if v == int(v) else v for v in (x1, y1, x2 - x1, y2 - y1)]
+
+
+def _geometry_clean(rects: list) -> bool:
+    """Every rectangle inside the page with positive size, and no two overlap."""
+    return bool(rects) and all(r is not None and _region_pct_valid(r) for r in rects) and not _page_overlaps(rects)
+
+
+def _resolve_page_geometry(region_texts: list[str]) -> dict:
+    """Read all panels of ONE page the same way. Returns {mode, rects, raw_xywh, corner, ambiguous, reason, raw_overlap}:
+    mode 'xywh'      documented reading is clean -> rects = the numbers as written (nothing changes);
+    mode 'corners'   the documented reading is not clean but (x1,y1,x2,y2) is -> rects = converted rectangles of the whole page;
+    mode 'legacy'    neither is clean (or a region is missing/unreadable): rects None, the caller keeps the per-panel repair; ambiguous is True for a page with more than one panel."""
+    raw_xywh = [_parse_region(t) for t in region_texts]
+    corner = [_corners_to_xywh(n) for n in raw_xywh]
+    info = {"raw_xywh": raw_xywh, "corner": corner, "raw_overlap": _page_overlaps([r for r in raw_xywh]), "rects": None, "mode": "legacy", "ambiguous": False, "reason": ""}
+    if not raw_xywh:
+        info["reason"] = "no panels"
+        return info
+    if any(n is None for n in raw_xywh):
+        info["reason"] = "a region is missing or has no four numbers"
+        info["ambiguous"] = len(raw_xywh) > 1
+        return info
+    if _geometry_clean(raw_xywh):
+        info.update(mode="xywh", rects=raw_xywh, reason="x,y,width,height is clean for the whole page")
+    elif _geometry_clean(corner):
+        info.update(mode="corners", rects=corner, reason="x,y,width,height is not clean (out of the page or overlapping) but x1,y1,x2,y2 is")
+    else:
+        info["reason"] = "neither x,y,width,height nor x1,y1,x2,y2 gives a clean page"
+        info["ambiguous"] = len(raw_xywh) > 1
+    return info
+
+
+def _geometry_notes(info: dict, label: str) -> list[tuple[str, str]]:
+    """[(level, message)] for the log: page-level conversions (corner reading) and ambiguous pages. Level 'info' or 'warn'."""
+    notes: list[tuple[str, str]] = []
+    conv = [g["page"] for g in info.get("geometry", []) if g.get("mode") == "corners"]
+    amb = [g["page"] for g in info.get("geometry", []) if g.get("ambiguous")]
+    if conv:
+        notes.append(("info", f"{label}: page(s) {conv} wrote region_pct as corners (x1,y1,x2,y2); read as one consistent layout per page and converted to x,y,width,height "
+                              f"({info.get('regions_converted', 0)} region(s) changed)"))
+    if amb:
+        notes.append(("warn", f"{label}: geometry of page(s) {amb} is ambiguous (neither x,y,width,height nor x1,y1,x2,y2 is clean); the per-panel repair was used and panels may still overlap"))
+    return notes
+
+
 def _parse_pages_tags(raw: str | None) -> tuple[list[dict] | None, dict]:
     """Structure only; keeps every panel that has story content. Returns (pages, info).
 
@@ -343,8 +426,14 @@ def _parse_pages_tags(raw: str | None) -> tuple[list[dict] | None, dict]:
     least one such panel; a missing identity/location lock becomes an empty string. Pages and panels
     are renumbered 1..N in the order given. Model-authored semantic strings are never rewritten.
     info: complete (nothing dropped/repaired and no unclosed tag), regions_repaired, dropped_panels,
-    dropped_pages."""
-    info = {"complete": False, "regions_repaired": 0, "dropped_panels": 0, "dropped_pages": 0}
+    dropped_pages.
+
+    Geometry is resolved per PAGE first (_resolve_page_geometry): a page written as x,y,width,height stays as written; a page written as corners x1,y1,x2,y2 is converted as a whole; only when
+    neither reading is clean does the per-panel repair above apply. regions_repaired counts every panel whose region changed (conversion or clamp); regions_converted / regions_clamped
+    separate the two, geometry holds one diagnostic record per kept page and geometry_ambiguous_pages counts the pages left to the legacy repair. Conversions never drop content, so they
+    cannot cause a retry."""
+    info = {"complete": False, "regions_repaired": 0, "regions_converted": 0, "regions_clamped": 0, "dropped_panels": 0, "dropped_pages": 0,
+            "geometry": [], "geometry_ambiguous_pages": 0}
     if not isinstance(raw, str) or not raw.strip():
         return None, info
     text = _strip_code_fence(raw)
@@ -354,19 +443,33 @@ def _parse_pages_tags(raw: str | None) -> tuple[list[dict] | None, dict]:
     out: list[dict] = []
     for page_key in sorted(fields):
         page = fields[page_key]
-        panels: list[dict] = []
+        kept: list[dict] = []
         for panel_key in sorted(page["panels"]):
             raw_panel = page["panels"][panel_key]
-            desc = raw_panel.get("desc", "")
-            if not desc.strip():
+            if not raw_panel.get("desc", "").strip():
                 info["dropped_panels"] += 1
                 continue
+            kept.append(raw_panel)
+        geo = _resolve_page_geometry([rp.get("region_pct", "") for rp in kept])
+        panels: list[dict] = []
+        changed = 0
+        for idx, raw_panel in enumerate(kept):
+            desc = raw_panel.get("desc", "")
             region_text = raw_panel.get("region_pct", "")
-            region = _parse_region(region_text)
-            if region is None or not _region_pct_valid(region):
-                fitted = _fit_region(region_text)
-                region = fitted if fitted is not None else list(_FALLBACK_REGION)
-                info["regions_repaired"] += 1
+            if geo["rects"] is not None:                      # the whole page was read one consistent way
+                region = geo["rects"][idx]
+                if region != geo["raw_xywh"][idx]:
+                    info["regions_converted"] += 1
+                    info["regions_repaired"] += 1
+                    changed += 1
+            else:                                             # legacy per-panel repair (unchanged behaviour)
+                region = _parse_region(region_text)
+                if region is None or not _region_pct_valid(region):
+                    fitted = _fit_region(region_text)
+                    region = fitted if fitted is not None else list(_FALLBACK_REGION)
+                    info["regions_clamped"] += 1
+                    info["regions_repaired"] += 1
+                    changed += 1
             panels.append({
                 "panel": len(panels) + 1, "region_pct": region, "desc": desc,
                 # canonical per-panel text — panel-local by construction, "" when absent
@@ -377,6 +480,11 @@ def _parse_pages_tags(raw: str | None) -> tuple[list[dict] | None, dict]:
         if not panels:
             info["dropped_pages"] += 1
             continue
+        final = [p["region_pct"] for p in panels]
+        info["geometry"].append({"page": len(out) + 1, "panels": len(panels), "mode": geo["mode"], "ambiguous": geo["ambiguous"], "reason": geo["reason"], "raw_xywh": geo["raw_xywh"],
+                                 "corner": geo["corner"], "final": final, "regions_changed": changed, "raw_overlap": geo["raw_overlap"], "final_overlap": _page_overlaps(final)})
+        if geo["ambiguous"]:
+            info["geometry_ambiguous_pages"] += 1
         out.append({
             "page": len(out) + 1,
             "identity_lock": page["fields"].get("identity_lock", ""),
@@ -411,6 +519,7 @@ async def _run_b_manga_local_per_macro(
     all_turns: list[dict] = []
     session_id = ""
     regions_repaired = 0
+    geometry_reports: list[dict] = []
     for macro, micros in groups:
         mid = str(macro.get("id") or "")
         base_prompt = _build_b_manga_user_prompt(
@@ -440,8 +549,12 @@ async def _run_b_manga_local_per_macro(
             # (cut-off) tag retries THIS macro. A geometry-only region fix is transport repair.
             lost = bool(info.get("dropped_panels") or info.get("dropped_pages") or info.get("unclosed"))
             if pages is not None and not lost:
-                if info["regions_repaired"] and on_log:
-                    await on_log(f"⚠ Page List {mid}: {info['regions_repaired']} panel region(s) fixed to fit the page")
+                if on_log:
+                    for _lvl, _msg in _geometry_notes(info, f"Page List {mid}"):
+                        await on_log(("ℹ " if _lvl == "info" else "⚠ ") + _msg)
+                    if info["regions_clamped"]:
+                        await on_log(f"⚠ Page List {mid}: {info['regions_clamped']} panel region(s) fixed to fit the page")
+                geometry_reports.extend({"macro": mid, **_g} for _g in info.get("geometry", []))
                 break
             if on_log:
                 await on_log(f"⚠ Page List {mid} attempt {attempt}: " + (
@@ -466,7 +579,7 @@ async def _run_b_manga_local_per_macro(
 
     if chat_capture is not None:
         chat_capture.update({"turns": all_turns, "sessions": sessions, "backend": "local",
-                             "llm_wf_file": llm_wf_file, "session_id": session_id})
+                             "llm_wf_file": llm_wf_file, "session_id": session_id, "geometry": geometry_reports})
         if regions_repaired:                        # geometry-only repair: surface it like the whole-story path
             chat_capture["salvage"] = {
                 "pages": len(all_pages), "panels": sum(len(p["panels"]) for p in all_pages),
@@ -553,6 +666,9 @@ async def run_b_manga_vnext(
         turns.append({"system_prompt": _B_MANGA_SYSTEM_PROMPT, "user_prompt": sent, "raw_response": raw or ""})
         pages, info = _parse_pages_tags(raw)
         if pages is not None:
+            if on_log:
+                for _lvl, _msg in _geometry_notes(info, "Page List"):
+                    await on_log(("ℹ " if _lvl == "info" else "⚠ ") + _msg)
             if not info["complete"] and on_log:
                 await on_log(
                     f"⚠ Page List: response needed repair — kept {len(pages)} page(s), "
@@ -571,6 +687,7 @@ async def run_b_manga_vnext(
                 chat_capture["llm_wf_file"] = llm_wf_file
                 chat_capture["session_id"] = session_id if llm_wf_file != GROK_MARKER else ""
                 chat_capture["grok_model"] = grok_model
+                chat_capture["geometry"] = info.get("geometry", [])
             for _pg in pages:
                 for _p in _pg.get("panels") or []:
                     gate_dialogue_fields(_p, dialogue_style)
