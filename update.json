@@ -1,32 +1,32 @@
 {
   "story_generator": {
     "name": "Story Generator",
-    "version": "0.1.4",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.4/WorkflowPad-v0.1.4-Beta.zip",
-    "notes": "Fix: Prompt Lab chat and logs refresh after a tab switch; LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
+    "version": "0.1.5",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.5/WorkflowPad-v0.1.5-Beta.zip",
+    "notes": "Neutral default wording in the Story Generator prompt-editor system prompt; Prompt Lab chat refresh fix"
   },
   "prompt_lab": {
     "name": "Prompt Lab",
-    "version": "0.1.4",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.4/WorkflowPad-v0.1.4-Beta.zip",
-    "notes": "Fix: Prompt Lab chat and logs refresh after a tab switch; LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
+    "version": "0.1.5",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.5/WorkflowPad-v0.1.5-Beta.zip",
+    "notes": "Neutral default wording in the Story Generator prompt-editor system prompt; Prompt Lab chat refresh fix"
   },
   "image_editor": {
     "name": "Image Editor",
-    "version": "0.1.4",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.4/WorkflowPad-v0.1.4-Beta.zip",
-    "notes": "Fix: Prompt Lab chat and logs refresh after a tab switch; LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
+    "version": "0.1.5",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.5/WorkflowPad-v0.1.5-Beta.zip",
+    "notes": "Neutral default wording in the Story Generator prompt-editor system prompt; Prompt Lab chat refresh fix"
   },
   "gallery_generator": {
     "name": "Gallery Generator",
-    "version": "0.1.4",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.4/WorkflowPad-v0.1.4-Beta.zip",
-    "notes": "Fix: Prompt Lab chat and logs refresh after a tab switch; LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
+    "version": "0.1.5",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.5/WorkflowPad-v0.1.5-Beta.zip",
+    "notes": "Neutral default wording in the Story Generator prompt-editor system prompt; Prompt Lab chat refresh fix"
   },
   "batch_editor": {
     "name": "Batch Editor",
-    "version": "0.1.4",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.4/WorkflowPad-v0.1.4-Beta.zip",
-    "notes": "Fix: Prompt Lab chat and logs refresh after a tab switch; LLM workflow lists show every .json; Story Generator EXE renamed StoryGenerator.exe"
+    "version": "0.1.5",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.5/WorkflowPad-v0.1.5-Beta.zip",
+    "notes": "Neutral default wording in the Story Generator prompt-editor system prompt; Prompt Lab chat refresh fix"
   }
 }
