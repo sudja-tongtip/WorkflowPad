@@ -23,6 +23,7 @@ import urllib.request
 import uuid
 
 from .constants import LLM_DIR, lang_prompt_name, dialogue_authoring_text, gate_dialogue_fields
+from . import llm_overrides as _overrides
 from .comfy_api import comfy_queue, comfy_history
 
 
@@ -87,93 +88,35 @@ _LOCAL_MAX_TOKENS_CEILING = 32768
 
 
 _B_SYSTEM_PROMPT = r"""
-ROLE:
-Storyboard Planner converting A1/A2 into precise self-contained still-image shot truths.
+ROLE / GOAL:
+Storyboard planner. Turn A1 (characters, world, locations, objects, continuity) and A2 (events, chronology) into still-image shot truths. B defines WHAT is in each image; the Fill stage decides camera, framing and composition, so write none.
+Create exactly the requested number of distinct shots. Each shot carries enough current visual truth for Fill to work without rereading A1/A2.
 
-TASK:
-Create exactly the requested number of unique shots.
-Each shot must carry enough current visual truth for Fill to work without rereading A1/A2.
+STORY TRUTH AND CONTINUITY
 
-CORE RULES
-
-1. Preserve story truth exactly: characters, actions, reactions, clothing, physical states, objects, locations, relationships, contact, chronology, and outcome.
-Do not invent, soften, intensify, repair, or reinterpret meaning.
-
-2. Each shot is one complete frozen drawable moment, meaningfully distinct from the other shots.
-
-3. No camera, framing, lens, angle, shot scale, or composition unless explicitly requested.
-B defines WHAT exists. Fill decides HOW to photograph it.
-
-4. A1 is the production-design authority. A2 is the event/chronology authority. Do not contradict either.
-
-5. Describe the CURRENT state only.
-Carry forward clothing changes, restraint, injury, dirt, wetness, damage, object state, and other persistent visual facts until the story changes them.
-Facts already established as the character's current state remain current unless the CURRENT macro/micro event explicitly changes, ends, reverses, or contradicts them. Do not silently reset an established physical, clothing, object, or location state merely because the current beat focuses on something else. When PRECEDING SHOT context is supplied: it is continuity evidence only — the CURRENT A2 event remains the authority for what changes now, and the absence of a repeated state in the CURRENT A2 event is NOT by itself evidence that the state ended. Before finalizing each shot, semantically reconcile Body, State, Appearance, Interaction, and objects so they describe one mutually consistent current moment — within one shot they must not contradict each other about the same current fact (e.g. one field still wearing a garment another field already removed). Do not copy the preceding shot blindly, and do not carry forward a temporary action or gesture merely because it existed previously.
-
-6. visible_people lists every visible person and no off-screen characters.
-
-7. objects lists only story-relevant objects actually present in the shot.
-
-8. Use concrete current clothing. Never use placeholders such as "casual clothes", "unspecified", "same clothes", or "appropriate outfit".
-
-9. Describe only what can exist visibly in one still frame.
-Do not invent story action, and do not invent gestures or expressions to explain invisible story meaning.
-
-10. Keep shot_desc concise, concrete, and technical.
-When an event depends on a boundary, opening, container, or enclosure, keep the explicit part-by-part spatial relation in Body/Interaction: what is inside, outside, through, crossing, or adjacent. Do not collapse it into a generic "inside X".
-
-A2 MICRO-EVENT FORMAT
-
-An A2 unit may carry two labelled lines. HAPPENS is narrative meaning / event context: use it to understand the event and any emotion the source supports; never use it to invent poses, gestures or objects. DETAILS is concrete physical / visual evidence: it decides Beat (the action now happening), Body (pose and position), Interaction (contact and object use), State (what persists or has changed) and the Appearance / Setting / Light facts relevant to that moment. A1 stays the production-design authority and A2 the chronology / event authority. If DETAILS in a later unit does not mention an object, a clothing state or a contact, do not conclude it disappeared or was put down: keep the last established state until an event changes it. Add no precision the A2 unit and A1 do not state: no hand side, finger, button, target body part, turn of the body, light direction, furniture position, expression, emotion or gesture. Keep the unit's time: an action described as about to happen is shown as not yet happened (no contact yet), actions the unit joins as simultaneous stay together in one shot, and a state from before and a state from after the event are never mixed. BAD: "his right arm stretches toward her shoulder" for a unit that says only "he reaches a hand toward her"; GOOD: "he reaches a hand toward her; it has not touched her yet" (no side, no target). Emotion is only a reaction the source states; otherwise write only that no expression is stated. Never copy the labels HAPPENS: or DETAILS: into shot_desc or story.
+1. Preserve story truth exactly: people, actions, reactions, clothing, physical state, objects, location, relationships, contact, chronology, outcome. Do not invent, soften, intensify or reinterpret. A1 is the authority for design, A2 for events and chronology; never contradict either.
+2. One shot = one frozen drawable moment, distinct from the other shots. Show only what can exist visibly in one still frame; do not invent gestures or expressions to explain invisible meaning.
+3. Current state only. Clothing changes, restraint, injury, dirt, wetness, damage and object state persist until the story changes them; do not reset a state because the current beat focuses elsewhere. PRECEDING SHOT context, when given, is continuity evidence only: the CURRENT A2 event decides what changes, and a state that is not repeated has not ended. Do not copy the previous shot blindly or carry over a temporary gesture. The fields of one shot must agree with each other (no garment worn in one field and removed in another).
+4. Use concrete current clothing (never "casual clothes", "same clothes", "unspecified"). visible_people = every visible person and nobody off-screen. objects = only story-relevant objects present in the shot.
+5. When an event depends on a boundary, opening or container, keep the part-by-part spatial relation (what is inside, outside, through, crossing, adjacent) in Body/Interaction.
+6. An A2 unit may have two labelled lines. HAPPENS is narrative meaning: use it to understand the event and any source-stated emotion, never to invent poses, gestures or objects. DETAILS is concrete evidence: it decides Beat, Body, Interaction, State and the relevant Appearance, Setting and Light. Add no precision that the unit and A1 do not state (hand side, finger, target body part, light direction, expression). Keep the unit's time: an action about to happen has not happened yet, simultaneous actions stay in one shot, states from before and after an event are not mixed. If a later unit does not mention an object, clothing state or contact, keep its last established state. Never copy the labels HAPPENS: or DETAILS: into the output.
+Example: a unit that says "he reaches a hand toward her" becomes "he reaches a hand toward her; it has not touched her yet", not "his right arm stretches toward her shoulder".
 
 SHOT_DESC
 
-Use exactly these eight blocks in this order:
-
-(Beat: ...) (Emotion: ...) (Body: ...) (Appearance: ...) (Setting: ...) (Interaction: ...) (State: ...) (Light: ...)
-
-Each fact has one primary owning block. Do not use one block to do another block's job.
-
-Beat = the single current visible event/action of this frozen moment ("what is happening now?"). A genuinely static moment (resting, waiting, standing, watching) is valid; never exaggerate an action to fill it. Never composition, character arrangement, positioning, visual emphasis, shot purpose, mood, or any editorial label.
-BAD: (Beat: main character arrangement) / (Beat: emotional climax)
-GOOD: (Beat: Mira opens the door while Arun blocks the passage.)
-
-Emotion = only gaze, facial expression, and visible reaction explicitly supported by the story. Never abstract mood, atmosphere, body geometry, invented emotion, or narrative meaning. If the story gives no visible reaction, keep it minimal and factual; do not invent fear, joy, tension, or relief to fill it.
-BAD: (Emotion: overwhelming happiness and complete relaxation.)
-GOOD: (Emotion: Mira smiles faintly and her tense gaze softens.)
-
-Body = physical geometry only: pose, direction, spacing, limb placement, blocking, contact geometry, and story-relevant inside/outside/through spatial relations (which body parts are on which side of a boundary or opening). Never emotion, composition importance, camera/framing, clothing, or story interpretation.
-BAD: (Body: Mira stands prominently in the center and appears the happiest.)
-GOOD: (Body: Mira stands between Arun and the doorway, her torso turned toward Arun while one hand remains on the door.)
-
-Appearance = current clothing, hair appearance, accessories, and visible exterior look (dirt or wetness only as outward appearance). Never pose, interaction, emotion, narrative meaning, or composition.
-
-Setting = where this moment occurs: current physical location, relevant sub-area, and visible environmental facts (surfaces, architecture, terrain, weather) actually present. Never what characters do, interaction, emotion, composition, or camera language.
-
-Interaction = the current direct engagement between person and person, object, surface, or environment (touching, gripping, leaning, using an object, facing or confronting when story-relevant, blocking a passage, keeping distance). Contact is not required. Never merely restate Setting.
-BAD: (Interaction: Everyone is surrounded by the wide field.)
-GOOD: (Interaction: Mira grips Arun's wrist while Arun braces his other hand against the door.)
-GOOD without contact: (Interaction: Mira faces Arun across the open doorway without touching him.)
-
-State = persistent physical/continuity conditions that remain true now (injury, restraint, wetness, dirt, exhaustion, damage, pregnancy, transformed condition, displaced or removed clothing, persistent object/body condition). WHAT remains true, never WHY. Never current action, transient pose, emotion, mood, interpretation, history, or cause.
-BAD: (State: Mira is soaked because of the earlier struggle and feels relieved.)
-GOOD: (State: Mira's hair and clothes remain soaked.)
-
-Light = current established visible illumination. If a physical source is established, state it; otherwise describe only visible light quality and behavior without inventing a source (no sunlight, moonlight, golden hour, neon, or rim light unless established). No mood or cinematic styling.
-BAD: (Light: dramatic golden cinematic light symbolizing hope.)
-GOOD: (Light: Diffuse daylight enters through the open doorway and falls softly across the room.)
-
-FIELD OWNERSHIP RULE: Beat owns the event; Emotion the visible reaction; Body the physical geometry; Appearance the current look/clothing; Setting the place; Interaction the current engagement/contact; State the persistent condition; Light the illumination. Do not repeat one fact across blocks merely to fill them (e.g. a soaked character: Appearance may show wet hair and clothes, State says the character remains soaked — not the same sentence twice). If a fact touches several concepts, put its primary truth in the owning block and let the others describe only their own aspect.
-Composition language is forbidden in every block: centered, prominently centered, visual focus, dominant in frame, foreground emphasis, balanced composition, main focal point, arranged symmetrically — unless it is world-space story truth rather than image composition (GOOD Body: "Mira stands physically between Arun and the door."; BAD: "Mira is centered as the dominant focal point.").
+Eight blocks in this order. Each fact belongs to one owning block only; do not repeat it across blocks. No composition language in any block (centered, focal point, dominant in frame) unless it is a physical fact of the story world.
+(Beat: ...) the single visible event now. A static moment (resting, waiting) is valid. Never composition, arrangement, mood or an editorial label.
+(Emotion: ...) gaze, facial expression and visible reaction the story supports. If none is stated, say so minimally. Never mood or atmosphere.
+(Body: ...) physical geometry: pose, direction, spacing, limb placement, contact geometry, inside/outside/through relations. Never emotion, clothing or interpretation.
+(Appearance: ...) current clothing, hair, accessories and outward look (dirt or wetness only as look).
+(Setting: ...) where this moment occurs: location, sub-area, visible environment.
+(Interaction: ...) the current engagement between person and person, object, surface or environment (touching, gripping, leaning, blocking, keeping distance). Contact is not required. Never just restate Setting.
+(State: ...) what remains true now (injury, restraint, wetness, damage, removed clothing); WHAT, never why.
+(Light: ...) the established visible illumination. Name a source only if the story establishes one; no mood or cinematic style.
 
 STORY
 
-<shotN.story> is one concise poetic narrative passage fusing the eight shot_desc blocks.
-Use vivid natural literary prose while preserving the same shot truth.
-Every person, action, expression, state, object, clothing detail, and setting detail in Story must already exist in the eight blocks of the same shot.
-Poetic wording is allowed. New facts are not.
-Story may rephrase the eight blocks naturally but must not reintroduce facts the ownership rules rejected: no composition, abstract emotional interpretation, invented cause, invented light, or camera language.
-Story must NOT appear inside shot_desc.
+<shotN.story> is one concise poetic passage fusing the eight blocks, in natural literary prose. Every fact in it must already be in the same shot's eight blocks: no new facts, no composition, abstract emotion, invented cause or light, or camera language. Never put it inside shot_desc.
 
 OUTPUT
 
@@ -197,29 +140,8 @@ Return exactly eight tags per shot, in this shape (shot1 shown; shot2, shot3... 
 <shot1.speech_char></shot1.speech_char>
 <shot1.subtitle></shot1.subtitle>
 
-The shape above is only a template: the "..." are placeholders, never copy them.
-shot_desc holds ALL EIGHT blocks and nothing else, in this order. </shotN.shot_desc> is written exactly ONCE, right after (Light: ...): never close it earlier and never write a block after it.
-Every shot has (Light: ...), even when its lighting is the same as the previous shot: state it again.
-
+The "..." are placeholders, never copy them. shot_desc holds all eight blocks and nothing else, in this order, each written only as (Name: ...) and never as a tag; </shotN.shot_desc> is written once, right after (Light: ...). Every shot has (Light: ...), restated even when unchanged.
 uses: one or more real supplied A2 ids separated by commas, e.g. E1.1,E1.2
-Leave empty fields empty, but always include every required tag.
-
-FINAL CHECK
-
-- correct A2 units
-- every shot follows the OUTPUT shape: all eight shot_desc blocks in one tag, closed once after (Light: ...); story tag filled
-- current story, clothing, and physical state preserved
-- an established current state was not silently reset merely because this beat focuses on something else
-- Body, State, Appearance, Interaction, and objects agree with each other about the same current fact — no intra-shot contradiction
-- every visible person included; only present relevant objects included
-- story adds no new facts; no invented camera or story action
-- no vague clothing placeholders
-- every shot_desc fact sits in its owning block; no composition/editorial language in any block; Beat is a concrete current event/action; Emotion is visible/supported reaction only; Body is geometry only; Interaction is actual current engagement; State is persistent condition only; Light invents no source
-
-OUTPUT ONLY the required shot tags, directly one after another.
-No commentary, notes, explanations, headings, markdown, planning text, or any other text outside the tags: that is a format failure.
-
-**IMPORTANT**: This is an API-style machine output, not a chat response. Any text outside the required tags is a format failure. Every tag is closed only by its own exact name: <shot1.story> ends with </shot1.story>, <shot1.objects> ends with </shot1.objects>.
 """
 
 def _story_material(a1: dict, macro_events: list[dict], micro_beats: list[dict]) -> str:
@@ -278,6 +200,12 @@ def _b_max_tokens(count: int, material_size: int) -> int:
     return max(5000, min(48000, material_size + int(count) * 900 + 2500))
 
 
+# B Local only: the sampler's repeat penalty. The workflow's 1.12 made Gemma cut the eight blocks of the later shots of one reply short (macro E3, compact prompt: 0/3 complete
+# replies, 3/9 shots with all eight blocks); 1.0 (no penalty) gave 3/3 and 9/9 with every other setting unchanged. Applied to the workflow COPY below only: the workflow file and every
+# other stage keep their own value.
+_B_LOCAL_REPEAT_PENALTY = 1.0
+
+
 async def _call_local_text(wf_template: dict, system_prompt: str, user_prompt: str, *,
                            max_tokens: int, session_id: str, on_log=None, reset: bool = True) -> str | None:
     wf = copy.deepcopy(wf_template or {})
@@ -291,6 +219,7 @@ async def _call_local_text(wf_template: dict, system_prompt: str, user_prompt: s
         inputs["session_id"] = session_id
         inputs["reset_session"] = bool(reset)
         inputs["max_tokens"] = max_tokens
+        used = _overrides.apply(inputs, repeat_penalty=_B_LOCAL_REPEAT_PENALTY)      # Program mode: 1.0; Workflow mode: the workflow's own value is kept
         hit = True
     if not hit:
         if on_log:
@@ -298,6 +227,7 @@ async def _call_local_text(wf_template: dict, system_prompt: str, user_prompt: s
         return None
 
     if on_log:
+        await on_log(_overrides.describe(used))
         await on_log(f"📋 SHOT PLANNING SYSTEM:\n{system_prompt}")
         await on_log(f"📤 SHOT PLANNING USER:\n{user_prompt}")
 
@@ -457,6 +387,7 @@ _B_TEXT_FIELDS = ("visible_people", "shot_desc", "objects", "narration", "speech
 
 _SHOT_DESC_BLOCKS = ("Beat", "Emotion", "Body", "Appearance", "Setting", "Interaction", "State", "Light")
 _SHOT_DESC_OPEN_RE = re.compile(r"\(\s*(" + "|".join(_SHOT_DESC_BLOCKS) + r")\s*:")
+_TAG_IN_DESC_RE = re.compile(r"</?[A-Za-z][\w.]*>")          # an XML-looking tag inside shot_desc (a block name written as a tag): never part of a block
 
 
 def _valid_shot_desc_structure(text: str) -> bool:
@@ -559,7 +490,11 @@ def _reply_problems(raw: str | None, *, count: int, valid_ids: set[str], strict_
             found = [m.group(1) for m in _SHOT_DESC_OPEN_RE.finditer(d)]
             missing = [b for b in _SHOT_DESC_BLOCKS if b not in found]
             everything = _blocks_after_closer(raw or "", idx)             # every block written between the tag opener and the next shot tag
-            if missing and everything == list(_SHOT_DESC_BLOCKS):
+            stray = _TAG_IN_DESC_RE.findall(d)
+            if stray and not missing and len(found) == len(_SHOT_DESC_BLOCKS):      # the eight blocks are right: the fault is the tag(s) between them
+                problems.append(f"shot{idx}.shot_desc contains the tag(s) {', '.join(dict.fromkeys(stray))}: a block is written only as (Name: ...), never as a tag. "
+                                f"Remove those tags and keep the eight blocks, each ending with ')'")
+            elif missing and everything == list(_SHOT_DESC_BLOCKS):
                 problems.append(f"shot{idx}.shot_desc was closed right after ({found[-1] if found else 'the start'}) although the blocks {', '.join(missing)} follow: "
                                 f"delete that early </shot{idx}.shot_desc> so that all eight blocks sit inside the tag, and close shot_desc only once, after (Light: ...)")
             elif missing and len(found) == len(set(found)):

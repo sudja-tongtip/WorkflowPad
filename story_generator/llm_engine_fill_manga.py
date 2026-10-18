@@ -23,6 +23,7 @@ import uuid
 
 from .constants import LLM_DIR
 from .comfy_api import comfy_queue, comfy_history
+from . import manga_grid as _grid
 from .visual_direction import visual_direction_for_preset
 
 __version__ = "20260923_fill_manga_clean_a1"
@@ -98,26 +99,22 @@ PRODUCTION SHEETS (character/world/location/object/continuity reference, supplie
 Each panel description is a compact piece of natural visual prose for Krea2. Preserve the panel's factual truth exactly, but express it as one coherent visual moment rather than a list of attributes or prompt fragments. For every panel, preserve who is visible, the current action/interaction, current clothing and physical state, location, objects actually present, panel chronology, and the page-level identity/location/object locks. You may improve phrasing, spatial clarity, visible expression, and environmental presentation, and decide staging that changes no story fact (small angles, which body overlaps which from the camera side). When a panel gives body geometry or contact (which part touches which, where hands, knees and feet are), keep every part of it; when it states only the action, state that action as the panel does and add no contact point and no hand, arm or leg position it does not give. Never invent a new event, cause, state, object, relationship, or chronology.
 
 Write natural English sentences with concrete visible action, clear body orientation/contact/relative position, concise spatial description, current clothing/state, and the relevant setting. Avoid keyword piles, comma-only attribute lists, cinematic filler, abstract story explanation, invisible motives, and repeating the same fact in multiple forms.
-BAD: "Wide expansive view. Woman seated. Looking outside. Golden hair. Soft light."
-GOOD: "Arunee sits beside the airplane window, her long golden hair catching the soft cabin light as she watches the white clouds drifting beyond the glass."
 
 Treat the page as one continuous visual sequence. Keep character identity, location, clothing state, object state, and spatial continuity coherent across panels unless the panel truth explicitly changes them.
 
 A panel desc is the presence authority for that panel. Do not add a person, object, action, clothing state, location detail, dialogue, reaction, or story meaning merely because a page lock or a production sheet mentions it — a global reference may describe a fact belonging to a different point in the story than this panel. Never import a person, object, clothing state, physical state, location state, action, or future transition into a panel merely because it appears in a stable sheet or a page lock.
 IDENTITY LOCK, LOCATION LOCK, and OBJECT LOCK are permanent identity anchors only; preserve their facts without turning them into panel-presence claims.
+PAGE LAYOUT TEXT: when the user message carries a PAGE LAYOUT TEXT block, copy that text exactly — every word, including its first sentence about thick black borders — as the whole body of PAGE LAYOUT. Do not shorten it, reword it, merge it, or add percentages, sizes or coordinates to it. It already states the panel count and where each panel sits. Without such a block, translate region_pct as described below.
+OUTFIT CONTINUITY (the one exception to the clothing rules above about sheets and page locks): every person in IDENTITY LOCK gets a complete outfit there. Resolve it in this order: (1) a PANEL DESC of this page that states or changes the outfit (that panel keeps its own statement); (2) otherwise the outfit stated for that person in PREVIOUS PAGE IDENTITY LOCK, when that note is supplied; (3) otherwise that person's init_cloth in CHARACTERS — init_cloth is only the outfit at the very start of the story, so once PREVIOUS PAGE IDENTITY LOCK states an outfit for that person it replaces init_cloth for the rest of the story. When a panel of this page changes the outfit, IDENTITY LOCK gives the outfit the person has after the change. Keep an outfit until a panel explicitly changes it, and never restore an outfit that has already changed. This applies only to people who are visible on this page — never add a person, and never add a different outfit, merely to describe clothing.
 A person may be identified by a trigger word (an identity token of a trained character model). Keep such a word exactly as written; never replace it with a name or a description, and never mention or explain trigger status.
 
 Write IDENTITY LOCK, LOCATION LOCK, and OBJECT LOCK as normal spoken English sentences, the same as a PANEL description — never as tags, labels, or key:value pairs, and never a comma-only attribute list. No "trigger:", no "Name:", no attribute dumped after a colon.
-Build IDENTITY LOCK from the UNION of people actually visible across all CURRENT PANEL DESC entries on this page — never include a character merely because CHARACTERS lists them. For each of those people, resolve CHARACTERS (the sheet gives WHAT is stable about a person; the panel desc decides WHETHER they are visible). IDENTITY LOCK describes each such character's stable identity and design for the whole page, in complete sentences, and MUST explicitly include: their identifier (trigger token or name, used naturally the way a sentence uses someone's name), their supplied gender, and their supplied age/age range (exact age stays exact, a range stays a range, never invented when absent, and never remark that a fact is missing) — not optional, even for secondary characters or when a trigger is present — plus nationality when known/relevant, hair, face, body, skin, and permanent marks. Current clothing and current physical state belong in each PANEL's own prose, per that panel's truth — never in this page-level lock, since they may change from panel to panel.
-BAD: "Arunee: female, 25, golden hair, curvy body, white tank top"
-GOOD: "Arunee is a 25-year-old woman with long golden hair, a graceful curving build, and smooth skin."
+Build IDENTITY LOCK from the UNION of people actually visible across all CURRENT PANEL DESC entries on this page — never include a character merely because CHARACTERS lists them. For each of those people, resolve CHARACTERS (the sheet gives WHAT is stable about a person; the panel desc decides WHETHER they are visible). IDENTITY LOCK describes each such character's stable identity and design for the whole page, in complete sentences, and MUST explicitly include: their identifier (trigger token or name, used naturally the way a sentence uses someone's name), their supplied gender, and their supplied age/age range (exact age stays exact, a range stays a range, never invented when absent, and never remark that a fact is missing) — not optional, even for secondary characters or when a trigger is present — plus nationality when known/relevant, hair, face, body, skin, and permanent marks. Finish each person's part of IDENTITY LOCK with a plain sentence about what that person wears (resolved by OUTFIT CONTINUITY; the outfit they have after any change on this page), so the next page can carry it on — state it as a fact such as "He wears ...", never as a "final outfit". Current physical state at each moment belongs in each PANEL's own prose, per that panel's truth.
 Age and gender live in this page-level lock once; PANEL prose does not need to repeat them.
 LOCATION LOCK describes the canonical page-level place, the relevant sub-area, and any important stable spatial or boundary relationship, in complete sentences. If a panel changes sub-area, boundary relation, or location state, describe that current fact inside that PANEL instead.
 BAD: "Location: airplane cabin, window seat, inside"
 GOOD: "The scene takes place inside the passenger cabin of an airplane, at a seat beside the window."
 OBJECT LOCK describes only the stable identity, ownership, and reference facts of page-level objects supplied by CURRENT B MANGA PAGE, in complete sentences. Actual object presence and current object state are decided per PANEL DESC — an object lock here must not make that object appear, or appear in a particular state, in every panel.
-BAD: "jean button: Arunee, undone, foreground"
-GOOD: "The button belongs to Arunee's jeans."
 If any other semantic block appears, apply the same rule: the header stays a structural label, but its content is always normal spoken/written English sentences, never a tag, key:value pair, or attribute dump.
 
 Translate each region_pct into clear natural-language page placement and relative panel size. Do not output raw percentages, coordinates, region_pct, or bounding-box syntax.
@@ -131,13 +128,13 @@ Each PANEL section must remain one physical instant; never merge consecutive pan
 Write concrete natural English for Krea 2. Translate supplied non-English text into English while preserving meaning. Use STYLE only for visual look and do not add competing aesthetics.
 
 For a single page output only this structure:
-<one short instruction to create ONE page with the exact supplied number of clearly separated panels>
+(line 1: write one short instruction sentence, in your own words, that asks for ONE page with the exact supplied number of clearly separated panels — no brackets, no label)
 
 PAGE LAYOUT:
 <one concise geometry line per panel>
 
 IDENTITY LOCK:
-<one or more natural English sentences per visible character — stable page-level identity only: identifier, gender, age/age range, nationality when known, hair, face, body, skin, and permanent marks; never current clothing or current physical state, which belong in each PANEL; never tags or key:value pairs>
+<one or more natural English sentences per visible character — stable page-level identity: identifier, gender, age/age range, nationality when known, hair, face, body, skin, and permanent marks, then what the person wears after any change on the page; current physical state belongs in each PANEL; never tags or key:value pairs>
 (omit this block when empty)
 
 LOCATION LOCK:
@@ -205,12 +202,26 @@ def _page_payload(spec: dict) -> str:
     return json.dumps(fields, ensure_ascii=False, indent=2)
 
 
+_IDENTITY_LOCK_RE = re.compile(r"^[ \t]*IDENTITY LOCK:[ \t]*\n(.*?)(?=^[ \t]*LOCATION LOCK:)", re.M | re.S)
+
+
+def _extract_identity_lock(prompt: str) -> str:
+    """Structural slice only: the text between the IDENTITY LOCK: and LOCATION LOCK: headers of a finished page prompt ('' when the headers are not there)."""
+    m = _IDENTITY_LOCK_RE.search(prompt or "")
+    return m.group(1).strip() if m else ""
+
+
 def _build_local_user_prompt(spec: dict, a1: dict, *, image_style: str, props_desc: str,
-                             visual_direction: str) -> str:
+                             visual_direction: str, previous_identity_lock: str = "") -> str:
     parts: list[str] = [_production_reference(a1, props_desc=props_desc)]
     if _style_block(image_style):
         parts.append("STYLE:\n" + _style_block(image_style))
     parts.append(visual_direction)
+    parts.append("PREVIOUS PAGE IDENTITY LOCK (outfit carry-over note — the outfit it states for a person replaces init_cloth in CHARACTERS):\n" + (
+        previous_identity_lock.strip() or "none — this is the first page, or no earlier page prompt exists; take each outfit from CHARACTERS (init_cloth) unless a panel desc states it."))
+    layout = _grid.layout_text_for([p.get("region_pct") for p in (spec.get("panels") or []) if isinstance(p, dict)])
+    if layout:
+        parts.append("PAGE LAYOUT TEXT (copy exactly as the whole body of PAGE LAYOUT; no added percentages or numbers):\n" + layout)
     parts.append("CURRENT B MANGA PAGE:\n" + _page_payload(spec))
     parts.append("Write the complete final Krea 2 page prompt now.")
     return "\n\n".join(parts)
@@ -437,6 +448,7 @@ async def run_fill_manga_vnext(
     props_desc: str = "",
     stop_event: asyncio.Event | None = None,
     visual_direction: str = "",
+    previous_prompt: str = "",
 ) -> list[dict]:
     """Clean Manga Fill. genre/genre2 remain transport-neutral (unused); a1/props_desc now route
     the existing A1 production-reference sheets to the LLM instead of being discarded."""
@@ -517,6 +529,7 @@ async def run_fill_manga_vnext(
         await on_err(f"Manga Prompts workflow read failed: {exc}")
         return pages
 
+    carry_lock = _extract_identity_lock(previous_prompt)        # IDENTITY LOCK of the page before this one (outfit carry-over note)
     for idx, shot in enumerate(pages):
         if stop_event and stop_event.is_set():
             if on_log:
@@ -529,7 +542,7 @@ async def run_fill_manga_vnext(
             wf_template,
             _FILL_MANGA_SYSTEM_PROMPT,
             _build_local_user_prompt(spec, a1, image_style=image_style, props_desc=props_desc,
-                                     visual_direction=visual_direction),
+                                     visual_direction=visual_direction, previous_identity_lock=carry_lock),
             max_tokens=_local_max_tokens(spec),
             session_id=session_id,
             on_log=on_log,
@@ -549,6 +562,7 @@ async def run_fill_manga_vnext(
             shot.pop("_fill_failed", None)
             shot.pop("_fill_rejected", None)
             shot.pop("_fill_renderer_ready", None)
+            carry_lock = _extract_identity_lock(prompt) or carry_lock        # the next page carries THIS page's lock (unchanged when the lock cannot be read)
             commit = "NEW"
         else:
             shot["_fill_failed"] = True

@@ -199,6 +199,7 @@ from .visual_direction import (
 )
 from .help_docs import load_help_tabs
 from . import comfy_api as _comfy_api_mod
+from . import llm_overrides as _llm_overrides
 from .storage    import (_load, _save, list_stories, list_projects, project_exists, format_project_time,
                          save_story, load_story, delete_story, load_credentials, save_credentials)
 from .ui_helpers import po, br, divider, _dlg_to_str, _pil_overlay_text, _pil_overlay_texts, pil_overlay_applies, block_prompt_format_rule, runtime_dialogue_prompt, assemble_runtime_prompt, section, collapsible_section, group_header
@@ -436,6 +437,7 @@ def main(page: ft.Page):
     _llm_timeout       : list[int] = [saved.get("llm_timeout", 120)]
     _grok_temperature  : list[float] = [saved.get("grok_temperature", 0.7)]
     _llm_debug_logging : list[bool] = [bool(saved.get("llm_debug_logging", False))]
+    _llm_use_program   : list[bool] = [saved.get("llm_settings_source", "program") != "workflow"]      # True = the program's tested LLM values, False = the workflow file's own (llm_overrides)
     # apply saved settings to modules
     _comfy_api_mod.set_comfy_host(_comfy_host[0])
     set_llm_params(_llm_tokens_outline[0], _llm_tokens_fill[0],
@@ -443,6 +445,7 @@ def main(page: ft.Page):
                    _llm_tokens_chat[0], _llm_tokens_story_a[0],
                    _llm_n_ctx[0], _custom_sys[0])
     set_llm_debug_logging(_llm_debug_logging[0])
+    _llm_overrides.set_mode(_llm_overrides.PROGRAM if _llm_use_program[0] else _llm_overrides.WORKFLOW)
     _stop_event = asyncio.Event()
     llm_busy: list[bool] = [False]
     # True ระหว่างลูป fill→check→director ที่เดินทีละช็อต: runner ของ check/director ถูก
@@ -512,7 +515,8 @@ def main(page: ft.Page):
     story_summary_field.on_change = _on_summary_change
 
     # ── Status widgets ────────────────────────────────────────────────
-    status_lbl    = ft.Text("Ready", size=11, color=C["text2"])
+    # one line, ellipsized: a long error (for example a B format fault) must never push the toolbar icons or the Stop button around; the full text is in AI Logs
+    status_lbl    = ft.Text("Ready", size=11, color=C["text2"], max_lines=1, overflow=ft.TextOverflow.ELLIPSIS, text_align=ft.TextAlign.RIGHT, expand=True)
     progress_ring = ft.ProgressRing(width=16, height=16, color=C["accent"], visible=False)
     llm_prog      = ft.ProgressRing(width=14, height=14, color=C["accent"], visible=False)
 
@@ -537,6 +541,17 @@ def main(page: ft.Page):
 
     def _clear_b_salvage_notice():
         _set_b_salvage_notice("")
+
+    def _toast(msg: str, color: str = C["amber"], duration: int = 3000) -> None:
+        """A SnackBar (a box at the bottom of the window) that disappears by itself after `duration` ms. For notices that need a glance, not a decision."""
+        snack = ft.SnackBar(content=ft.Text(msg, color="#111827", size=12, weight=ft.FontWeight.W_600), bgcolor=color, duration=duration)
+        def _gone(e, _s=snack):
+            try: page.overlay.remove(_s)
+            except ValueError: pass
+        snack.on_dismiss = _gone
+        page.overlay.append(snack)
+        snack.open = True
+        page.update()
 
     # ── LLM selector ─────────────────────────────────────────────────
     _GROK_OPTION = "[Grok API]"
@@ -757,6 +772,7 @@ def main(page: ft.Page):
             "llm_timeout": _llm_timeout[0],
             "grok_temperature": _grok_temperature[0],
             "llm_debug_logging": _llm_debug_logging[0],
+            "llm_settings_source": "program" if _llm_use_program[0] else "workflow",
             "num_shots": _safe_num_shots(),
         })
 
@@ -1477,6 +1493,8 @@ def main(page: ft.Page):
                 props_desc=_props_to_str(props_field.value).strip(),
                 stop_event=_stop_event,
                 visual_direction=_visual_direction(),
+                # outfit carry-over: the page before the first page of this run (its finished prompt holds the IDENTITY LOCK that Fill hands on)
+                previous_prompt=(shots_data[indices[0] - 1].get("prompt", "") if indices and indices[0] > 0 else ""),
             )
 
         async def _fill_once(target_idx, force_flag):
@@ -6792,12 +6810,16 @@ def main(page: ft.Page):
             _b_run_state[0] = "FINISHED_SUCCESS"
             _manga_salvage = _b_chat_capture.get("salvage")
             if _manga_salvage:
-                _set_b_salvage_notice(
-                    f"⚠ Page List response needed repair — kept {_manga_salvage['pages']} page(s) / "
-                    f"{_manga_salvage['panels']} panel(s); {_manga_salvage.get('regions_repaired', 0)} "
-                    f"layout region(s) fixed, {_manga_salvage.get('dropped', 0)} item(s) dropped. "
-                    f"Create pages again to regenerate."
-                )
+                if _manga_salvage.get("dropped", 0):                  # content was lost: keep the sticky notice in the toolbar
+                    _set_b_salvage_notice(
+                        f"⚠ Page List response needed repair — kept {_manga_salvage['pages']} page(s) / "
+                        f"{_manga_salvage['panels']} panel(s); {_manga_salvage.get('regions_repaired', 0)} "
+                        f"layout region(s) fixed, {_manga_salvage.get('dropped', 0)} item(s) dropped. "
+                        f"Create pages again to regenerate."
+                    )
+                else:                                                  # layout only (nothing lost): a toast that goes away after 3 seconds
+                    _toast(f"⚠ Page List: {_manga_salvage.get('regions_repaired', 0)} layout region(s) fixed — "
+                           f"{_manga_salvage['pages']} page(s) / {_manga_salvage['panels']} panel(s) kept, no content lost.")
             _manga_vnext_final_pages[0] = len(pages)
             _b_final_n[0] = len(pages)
             num_shots_field.value = str(len(pages))
@@ -9063,6 +9085,14 @@ def main(page: ft.Page):
         bgcolor=C["surface"], content_padding=po(left=8, right=8, top=6, bottom=6),
     )
 
+    llm_source_switch = ft.Switch(
+        value=_llm_use_program[0], active_color=C["accent"],
+        label="Use the program's LLM settings",
+        label_text_style=ft.TextStyle(size=11, color=C["text2"]),
+        tooltip="ON (default) = the program sets the LLM values it was tested with (for example repeat penalty 1.0 for Shot List and Page List). "
+                "OFF = the program leaves those values alone and every call uses the workflow file's own.",
+    )
+
     llm_debug_switch = ft.Switch(
         value=_llm_debug_logging[0], active_color=C["accent"],
         label="LLM Debug Logging",
@@ -9098,6 +9128,8 @@ def main(page: ft.Page):
         try: _grok_temperature[0] = max(0.0, min(2.0, float(grok_temp_field.value or "0.7")))
         except ValueError: pass
         _llm_debug_logging[0] = bool(llm_debug_switch.value)
+        _llm_use_program[0] = bool(llm_source_switch.value)
+        _llm_overrides.set_mode(_llm_overrides.PROGRAM if _llm_use_program[0] else _llm_overrides.WORKFLOW)
         set_llm_params(_llm_tokens_outline[0], _llm_tokens_fill[0],
                        _llm_timeout[0], _grok_temperature[0], _llm_tokens_groom[0],
                        _llm_tokens_chat[0], _llm_tokens_story_a[0],
@@ -9142,6 +9174,9 @@ def main(page: ft.Page):
             ),
             _shint("Story Editor = rewrite the story · Outline = plan shots (Shot List) · Image Prompt = write prompts · Timeout = local LLM only"),
             _shint("Chat = edit the outline in conversation · Story Pass = pass A (character/scene/props/events) — a lower cap is fine because the output is short"),
+            llm_source_switch,
+            _shint("ON = the program's tested LLM values are used (default). OFF = the workflow file's own values are used; max tokens and session handling stay program-controlled, and some stages "
+                   "may fail or cut their answers short with other values. Currently covers: repeat penalty of Shot List and Page List; more stages follow."),
             llm_debug_switch,
             _shint("OFF = production (no extra prompt, no debug files). ON = save raw request/response + a short decision report under %LOCALAPPDATA%\\WorkflowPad\\debug for every Story Editor, Outline, Image Prompt, Consistency Check, and Visual Direction call."),
         ),
@@ -9239,6 +9274,7 @@ def main(page: ft.Page):
     page.overlay.append(sys_dialog)
 
     def _open_sys_dialog(e):
+        llm_source_switch.value = _llm_use_program[0]
         llm_debug_switch.value = _llm_debug_logging[0]
         sys_dialog.open = True; page.update()
 
@@ -9276,8 +9312,8 @@ def main(page: ft.Page):
             ft.Container(expand=True),
             # ── กลุ่ม 3: Status + Stop (right) ────────────────────────
             b_salvage_banner,
-            ft.Row([llm_prog, status_lbl], spacing=6,
-                   vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            ft.Row([llm_prog, status_lbl], spacing=6, expand=True,
+                   alignment=ft.MainAxisAlignment.END, vertical_alignment=ft.CrossAxisAlignment.CENTER),
             ft.Container(width=1, height=24, bgcolor=C["border2"]),
             stop_btn,
         ], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER),

@@ -23,6 +23,8 @@ import urllib.request
 import uuid
 
 from .constants import LLM_DIR, lang_prompt_name, dialogue_authoring_text, gate_dialogue_fields
+from . import llm_overrides as _overrides
+from . import manga_grid as _grid
 from .comfy_api import comfy_queue, comfy_history
 
 __version__ = "20260925_b_manga_tag_format"
@@ -45,7 +47,7 @@ Your job is to turn those events into the natural final set of pages and panels.
 You decide the final page count, which adjacent events share a panel or page, panel count, page rhythm, and panel geometry.
 Do not use a formula, fixed panels-per-page rule, or one-event-per-panel rule. Do not pad or duplicate moments.
 
-Each panel desc is one concise natural-prose description of exactly one drawable physical instant: normally 1-2 sentences, about 35-70 words, shorter when the moment is simple. State the visible people, current action/contact, pose and spatial relationship, each visible person's current clothing (or nudity) and physical state, relevant objects and their current state, the immediate sub-area, and any explicit visible reaction or established light needed to preserve the moment. Merge related facts naturally and state each fact once; never repeat a fact to cover another category. Each panel stays self-sufficient for what is true NOW (current clothing and state), but does not re-describe permanent identity (identity_lock), the full location (location_lock), or permanent object lore (object_lock). Mention light only when it is established, needed for continuity, or materially important. Emotion is source-owned: write only visible or explicitly supported reactions, never a feeling the story does not state.
+Each panel desc is one concise natural-prose description of exactly one drawable physical instant: normally 1-2 sentences, about 35-70 words, shorter when the moment is simple. State the visible people, current action/contact, pose and spatial relationship, each visible person's current clothing (or nudity) and physical state, relevant objects and their current state, the immediate sub-area, and any explicit visible reaction or established light needed to preserve the moment. Merge related facts naturally and state each fact once; never repeat a fact to cover another category. Each panel stays self-sufficient for what is true NOW (current clothing and state), but does not re-describe permanent identity (identity_lock), the full location (location_lock), or permanent object lore (object_lock). Mention light only when it is established, needed for continuity, or materially important. Emotion is source-owned: write only visible or explicitly supported reactions, never a feeling the story does not state. For every visible character in every panel, explicitly describe their complete CURRENT outfit, even when unchanged from earlier panels or absent from the current A2 unit. Continue established clothing until an event explicitly changes it. Never restore an outfit that has already changed.
 Do not invent missing actions, reactions, transitions, clothing changes, objects, or story meaning.
 Do not write camera, shot size, lens, or framing (never "close-up", "close on", "tight shot", "focus on"); Fill Manga owns HOW the panel is shown. desc is storyboard truth, not an image-generation prompt.
 
@@ -163,7 +165,7 @@ async def _call_local_text(
         inputs["session_id"] = session_id
         inputs["reset_session"] = True
         inputs["max_tokens"] = max_tokens
-        inputs["repeat_penalty"] = _B_MANGA_LOCAL_REPEAT_PENALTY
+        used = _overrides.apply(inputs, repeat_penalty=_B_MANGA_LOCAL_REPEAT_PENALTY)    # Program mode: 1.0; Workflow mode: the workflow's own value is kept
         hit = True
     if not hit:
         if on_log:
@@ -171,6 +173,7 @@ async def _call_local_text(
         return None
 
     if on_log:
+        await on_log(_overrides.describe(used))
         await on_log(f"📋 MANGA SHOT PLANNING SYSTEM:\n{system_prompt}")
         await on_log(f"📤 MANGA SHOT PLANNING USER:\n{user_prompt}")
 
@@ -485,6 +488,11 @@ def _parse_pages_tags(raw: str | None) -> tuple[list[dict] | None, dict]:
                                  "corner": geo["corner"], "final": final, "regions_changed": changed, "raw_overlap": geo["raw_overlap"], "final_overlap": _page_overlaps(final)})
         if geo["ambiguous"]:
             info["geometry_ambiguous_pages"] += 1
+        grid = _grid.template_regions(len(panels))        # 2..5 panels: the page grid comes from manga_grid (the model only writes stacked bands the image model cannot draw); content untouched
+        if grid:
+            for _p, _r in zip(panels, grid):
+                _p["region_pct"] = _r
+            info["grid_template_pages"] = info.get("grid_template_pages", 0) + 1
         out.append({
             "page": len(out) + 1,
             "identity_lock": page["fields"].get("identity_lock", ""),
