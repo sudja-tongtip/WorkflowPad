@@ -1,32 +1,32 @@
 {
   "story_generator": {
     "name": "Story Generator",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "download_url": "",
-    "notes": "Initial release"
+    "notes": "Workflow folders image_create / image_edit, selectable workflows, LLM settings switch, Batch Editor selection"
   },
   "prompt_lab": {
     "name": "Prompt Lab",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "download_url": "",
-    "notes": "Initial release"
+    "notes": "Workflow folders image_create / image_edit, selectable workflows, LLM settings switch, Batch Editor selection"
   },
   "image_editor": {
     "name": "Image Editor",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "download_url": "",
-    "notes": "Initial release"
+    "notes": "Workflow folders image_create / image_edit, selectable workflows, LLM settings switch, Batch Editor selection"
   },
   "gallery_generator": {
     "name": "Gallery Generator",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "download_url": "",
-    "notes": "Initial release"
+    "notes": "Workflow folders image_create / image_edit, selectable workflows, LLM settings switch, Batch Editor selection"
   },
   "batch_editor": {
     "name": "Batch Editor",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "download_url": "",
-    "notes": "Initial release"
+    "notes": "Workflow folders image_create / image_edit, selectable workflows, LLM settings switch, Batch Editor selection"
   }
 }
