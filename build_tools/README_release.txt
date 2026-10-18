@@ -26,7 +26,7 @@ WorkflowPad-Manual.html  the illustrated user manual (double-click to open it in
 Folders
 -------
 comfy_workflow\  example ComfyUI workflows + a README that shows how to set up your ComfyUI
-comfy_apis\      YOUR exported ComfyUI workflows (Export (API)) go here: image, llm, caption, enhance
+comfy_apis\      YOUR exported ComfyUI workflows (Export (API)) go here: image_create, image_edit, llm, caption, enhance
 icons\           program icons
 _internal\ program runtime — do not edit
 

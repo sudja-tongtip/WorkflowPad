@@ -21,7 +21,7 @@ def check(name, fn):
 def _paths():
     from story_generator import constants as c
     return {"frozen": getattr(sys, "frozen", False), "exe": sys.executable, "APP_ROOT": str(c.APP_ROOT),
-            "API_DIR_exists": c.API_DIR.is_dir(), "API_DIR": str(c.API_DIR.relative_to(c.APP_ROOT)), "icons_exist": (c.APP_ROOT / "icons").is_dir(),
+            "API_DIR_exists": c.API_DIR.is_dir(), "API_DIR": str(c.API_DIR.relative_to(c.APP_ROOT)), "IMAGE_EDIT_DIR": str(c.IMAGE_EDIT_DIR.relative_to(c.APP_ROOT)), "icons_exist": (c.APP_ROOT / "icons").is_dir(),
             "FLET_VIEW_PATH": os.environ.get("FLET_VIEW_PATH"),
             "flet_exe": os.path.isfile(os.path.join(os.environ.get("FLET_VIEW_PATH", ""), "flet.exe")),
             "meipass_is_not_root": str(getattr(sys, "_MEIPASS", "")) != str(c.APP_ROOT)}

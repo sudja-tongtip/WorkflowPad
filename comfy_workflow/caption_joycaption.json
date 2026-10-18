@@ -1,117 +1,439 @@
 {
-  "3": {
-    "inputs": {
-      "image": "example.png"
-    },
-    "class_type": "LoadImage",
-    "_meta": {
-      "title": "Load Image"
-    }
-  },
-  "11": {
-    "inputs": {
-      "text_0": "",
-      "text": [
-        "128",
-        1
-      ]
-    },
-    "class_type": "ShowText|pysssss",
-    "_meta": {
-      "title": "Show Text 🐍"
-    }
-  },
-  "24": {
-    "inputs": {
-      "root_dir": "output",
-      "file": "file.txt",
-      "append": "append",
-      "insert": true,
-      "text": [
-        "128",
-        1
-      ]
-    },
-    "class_type": "SaveText|pysssss",
-    "_meta": {
-      "title": "Save Text 🐍"
-    }
-  },
-  "107": {
-    "inputs": {
-      "resize_type": "scale width",
-      "resize_type.width": 1024,
-      "scale_method": "area",
-      "input": [
-        "3",
-        0
-      ]
-    },
-    "class_type": "ResizeImageMaskNode",
-    "_meta": {
-      "title": "Resize Image/Mask"
-    }
-  },
-  "128": {
-    "inputs": {
-      "model": "JoyCaption Beta One (Q4_K_M)",
-      "processing_mode": "GPU",
-      "prompt_style": "Descriptive",
-      "caption_length": "medium",
-      "max_new_tokens": 2048,
-      "temperature": 0.75,
-      "top_p": 0.92,
-      "top_k": 40,
-      "custom_prompt": "You are a precise visual analyst for AI image generation quality control.\n\nDescribe ONLY what is literally visible in this image. Be specific and technical. Cover these aspects in order:\n\n1. FRAMING & COMPOSITION: Shot type (wide/full-body/medium/close-up), camera angle (eye-level/low/high/dutch), where each character is positioned in the frame (left third/center/right third), negative space\n2. CHARACTERS: How many people visible, gender, approximate position in frame, what they are doing (exact body pose and action), facial expression and emotional state\n3. CLOTHING & STATE: Exact outfit of each person, state of dress/undress\n4. ENVIRONMENT: Setting, background elements, props visible\n5. LIGHTING: Light source direction, color temperature, mood, shadows\n6. TEXT OVERLAYS: If any speech bubbles, narration boxes, or text visible — describe their position, shape, and what text they contain\n\nOutput pure description only. No opinions. No \"this image shows\". Start immediately with the shot type.",
-      "memory_management": "Clear After Run",
-      "image": [
-        "107",
-        0
+  "id": "3f144148-db5d-4806-8b2d-abb93590608c",
+  "revision": 0,
+  "last_node_id": 129,
+  "last_link_id": 58,
+  "nodes": [
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [
+        48.4509367989192,
+        160.70234758009377
       ],
-      "extra_options": [
-        "129",
-        0
+      "size": [
+        282.798828125,
+        314
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            23
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "image": true,
+            "upload": true
+          },
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "example.png",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 24,
+      "type": "SaveText|pysssss",
+      "pos": [
+        1465.2419234359818,
+        228.96440876247203
+      ],
+      "size": [
+        270,
+        130
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 57
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveText|pysssss",
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "root_dir": true,
+            "file": true,
+            "append": true,
+            "insert": true
+          },
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "output",
+        "file.txt",
+        "append",
+        true
+      ],
+      "widgets_values_named": {
+        "root_dir": "output",
+        "file": "file.txt",
+        "append": "append",
+        "insert": true
+      }
+    },
+    {
+      "id": 107,
+      "type": "ResizeImageMaskNode",
+      "pos": [
+        397.813548328824,
+        183.44897949795248
+      ],
+      "size": [
+        270,
+        154
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input",
+          "type": "IMAGE,MASK",
+          "link": 23
+        }
+      ],
+      "outputs": [
+        {
+          "name": "resized",
+          "type": "IMAGE",
+          "links": [
+            53
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ResizeImageMaskNode",
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "resize_type": true,
+            "resize_type.width": true,
+            "resize_type.height": true,
+            "resize_type.crop": true,
+            "scale_method": true
+          },
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "scale dimensions",
+        1024,
+        1024,
+        "center",
+        "area"
+      ],
+      "widgets_values_named": {
+        "resize_type": "scale dimensions",
+        "resize_type.width": 1024,
+        "resize_type.height": 1024,
+        "resize_type.crop": "center",
+        "scale_method": "area"
+      }
+    },
+    {
+      "id": 129,
+      "type": "JC_ExtraOptions",
+      "pos": [
+        198.5034088676656,
+        632.2632994138172
+      ],
+      "size": [
+        400,
+        736
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "extra_options",
+          "type": "JOYCAPTION_EXTRA_OPTIONS",
+          "links": [
+            58
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "JC_ExtraOptions",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false,
+        false,
+        false,
+        ""
+      ],
+      "widgets_values_named": {
+        "exclude_people_info": false,
+        "include_lighting": true,
+        "include_camera_angle": true,
+        "include_watermark": false,
+        "include_JPEG_artifacts": false,
+        "include_exif": false,
+        "exclude_sexual": false,
+        "exclude_image_resolution": false,
+        "include_aesthetic_quality": true,
+        "include_composition_style": true,
+        "exclude_text": false,
+        "specify_depth_field": true,
+        "specify_lighting_sources": true,
+        "do_not_use_ambiguous_language": true,
+        "include_nsfw": true,
+        "only_describe_most_important_elements": false,
+        "do_not_include_artist_name_or_title": true,
+        "identify_image_orientation": false,
+        "use_vulgar_slang_and_profanity": false,
+        "do_not_use_polite_euphemisms": true,
+        "include_character_age": true,
+        "include_camera_shot_type": true,
+        "exclude_mood_feeling": false,
+        "include_camera_vantage_height": true,
+        "mention_watermark": false,
+        "avoid_meta_descriptive_phrases": false,
+        "refer_character_name": false,
+        "character_name": ""
+      }
+    },
+    {
+      "id": 128,
+      "type": "JC_GGUF_adv",
+      "pos": [
+        743.6172115270882,
+        448.8836815336826
+      ],
+      "size": [
+        400,
+        324
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 53
+        },
+        {
+          "name": "extra_options",
+          "shape": 7,
+          "type": "JOYCAPTION_EXTRA_OPTIONS",
+          "link": 58
+        }
+      ],
+      "outputs": [
+        {
+          "name": "PROMPT",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            56,
+            57
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "JC_GGUF_adv",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "JoyCaption Beta One (Q4_K_M)",
+        "GPU",
+        "Descriptive",
+        "long",
+        2048,
+        0.75,
+        0.92,
+        40,
+        "",
+        "Clear After Run"
+      ],
+      "widgets_values_named": {
+        "model": "JoyCaption Beta One (Q4_K_M)",
+        "processing_mode": "GPU",
+        "prompt_style": "Descriptive",
+        "caption_length": "long",
+        "max_new_tokens": 2048,
+        "temperature": 0.75,
+        "top_p": 0.92,
+        "top_k": 40,
+        "custom_prompt": "",
+        "memory_management": "Clear After Run"
+      }
+    },
+    {
+      "id": 11,
+      "type": "ShowText|pysssss",
+      "pos": [
+        1204.26473238824,
+        495.465015011353
+      ],
+      "size": [
+        484.8499999999999,
+        240.45
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 56
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "shape": 6,
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ShowText|pysssss",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "text_0": ""
+      }
+    }
+  ],
+  "links": [
+    [
+      53,
+      107,
+      0,
+      128,
+      0,
+      "IMAGE"
+    ],
+    [
+      56,
+      128,
+      1,
+      11,
+      0,
+      "STRING"
+    ],
+    [
+      57,
+      128,
+      1,
+      24,
+      0,
+      "STRING"
+    ],
+    [
+      58,
+      129,
+      0,
+      128,
+      1,
+      "JOYCAPTION_EXTRA_OPTIONS"
+    ],
+    [
+      23,
+      3,
+      0,
+      107,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.6697019115443762,
+      "offset": [
+        854.4319002730474,
+        81.44577678754085
       ]
     },
-    "class_type": "JC_GGUF_adv",
-    "_meta": {
-      "title": "JoyCaption GGUF (Advanced)"
-    }
+    "ue_links": [],
+    "links_added_by_ue": [],
+    "frontendVersion": "1.55.17"
   },
-  "129": {
-    "inputs": {
-      "exclude_people_info": false,
-      "include_lighting": true,
-      "include_camera_angle": true,
-      "include_watermark": false,
-      "include_JPEG_artifacts": false,
-      "include_exif": false,
-      "exclude_sexual": false,
-      "exclude_image_resolution": false,
-      "include_aesthetic_quality": true,
-      "include_composition_style": true,
-      "exclude_text": true,
-      "specify_depth_field": true,
-      "specify_lighting_sources": true,
-      "do_not_use_ambiguous_language": true,
-      "include_nsfw": true,
-      "only_describe_most_important_elements": false,
-      "do_not_include_artist_name_or_title": true,
-      "identify_image_orientation": false,
-      "use_vulgar_slang_and_profanity": false,
-      "do_not_use_polite_euphemisms": true,
-      "include_character_age": false,
-      "include_camera_shot_type": true,
-      "exclude_mood_feeling": false,
-      "include_camera_vantage_height": true,
-      "mention_watermark": false,
-      "avoid_meta_descriptive_phrases": false,
-      "refer_character_name": false,
-      "character_name": ""
-    },
-    "class_type": "JC_ExtraOptions",
-    "_meta": {
-      "title": "JoyCaption Extra Options"
-    }
-  }
+  "version": 0.4
 }

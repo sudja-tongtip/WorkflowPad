@@ -1,51 +1,206 @@
 {
-  "3": {
-    "inputs": {
-      "source": [
-        "7",
-        0
+  "id": "7beb33a1-80a3-43f3-9851-522185009483",
+  "revision": 0,
+  "last_node_id": 10,
+  "last_link_id": 9,
+  "nodes": [
+    {
+      "id": 3,
+      "type": "PreviewAny",
+      "pos": [
+        753.5678064915935,
+        201.0408356837774
+      ],
+      "size": [
+        480,
+        400
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core",
+        "ver": "0.21.0",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 7,
+      "type": "LLMSessionChatNode",
+      "pos": [
+        247.11289291738524,
+        184.18441046348207
+      ],
+      "size": [
+        400,
+        790
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "media",
+          "shape": 7,
+          "type": "*",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "assistant_text",
+          "type": "STRING",
+          "links": [
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LLMSessionChatNode",
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "user_text": true,
+            "session_id": true,
+            "model": true,
+            "mmproj": true,
+            "system_prompt": true,
+            "max_tokens": true,
+            "temperature": true,
+            "top_p": true,
+            "n_gpu_layers": true,
+            "n_ctx": true,
+            "persistent_cache": true,
+            "runtime_cache": true,
+            "log_level": true,
+            "suppress_backend_logs": true,
+            "repeat_penalty": true,
+            "repeat_last_n": true,
+            "rewrite_continue": true,
+            "max_turns": true,
+            "summarize_old_history": true,
+            "summary_chunk_turns": true,
+            "max_tokens_summary": true,
+            "summary_max_chars": true,
+            "dynamic_max_tokens": true,
+            "min_generation_tokens": true,
+            "safety_margin_tokens": true,
+            "history_dir": true,
+            "reset_session": true,
+            "stream_to_console": true,
+            "enable_thinking": true
+          },
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "",
+        "default",
+        "SELECT_YOUR_MODEL",
+        "(Auto-detect)",
+        "",
+        1024,
+        0.7,
+        0.9,
+        -1,
+        32768,
+        "off",
+        "off",
+        "timing",
+        true,
+        1,
+        256,
+        true,
+        6,
+        true,
+        2,
+        512,
+        1500,
+        true,
+        96,
+        64,
+        "",
+        true,
+        false,
+        false
+      ],
+      "widgets_values_named": {
+        "user_text": "",
+        "session_id": "default",
+        "model": "SELECT_YOUR_MODEL",
+        "mmproj": "(Auto-detect)",
+        "system_prompt": "",
+        "max_tokens": 1024,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "n_gpu_layers": -1,
+        "n_ctx": 32768,
+        "persistent_cache": "off",
+        "runtime_cache": "off",
+        "log_level": "timing",
+        "suppress_backend_logs": true,
+        "repeat_penalty": 1,
+        "repeat_last_n": 256,
+        "rewrite_continue": true,
+        "max_turns": 6,
+        "summarize_old_history": true,
+        "summary_chunk_turns": 2,
+        "max_tokens_summary": 512,
+        "summary_max_chars": 1500,
+        "dynamic_max_tokens": true,
+        "min_generation_tokens": 96,
+        "safety_margin_tokens": 64,
+        "history_dir": "",
+        "reset_session": true,
+        "stream_to_console": false,
+        "enable_thinking": false
+      }
+    }
+  ],
+  "links": [
+    [
+      5,
+      7,
+      0,
+      3,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.9395600303571439,
+      "offset": [
+        435.25396615858944,
+        57.460088481394976
       ]
     },
-    "class_type": "PreviewAny",
-    "_meta": {
-      "title": "Preview as Text"
-    }
+    "frontendVersion": "1.55.17",
+    "ue_links": [],
+    "links_added_by_ue": []
   },
-  "7": {
-    "inputs": {
-      "user_text": "Hello",
-      "session_id": "default",
-      "model": "SELECT_YOUR_MODEL",
-      "mmproj": "(Auto-detect)",
-      "system_prompt": "You are a helpful assistant.",
-      "max_tokens": 1024,
-      "temperature": 0.7,
-      "top_p": 0.9,
-      "n_gpu_layers": -1,
-      "n_ctx": 12288,
-      "persistent_cache": "off",
-      "runtime_cache": "off",
-      "log_level": "timing",
-      "suppress_backend_logs": true,
-      "repeat_penalty": 1.12,
-      "repeat_last_n": 256,
-      "rewrite_continue": true,
-      "max_turns": 6,
-      "summarize_old_history": true,
-      "summary_chunk_turns": 2,
-      "max_tokens_summary": 512,
-      "summary_max_chars": 1500,
-      "dynamic_max_tokens": true,
-      "min_generation_tokens": 96,
-      "safety_margin_tokens": 64,
-      "history_dir": "",
-      "reset_session": true,
-      "stream_to_console": false,
-      "enable_thinking": false
-    },
-    "class_type": "LLMSessionChatNode",
-    "_meta": {
-      "title": "LLM Session Chat"
-    }
-  }
+  "version": 0.4
 }
