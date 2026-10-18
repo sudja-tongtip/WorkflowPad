@@ -20,7 +20,7 @@ if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
 # ── App metadata ──────────────────────
 APP_ID      = "prompt_lab"
 APP_NAME    = "Prompt Lab"
-APP_VERSION = "0.1.3"   # SemVer; see RELEASE.md
+APP_VERSION = "0.1.4"   # SemVer; see RELEASE.md
 
 # ── Config ────────────────────────────────────────────────────────────
 COMFY_HOST   = "127.0.0.1:8188"
@@ -844,6 +844,11 @@ def main(page: ft.Page):
     llm_status = ft.Text("", size=10, color=C["text3"])
     llm_progress = ft.ProgressRing(width=14, height=14, color=C["accent"], visible=False)
 
+    def _refresh_list(lv):
+        """Update the list itself, not just its container: a list swapped in by a tab switch otherwise showed new bubbles only after switching tabs again."""
+        try: lv.update()
+        except Exception: pass
+
     def _add_chat_bubble(role: str, text: str, color: str, model: str | None = None):
         is_user = role == "user"
         model = model or _active_model[0]
@@ -873,7 +878,7 @@ def main(page: ft.Page):
                 ),
             )
         )
-        chat_view.update()
+        _refresh_list(ch)
         page.update()
 
     def _set_model_status(m: str, text: str, color: str, busy: bool | None = None):
@@ -1240,6 +1245,7 @@ def main(page: ft.Page):
                 padding=po(left=8, top=4, right=8, bottom=4),
             )
         )
+        _refresh_list(lg)
         page.update()
 
     def _tab_style(active: bool):
