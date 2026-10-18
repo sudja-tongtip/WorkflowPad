@@ -34,6 +34,7 @@ TREES = [
     ("comfy_workflow", "*.json"),   # example ComfyUI workflows the user opens in ComfyUI, edits, then exports with Export (API)
     ("comfy_workflow", "*.txt"),    # ... and the README that teaches it
     ("icons",   "*.ico"),
+    ("helper",  "*.txt"),       # text shown by the Help button in Story Generator
 ]
 # The user's exported API files go here (the apps read them). Shipped EMPTY on purpose: the release never carries the author's own workflows.
 COMFY_APIS = {
@@ -67,6 +68,7 @@ CUDA_LIB = re.compile(r"(cudart|cublas|cudnn|cufft|curand|cusolver|cusparse|nvrt
 
 README = ROOT / "build_tools" / "README_release.txt"
 LICENSE_FILE = ROOT / "LICENSE"
+MANUAL = ROOT / "docs" / "WorkflowPad-Manual.html"      # the illustrated user manual (one self-contained file)
 SOURCE_URL = "https://github.com/sudja-tongtip/WorkflowPad"
 
 
@@ -137,6 +139,9 @@ def stage(dest: Path) -> list[Path]:
     if README.is_file():
         shutil.copy2(README, dest / "README.txt")
         copied.append(dest / "README.txt")
+    if MANUAL.is_file():
+        shutil.copy2(MANUAL, dest / MANUAL.name)
+        copied.append(dest / MANUAL.name)
     if LICENSE_FILE.is_file():
         shutil.copy2(LICENSE_FILE, dest / "LICENSE.txt")
         copied.append(dest / "LICENSE.txt")
@@ -240,6 +245,8 @@ def validate_layout(dest: Path) -> list[str]:
     for exe in EXES:
         if not (dest / exe).is_file():
             problems.append(f"missing {exe}")
+    if not (dest / MANUAL.name).is_file():
+        problems.append(f"{MANUAL.name} missing (build docs/ first)")
     if not (dest / "LICENSE.txt").is_file():
         problems.append("LICENSE.txt missing (add a LICENSE file at the project root)")
     internal = dest / "_internal"

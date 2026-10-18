@@ -23,16 +23,16 @@ Each app owns its own version and is released independently. Nothing forces the 
 
 ## Git tags / GitHub Release names
 
+The portable ZIP ships all five apps together, so one release = one tag:
+
 ```
-story-generator-v0.1.0
-prompt-lab-v0.1.0
-image-editor-v0.1.0
-gallery-generator-v0.1.0
-batch-editor-v0.1.0
+v0.1.0
 ```
 
-Example: Prompt Lab can go `0.1.0` → `0.1.1` (fix) → `0.1.2` (fix) → `0.2.0` (feature) while Story Generator
-stays at `0.1.0`.
+- GitHub Release title: `WorkflowPad v0.1.0 Beta`, with "Set as a pre-release" ticked while the version is 0.x.
+- ZIP name: `WorkflowPad-v0.1.0-Beta.zip` (`RELEASE_NAME` in `make_release.py`).
+- `APP_VERSION` and `update.json` stay plain `MAJOR.MINOR.PATCH` (no `-beta` suffix): `app_version.parse_version()` only accepts digits.
+- Each app still owns its own `APP_VERSION`; the release tag is the highest version that the ZIP contains.
 
 ## When the version changes
 

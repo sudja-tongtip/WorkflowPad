@@ -21,6 +21,8 @@ download them (about 13 MB), or open Settings -> Detection -> Detection Models. 
 %LOCALAPPDATA%\WorkflowPad\models and only downloaded when you press Install Models. Without them the narration box is
 still placed automatically, just without person/face avoidance.
 
+WorkflowPad-Manual.html  the illustrated user manual (double-click to open it in your browser)
+
 Folders
 -------
 comfy_workflow\  example ComfyUI workflows + a README that shows how to set up your ComfyUI

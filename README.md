@@ -12,6 +12,10 @@ WorkflowPad is a set of desktop tools (Python + [Flet](https://flet.dev)) that t
 | **Batch Editor** (`batch_editor.py`) | Edit images with a ComfyUI workflow and a prompt editor |
 | **Gallery Generator** (`gallery_generator.py`) | Generate images repeatedly (until stopped or a target count) into a gallery of thumbnails |
 
+## Manual
+
+An illustrated user manual for all five programs: [`docs/WorkflowPad-Manual.html`](docs/WorkflowPad-Manual.html) (download the file and open it in a browser; it is also inside the release ZIP).
+
 ## Download (Windows)
 
 Portable build, no Python needed: see the **Releases** page of this repository. Extract the ZIP, run `WorkflowPad.exe`.
