@@ -183,6 +183,8 @@ from .llm_engine_a1_novel import run_a1_routed as _run_a1_routed
 # A1 engine: Story/Static auto-routing (llm_engine_a1_novel -> llm_engine_a1_static). Set environment A1_ENGINE=legacy to use the old A1.
 run_production_reference = _run_a1_legacy if os.environ.get("A1_ENGINE", "").strip().lower() == "legacy" else _run_a1_routed
 from .llm_engine_a2 import run_beat_decomposition
+from .llm_engine_static_pose import run_static_pose_fill
+from .llm_engine_a1_router import classify_source as _classify_source
 from .llm_engine_b import run_shot_planning
 from .llm_engine_fill import run_normal_render_prompt
 from .llm_engine_b_manga import run_manga_shot_planning, manga_vnext_page_to_legacy_dict
@@ -1988,7 +1990,8 @@ def main(page: ft.Page):
             _shots_lbl.value = "Shots"
             _shots_unit_lbl.value = "shot"
             num_shots_field.disabled = False
-            num_shots_field.tooltip = None
+            num_shots_field.tooltip = ("Static Pose Fill: how many shots (poses) to make from the prompt. It is used when the input is one still-picture prompt; "
+                                       "a story is planned as usual." if _outline_mode[0] == "static_pose" else None)
         # MANGA-PAGE-ORPHAN-AUTHORITY-CLEANUP-A1: was `_manga_page_mode[0] and not _manga_page_forced[0]`
         # (the only way to reveal a "turn it off" switch when it happened to be stuck on). Now
         # unconditionally hidden along with _manga_switch_fill above — see that widget's comment for
@@ -2231,7 +2234,7 @@ def main(page: ft.Page):
             # (now-hidden) old Manga Page switch. Always False: the flag can no longer change
             # Checker behavior for any call.
             manga_page=False,
-            outline_mode=_outline_mode[0],
+            outline_mode=_outline_mode_for_engines(),
             props_desc=_props_to_str(props_field.value).strip(),
             fill_engine=_ck_eng,
             narration_type=_narration_type[0],
@@ -3173,18 +3176,26 @@ def main(page: ft.Page):
         ("cinematic",  "📖 Visual Novel — broader dramatic / story moments"),
         ("sequential", "📋 Sequential — chronological order"),
         ("manga",      "📦 Manga — page / panel beats"),
+        ("static_pose", "🎭 Static Pose Fill (If possible)"),
     ]
     # VN ถูกตัดออก — ต่างจาก cinematic แค่มีช่อง narration ซึ่ง Narration Type คุมอยู่แล้ว
     # เรื่องเก่าที่เซฟเป็น "vn" ถูก map เป็น cinematic ตอนโหลด ไม่งั้นจะค้างในโหมดที่ไม่มีใน dropdown
     if _outline_mode[0] == "vn":
         _outline_mode[0] = "cinematic"
     _OUTLINE_MODE_KEYS = {k for k, _ in _OUTLINE_MODE_OPTS}
+
+    def _outline_mode_for_engines() -> str:
+        """The Story Bible / Beat Sheet / Shot List engines know three modes. Static Pose Fill has its own path for a still-picture prompt; when the
+        input turns out to be a story, the normal pipeline runs it exactly as Visual Novel (cinematic)."""
+        return "cinematic" if _outline_mode[0] == "static_pose" else _outline_mode[0]
     outline_mode_dd = ft.Dropdown(
         value=_outline_mode[0] if _outline_mode[0] in _OUTLINE_MODE_KEYS else "cinematic",
         options=[ft.dropdown.Option(key=k, text=label) for k, label in _OUTLINE_MODE_OPTS],
         tooltip="Visual Novel: broader dramatic/story moments — a continuous interaction may stay one beat. "
                 "Sequential: finer chronological moments — preserves more meaningful intermediate moments. "
-                "Manga: each shot is a multi-panel manga page.",
+                "Manga: each shot is a multi-panel manga page. "
+                "Static Pose Fill: when the input is ONE still-picture prompt (the check decides), make the number of shots you set from it, each with a new pose, "
+                "expression, emotion and camera angle; the style words are removed. A story is planned as Visual Novel.",
         text_size=12, height=40, expand=True, border_color=C["border"], focused_border_color=C["accent"],
         bgcolor=C["surface"], content_padding=po(left=8, right=4, top=0, bottom=0),
     )
@@ -3584,7 +3595,7 @@ def main(page: ft.Page):
                 requirement=groom_req_field.value.strip(),
                 on_log=_llm_log,
                 grok_api_key=_grok_api_key[0], grok_model=_grok_model[0],
-                outline_mode=_outline_mode[0],
+                outline_mode=_outline_mode_for_engines(),
                 story_length=groom_length_dd.value or "auto",
                 dialogue_style=_dialogue_style[0],
                 creativity=groom_creativity_dd.value or _groom_creativity[0] or "balanced",
@@ -5087,6 +5098,9 @@ def main(page: ft.Page):
             or (_outline_phase[0] == "FAILED" and _has_a)
         )
         _outline_create_btn.disabled = not (caps["create"] or (_outline_phase[0] == "FAILED" and _has_a))
+        if bool(shots_data) and all(isinstance(_sp, dict) and _sp.get("_static_pose") for _sp in shots_data):
+            _outline_create_btn.visible = False         # Static Pose Fill shots are complete: B and Fill have nothing to add
+            _outline_continue_btn.visible = False
         # Events (A2 micro beats) are editable only while the user can still act on them.
         _outline_events_tf.read_only = not (
             _outline_phase[0] in ("REVIEW_A", "READY", "FAILED") and _has_a
@@ -6296,7 +6310,7 @@ def main(page: ft.Page):
                 # fields with them; how they are drawn is decided later at render time.
                 dialogue_style=_cur_dlg_style(), narration_type=_narration_type[0],
                 grok_api_key=_grok_api_key[0], grok_model=_grok_model[0],
-                chat_capture=cap, mode=_outline_mode[0],
+                chat_capture=cap, mode=_outline_mode_for_engines(),
                 a2_count=_a2_count, strict_a2_1to1=_strict_1to1,
             )
 
@@ -6860,6 +6874,85 @@ def main(page: ft.Page):
         _set_outline_phase("READY", f"✅ Outline ready — {len(shots_data)} pages")
         page.update()
 
+    async def _static_pose_a0_check() -> str:
+        """A0 (the source router, as before): is the Story field ONE still picture ('STATIC') or a story ('NARRATIVE')? Returns the label, or '' when the check
+        could not decide (the caller then runs the normal pipeline, which does its own routing)."""
+        story = _outline_story[0] or story_field.value.strip()
+        await _llm_log("🔎 Static Pose Fill: checking whether the input is one still picture or a story...")
+        decision = await _classify_source(story, llm_dd.value, _llm_log, grok_api_key=_grok_api_key[0], grok_model=_grok_model[0])
+        if decision.get("status") == "invalid":
+            await _llm_log(f"⚠ Static Pose Fill: invalid check reply {decision.get('raw')!r} - asking once more")
+            decision = await _classify_source(story, llm_dd.value, _llm_log, grok_api_key=_grok_api_key[0], grok_model=_grok_model[0])
+        label = decision.get("label") or ""
+        if label == "STATIC":
+            await _llm_log("ℹ Static Pose Fill: STATIC -> poses from the prompt")
+        elif label == "NARRATIVE":
+            await _llm_log("ℹ Static Pose Fill: NARRATIVE -> the story is planned as usual (Visual Novel)")
+        else:
+            await _llm_log(f"⚠ Static Pose Fill: the check gave no answer ({decision.get('error') or decision.get('raw')!r}) - the story is planned as usual")
+        return label
+
+    async def _do_generate_outline_static_pose(from_review: bool = False):
+        """Static Pose Fill: the Story field holds ONE still-picture prompt (A0 said STATIC). No Story Bible, no Beat Sheet, no B, no Fill:
+        base prompt (style words removed) -> N planned poses -> one written prompt per shot -> shots_data, each shot ready to render."""
+        story = _outline_story[0] or story_field.value.strip()
+        llm_wf = llm_dd.value
+        n = max(1, min(60, _safe_num_shots()))
+        _clear_b_salvage_notice()
+
+        async def _on_err(msg):
+            llm_busy[0] = False; llm_prog.visible = False
+            gen_shots_btn.disabled = False; fill_prompts_btn.disabled = False
+            _b_run_state[0] = "FINISHED_FAILED"
+            _set_outline_phase("FAILED", f"❌ {msg}")
+            status_lbl.value = f"❌ {msg}"; await _llm_log(f"❌ {msg}"); page.update()
+
+        if from_review or not outline_review_dialog.open:
+            _outline_shots_backup[:] = [dict(s) for s in shots_data]
+        _outline_events[0] = []
+        _b_run_state[0] = "RUNNING"
+        _set_outline_phase("PASS_B")
+        _outline_timer_start("🎭 Static Pose Fill: removing the style words...")
+        _outline_review_col.controls.clear()
+        _outline_review_is_new[0] = True
+        _outline_refresh_tabs_visibility()
+        _open_dialog(outline_review_dialog)
+        _sync_genre()
+
+        async def _on_shot(i, shot, total):
+            if i + 1 < total:
+                _outline_timer_start(f"🎭 Static Pose Fill: writing shot {i + 2}/{total}...")
+
+        try:
+            _outline_timer_start("🎭 Static Pose Fill: removing the style words and planning the poses...")
+            result = await run_static_pose_fill(story, n, llm_wf, _on_err, on_log=_llm_log,
+                                                grok_api_key=_grok_api_key[0], grok_model=_grok_model[0], on_shot=_on_shot)
+            if result is None:
+                return
+            shots_data[:] = result["shots"]
+            _b_final_n[0] = len(shots_data)
+            _b_run_state[0] = "FINISHED_SUCCESS"
+        except Exception as _ex:
+            import traceback
+            await _llm_log(f"❌ Static Pose Fill exception:\n{traceback.format_exc()}")
+            await _on_err(f"Static Pose Fill error: {_ex}")
+            return
+
+        excess = [k for k in list(gallery_images.keys()) if k >= len(shots_data)]
+        for k in excess:
+            for img in gallery_images.pop(k, []):
+                try: Path(img["path"]).unlink(missing_ok=True)
+                except Exception: pass
+
+        llm_busy[0] = False; llm_prog.visible = False
+        gen_shots_btn.disabled = False; fill_prompts_btn.disabled = False
+        _failed = result.get("failed") or []
+        status_lbl.value = (f"🎭 Static Pose Fill done — {len(shots_data)} shots" if not _failed else
+                            f"⚠ Static Pose Fill — {len(shots_data)} shots, {len(_failed)} without a prompt (shots {', '.join(str(x) for x in _failed)})")
+        _outline_review_rebuild()
+        _set_outline_phase("READY", status_lbl.value)
+        page.update()
+
     async def _outline_generate_dispatch(ask_shot_count: bool = True, reuse_pass_a: bool = False,
                                          from_review: bool = False):
         """VNEXT-PRODUCTION-PROMOTION-A1 follow-up: the legacy Outline pipeline (_do_generate_outline)
@@ -6871,6 +6964,11 @@ def main(page: ft.Page):
         # Character/Events and press Create shot/pages. Callers that pass ask_shot_count=False
         # (Fast Lane, Redo Info, Regenerate on reused A) keep running straight through to B.
         _stop_after_a = bool(ask_shot_count and not reuse_pass_a)
+        if _outline_mode[0] == "static_pose":
+            # A0 as before: one still picture -> Static Pose Fill; a story (or no answer) -> the normal pipeline below, as Visual Novel.
+            if await _static_pose_a0_check() == "STATIC":
+                await _do_generate_outline_static_pose(from_review=from_review)
+                return
         if _manga_vnext_mode[0]:
             await _do_generate_outline_manga_vnext(
                 ask_shot_count=ask_shot_count, reuse_pass_a=reuse_pass_a,
