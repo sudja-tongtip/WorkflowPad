@@ -2114,6 +2114,8 @@ def main(page: ft.Page):
     async def do_fill_prompts(e, single_idx=None):
         if llm_busy[0]: return
         if not shots_data: status_lbl.value = "⚠ Run 📐 Outline first"; page.update(); return
+        if _shots_are_static_pose():
+            status_lbl.value = "ℹ Static Pose shots already carry their prompts - run 📐 Outline again to make new ones"; page.update(); return
         llm_wf = llm_dd.value
         if not llm_wf:
             status_lbl.value = "⚠ Select LLM workflow"; page.update(); return
@@ -3184,6 +3186,10 @@ def main(page: ft.Page):
         _outline_mode[0] = "cinematic"
     _OUTLINE_MODE_KEYS = {k for k, _ in _OUTLINE_MODE_OPTS}
 
+    def _shots_are_static_pose() -> bool:
+        """True when every shot came from Static Pose Fill: each already carries its finished prompt, so Image Prompts (Fill) has nothing to do and must not rewrite them."""
+        return bool(shots_data) and all(isinstance(_sp, dict) and _sp.get("_static_pose") for _sp in shots_data)
+
     def _outline_mode_for_engines() -> str:
         """The Story Bible / Beat Sheet / Shot List engines know three modes. Static Pose Fill has its own path for a still-picture prompt; when the
         input turns out to be a story, the normal pipeline runs it exactly as Visual Novel (cinematic)."""
@@ -4212,6 +4218,18 @@ def main(page: ft.Page):
             rebuild_shots_col()
             _save_state()
             page.update()
+
+            if _shots_are_static_pose():
+                # Static Pose Fill shots are complete: skip Image Prompts (Fill) and go straight to the render, the same Run All Fill's own chain calls.
+                await _llm_log("⚡ Fast Lane: Static Pose shots already carry their prompts - Image Prompts skipped, rendering")
+                _runner = _do_run_all_ref[0]
+                if _runner is None:
+                    await _llm_log("⚠ Fast Lane: Run All is not wired yet - cannot render")
+                elif not any((_s.get("prompt") or "").strip() for _s in shots_data):
+                    status_lbl.value = "⚠ No prompts to render"; page.update()
+                else:
+                    await _runner(None)
+                return
 
             # Borrow Fill's own existing "auto-render when done" chain (see _do_fill_prompts_run_inner)
             # instead of calling do_run_all separately — one shared render path, no duplication.
