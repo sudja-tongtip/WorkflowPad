@@ -576,6 +576,16 @@ def _wrap_text_thai(text: str, font, max_width: int, draw) -> list[str]:
     return lines
 
 
+_OVERLAY_BASE_FONT = 32          # the text size that looks right on a 1080 px short side
+_OVERLAY_BASE_SHORT_SIDE = 1080
+
+
+def overlay_font_size(W: int, H: int) -> int:
+    """Narration / subtitle text size for an image of W x H: it scales with the SHORT side, so a 2304x1296 render and a 1024x576 render carry the same
+    proportion of text as the 1080 px picture the base size was chosen for (1080 short side -> 32 px)."""
+    return max(12, int(round(min(int(W), int(H)) / _OVERLAY_BASE_SHORT_SIDE * _OVERLAY_BASE_FONT)))
+
+
 def _load_overlay_font(font_size: int):
     from PIL import ImageFont
     import platform, glob, os
@@ -1301,7 +1311,7 @@ def _draw_subtitle_bar(draw, W: int, H: int, m: dict, y_offset: int = 0) -> None
 
 
 def apply_dual_text_overlay(image_path: str, narration_text: str, subtitle_text: str,
-                             style: str, position: str = "bottom", font_size: int = 32) -> bool:
+                             style: str, position: str = "bottom", font_size: int | None = None) -> bool:
     """TEXT-CHANNEL-A1: draw narration and subtitle/dialogue as two independent PIL channels. Field
     presence decides whether each draws: narration -> adaptive narration card (narration_box_pil),
     subtitle_text -> fixed bottom subtitle bar, both -> both, neither -> no-op (returns True).
@@ -1320,6 +1330,8 @@ def apply_dual_text_overlay(image_path: str, narration_text: str, subtitle_text:
         subjects = _safe_detect_subjects(image_path) if narration_text else None   # pristine file
         img = Image.open(image_path).convert("RGBA")
         W, H = img.size
+        if not font_size:
+            font_size = overlay_font_size(W, H)         # None = scale with the picture
         overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
         ok = True
@@ -1349,7 +1361,7 @@ def apply_dialogue_overlay(
     text,
     style: str,          # "caption_box" | "subtitle_bar" | "narration_box" | "narration_box_pil"
     position: str,       # "top" | "bottom"
-    font_size: int = 32,
+    font_size: int | None = None,     # None = scale with the picture (overlay_font_size)
     y_offset: int = 0,   # compat: lifts caption_box / narration_box / subtitle_bar off the bottom edge;
                          # for narration_box_pil it is RESERVED bottom space to avoid (not a position offset)
 ) -> bool:
@@ -1377,6 +1389,8 @@ def apply_dialogue_overlay(
 
         img = Image.open(image_path).convert("RGBA")
         W, H = img.size
+        if not font_size:
+            font_size = overlay_font_size(W, H)         # None = scale with the picture
         overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
         font = _load_overlay_font(font_size)

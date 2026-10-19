@@ -200,6 +200,7 @@ from .visual_direction import (
 from .help_docs import load_help_tabs
 from . import comfy_api as _comfy_api_mod
 from . import llm_overrides as _llm_overrides
+from . import fill_conversation as _fc_tokens
 from .storage    import (_load, _save, list_stories, list_projects, project_exists, format_project_time,
                          save_story, load_story, delete_story, load_credentials, save_credentials)
 from .ui_helpers import po, br, divider, _dlg_to_str, _pil_overlay_text, _pil_overlay_texts, pil_overlay_applies, block_prompt_format_rule, runtime_dialogue_prompt, assemble_runtime_prompt, section, collapsible_section, group_header
@@ -9335,11 +9336,11 @@ def main(page: ft.Page):
                           tooltip="Settings", width=30, height=30, padding=0, on_click=_open_sys_dialog),
             # ── Divider ────────────────────────────────────────────────
             ft.Container(width=1, height=24, bgcolor=C["border2"]),
-            # ── Spacer (the B notice banner expands into the free space itself) ──
-            ft.Container(expand=True),
             # ── กลุ่ม 3: Status + Stop (right) ────────────────────────
+            # The status text takes the free space and is right-aligned; the spinner follows it, so the two stay together at the right (the spinner used to sit at the
+            # left edge of the expanded status area, in the middle of the toolbar). The B notice banner expands into the free space itself when it is shown.
             b_salvage_banner,
-            ft.Row([llm_prog, status_lbl], spacing=6, expand=True,
+            ft.Row([status_lbl, llm_prog], spacing=6, expand=True,
                    alignment=ft.MainAxisAlignment.END, vertical_alignment=ft.CrossAxisAlignment.CENTER),
             ft.Container(width=1, height=24, bgcolor=C["border2"]),
             stop_btn,
@@ -9517,6 +9518,7 @@ def main(page: ft.Page):
     _story_chat_last_json: list[str] = [""]
     _story_chat_wf_template: list      = [None]
     _story_chat_busy: list[bool]      = [False]
+    _story_chat_tokens: list[int]     = [0]      # ESTIMATE of what the Comfy chat session already holds (messages and replies; the system prompt is counted per check)
 
     story_chat_list = ft.ListView(spacing=6, expand=True, auto_scroll=True)
     _story_chat_height: list[float] = [200.0]
@@ -9564,6 +9566,7 @@ def main(page: ft.Page):
     def _story_chat_new_session(e=None):
         _story_chat_session_id[0] = uuid.uuid4().hex[:8]
         _story_chat_sent_json[0] = False
+        _story_chat_tokens[0] = 0
         _story_chat_wf_template[0] = None
         story_chat_list.controls.clear()
         story_chat_list.update()
@@ -9855,6 +9858,27 @@ def main(page: ft.Page):
         story_chat_list.controls.append(preview_box)
         if story_chat_list.page: story_chat_list.update()
 
+    _STORY_CHAT_N_CTX = 32768       # what run_llm_chat asks the local node for (PROGRAM mode); WORKFLOW mode uses the workflow's own n_ctx
+
+    def _story_chat_context_problem(wf_tpl, system_prompt: str, text: str, fresh_text: str, max_tok: int) -> str:
+        """Local model only. Estimate (it over-counts a little: the safe side) whether system prompt + the session so far + this message + the room reserved for the reply fit the
+        context window. A prompt that does not fit makes the Comfy node hang the queue instead of failing, so nothing is sent and the user is told why. Returns '' when it fits."""
+        n_ctx = _llm_overrides.effective_n_ctx(wf_tpl, _STORY_CHAT_N_CTX)
+        _est = _fc_tokens.estimate_tokens
+        _msg_oh = _fc_tokens.PER_MESSAGE_OVERHEAD
+        base = _fc_tokens.BASE_OVERHEAD + _est(system_prompt) + _msg_oh
+        need = base + _story_chat_tokens[0] + _est(text) + _msg_oh + max_tok
+        if need <= n_ctx:
+            return ""
+        fresh = base + _est(fresh_text) + _msg_oh + max_tok
+        if fresh > n_ctx:
+            return (f"⚠ Not sent: the project is too large for this model's context window. A new chat would need about {fresh:,} tokens "
+                    f"(system prompt + the whole project ≈ {base + _est(fresh_text):,}, plus {max_tok:,} reserved for the reply) but the window is {n_ctx:,}. "
+                    "Lower the reply-length limit in Settings, raise n_ctx in the LLM workflow, or use Grok for this chat.")
+        return (f"⚠ Not sent: this chat is full. It would need about {need:,} tokens (the earlier conversation ≈ {_story_chat_tokens[0]:,}, "
+                f"plus this message and {max_tok:,} reserved for the reply) but the window is {n_ctx:,}. "
+                "Press New Session (the project is sent again, the earlier conversation is dropped), then ask again.")
+
     async def _send_story_chat(e=None):
         if _story_chat_busy[0]: return
         msg = story_chat_input.value.strip()
@@ -9880,22 +9904,45 @@ def main(page: ft.Page):
             raw_json_str = json.dumps(_build_raw_data(), ensure_ascii=False, indent=2)
             if not _story_chat_sent_json[0]:
                 combined = f"=== FULL STORY JSON ===\n{raw_json_str}\n\n=== USER MESSAGE ===\n{msg}"
+                if not _is_grok:
+                    _problem = _story_chat_context_problem(wf_tpl, _build_story_chat_sys(), combined, combined, _llm_tokens_outline[0])
+                    if _problem:
+                        _story_chat_bubble(_problem, is_user=False)
+                        _story_chat_busy[0] = False
+                        story_chat_status.value = ""; story_chat_status.update()
+                        return
                 raw = await run_llm_chat(combined, wf_tpl, _story_chat_session_id[0],
                                          system_prompt=_build_story_chat_sys(), on_log=_llm_log,
                                          reset=True, max_tokens=_llm_tokens_outline[0],
                                          grok_api_key=_grok_api_key[0], grok_model=_grok_model[0])
                 _story_chat_sent_json[0] = True
                 _story_chat_last_json[0] = raw_json_str
+                if raw:
+                    _story_chat_tokens[0] = (_fc_tokens.estimate_tokens(combined) + _fc_tokens.estimate_tokens(raw)
+                                             + 2 * _fc_tokens.PER_MESSAGE_OVERHEAD)
             else:
+                _prev_json = _story_chat_last_json[0]
                 if raw_json_str != _story_chat_last_json[0]:
                     msg = ("=== UPDATED FULL STORY JSON (the project changed since the earlier JSON; "
                            "this version REPLACES it — ignore the old one) ===\n"
                            f"{raw_json_str}\n\n=== USER MESSAGE ===\n{msg}")
                     _story_chat_last_json[0] = raw_json_str
+                if not _is_grok:
+                    _fresh = f"=== FULL STORY JSON ===\n{raw_json_str}\n\n=== USER MESSAGE ===\n{msg}"
+                    _problem = _story_chat_context_problem(wf_tpl, _build_story_chat_sys(), msg, _fresh, _llm_tokens_outline[0])
+                    if _problem:
+                        _story_chat_last_json[0] = _prev_json       # nothing was sent: the next try must still see the project as changed
+                        _story_chat_bubble(_problem, is_user=False)
+                        _story_chat_busy[0] = False
+                        story_chat_status.value = ""; story_chat_status.update()
+                        return
                 raw = await run_llm_chat(msg, wf_tpl, _story_chat_session_id[0],
                                          system_prompt=_build_story_chat_sys(), on_log=_llm_log,
                                          reset=False, max_tokens=_llm_tokens_outline[0],
                                          grok_api_key=_grok_api_key[0], grok_model=_grok_model[0])
+                if raw:
+                    _story_chat_tokens[0] += (_fc_tokens.estimate_tokens(msg) + _fc_tokens.estimate_tokens(raw)
+                                              + 2 * _fc_tokens.PER_MESSAGE_OVERHEAD)
             if raw:
                 obj, explanation, partial = _parse_story_chat_reply(raw)
                 if explanation:
