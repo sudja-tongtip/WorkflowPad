@@ -14,7 +14,7 @@ except ImportError:
 # ── App metadata ──────────────────────
 APP_ID      = "image_editor"
 APP_NAME    = "Image Editor"
-APP_VERSION = "0.1.6"   # SemVer; see RELEASE.md
+APP_VERSION = "0.1.7"   # SemVer; see RELEASE.md
 
 # ── Config ────────────────────────────────────────────────────────────
 COMFY_HOST  = "127.0.0.1:8188"
