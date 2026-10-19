@@ -72,7 +72,7 @@ def _build_router_user_prompt(story_text: str, contract: str | None = None) -> s
     return "INPUT:\n" + (story_text or "") + "\n\n" + _contract(contract)[1]["reminder"]
 
 
-_TEMPLATE_TAIL_RE = re.compile(r"(?:\s*</?(?:end_of_turn|start_of_turn|eos)>)+\s*$")        # chat-template end markers a local model may leak after its answer
+_TEMPLATE_TAIL_RE = re.compile(r"(?:\s*</?(?:end_of_turn|end_turn|start_turn|start_of_turn|eos)>)+\s*$")        # chat-template end markers a local model may leak after its answer
 
 
 def _strip_template_tail(raw: str | None) -> str:

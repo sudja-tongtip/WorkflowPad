@@ -9,7 +9,7 @@ from pathlib import Path
 # ── App metadata (single source of truth for Story Generator) ──────────
 APP_ID      = "story_generator"
 APP_NAME    = "Story Generator"
-APP_VERSION = "0.1.6"   # SemVer; see RELEASE.md
+APP_VERSION = "0.1.7"   # SemVer; see RELEASE.md
 
 # ── Config ────────────────────────────────────────────────────────────
 # App root = the folder that holds comfy_apis/, icons/, stories/ ... Source run: the project folder. Frozen

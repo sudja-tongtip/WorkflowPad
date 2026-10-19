@@ -247,7 +247,7 @@ def _parse_events(raw: str | None, n_expected: int) -> tuple[list[dict] | None, 
 # ---------------------------------------------------------------------------------------------------------------------------------
 # the conversation
 # ---------------------------------------------------------------------------------------------------------------------------------
-_TEMPLATE_END_RE = re.compile(r"(?:\s*</?(?:end_of_turn|eos|start_of_turn)>)+\s*$")      # chat-template end markers a local model may leak after its answer
+_TEMPLATE_END_RE = re.compile(r"(?:\s*</?(?:end_of_turn|end_turn|start_turn|eos|start_of_turn)>)+\s*$")      # chat-template end markers a local model may leak after its answer
 
 
 def _strip_template_tail(raw: str) -> tuple[str, list[str]]:
