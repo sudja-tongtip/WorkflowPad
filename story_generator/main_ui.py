@@ -1096,6 +1096,17 @@ def main(page: ft.Page):
         _dialogue_dd_ref=_dialogue_dd_ref,
         ensure_yolo_fn=lambda: _maybe_offer_yolo(),
     )
+
+    _rebuild_shots_col_raw = rebuild_shots_col
+
+    def rebuild_shots_col(*_a, **_k):
+        """The shot list changed (outline, project load, clear...): Checker / Director buttons follow the kind of shots now on screen (Static Pose shots hide them)."""
+        _r = _rebuild_shots_col_raw(*_a, **_k)
+        try:
+            _sync_manga_agent_availability()
+        except NameError:          # during start-up, before the function exists
+            pass
+        return _r
     _thumb_registry_ref[0] = _thumb_registry
 
     # ── Loop settings ─────────────────────────────────────────────────
@@ -2817,16 +2828,17 @@ def main(page: ft.Page):
         from Manga vNext mode alone — never touched from any other call site, so Normal behavior is
         restored exactly by simply turning Manga vNext off again."""
         _mv = _manga_vnext_mode[0]
+        _sp = _shots_are_static_pose()          # Static Pose Fill shots: complete prompts, nothing for the Checker / Director (they read sheets and Fill's blocks)
         # Checker: visible but disabled (§42) — never hidden, so its presence/unavailability is
-        # obvious rather than looking like the feature vanished.
-        check_prompts_btn.visible = True
+        # obvious rather than looking like the feature vanished. (Static Pose shots: hidden.)
+        check_prompts_btn.visible = not _sp
         check_prompts_btn.disabled = _mv or llm_busy[0]
         check_prompts_btn.tooltip = _MANGA_VNEXT_CHECKER_TIP if _mv else _check_prompts_btn_tooltip_normal[0]
-        _auto_check_switch.disabled = _mv
+        _auto_check_switch.disabled = _mv or _sp
         # Director: hidden entirely (§44).
-        director_prompts_btn.visible = not _mv
+        director_prompts_btn.visible = (not _mv) and (not _sp)
         director_prompts_btn.tooltip = _director_prompts_btn_tooltip_normal[0] if not _mv else _MANGA_VNEXT_DIRECTOR_TIP
-        _auto_director_switch.disabled = _mv
+        _auto_director_switch.disabled = _mv or _sp
         # Vision: unavailable (§45) — keep hidden the same way it is already hidden in Normal mode
         # elsewhere in the app; only actively hide here when Manga vNext turns it off, never force
         # it visible when Manga vNext turns off (Normal's own existing visibility rule wins).
@@ -6925,6 +6937,7 @@ def main(page: ft.Page):
         if from_review or not outline_review_dialog.open:
             _outline_shots_backup[:] = [dict(s) for s in shots_data]
         _outline_events[0] = []
+        outline_chat_btn.disabled = True            # there is no B conversation to continue
         _b_run_state[0] = "RUNNING"
         _set_outline_phase("PASS_B")
         _outline_timer_start("🎭 Static Pose Fill: removing the style words...")

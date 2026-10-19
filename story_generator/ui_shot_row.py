@@ -1249,6 +1249,11 @@ def build_shot_col(
         # ใน Fill) — ซ่อนปุ่มไปเลยแทนที่จะเปิด session ใหม่ที่ไม่เกี่ยวกับตอน fill จริง
         if shot.get("_fill_backend") == "grok":
             regen_chat_btn.visible = False
+        if shot.get("_static_pose"):
+            # Static Pose Fill shot: the prompt is complete. Image Prompt (Fill) would rewrite it; the Checker / Director read the sheets and Fill's blocks this shot does not have.
+            regen_quick_btn.visible = False
+            check_shot_btn.visible = False
+            director_shot_btn.visible = False
         # REGEN-MANGA-BLOCK-A1 (Part C): generic chat Regen is not structurally capable of safely
         # editing Manga vNext's canonical shot["_manga_page_spec"]["panels"][j]["desc"] — it only
         # knows how to write flat top-level shot_desc/narration/speech_char/subtitle, which would
