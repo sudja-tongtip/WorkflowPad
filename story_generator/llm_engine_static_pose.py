@@ -1,14 +1,16 @@
 """
-llm_engine_static_pose.py - STATIC POSE FILL: a still picture prompt becomes a set of shots that differ in pose, facial expression, emotion and camera.
+llm_engine_static_pose.py - POSE VARIATIONS (internal name: static pose): ONE image prompt becomes a set of prompts that differ in pose, facial expression, emotion and camera.
 
-No Story Bible, no sheets, no Beat Sheet, no B and no Fill: the user's own prompt is the source and the writer.
+No Story Bible, no sheets, no cast list, no Beat Sheet, no B and no Fill: the user's own prompt, taken as ONE complete visual composition, is the source and the writer.
 
-    1. BASE   one call: the prompt without its STYLE words (art style, medium, quality tags). The app adds the style itself at render time.
-    2. PLAN   one call: N shots, each with pose / expression / emotion / camera. No story; the shots only have to differ.
-    3. WRITE  one call per shot: the base prompt rewritten for that shot. Only the four things change; everything else stays as written.
+    1. BASE   one call: the prompt without its STYLE words (art style, medium, rendering look, quality tags). The words that were removed come back as the
+              source style. The app adds the style itself at render time.
+    2. PLAN   one call: N variations, each with pose / expression / emotion / camera. No story, no events; the variations only have to differ.
+    3. WRITE  one call per shot: the SAME base prompt rewritten for that shot (never the previous shot's prompt, so nothing drifts from shot to shot).
 
-Python only checks STRUCTURE (the tag is there, the text is not empty, the count is right, nothing is a copy of another shot, no tag left inside the prompt).
-It never reads the meaning of the prompt or of the answer. Every call is a fresh session: nothing grows, so a long run cannot overfill the model's context.
+Python only checks STRUCTURE (the tag is there, the text is not empty, the count is right, no two plans are the same, no tag left inside, the answer is not just the plan).
+It never reads the meaning of the prompt or of the answer, so it can NOT guarantee that every subject, object or garment of the original survived: that is up to the model.
+Every call is a fresh session: nothing grows, so a long run cannot overfill the model's context.
 """
 
 from __future__ import annotations
@@ -22,7 +24,7 @@ from .constants import LLM_DIR
 from .llm_engine_a1 import GROK_MARKER, _call_grok_text, _call_local_text
 from . import fill_conversation as _fc
 
-__version__ = "20261019_static_pose_1"
+__version__ = "20261020_pose_variations_2"
 
 _MAX_ATTEMPTS = 3
 _FIELDS = ("pose", "expression", "emotion", "camera")
@@ -41,13 +43,25 @@ def _norm(text: str) -> str:
     return " ".join((text or "").lower().split())
 
 
+def _loose(text: str) -> str:
+    """Lower case, every character that is not a letter or a digit becomes a space, runs of spaces collapse: two texts that differ only in spacing,
+    punctuation or capitals have the same loose form."""
+    return " ".join(re.sub(r"[^\w]+|_", " ", (text or "").lower()).split())
+
+
+def _word_set(text: str) -> str:
+    """The same words in any order: the loose form with its words sorted and repeated words dropped (a plan that only re-phrases the order of its words is not new)."""
+    return " ".join(sorted(set(_loose(text).split())))
+
+
 def _build_base_user(prompt: str) -> str:
     return (
-        "Below is an image prompt. Remove its STYLE words and change nothing else.\n"
-        "STYLE words name the art style, the medium or the rendering look, and quality tags: for example \"oil painting\", \"digital art\", \"anime style\", "
+        "Below is an image prompt. Take its STYLE words out and change nothing else.\n"
+        "STYLE words are ONLY words that name the art style, the medium, the rendering look, or quality tags: for example \"oil painting\", \"digital art\", \"anime style\", "
         "\"cinematic\", \"photorealistic\", \"masterpiece\", \"highly detailed\", \"8k\", \"film grain\".\n"
-        "Keep everything that says what is IN the picture: the person, face, hair, clothing, body, pose, objects, place, light, colours, mood and camera framing.\n"
-        "Keep the original wording, order and language of everything you keep. Do not add, explain or rewrite anything.\n"
+        "Everything that is not style stays exactly as written: do not summarise, shorten or rewrite anything. Keep the original language, the order of the text and the details. "
+        "Keep the number and the kind of the subjects (people, animals, objects), their clothing, the objects, the location, the lighting, the colours, the mood and the camera framing "
+        "exactly as the prompt gives them.\n"
         "Reply in exactly this format and nothing else:\n"
         "<base_prompt>the prompt without the style words</base_prompt>\n"
         "<source_style>the style words you removed, as one short comma-separated style description (empty if the prompt had no style words)</source_style>\n\n"
@@ -60,12 +74,18 @@ def _build_plan_user(base: str, n: int, previous_problems: list[str] | None = No
     more = "" if n <= 3 else f"\n... and so on up to <shot_{n}>"
     fix = ("\nYour previous reply could not be accepted: " + "; ".join(previous_problems[:4]) + ". Write the complete plan again.\n") if previous_problems else ""
     return (
-        f"Plan {n} different shots of the SAME person in the SAME place for an image generator. The picture description below is the starting picture.\n"
-        "For every shot choose a new pose, a new facial expression, a new emotion and a new camera angle or distance. There is no story: the shots only need to be varied and good to look at.\n"
-        "Rules: every shot differs from the others and from the starting picture in its pose AND its expression; a pose must be physically possible for this person in this place; "
-        "do not change the person, clothing, hair, objects, place or light; write each field as plain visual words (body positions, face, camera), not pronouns alone.\n"
+        "Treat the original image prompt below as one complete visual composition. "
+        f"Plan {n} variations by changing poses, facial expressions where applicable, emotions and camera perspectives. "
+        "Preserve all original subjects, clothing, objects, environment and lighting. Do not add characters, remove subjects or invent story events.\n"
+        "Rules:\n"
+        "- Keep every subject that the prompt has. Do not assume there is one person: there may be several people, animals or objects.\n"
+        "- If there are several subjects, change their poses together in a way that suits the whole composition.\n"
+        "- The pose of every variation differs from the original and from the other variations.\n"
+        "- Expression and emotion must fit the subjects that really exist. Do not give a human expression to something without a face: write none for expression (and for emotion if it does not apply) in that case.\n"
+        "- The camera may change angle, distance and framing, but must not hide the important details of the original.\n"
+        "- No action sequence and no story progression: the variations are separate, independent pictures of the same composition.\n"
         f"Reply in exactly this format for shot 1 to shot {n} and nothing else:\n{blocks}{more}\n{fix}\n"
-        f"PICTURE DESCRIPTION:\n{base}"
+        f"ORIGINAL PROMPT:\n{base}"
     )
 
 
@@ -88,43 +108,57 @@ def _parse_plan(raw: str | None, n: int) -> tuple[list[dict] | None, list[str]]:
         shots.append(item)
     if problems:
         return None, problems
-    seen_pose: dict[str, int] = {}
+    # The same pose twice: exact, or the same after spacing / punctuation / capitals / word order are ignored. Different words are NOT taken to mean a different pose, and
+    # same words are not proof of the same pose either: this only catches a plan that repeats itself in the plainest ways.
+    seen_loose: dict[str, int] = {}
+    seen_words: dict[str, int] = {}
     for i, it in enumerate(shots, 1):
-        key = _norm(it["pose"])
-        if key in seen_pose:
-            problems.append(f"shot {i} repeats the pose of shot {seen_pose[key]}")
-        else:
-            seen_pose[key] = i
+        k1, k2 = _loose(it["pose"]), _word_set(it["pose"])
+        first = seen_loose.get(k1) or seen_words.get(k2)
+        if first:
+            problems.append(f"shot {i} repeats the pose of shot {first}")
+            continue
+        seen_loose[k1] = i
+        seen_words[k2] = i
     return (None, problems) if problems else (shots, [])
 
 
 def _build_shot_user(base: str, plan: dict, previous_problems: list[str] | None = None) -> str:
-    fix = ("\nYour previous reply could not be accepted: " + "; ".join(previous_problems[:3]) + ". Write the complete description again.\n") if previous_problems else ""
+    fix = ("\nYour previous reply could not be accepted: " + "; ".join(previous_problems[:3]) + ". Write the complete prompt again.\n") if previous_problems else ""
     return (
-        "Rewrite the picture description below for a new shot.\n"
-        "Change ONLY these four things, in the places where the description already speaks about the pose, the face, the mood and the camera:\n"
+        "Rewrite the original image prompt below as the complete prompt of one new shot.\n"
+        "Change the pose, the expression, the emotion and the camera to this plan:\n"
         f"pose: {plan['pose']}\nexpression: {plan['expression']}\nemotion: {plan['emotion']}\ncamera: {plan['camera']}\n"
-        "Everything else stays as written: the person, face shape, hair, clothing, body, objects, place, light and colours. Remove every sentence or phrase that still describes the old pose, "
-        "the old expression or the old camera. Do not add style words (no art style, medium or quality tags). Keep the language and the wording of the description as much as you can.\n"
-        f"Reply with the complete new description inside <prompt></prompt> and nothing else.\n{fix}\n"
-        f"PICTURE DESCRIPTION:\n{base}"
+        "Rules:\n"
+        "- Where the original already speaks about the pose, the face, the mood or the camera, replace it. If the original has no clear pose or camera, add the short description that is needed.\n"
+        "- Remove every phrase that still describes the old pose, expression or camera and that contradicts the new one.\n"
+        "- Keep everything else of the original: the subjects, clothing, objects, location, lighting and colours, with the wording of the original as far as you can.\n"
+        "- Do not add people, objects or events. Do not add style words (no art style, medium, rendering look or quality tags): the style is handled separately.\n"
+        "- Write the whole prompt, not a list of what changed.\n"
+        f"Reply with the complete rewritten prompt inside <prompt></prompt> and nothing else.\n{fix}\n"
+        f"ORIGINAL PROMPT:\n{base}"
     )
 
 
-def _check_shot_prompt(text: str | None, base: str) -> list[str]:
+def _check_shot_prompt(text: str | None, base: str, plan: dict | None = None) -> list[str]:
+    """Structure only. A short or odd answer is caught; whether every person, object and garment survived is NOT checked here."""
     t = (text or "").strip()
     if not t:
         return ["the <prompt> block is missing or empty"]
     problems = []
     if re.search(r"</?[A-Za-z_][\w.\-]*>", t):
-        problems.append("a tag is left inside the description")
+        problems.append("a tag is left inside the prompt")
     ratio = len(t) / max(len(base), 1)
     if ratio < _SHOT_MIN_RATIO:
-        problems.append("the description is much shorter than the original")
+        problems.append("the prompt is much shorter than the original")
     elif ratio > _SHOT_MAX_RATIO:
-        problems.append("the description is much longer than the original")
-    if _norm(t) == _norm(base):
-        problems.append("the description is unchanged")
+        problems.append("the prompt is much longer than the original")
+    if _loose(t) == _loose(base):
+        problems.append("the prompt is unchanged")
+    if len(re.findall(r"(?im)^[ \t]*(?:pose|expression|emotion|camera)[ \t]*:", t)) >= 2:
+        problems.append("the answer lists the plan fields instead of writing the prompt")
+    if plan and _loose(t) == _loose(" ".join(str(plan.get(k) or "") for k in _FIELDS)):
+        problems.append("the answer is only the plan")
     return problems
 
 
@@ -149,29 +183,29 @@ async def run_static_pose_fill(
     on_shot=None,
     stop_event: asyncio.Event | None = None,
 ) -> dict | None:
-    """Returns {"base_prompt": str, "source_style": str (the removed style words), "plan": [...], "shots": [native shot dicts], "failed": [shot numbers]} or None when the base prompt or the plan could not be made
-    (on_err has been told why). A shot whose prompt could not be written is kept with an empty prompt and "_fill_failed": True."""
+    """Pose Variations. Returns {"base_prompt": str, "source_style": str (the removed style words), "plan": [...], "shots": [native shot dicts], "failed": [shot numbers]} or None
+    when the base prompt or the plan could not be made (on_err has been told why). A shot whose prompt could not be written is kept with an empty prompt and "_fill_failed": True."""
     source = (static_prompt or "").strip()
     n = int(n_shots or 0)
     if not source:
-        await on_err("Static Pose Fill: the input is empty")
+        await on_err("Pose Variations: the input is empty")
         return None
     if n < 1:
-        await on_err("Static Pose Fill: the number of shots must be at least 1")
+        await on_err("Pose Variations: the number of shots must be at least 1")
         return None
     wf_template = None
     if llm_wf_file != GROK_MARKER:
         if not (llm_wf_file or "").strip():
-            await on_err("Static Pose Fill: no local LLM workflow selected")
+            await on_err("Pose Variations: no local LLM workflow selected")
             return None
         wf_path = LLM_DIR / f"{llm_wf_file}.json"
         if not wf_path.exists():
-            await on_err(f"Static Pose Fill: workflow not found: {wf_path}")
+            await on_err(f"Pose Variations: workflow not found: {wf_path}")
             return None
         try:
             wf_template = json.loads(wf_path.read_text(encoding="utf-8"))
         except Exception as exc:
-            await on_err(f"Static Pose Fill: workflow read failed: {exc}")
+            await on_err(f"Pose Variations: workflow read failed: {exc}")
             return None
 
     async def log(msg: str):
@@ -187,7 +221,7 @@ async def run_static_pose_fill(
     problems: list[str] = []
     for attempt in range(1, _MAX_ATTEMPTS + 1):
         if stopped():
-            await on_err("Static Pose Fill: stopped")
+            await on_err("Pose Variations: stopped")
             return None
         raw = await _ask(llm_wf_file, wf_template, _build_base_user(source), max_tokens=_tokens_for(source, 1.4, 256, 4096),
                          grok_api_key=grok_api_key, grok_model=grok_model, on_log=on_log)
@@ -202,11 +236,11 @@ async def run_static_pose_fill(
         if not problems:
             base = cand.strip()
             style = " ".join((_tag(raw, "source_style") or "").split())      # the removed style words: they go to the project's "as source" style
-            await log(f"ℹ Static Pose Fill: base prompt ready (attempt {attempt}), {len(source)} -> {len(base)} characters; source style: {style!r}")
+            await log(f"ℹ Pose Variations: base prompt ready (attempt {attempt}), {len(source)} -> {len(base)} characters; source style: {style!r}")
             break
-        await log(f"⚠ Static Pose Fill: base prompt attempt {attempt}: " + "; ".join(problems))
+        await log(f"⚠ Pose Variations: base prompt attempt {attempt}: " + "; ".join(problems))
     if base is None:
-        await on_err("Static Pose Fill: the style words could not be removed after 3 attempts - " + "; ".join(problems))
+        await on_err("Pose Variations: the style words could not be removed after 3 attempts - " + "; ".join(problems))
         return None
 
     # 2. PLAN: N different poses
@@ -214,36 +248,36 @@ async def run_static_pose_fill(
     problems = []
     for attempt in range(1, _MAX_ATTEMPTS + 1):
         if stopped():
-            await on_err("Static Pose Fill: stopped")
+            await on_err("Pose Variations: stopped")
             return None
         raw = await _ask(llm_wf_file, wf_template, _build_plan_user(base, n, problems if attempt > 1 else None), max_tokens=min(8192, 400 + 140 * n),
                          grok_api_key=grok_api_key, grok_model=grok_model, on_log=on_log)
         plan, problems = _parse_plan(raw, n)
         if plan is not None:
-            await log(f"ℹ Static Pose Fill: {n} poses planned (attempt {attempt})")
+            await log(f"ℹ Pose Variations: {n} variations planned (attempt {attempt})")
             break
-        await log(f"⚠ Static Pose Fill: plan attempt {attempt}: " + "; ".join(problems))
+        await log(f"⚠ Pose Variations: plan attempt {attempt}: " + "; ".join(problems))
     if plan is None:
-        await on_err("Static Pose Fill: the pose plan was not accepted after 3 attempts - " + "; ".join(problems))
+        await on_err("Pose Variations: the plan was not accepted after 3 attempts - " + "; ".join(problems))
         return None
 
-    # 3. WRITE: one prompt per shot
+    # 3. WRITE: one prompt per shot, every one from the SAME base prompt
     shots: list[dict] = []
     failed: list[int] = []
     for i, item in enumerate(plan, 1):
         if stopped():
-            await log("⏹ Static Pose Fill: stopped by the user")
+            await log("⏹ Pose Variations: stopped by the user")
             break
         written, problems = None, []
         for attempt in range(1, _MAX_ATTEMPTS + 1):
             raw = await _ask(llm_wf_file, wf_template, _build_shot_user(base, item, problems if attempt > 1 else None), max_tokens=_tokens_for(base, 1.8, 384),
                              grok_api_key=grok_api_key, grok_model=grok_model, on_log=on_log)
             cand = _tag(raw, "prompt")
-            problems = _check_shot_prompt(cand, base)
+            problems = _check_shot_prompt(cand, base, item)
             if not problems:
                 written = cand.strip()
                 break
-            await log(f"⚠ Static Pose Fill: shot {i} attempt {attempt}: " + "; ".join(problems))
+            await log(f"⚠ Pose Variations: shot {i} attempt {attempt}: " + "; ".join(problems))
         shot = {
             "shot": i,
             "uses": [],
@@ -262,7 +296,7 @@ async def run_static_pose_fill(
         if written is None:
             shot["_fill_failed"] = True
             failed.append(i)
-            await log(f"❌ Static Pose Fill: shot {i} was not accepted after {_MAX_ATTEMPTS} attempts - " + "; ".join(problems))
+            await log(f"❌ Pose Variations: shot {i} was not accepted after {_MAX_ATTEMPTS} attempts - " + "; ".join(problems))
         shots.append(shot)
         if on_shot:
             await on_shot(i - 1, shot, n)
