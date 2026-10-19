@@ -108,11 +108,17 @@ def _clean(raw: str | None) -> str:
     return _strip_code_fence(raw or "")
 
 
+_LONE_MARKER_RE = re.compile(r"</?([A-Za-z_][\w.\-]*)\s*/?>")
+
+
 def _outside(text: str, patterns: list) -> str:
     """Whatever is left of the reply after removing the expected tagged blocks (must be whitespace only)."""
     rest = text
     for p in patterns:
         rest = p.sub("", rest)
+    # A lone marker such as </start_turn> or <end_turn> carries no data. Its name is not one of the expected tags, so it is a leaked chat-template
+    # token, not content; drop the marker itself. Text that sits next to a marker (or inside an unexpected <x>...</x>) is still a fault.
+    rest = _LONE_MARKER_RE.sub(lambda m: m.group(0) if any(m.group(1) in p.pattern for p in patterns) else "", rest)
     return rest.strip()
 
 

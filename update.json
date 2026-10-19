@@ -1,32 +1,32 @@
 {
   "story_generator": {
     "name": "Story Generator",
-    "version": "0.1.7",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.7/WorkflowPad-v0.1.7-Beta.zip",
-    "notes": "Story Generator: Prompt Format dropdown hidden; Story Bible no longer rejects replies ending in a stray <end_turn> or </start_turn> marker"
+    "version": "0.1.8",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.8/WorkflowPad-v0.1.8-Beta.zip",
+    "notes": "Story Generator: Prompt Format dropdown hidden; Story Bible ignores stray chat-template markers (e.g. <end_turn>, </start_turn>) outside the expected tags"
   },
   "prompt_lab": {
     "name": "Prompt Lab",
-    "version": "0.1.7",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.7/WorkflowPad-v0.1.7-Beta.zip",
-    "notes": "Story Generator: Prompt Format dropdown hidden; Story Bible no longer rejects replies ending in a stray <end_turn> or </start_turn> marker"
+    "version": "0.1.8",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.8/WorkflowPad-v0.1.8-Beta.zip",
+    "notes": "Story Generator: Prompt Format dropdown hidden; Story Bible ignores stray chat-template markers (e.g. <end_turn>, </start_turn>) outside the expected tags"
   },
   "image_editor": {
     "name": "Image Editor",
-    "version": "0.1.7",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.7/WorkflowPad-v0.1.7-Beta.zip",
-    "notes": "Story Generator: Prompt Format dropdown hidden; Story Bible no longer rejects replies ending in a stray <end_turn> or </start_turn> marker"
+    "version": "0.1.8",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.8/WorkflowPad-v0.1.8-Beta.zip",
+    "notes": "Story Generator: Prompt Format dropdown hidden; Story Bible ignores stray chat-template markers (e.g. <end_turn>, </start_turn>) outside the expected tags"
   },
   "gallery_generator": {
     "name": "Gallery Generator",
-    "version": "0.1.7",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.7/WorkflowPad-v0.1.7-Beta.zip",
-    "notes": "Story Generator: Prompt Format dropdown hidden; Story Bible no longer rejects replies ending in a stray <end_turn> or </start_turn> marker"
+    "version": "0.1.8",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.8/WorkflowPad-v0.1.8-Beta.zip",
+    "notes": "Story Generator: Prompt Format dropdown hidden; Story Bible ignores stray chat-template markers (e.g. <end_turn>, </start_turn>) outside the expected tags"
   },
   "batch_editor": {
     "name": "Batch Editor",
-    "version": "0.1.7",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.7/WorkflowPad-v0.1.7-Beta.zip",
-    "notes": "Story Generator: Prompt Format dropdown hidden; Story Bible no longer rejects replies ending in a stray <end_turn> or </start_turn> marker"
+    "version": "0.1.8",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.8/WorkflowPad-v0.1.8-Beta.zip",
+    "notes": "Story Generator: Prompt Format dropdown hidden; Story Bible ignores stray chat-template markers (e.g. <end_turn>, </start_turn>) outside the expected tags"
   }
 }
