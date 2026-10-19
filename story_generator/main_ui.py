@@ -202,6 +202,7 @@ from .visual_direction import (
 from .help_docs import load_help_tabs
 from . import comfy_api as _comfy_api_mod
 from . import llm_overrides as _llm_overrides
+import update_check as _update_check
 from . import fill_conversation as _fc_tokens
 from .storage    import (_load, _save, list_stories, list_projects, project_exists, format_project_time,
                          save_story, load_story, delete_story, load_credentials, save_credentials)
@@ -9366,6 +9367,9 @@ def main(page: ft.Page):
             _slabel("ComfyUI Host"),
             comfy_host_field,
             _shint("Host and port of the running ComfyUI server"),
+            _slabel("Updates"),
+            _update_check.settings_row(ft, page, APP_NAME, APP_VERSION),
+            _shint("One setting for all WorkflowPad programs. A notice only: nothing is downloaded or installed. Once a day the program asks the GitHub releases page of this project."),
         ),
         _tab_col(
             _srow(
@@ -10293,6 +10297,7 @@ def main(page: ft.Page):
             ], expand=True),
         ], spacing=0, expand=True)
     )
+    _update_check.start_notice(ft, page, APP_NAME, APP_VERSION)      # a notice only (GitHub releases, once a day, silent when offline); see update_check.py
 
     rebuild_shots_col()
     _sync_manga_agent_availability()   # MANGA-VNEXT-A1: apply saved manga_vnext_mode's UI state on load
