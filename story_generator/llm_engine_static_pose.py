@@ -91,23 +91,37 @@ def _build_plan_user(base: str, n: int, previous_problems: list[str] | None = No
 
 def _parse_plan(raw: str | None, n: int) -> tuple[list[dict] | None, list[str]]:
     problems: list[str] = []
+    # The <shot_k> tags are only a frame: a small model often shifts a closing tag (</shot_4> after shot 3, a shot without its opening tag). The DATA is the labelled lines, so the
+    # tags are ignored and every "pose:" line starts the next variation, which then collects its expression / emotion / camera lines.
     shots: list[dict] = []
-    for i in range(1, n + 1):
-        block = _tag(raw, f"shot_{i}")
-        if block is None:
-            problems.append(f"<shot_{i}> is missing or not closed")
+    cur: dict | None = None
+    last_key = ""
+    for line in (raw or "").splitlines():
+        clean = re.sub(r"</?shot_\d+\s*>", "", line).strip()
+        if not clean:
             continue
-        item = {}
-        for line in block.splitlines():
-            m = re.match(r"^\s*(pose|expression|emotion|camera)\s*:\s*(.*)$", line, re.IGNORECASE)
-            if m and m.group(1).lower() not in item:
-                item[m.group(1).lower()] = m.group(2).strip()
+        m = re.match(r"^(pose|expression|emotion|camera)\s*:\s*(.*)$", clean, re.IGNORECASE)
+        if m:
+            key, val = m.group(1).lower(), m.group(2).strip()
+            if key == "pose":
+                cur = {"pose": val}
+                shots.append(cur)
+                last_key = "pose"
+            elif cur is not None and key not in cur:
+                cur[key] = val
+                last_key = key
+            continue
+        if cur is not None and last_key and not clean.startswith("<"):     # a value that continues on the next line
+            cur[last_key] = (cur[last_key] + " " + clean).strip()
+    if len(shots) != n:
+        problems.append(f"the plan has {len(shots)} variation(s) instead of {n}")
+    for i, item in enumerate(shots[:n], 1):
         missing = [k for k in _FIELDS if not (item.get(k) or "").strip()]
         if missing:
-            problems.append(f"<shot_{i}> has no " + ", ".join(missing))
-        shots.append(item)
+            problems.append(f"variation {i} has no " + ", ".join(missing))
     if problems:
         return None, problems
+    shots = shots[:n]
     # The same pose twice: exact, or the same after spacing / punctuation / capitals / word order are ignored. Different words are NOT taken to mean a different pose, and
     # same words are not proof of the same pose either: this only catches a plan that repeats itself in the plainest ways.
     seen_loose: dict[str, int] = {}
