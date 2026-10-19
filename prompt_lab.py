@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 import flet as ft
 import os as _os
+import update_check as _update_check
 
 # ── Force UTF-8 stdout/stderr (fix UnicodeEncodeError on Windows) ──────
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -1165,6 +1166,9 @@ def main(page: ft.Page):
             "💡 LLM workflow files (*.json) must be in the comfy_apis/llm/ folder next to this file",
             size=10, color=C["text3"], italic=True,
         ),
+        ft.Divider(height=1, color=C["border"]),
+        _label("Updates"),
+        _update_check.settings_row(ft, page, APP_NAME, APP_VERSION),
     ], spacing=6, tight=True, scroll=ft.ScrollMode.AUTO, expand=True)
 
     cfg_grok_content = ft.Column([
@@ -2040,6 +2044,7 @@ def main(page: ft.Page):
             right_container,
         ]),
     ]))
+    _update_check.start_notice(ft, page, APP_NAME, APP_VERSION)      # a notice only (GitHub releases, once a day, silent when offline); see update_check.py
 
     refresh_list(sel[0])
     load_thumb_for_prompt(sel[0])

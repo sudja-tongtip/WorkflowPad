@@ -63,6 +63,12 @@ Story Generator can use **Grok** (an API key in Settings → Grok API, shared wi
 
 Your stories and settings are **not** in the program folder. They are in `%APPDATA%\WorkflowPad` (stories, last sessions, prompt lists, settings) and `%LOCALAPPDATA%\WorkflowPad` (temporary files, optional debug logs, optional detection models). The Grok key is in `%APPDATA%\StoryGenerator`. Your exported workflows stay in `comfy_apis/` and are not tracked by git.
 
+## Update notice
+
+Once a day each program asks the GitHub releases page of this project whether a newer version exists (one plain web request, nothing about you is sent; GitHub sees your IP address like for any web request). If there is one, a small notice appears with a button that opens the download page in your browser. Nothing is downloaded or installed by the program. It is silent when you are offline.
+
+One switch controls all five programs: Settings → Connection in Story Generator, or the LLM Settings of Prompt Lab, or "Turn off update checks" on the notice itself. The choice, the "skip this version" choice and the last answer are kept in `%APPDATA%\WorkflowPad\update_check.json` (set `"enabled": false` there to turn it off by hand).
+
 ## Build the portable release
 
 ```

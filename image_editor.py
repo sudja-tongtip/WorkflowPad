@@ -4,6 +4,7 @@ Image Editor v2 – Working Folder workspace (edit history lives in the folder),
 import asyncio, base64, json, os, random, shutil, sys, time, urllib.parse, urllib.request, uuid
 from pathlib import Path
 import flet as ft
+import update_check as _update_check
 try:
     import flet_code_editor as fce
     _HAS_FCE = True
@@ -4566,6 +4567,7 @@ async def main(page:ft.Page):
     page.add(ft.Column([header,
         ft.Column([top_panel,history_panel],spacing=0,expand=True),
     ],spacing=0,expand=True))
+    _update_check.start_notice(ft, page, APP_NAME, APP_VERSION)      # a notice only (GitHub releases, once a day, silent when offline); see update_check.py
 
     # ── Drag & Drop images from Explorer ──────────────────────────────────
     def _on_file_drop(e: ft.FileDropEvent):

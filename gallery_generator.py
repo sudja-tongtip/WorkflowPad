@@ -18,6 +18,7 @@ import uuid
 from pathlib import Path
 
 import flet as ft
+import update_check as _update_check
 
 # ── App metadata ──────────────────────
 APP_ID      = "gallery_generator"
@@ -2293,6 +2294,7 @@ async def main(page: ft.Page):
         header,
         ft.Row([center_panel, right_panel], spacing=0, expand=True),
     ], spacing=0, expand=True))
+    _update_check.start_notice(ft, page, APP_NAME, APP_VERSION)      # a notice only (GitHub releases, once a day, silent when offline); see update_check.py
 
 
 ft.app(target=main)
