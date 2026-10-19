@@ -48,7 +48,9 @@ def _build_base_user(prompt: str) -> str:
         "\"cinematic\", \"photorealistic\", \"masterpiece\", \"highly detailed\", \"8k\", \"film grain\".\n"
         "Keep everything that says what is IN the picture: the person, face, hair, clothing, body, pose, objects, place, light, colours, mood and camera framing.\n"
         "Keep the original wording, order and language of everything you keep. Do not add, explain or rewrite anything.\n"
-        "Reply with the prompt without the style words inside <base_prompt></base_prompt> and nothing else.\n\n"
+        "Reply in exactly this format and nothing else:\n"
+        "<base_prompt>the prompt without the style words</base_prompt>\n"
+        "<source_style>the style words you removed, as one short comma-separated style description (empty if the prompt had no style words)</source_style>\n\n"
         f"PROMPT:\n{prompt}"
     )
 
@@ -147,7 +149,7 @@ async def run_static_pose_fill(
     on_shot=None,
     stop_event: asyncio.Event | None = None,
 ) -> dict | None:
-    """Returns {"base_prompt": str, "plan": [...], "shots": [native shot dicts], "failed": [shot numbers]} or None when the base prompt or the plan could not be made
+    """Returns {"base_prompt": str, "source_style": str (the removed style words), "plan": [...], "shots": [native shot dicts], "failed": [shot numbers]} or None when the base prompt or the plan could not be made
     (on_err has been told why). A shot whose prompt could not be written is kept with an empty prompt and "_fill_failed": True."""
     source = (static_prompt or "").strip()
     n = int(n_shots or 0)
@@ -181,6 +183,7 @@ async def run_static_pose_fill(
 
     # 1. BASE: the prompt without its style words
     base = None
+    style = ""
     problems: list[str] = []
     for attempt in range(1, _MAX_ATTEMPTS + 1):
         if stopped():
@@ -198,7 +201,8 @@ async def run_static_pose_fill(
             problems.append("a tag is left inside the base prompt")
         if not problems:
             base = cand.strip()
-            await log(f"ℹ Static Pose Fill: base prompt ready (attempt {attempt}), {len(source)} -> {len(base)} characters")
+            style = " ".join((_tag(raw, "source_style") or "").split())      # the removed style words: they go to the project's "as source" style
+            await log(f"ℹ Static Pose Fill: base prompt ready (attempt {attempt}), {len(source)} -> {len(base)} characters; source style: {style!r}")
             break
         await log(f"⚠ Static Pose Fill: base prompt attempt {attempt}: " + "; ".join(problems))
     if base is None:
@@ -262,4 +266,4 @@ async def run_static_pose_fill(
         shots.append(shot)
         if on_shot:
             await on_shot(i - 1, shot, n)
-    return {"base_prompt": base, "plan": plan, "shots": shots, "failed": failed}
+    return {"base_prompt": base, "source_style": style, "plan": plan, "shots": shots, "failed": failed}

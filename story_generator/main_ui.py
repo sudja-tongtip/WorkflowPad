@@ -6932,6 +6932,10 @@ def main(page: ft.Page):
             shots_data[:] = result["shots"]
             _b_final_n[0] = len(shots_data)
             _b_run_state[0] = "FINISHED_SUCCESS"
+            # The style words taken out of the prompt are the source's style: keep them as "As Source" (Style dropdown), the same place A1 puts the style it reads
+            # from a source. A style the user typed or Groom captured for this same source is kept, exactly as after an A1 run.
+            _adopt_a1_source_style(result.get("source_style") or "")
+            await _llm_log(f"🎬 Static Pose Fill: source style kept as \"As Source\": {(_source_style[0] or '(none)')!r}")
         except Exception as _ex:
             import traceback
             await _llm_log(f"❌ Static Pose Fill exception:\n{traceback.format_exc()}")
