@@ -1,7 +1,7 @@
 """Build the Windows portable release: PyInstaller one-folder EXEs + resources + notices -> folder + ZIP.
 
 Usage:
-    python make_release.py                # build EXEs, validate, stage dist/WorkflowPad-v0.1.8-Beta, zip
+    python make_release.py                # build EXEs, validate, stage dist/WorkflowPad-v0.1.6-Beta, zip
     python make_release.py --skip-build   # re-stage from the last dist/_build/dist output (no PyInstaller run)
     python make_release.py --no-zip       # stage the folder only
 
@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-RELEASE_NAME = "WorkflowPad-v0.1.8-Beta"
+RELEASE_NAME = "WorkflowPad-v0.1.6-Beta"
 BUILD_DIR = ROOT / "dist" / "_build"
 BUILT = BUILD_DIR / "dist" / "WorkflowPad"          # PyInstaller COLLECT output (name set in WorkflowPad.spec)
 EXES = ("StoryGenerator.exe", "ImageEditor.exe", "PromptLab.exe", "BatchEditor.exe", "GalleryGenerator.exe")
