@@ -4273,9 +4273,6 @@ def main(page: ft.Page):
                                    vertical_alignment=ft.CrossAxisAlignment.CENTER),
                         ], spacing=3, tight=True), padding=po(left=0, right=0, top=0, bottom=12)),
                     ),
-                    _og_group("IMAGE PROMPT",
-                        _manga_switch_outline,
-                    ),
                 ], spacing=0, tight=True, expand=True),
                 ft.Column([
                     _og_group("SHOT DESIGN",
