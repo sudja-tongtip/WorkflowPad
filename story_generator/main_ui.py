@@ -353,8 +353,8 @@ def main(page: ft.Page):
     _run_steps    : list[int]  = [saved.get("run_steps", -1)]
     _ext_editor   : list[str]  = [saved.get("ext_editor", "")]
     # "sectioned" ถูกยุบเข้า "sectioned_detailed" — map ค่าเก่าตอนโหลด ไม่งั้น dropdown จะว่าง
-    _prompt_style : list[str]  = [{"sectioned": "sectioned_detailed"}.get(
-        saved.get("prompt_style", "narrative"), saved.get("prompt_style", "narrative"))]   # "narrative" | "tag_style"
+    # The Prompt Format dropdown is hidden (only Narrative is used), so a style saved by an older build must not stay in force unseen.
+    _prompt_style : list[str]  = ["narrative"]   # "narrative" | "tag_style"
     # VISUAL PRESET: the single first-pass visual-direction authority, shared by Outline Settings and the
     # Fill dialog, used by Normal Fill and Manga Fill. A project saved before it existed maps its old
     # Shot Scale preset to the nearest preset; nothing else from the old Fill controls is read.
@@ -4262,7 +4262,6 @@ def main(page: ft.Page):
                         ], spacing=3, tight=True), padding=po(left=0, right=0, top=0, bottom=12)),
                     ),
                     _og_group("IMAGE PROMPT",
-                        _og_field("Prompt Format", outline_prompt_style_dd),
                         _manga_switch_outline,
                     ),
                 ], spacing=0, tight=True, expand=True),
