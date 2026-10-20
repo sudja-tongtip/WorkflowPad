@@ -1,4 +1,4 @@
-# WorkflowPad v0.1.7 Beta — Python dependencies
+# WorkflowPad v0.1.8 Beta — Python dependencies
 # Tested on Python 3.14.6 / Windows 11. Python 3.11+ is expected to work.
 #
 #   pip install -r requirements.txt

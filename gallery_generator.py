@@ -23,7 +23,7 @@ import update_check as _update_check
 # ── App metadata ──────────────────────
 APP_ID      = "gallery_generator"
 APP_NAME    = "Gallery Generator"
-APP_VERSION = "0.1.7"   # SemVer; see RELEASE.md
+APP_VERSION = "0.1.8"   # SemVer; see RELEASE.md
 
 # ── Config ────────────────────────────────────────────────────────────
 COMFY_HOST = "127.0.0.1:8188"
