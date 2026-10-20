@@ -3,30 +3,30 @@
     "name": "Story Generator",
     "version": "0.1.8",
     "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.8/WorkflowPad-v0.1.8-Beta.zip",
-    "notes": "Fill camera variety (view ledger) and clothing continuity (wear ledger); Beat Sheet retries 3 times and stays readable when a macro fails; Pose Variations continues with fewer variations than asked; stray chat-template markers are removed from Fill and Shot List answers"
+    "notes": "Fill camera variety (view ledger) and clothing continuity (wear ledger); Beat Sheet (local) uses a simpler beat format with ===BEAT=== separators instead of paired tags, retries 3 times and stays readable when a macro fails; Pose Variations continues with fewer variations than asked; stray chat-template markers are removed from Fill and Shot List answers"
   },
   "prompt_lab": {
     "name": "Prompt Lab",
     "version": "0.1.8",
     "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.8/WorkflowPad-v0.1.8-Beta.zip",
-    "notes": "Fill camera variety (view ledger) and clothing continuity (wear ledger); Beat Sheet retries 3 times and stays readable when a macro fails; Pose Variations continues with fewer variations than asked; stray chat-template markers are removed from Fill and Shot List answers"
+    "notes": "Fill camera variety (view ledger) and clothing continuity (wear ledger); Beat Sheet (local) uses a simpler beat format with ===BEAT=== separators instead of paired tags, retries 3 times and stays readable when a macro fails; Pose Variations continues with fewer variations than asked; stray chat-template markers are removed from Fill and Shot List answers"
   },
   "image_editor": {
     "name": "Image Editor",
     "version": "0.1.8",
     "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.8/WorkflowPad-v0.1.8-Beta.zip",
-    "notes": "Fill camera variety (view ledger) and clothing continuity (wear ledger); Beat Sheet retries 3 times and stays readable when a macro fails; Pose Variations continues with fewer variations than asked; stray chat-template markers are removed from Fill and Shot List answers"
+    "notes": "Fill camera variety (view ledger) and clothing continuity (wear ledger); Beat Sheet (local) uses a simpler beat format with ===BEAT=== separators instead of paired tags, retries 3 times and stays readable when a macro fails; Pose Variations continues with fewer variations than asked; stray chat-template markers are removed from Fill and Shot List answers"
   },
   "gallery_generator": {
     "name": "Gallery Generator",
     "version": "0.1.8",
     "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.8/WorkflowPad-v0.1.8-Beta.zip",
-    "notes": "Fill camera variety (view ledger) and clothing continuity (wear ledger); Beat Sheet retries 3 times and stays readable when a macro fails; Pose Variations continues with fewer variations than asked; stray chat-template markers are removed from Fill and Shot List answers"
+    "notes": "Fill camera variety (view ledger) and clothing continuity (wear ledger); Beat Sheet (local) uses a simpler beat format with ===BEAT=== separators instead of paired tags, retries 3 times and stays readable when a macro fails; Pose Variations continues with fewer variations than asked; stray chat-template markers are removed from Fill and Shot List answers"
   },
   "batch_editor": {
     "name": "Batch Editor",
     "version": "0.1.8",
     "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.8/WorkflowPad-v0.1.8-Beta.zip",
-    "notes": "Fill camera variety (view ledger) and clothing continuity (wear ledger); Beat Sheet retries 3 times and stays readable when a macro fails; Pose Variations continues with fewer variations than asked; stray chat-template markers are removed from Fill and Shot List answers"
+    "notes": "Fill camera variety (view ledger) and clothing continuity (wear ledger); Beat Sheet (local) uses a simpler beat format with ===BEAT=== separators instead of paired tags, retries 3 times and stays readable when a macro fails; Pose Variations continues with fewer variations than asked; stray chat-template markers are removed from Fill and Shot List answers"
   }
 }

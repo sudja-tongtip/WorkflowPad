@@ -71,6 +71,9 @@ _GROK_REASONING_EFFORT = "low"
 _A2_SYSTEM_PROMPT = """You are the second story editor. Split each macro into ordered beats. Do not add an action the macro does not contain. Do not design camera shots. Name each character with the exact name from CHARACTERS. Return only the requested tags."""
 
 
+_A2_SYSTEM_PROMPT_LOCAL = _A2_SYSTEM_PROMPT.replace("Return only the requested tags.", "Return only the requested beats in the requested format.")
+
+
 def _beat_guard() -> str:
     """Short rules placed next to the request. The long system prompt already states them; a small local model follows the nearby lines."""
     return (
@@ -137,11 +140,13 @@ def _build_one_macro_user_prompt(a1: dict, macro: dict, *, mode: str, desc_lang:
         "Identify the story beats of this target macro event, in order.\n"
         f"{_beat_guard()}\n"
         "OUTPUT FORMAT:\n"
-        "Return one tag per micro-event for this macro event, in this exact form, nothing else:\n"
-        f"<{mid}.1>\nHAPPENS: who is doing what in this beat\nDETAILS: the body and objects at that point of the action\n</{mid}.1>\n"
-        f"IDs use the form {mid}.1 (then {mid}.2... only if needed) in order. Each tag's content is plain prose — write "
-        "it exactly as the story needs, including any quotation marks, punctuation, or line "
-        "breaks; there is no JSON and nothing to escape."
+        "Write the beats of this macro event in order, in exactly this form and nothing else:\n"
+        "HAPPENS: who is doing what in this beat\nDETAILS: the body and objects at that point of the action\n"
+        "===BEAT===\n"
+        "HAPPENS: who is doing what in the next beat\nDETAILS: the body and objects at that point of the action\n"
+        "===END===\n"
+        "One beat is one HAPPENS line and one DETAILS line. Put the line ===BEAT=== between two beats and the line ===END=== after the last beat, also when there is only one beat. "
+        "No tags, no numbering, no other lines. Each line's text is plain prose - write it exactly as the story needs, including any quotation marks and punctuation."
     )
 
 
@@ -360,6 +365,58 @@ def _parse_micro_tags(raw: str | None, *, allowed_parents: set[str], require_par
         problems[:] = why
     return None if why else beats
 
+_BEAT_SEP = "===BEAT==="
+_BEAT_END = "===END==="
+_MARKER_LINE_RE = re.compile(r"^[ \t]*={2,}[ \t]*[A-Za-z_]*[ \t]*={2,}[ \t]*$")
+_LABEL_HAPPENS_RE = re.compile(r"\A[ \t]*HAPPENS[ \t]*:", re.IGNORECASE)
+_LABEL_DETAILS_RE = re.compile(r"(?m)^[ \t]*DETAILS[ \t]*:")
+
+
+def _parse_beat_blocks(raw: str | None, parent: str) -> tuple[list[dict], list[str]]:
+    """STRUCTURE only: (beats, problems) for one macro event. The reply is beat, ===BEAT===, beat ... ===END===. Python splits at the marker lines, numbers the beats parent.1, parent.2 ... and keeps each
+    beat's text exactly as written (outer whitespace trimmed). Refused (problems not empty): empty reply, no ===END=== line (cut off or incomplete), text after ===END===, any other ===MARKER=== line, an
+    empty beat, a beat that does not start with the HAPPENS: label or has no DETAILS: label, a beat-id tag such as <E5.1> left in the text. Nothing in a beat is read, completed or rewritten; no word of the
+    story is interpreted."""
+    problems: list[str] = []
+    if not isinstance(raw, str) or not raw.strip():
+        return [], ["the reply is empty"]
+    text = _strip_template_tail(_strip_code_fence(raw))
+    blocks: list[list[str]] = [[]]
+    ended = False
+    after: list[str] = []
+    for ln in text.splitlines():
+        t = ln.strip()
+        if ended:
+            if t:
+                after.append(t)
+            continue
+        if t == _BEAT_SEP:
+            blocks.append([])
+        elif t == _BEAT_END:
+            ended = True
+        elif _MARKER_LINE_RE.match(ln):
+            problems.append(f"unexpected marker line {t!r} (only {_BEAT_SEP} and {_BEAT_END} are allowed)")
+        else:
+            blocks[-1].append(ln)
+    if not ended:
+        problems.append(f"the reply has no {_BEAT_END} line (it may have been cut off)")
+    if after:
+        problems.append(f"text after {_BEAT_END}: {after[0][:60]!r}")
+    beats: list[dict] = []
+    for i, b in enumerate(blocks, 1):
+        body = "\n".join(b).strip()
+        if not body:
+            problems.append(f"beat {i} is empty")
+            continue
+        if not _LABEL_HAPPENS_RE.match(body) or not _LABEL_DETAILS_RE.search(body):
+            problems.append(f"beat {i} must start with HAPPENS: and have a DETAILS: line")
+        stray = _INNER_PROTOCOL_TAG_RE.findall(body)
+        if stray:
+            problems.append(f"beat {i} contains a tag ({', '.join(dict.fromkeys(stray))}); this format has no tags")
+        beats.append({"id": f"{parent}.{len(beats) + 1}", "parent": parent, "content": body})
+    return beats, problems
+
+
 async def run_a2_vnext(a1: dict, llm_wf_file: str, on_err, on_log=None,
                         mode: str = "cinematic", genre: str = "", genre2: str = "",
                         desc_lang: str = "en", story_text: str = "",
@@ -452,18 +509,18 @@ async def run_a2_vnext(a1: dict, llm_wf_file: str, on_err, on_log=None,
             # (two long replies in one session may overflow a small model's context)
             fresh = attempt != 2
             correction = (
-                "Your previous reply could not be accepted: " + ("; ".join(why[:6]) if why else "missing or malformed tags") + ". "
-                f"Answer again for macro event {mid} only. Every tag opens and closes with the same id, for example <{mid}.1>HAPPENS: ...\nDETAILS: ...</{mid}.1>, then <{mid}.2>...</{mid}.2>, "
-                "numbered in order with no gaps, one opening tag and one closing tag per beat, nothing outside the tags."
+                "Your previous reply could not be accepted: " + ("; ".join(why[:6]) if why else "the format was not followed") + ". "
+                f"Answer again for macro event {mid} only: each beat is a HAPPENS: line and a DETAILS: line, beats are separated by a line ===BEAT===, and the last line is ===END===. Nothing else."
             )
             sent = base_user if attempt == 1 else (correction if attempt == 2 else base_user + "\n\n" + correction)
             raw = await _call_local_text(
-                wf_template, _A2_SYSTEM_PROMPT, sent,
+                wf_template, _A2_SYSTEM_PROMPT_LOCAL, sent,
                 max_tokens=_a2_max_tokens_for_macro(str(macro.get("content") or "")),
                 session_id=session_id, on_log=on_log, reset=fresh,
             )
-            turns.append({"system_prompt": _A2_SYSTEM_PROMPT, "user_prompt": sent, "reset_session": fresh, "raw_response": raw or ""})
-            accepted = _parse_micro_tags(raw, allowed_parents={mid}, require_parents={mid}, problems=why)
+            turns.append({"system_prompt": _A2_SYSTEM_PROMPT_LOCAL, "user_prompt": sent, "reset_session": fresh, "raw_response": raw or ""})
+            _beats, why = _parse_beat_blocks(raw, mid)
+            accepted = None if why else _beats
             if accepted is not None:
                 break
             if on_log:
