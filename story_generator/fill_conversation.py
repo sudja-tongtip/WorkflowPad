@@ -122,6 +122,52 @@ def strip_view_ledger(text: str) -> tuple[str, str]:
     return _VIEW_TAG_RE.sub("", t).lstrip(), " ".join(found[0].split())
 
 
+_WEAR_TAG_RE = re.compile(r"[ \t]*<wear>([^<]*)</wear>[ \t]*\n?", re.IGNORECASE)
+_WEAR_ID_RE = re.compile(r"\A\s*([A-Za-z]{1,6}\d{1,3})\s*(?:\||\Z)")
+_WEAR_ID_FIELD_RE = re.compile(r"[A-Za-z]{1,6}\d{1,3}")
+_IDENTITY_RE = re.compile(r"(?m)^IDENTITY LOCK:\s*\n(.*?)(?=\n[A-Z][A-Z ]*:\s*\n|\Z)", re.S)
+
+
+def strip_wear_notes(text: str) -> tuple[str, list[str]]:
+    """Transport only: every well-formed <wear>...</wear> working note is taken off the reply, wherever it stands. Returns (the reply without them, the notes as the model wrote them, whitespace collapsed).
+    No word of a note is read or changed; an unclosed tag is left alone (the structure check then refuses the reply)."""
+    t = text or ""
+    found = [" ".join(x.split()) for x in _WEAR_TAG_RE.findall(t)]
+    return (_WEAR_TAG_RE.sub("", t).lstrip() if found else t), [f for f in found if f]
+
+
+def wear_id(note: str) -> str:
+    """The character id at the start of a note (a letter-number token such as char1 before the first '|', upper-cased); '' when the note does not start with one. Nothing after the id is read."""
+    m = _WEAR_ID_RE.match(note or "")
+    return m.group(1).upper() if m else ""
+
+
+def split_wear_note(note: str) -> list[str]:
+    """One note -> one entry per person: a field of the note that is nothing but a character id (char2) starts the next person's entry, in case the model put two people into one <wear> tag. Fields are
+    joined back unchanged; no garment word is read."""
+    entries: list[list[str]] = []
+    for f in (note or "").split("|"):
+        ff = f.strip()
+        if _WEAR_ID_FIELD_RE.fullmatch(ff) or not entries:
+            entries.append([ff])
+        else:
+            entries[-1].append(ff)
+    return ["|".join(e) for e in entries if any(e)]
+
+
+def _wear_order(cid: str) -> tuple[int, str]:
+    d = re.sub(r"\D", "", cid)
+    return (int(d) if d else 0, cid)
+
+
+def _wear_block(snapshot: dict[str, str]) -> str:
+    """'CLOTHING SO FAR:' with the latest accepted note of every character (one line each, by id number); '' when there is none. Text only."""
+    if not snapshot:
+        return ""
+    return ("CLOTHING SO FAR (the latest accepted clothing state of each character, from your earlier <wear> lines; a person who is not in this shot keeps theirs):\n"
+            + "\n".join(snapshot[c] for c in sorted(snapshot, key=_wear_order)))
+
+
 def strip_template_tail(text: str) -> str:
     """Transport only: trailing chat-template markers a local model may leak after its answer (the same as the router's). Only markers at the very end are removed."""
     return _strip_template_tail(text or "").rstrip()
@@ -191,11 +237,12 @@ CONVERSATION_RULES = """
 
 CONVERSATION MODE (this overrides only how the work is delivered, not any rule above):
 1. CHARACTERS, WORLD, LOCATIONS, OBJECT REFERENCE, STYLE, and VISUAL DIRECTION are the DATA SHEETS in this system prompt. They are not sent again in the user message. Never answer ACK.
-2. Every user message is one shot: a short request, optionally a PARENT STORY EVENT, and the CURRENT B SHOT. Answer it with the final prompt in exactly the required block structure above and nothing else - no ACK, no commentary, no tags or sections that are not listed (except the one <view> line of rule 6), no markdown fences.
+2. Every user message is one shot: a short request, optionally a PARENT STORY EVENT, and the CURRENT B SHOT. Answer it with the final prompt in exactly the required block structure above and nothing else - no ACK, no commentary, no tags or sections that are not listed (except the <view> line of rule 6 and the <wear> lines of rule 7), no markdown fences.
 3. Use the DATA SHEETS and the earlier messages of this conversation automatically. "PREVIOUS FRAME LAYOUT", "PREVIOUS CAMERA" and "PREVIOUS SHOT POSE" mean the FRAME LAYOUT and CAMERA of your previous answer and the pose in the previous request's B shot; the screen-space continuity rule and the same-pose camera rule above apply to them.
 4. Keep identity, clothing, object, spatial and state continuity across shots. When the CURRENT B SHOT states a change (clothing, body state, object, location, contact), the new state is the truth from that shot on. Never carry an earlier state into a shot whose B shot contradicts it. Identity, clothing (including damage), held objects, location and where people stand persist until a B shot changes them, so keep them when CURRENT B SHOT is silent. Hand and limb positions, gaze and facial expression do not persist: describe them only as CURRENT B SHOT states them, and never copy such wording from an earlier answer.
 5. CURRENT B SHOT is the only truth for what happens now. Never invent events and never change the action, pose, people, objects or location of the B shot; earlier shots are continuity evidence only.
-6. VIEW LEDGER (the one exception to "Output only"): before the first section header write exactly one line, <view>...</view>, naming ONLY this shot's camera view as a few plain words: its direction (front, back, side, three-quarter, POV through someone's eyes), its height (low, eye-level, high, top-down) and its distance (close, medium, wide), for example <view>back low close</view>. Never an emotion, mood or story word. The request lists the CAMERA of your latest answers as VIEWS SO FAR. Choose this shot's view with the camera rule; if it is the same as, or nearly the same as, one of those and the shot does not need it, choose a view that is clearly different in direction, height or distance. Then write the CAMERA section and the first sentence of MAIN for exactly that view. CURRENT B SHOT's own viewpoint, framing and geometry stay. This line is only your working note: it is removed before the prompt is used, and the required block structure follows it."""
+6. VIEW LEDGER (the one exception to "Output only"): before the first section header write exactly one line, <view>...</view>, naming ONLY this shot's camera view as a few plain words: its direction (front, back, side, three-quarter, POV through someone's eyes), its height (low, eye-level, high, top-down) and its distance (close, medium, wide), for example <view>back low close</view>. Never an emotion, mood or story word. The request lists the CAMERA of your latest answers as VIEWS SO FAR. Choose this shot's view with the camera rule; if it is the same as, or nearly the same as, one of those and the shot does not need it, choose a view that is clearly different in direction, height or distance. Then write the CAMERA section and the first sentence of MAIN for exactly that view. CURRENT B SHOT's own viewpoint, framing and geometry stay. This line is only your working note: it is removed before the prompt is used, and the required block structure follows it.
+7. WEAR LEDGER (the second exception to "Output only"): next to the <view> line, before the first section header, write one <wear>...</wear> line for each person visible in CURRENT B SHOT, for example <wear>char1|shirt=white@on+open2|skirt=navy@on|shoes=black@on</wear> and, as its own tag, <wear>char2|coat=grey@on|boots=black@on</wear>. The id is the person's id in the CHARACTERS sheet (the tag name before the dot: char1, char2), and each person has a tag of their own: never two people in one tag. After the id write one item per garment, separated by |, as garment=colour@state, adding +modifier for a layer, displacement, damage or any other change (short codes of your own, such as on, off, open, pulled-down, torn, wet). Write the COMPLETE current clothing state of that person. Start from their init_cloth in CHARACTERS and from CLOTHING SO FAR (the latest <wear> line you wrote for each person, also for people who are not in this shot). CURRENT B SHOT wins: when it states a clothing change, apply exactly that change and keep every other garment as it was; when it is silent about clothing, keep the state from CLOTHING SO FAR unchanged, also when the person was absent for some shots. Never invent a garment, never reset a garment the shot did not change, and never put a pose or an action into the note. IDENTITY LOCK and every clothing phrase of MAIN must describe exactly the clothing state in your note. This line is only your working note: it is removed before the prompt is used."""
 
 _ESTIMATE_THAI = re.compile(r"[฀-๿]")
 
@@ -603,13 +650,14 @@ def _views_block(history: list[tuple[int, str]]) -> str:
     return "VIEWS SO FAR (the CAMERA of your latest answers, oldest first):\n" + "\n".join(f"Shot {n}: {c}" for n, c in history[-VIEW_HISTORY_MAX:])
 
 
-def shot_request(F, shot: dict, idx: int, total: int, a1: dict, micro_beats: list[dict], views_so_far: str = "") -> str:           # views_so_far: the 'VIEWS SO FAR' block (see _views_block) or ''  
+def shot_request(F, shot: dict, idx: int, total: int, a1: dict, micro_beats: list[dict], views_so_far: str = "", wear_so_far: str = "") -> str:           # views_so_far: the 'VIEWS SO FAR' block (see _views_block) or ''  
     """The short per-shot request (Local and Grok): the rules live in the system prompt, the sheet and earlier shots in the conversation history."""
     parent = F._parent_macro_text(a1, micro_beats, shot)
     return "\n\n".join(x for x in (
         f"Shot {idx + 1} of {total}: write its final Krea2 prompt, continuing the sequence from the data sheets in the system prompt and your earlier answers.",
         F._CAMERA_FROM_EMOTION,
         views_so_far,
+        wear_so_far,
         ("PARENT STORY EVENT:\n" + parent) if parent else "",
         "CURRENT B SHOT:\n" + F._shot_payload(shot),
     ) if x)
@@ -623,12 +671,15 @@ async def run_fill_conversation(F, shots: list[dict], a1: dict, wf_template: dic
     sheet = F._production_reference(a1, props_desc=props_desc, image_style=image_style) + "\n\n" + visual_direction
     system = attach_sheets(system_text(F), sheet)
     conv = FillConversation(wf_template, system, "", on_log=on_log, budget_ctx=budget_ctx, counter=counter, call=call, validator=validate_fill_output)
-    ledger = {"now": "", "kept": []}              # now = the <view> note of the latest reply; kept = [(shot number, the CAMERA text of the ACCEPTED answer)], what the next request carries
+    ledger = {"now": "", "kept": [], "wear": {}, "wear_now": []}              # now = the <view> note of the latest reply; kept = [(shot number, the CAMERA text of the ACCEPTED answer)], what the next request carries
 
     def _pre(t: str) -> tuple[str, str]:
         clean, seen = strip_view_ledger(t)
+        clean, wears = strip_wear_notes(clean)
         if seen:
             ledger["now"] = seen
+        if wears:
+            ledger["wear_now"] = wears
         return clean, seen
 
     conv.pre = _pre
@@ -643,8 +694,9 @@ async def run_fill_conversation(F, shots: list[dict], a1: dict, wf_template: dic
                 break
             previous = shot.get("prompt", "")
             request = shot_request(F, shot, idx, total, a1, micro_beats)                              # what the canon keeps
-            request_sent = shot_request(F, shot, idx, total, a1, micro_beats, _views_block(ledger["kept"]))         # what the model gets now (with the CAMERA of the latest accepted answers)
+            request_sent = shot_request(F, shot, idx, total, a1, micro_beats, _views_block(ledger["kept"]), _wear_block(ledger["wear"]))         # what the model gets now (with the CAMERA of the latest accepted answers)
             ledger["now"] = ""
+            ledger["wear_now"] = []
             has_objects = bool(str(shot.get("objects") or "").strip())
             conv.validator = lambda t, _o=has_objects, **kw: validate_fill_output(t, objects_nonempty=_o, **kw)       # OBJECT LOCK is required exactly when the current B shot has objects
             try:
@@ -660,6 +712,15 @@ async def run_fill_conversation(F, shots: list[dict], a1: dict, wf_template: dic
                 _cam = " ".join(F._extract_camera(text).split())       # the CAMERA section by its header only: what the model really wrote, not its note
                 if _cam:
                     ledger["kept"] = (ledger["kept"] + [(idx + 1, _cam)])[-VIEW_HISTORY_MAX:]
+                _idl = " ".join((_IDENTITY_RE.search(text).group(1) if _IDENTITY_RE.search(text) else "").split())
+                for _w in [e for n in ledger["wear_now"] for e in split_wear_note(n)]:     # only an ACCEPTED answer updates the snapshot: the latest note per character id
+                    _cid = wear_id(_w)
+                    if _cid:
+                        ledger["wear"][_cid] = _w
+                    if on_log:
+                        await on_log(f"ℹ Image Prompts (conversation): shot {idx + 1} wear note: {_w}" + ("" if _cid else "  [no character id: not kept]") + f" | IDENTITY LOCK: {_idl[:260]}")
+                if not ledger["wear_now"] and on_log:
+                    await on_log(f"ℹ Image Prompts (conversation): shot {idx + 1} wear note: (none) | IDENTITY LOCK: {_idl[:260]}")
                 if on_log:                                           # the note and the CAMERA side by side, for the person reading the log (nothing is compared or refused)
                     await on_log(f"ℹ Image Prompts (conversation): shot {idx + 1} view note: {ledger['now'] or '(none)'} | CAMERA: {_cam[:140] or '(none)'}")
                 shot["prompt"] = text
