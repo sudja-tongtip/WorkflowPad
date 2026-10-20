@@ -132,11 +132,12 @@ def start_notice(ft, page, app_name: str, current_version: str) -> None:
 
 
 def show_notice(ft, page, app_name: str, info: dict) -> None:
-    snack = ft.SnackBar(content=ft.Container(), bgcolor="#1F2937", persist=True, show_close_icon=True, close_icon_color="#9CA3AF")
-
+    """A small bar at the bottom of the window (a Container in the page overlay). It is NOT a SnackBar: in Flet 0.85 a SnackBar with buttons inside, or with a hex close_icon_color, makes the whole window
+    render blank/grey (seen on v0.1.7 the day v0.1.8 was released)."""
     def _close(e=None):
-        snack.open = False
         try:
+            if bar in page.overlay:
+                page.overlay.remove(bar)
             page.update()
         except Exception:
             pass
@@ -157,15 +158,13 @@ def show_notice(ft, page, app_name: str, info: dict) -> None:
         _close()
 
     btn = lambda text, fn: ft.TextButton(text, on_click=fn, style=ft.ButtonStyle(color="#93C5FD"))
-    snack.content = ft.Row([
-        ft.Text(f"A newer version is available: {info['version']} (you have {info['current']}).", color="#F9FAFB", size=12, expand=True),
-        btn("Open download page", _download),
-        btn("Skip this version", _skip),
-        btn("Turn off update checks", _turn_off),
-    ], spacing=4, wrap=True, vertical_alignment=ft.CrossAxisAlignment.CENTER)
-    snack.on_dismiss = lambda e, _s=snack: (page.overlay.remove(_s) if _s in page.overlay else None)
-    page.overlay.append(snack)
-    snack.open = True
+    bar = ft.Container(
+        content=ft.Column([
+            ft.Text(f"A newer version is available: {info['version']} (you have {info['current']}).", color="#F9FAFB", size=12),
+            ft.Row([btn("Open download page", _download), btn("Skip this version", _skip), btn("Turn off update checks", _turn_off)], spacing=4, wrap=True),
+        ], spacing=2, tight=True),
+        bgcolor="#1F2937", padding=12, border_radius=8, left=16, right=16, bottom=16)
+    page.overlay.append(bar)
     page.update()
 
 
