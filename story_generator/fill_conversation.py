@@ -91,6 +91,22 @@ def validate_fill_output(text: str, *, reply_tokens: int = 0, max_tokens: int = 
     return ""
 
 
+_FILL_HEADER_ANYWHERE_RE = re.compile(r"(?<![A-Za-z])(" + "|".join(re.escape(h) for h in _FILL_SECTIONS) + r")[ \t]*:[ \t]*")
+
+
+def repair_fill_headers(text: str) -> str:
+    """Transport only, like removing a code fence: put every section header (an exact upper-case name from the contract followed by a colon) on its own line, with its text on the
+    next line. Used only for a reply the validator refused. The sections, their order and their text are not read, changed or reordered: only line breaks are added; the result
+    must pass validate_fill_output again, so a reply that is wrong in any other way is still refused."""
+    t = (text or "").strip()
+    if not t:
+        return t
+    out = _FILL_HEADER_ANYWHERE_RE.sub(lambda m: "\n" + m.group(1) + ":\n", t)
+    out = "\n".join(part.strip() for part in out.split("\n"))
+    out = re.sub(r"\n{2,}", "\n", out).strip()
+    return out
+
+
 POSE_RULES_ON = False              # EXPERIMENT (default off): POSE_RULES below are appended to the system prompt of the conversation; False = the system prompt of the previous conversation mode
 
 # Pose fidelity and section roles (compact; the base prompt keeps every rule it had). Appended only when POSE_RULES_ON.
@@ -344,6 +360,7 @@ class FillConversation:
         self._call = call or call_session
         self.previous_n = previous_n
         self.validator = validator                      # reply text -> '' (ok) or a reason; None = every non-empty reply is accepted (old behaviour)
+        self.repair = None                              # optional: refused reply text -> a repaired text; used only when it then passes the validator
         self.last_rejected: dict | None = None          # set by shot() when the validator refused the reply: {'shot', 'reason', 'raw', 'session'}
         self.s: _Session | None = None
         self.system_tokens = 0
@@ -512,6 +529,13 @@ class FillConversation:
             return None
         self.last_rejected = None
         why = self.validator(text, reply_tokens=await self.counter.count(text), max_tokens=reserve) if self.validator else ""
+        if why and self.repair:
+            fixed = self.repair(text)
+            if fixed and fixed != text and not self.validator(fixed, reply_tokens=await self.counter.count(fixed), max_tokens=reserve):
+                self._record(event="repaired", shot=shot_no, session=self.s.id, was=why)
+                self._dbg_message(self.s.id, role="note", kind="repaired", content=f"section headers moved to their own lines (was: {why})")
+                await self._log(f"ℹ Image Prompts (conversation): shot {shot_no} reply reformatted (was refused: {why}): the section headers were moved to their own lines, nothing else changed")
+                text, why = fixed, ""
         if why:
             # The node already stored this exchange in its history file. The reply is not committed anywhere on our side (not in the session record,
             # not in self.accepted), and the next shot opens a NEW session, which is rebuilt from self.canon: the B shot of this shot is carried (it happened), the refused reply is not.
@@ -560,6 +584,7 @@ async def run_fill_conversation(F, shots: list[dict], a1: dict, wf_template: dic
     sheet = F._production_reference(a1, props_desc=props_desc, image_style=image_style) + "\n\n" + visual_direction
     system = attach_sheets(system_text(F), sheet)
     conv = FillConversation(wf_template, system, "", on_log=on_log, budget_ctx=budget_ctx, counter=counter, call=call, validator=validate_fill_output)
+    conv.repair = repair_fill_headers
     conv.dbg_meta = {"shots": total}
     await conv._log(f"ℹ Image Prompts (conversation): {total} shots, n_ctx {conv.n_ctx}, budget {conv.budget_ctx}, token counter {conv.counter.mode}" + (f" ({conv.counter.reason})" if conv.counter.reason else ""))
     try:
@@ -693,7 +718,14 @@ async def run_fill_conversation_grok(F, shots: list[dict], a1: dict, on_err, on_
         dmsg(role="assistant", kind="shot", shot=idx + 1, content=raw, seconds=round(time.time() - t1, 1), no_text=not text)
         dflush()
         LAST_RUN_DEBUG.append({"event": "shot", "backend": "grok", "shot": idx + 1, "history_messages": len(history), "ok": bool(text), "reply_chars": len(text), "seconds": round(time.time() - t1, 1)})
-        why = validate_fill_output(text, objects_nonempty=bool(str(shot.get("objects") or "").strip())) if text else ""
+        _has_obj = bool(str(shot.get("objects") or "").strip())
+        why = validate_fill_output(text, objects_nonempty=_has_obj) if text else ""
+        if why:
+            _fixed = repair_fill_headers(text)
+            if _fixed and _fixed != text and not validate_fill_output(_fixed, objects_nonempty=_has_obj):
+                if on_log:
+                    await on_log(f"ℹ Image Prompts (conversation, Grok): shot {idx + 1} reply reformatted (was refused: {why}): the section headers were moved to their own lines")
+                text, why = _fixed, ""
         if why:
             LAST_RUN_DEBUG.append({"event": "rejected", "backend": "grok", "shot": idx + 1, "reason": why})
             if on_log:
