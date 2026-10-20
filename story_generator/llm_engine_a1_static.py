@@ -17,7 +17,7 @@ Diagnostics (arc, outline, plan, validation issues, anchor, every attempt's prom
 A1 dict keeps its seven fields, so A2 consumes it unchanged.
 """
 
-__version__ = "20261102_a1_static_s18_conversation"
+__version__ = "20261020_a1_static_r8"
 
 import json
 import random
@@ -261,14 +261,13 @@ def _drop_empty_characters(result: dict) -> list[str]:
 
 
 def _merge_event_parts(result: dict) -> None:
-    """Explicit-label formatting only: 'HAPPENS: a DETAILS: b' -> 'a b'; a lone label is removed, the text is kept."""
+    """Explicit-label formatting only, and only when the WHOLE event text is the legacy form 'HAPPENS: a DETAILS: b' -> 'a b'. Any other text, including one that happens to contain
+    such a label somewhere, is left exactly as the model wrote it (model prose is never edited inside)."""
     for e in result.get("macro_events") or []:
         content = str(e.get("content") or "")
         m = _PARTS_RE.match(content)
         if m:
             e["content"] = (m.group(1) + " " + m.group(2)).strip()
-        else:
-            e["content"] = re.sub(r"\s*(?<![A-Za-z])DETAILS?:\s*", " ", re.sub(r"^\s*HAPPENS:\s*", "", content)).strip()
 
 
 
@@ -438,7 +437,7 @@ def _validate_event_blocks(events: list[dict], anchor: str) -> list[str]:
     return issues
 
 
-def _validate_prose_events(events: list[dict], anchor: str, n_expected: int) -> list[str]:
+def _validate_prose_events(events: list[dict], anchor: str, n_expected: int, *, check_stand_in: bool = True) -> list[str]:
     """Structural checks on the raw event tags: exactly E1..E<n> (one per arc step, in order), each non-empty, the anchor is an existing event
     whose text is not a stand-in. Report only; nothing is rewritten. (HAPPENS:/DETAILS: labels are not required; if a model still writes them
     _merge_event_parts removes the labels and keeps the text.)"""
@@ -454,7 +453,7 @@ def _validate_prose_events(events: list[dict], anchor: str, n_expected: int) -> 
         issues.append("the source anchor event is missing or not an existing event")
     else:
         text = next(str(e.get("content") or "") for e in events if e["id"] == anchor)
-        if _is_placeholder_details(text):
+        if check_stand_in and _is_placeholder_details(text):          # a phrase list (Thai / English): kept for the legacy two-pass path only, off in the conversation path
             issues.append(f"anchor event {anchor} is empty or only a stand-in (it must state the real source facts inside its prose)")
     return issues
 

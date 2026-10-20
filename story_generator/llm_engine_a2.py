@@ -12,7 +12,7 @@ ordered story events for Shot List. Python never decides what an event means, ne
 and never rewrites model-authored semantic fields.
 """
 
-__version__ = "20261028_a2_lia_it1"
+__version__ = "20261020_a2_short"
 
 import asyncio
 import copy
@@ -25,6 +25,7 @@ import uuid
 
 from .constants import LLM_DIR, lang_prompt_name
 from .comfy_api import comfy_queue, comfy_history
+from .llm_engine_a1_router import _strip_template_tail
 
 
 _CODE_FENCE_RE = re.compile(r"^```(?:json|xml)?\s*|```\s*$")
@@ -45,9 +46,8 @@ _TAG_RE = re.compile(r"<([A-Za-z0-9_.]+)>(.*?)</\1>", re.DOTALL)
 
 
 def _extract_micro_beats(raw: str) -> list[dict]:
-    """Extract every complete <id>content</id> pair, in the order they appear. Duplicate ids keep
-    only the first occurrence. Naturally truncation-tolerant: an incomplete trailing tag simply
-    produces no match, so this never raises and never needs a separate salvage codepath."""
+    """LENIENT extraction, for diagnostics only (which macro events produced any beat at all): every complete <id>content</id> pair, in the order they appear, duplicate ids once. It
+    never raises. It is NOT what accepts an answer: see _micro_beat_problems / _parse_micro_tags, which refuse a reply whose structure is wrong."""
     out: list[dict] = []
     seen: set[str] = set()
     for m in _TAG_RE.finditer(raw):
@@ -68,58 +68,32 @@ _GROK_TEMPERATURE = 0.35
 _GROK_REASONING_EFFORT = "low"
 
 
-_A2_SYSTEM_PROMPT = """You are the second story editor in a visual-story pipeline. Your primary function is to analyze macro events provided by the first editor and distill them into sequential, meaningful story beats suitable for a storyboard planner.
+_A2_SYSTEM_PROMPT = """You are the second story editor. Split each macro into ordered beats. Do not add an action the macro does not contain. Do not design camera shots. Name each character with the exact name from CHARACTERS. Return only the requested tags."""
 
-CORE PRINCIPLES:
-1. Each macro event from the previous editor is story truth. Never add new narrative elements; only segment existing ones.
-2. Identify the most meaningful, chronologically ordered moments within the macro event.
-3. Never reverse, relocate, or reinterpret events. Maintain strict chronological flow.
-4. Do not move material across macro events or design shots/camera.
-5. Every beat holds the facts of its phase - the story meaning in HAPPENS and the physical facts in DETAILS - without losing any fact from the source material.
-6. When the source explicitly establishes a new resulting state, preserve that resulting state in the micro-events. Do not replace a concrete state with only a symptom, mood, pose, or nearby consequence. Preserve only what the source actually establishes — never infer a state the source does not establish.
 
-BEAT DEFINITION AND GROUPING (crucial):
-A micro beat = one coherent narrative action or meaningful visual change. A beat is one continuous, uninterrupted phase. Combine adjacent material into the same beat whenever it constitutes one continuous, instantaneous moment: if action B is the direct, immediate result of decision A, or one exchange runs from question to final reply, they belong together unless a real time gap separates them. When in doubt, prioritize merging an action with its immediate reaction, or a decision with its immediate consequence — do not hesitate to merge on emotional or narrative continuity. Split only when the story enters a distinct narrative phase that cannot be faithfully represented within the same coherent beat. An emotional change alone does not require a separate beat, and neither does a change of sentence, clause, or speaker. A decision and the action that expresses it, and a posture or facial expression that accompanies one action, belong in the same beat. A macro event usually has only a few such beats; the selected mode controls how broadly or finely they are grouped.
-
-SUPPORTING CONTEXT IS NOT A BEAT: the following are never a reason to create a new beat - appearance and clothing that do not change; a pose or position that stays the same; lighting and background; a description of mood with no new event; a small shift of gaze or posture that belongs to the same response. Thoughts, memories, feelings, motives and imagined consequences are narrative context too: keep their meaning in the HAPPENS of one beat, however many sentences they take - never one beat per thought - and never turn them into a face, gesture or movement the macro does not state. A person who appears only in someone's thought is not in the scene. A story's importance is not a reason for a separate picture. Fold all of this into the beat it belongs to. When an action and its reaction run on without a significant turning point, make them ONE beat.
-But keep the order and every fact: never merge beats so that a stated change disappears - a change of clothing or bodily state the source states, a change of who holds an object, a character entering or leaving, a change of place, a touch or interaction that matters to the story, or an outcome that actually happens.
-
-TIME: keep the macro's temporal meaning exactly. "is doing" stays ongoing; "is about to" / "reaches out to" has NOT happened yet (never write it as done or as contact already made); "finished" is finished; "while" / "as" / "meanwhile" mean actions that overlap in time - they belong in ONE beat, even when they belong to different characters; "after" / "then" are a sequence; "until" is a turning point; "still" means the earlier state continues. Never change a temporal word to make the text shorter. An event and its immediate reaction (a door opens and she steps forward) belong together unless a real pause separates them.
-
-BEAT FORMAT (every beat has two labelled lines inside its tag):
-HAPPENS: what is happening in this beat NOW, in one short sentence, with the characters and actions the macro joins in this moment. Emotional or meaning language is allowed only where the macro itself states it. Never add a stance, purpose, motive or feeling the macro does not state (not "in a defensive stance", "to announce something", "to rest"), and never a new event.
-DETAILS: the physical and visual truth of the same moment, exactly as the macro states it: who does what; which body part moves, only if the source says; which hand holds or releases which object, only if the source says (never add a side the source does not give); how each person stands, sits or moves; who touches whom; where objects are and how their state changes; what happens to clothing or the body. Never replace a stated fact with vague wording such as "changes posture", "moves slightly", "does something", "they interact" or "the object moves", and never add precision the macro does not give. Write only the facts of this moment. Always keep every action, hand and object the macro states for this moment (a sword she is holding, a sash she is adjusting), even when the PRODUCTION REFERENCE also lists it; do not recite the reference's clothing, hair or place. Appearance alone never creates a beat. Put meaning (inviting, yielding, a secret) in HAPPENS, never in DETAILS. Where the macro is ambiguous (which hand, whose palm, who moves) copy its own wording and do not decide; "as if" and "seemingly" are comparisons, not facts; "almost touches" is not touching; hesitating between two options is not choosing one.
-Continuity: carry object holders, hand occupancy, clothing state, body position, contact and location faithfully. A held object that is later released keeps that release in the beat where the macro states it; never create a release, put-down, pick-up or change of state the macro does not state.
-
-NARRATIVE FLOW:
-In every beat, explicitly name each character performing or
-receiving an action using the exact name from CHARACTERS.
-Keep actions, body parts, and positions attached to the
-correct character. Do not use pronouns in place of character
-names when describing actions or interactions.
-
-Treat PRODUCTION REFERENCE as supporting context
-(identity, established state) only, never as the source
-of new actions or narrative details.
-
-EXAMPLE — too split (avoid this): a source macro with a repeated question, an offer, a repeated question again with an environmental reason, and a final question is turned into 8 beats, one per sentence (question alone, answer alone, offer alone, response alone, repeated question alone, weather alone, follow-up question alone, confirmation alone).
-
-EXAMPLE — correct compactness for the SAME macro: 4 beats. Beat 1 merges the question and its direct answer. Beat 2 merges the offer and the immediate response to it. Beat 3 merges the repeated question with the environmental reason that motivates the next question. Beat 4 merges the final question with its confirmation. Each beat is the question/offer together with its own immediate answer/reaction — never split apart.
-
-Return only the requested tags."""
+def _beat_guard() -> str:
+    """Short rules placed next to the request. The long system prompt already states them; a small local model follows the nearby lines."""
+    return (
+        "PICTURE RULES:\n"
+        "- One beat is one drawable state or action phase: one picture that shows who is doing what at that point of the macro event. A decision and the action that carries it out "
+        "belong to the same beat.\n"
+        "- Start a new beat when the macro event moves to a different action phase or a different resulting state (a new action, a change of position, place, who holds what, or who is involved), "
+        "in the order the macro event tells them. A look, a breath, a tighter grip or a sigh stays inside the beat of the action it belongs to; it is not a beat of its own.\n"
+        "- Do not copy clothing, hair, or an outfit from PRODUCTION REFERENCE. Name clothing only when this macro states it.\n"
+        "- Every action and every result this macro states must appear in a beat. If one sentence has two results, keep both. Do not drop the first result and keep only what remains.\n"
+        "- If this macro is one frozen moment, return one beat, written as the action that moment is already doing. "
+        "Do not add an action the macro does not contain. Do not turn an ongoing action into a finished pose or a person sitting still.\n"
+    )
 
 
 def _mode_instruction(mode: str) -> str:
     if (mode or "").strip().lower() == "sequential":
-        return ("Sequential mode: preserve meaningful chronological progression and distinct state changes. Group a decision "
-                "with its immediate physical expression, and group supporting gestures or expressions with the action they belong to. "
-                "Create a separate beat only when a new narrative phase, consequential action, or distinct resulting state needs "
-                "independent representation. Never split merely to show intermediate motions.")
+        return ("Sequential mode: keep the macro's order. Every distinct action phase or resulting state is its own beat; "
+                "gestures and expressions that belong to an action stay inside that action's beat.")
     return ("Visual Novel mode: optimize for extremely compact drawable beats. One beat should equal one "
             "drawable dramatic moment. If adjacent actions, dialogue, and immediate reactions happen in the "
             "same continuous moment and can be shown in one image, group them into one beat. Preserve "
             "chronology inside the beat whenever possible instead of splitting every step.")
-
 
 def _reference_text(a1: dict) -> str:
     return (
@@ -141,13 +115,13 @@ def _build_whole_story_user_prompt(a1: dict, *, mode: str, desc_lang: str) -> st
         f"{_mode_instruction(mode)}\n\n"
         f"PRODUCTION REFERENCE\n{_reference_text(a1)}\n\n"
         f"MACRO EVENTS\n{events}\n\n"
+        f"{_beat_guard()}\n"
         "OUTPUT FORMAT:\n"
         "Return one tag per micro-event, in this exact form, nothing else:\n"
-        "<E1.1>\nHAPPENS: one short sentence of narrative meaning\nDETAILS: the concrete physical facts of this moment\n</E1.1>\n"
+        "<E1.1>\nHAPPENS: who is doing what in this beat\nDETAILS: the body and objects at that point of the action\n</E1.1>\n"
         "Represent every macro event in order. Each macro uses its own parent id: E1.1 (then E1.2... only if needed) under E1; "
         "E2.1... under E2; E3.1... under E3, and so on. "
-        "One micro beat is valid when the macro contains one coherent dramatic moment. Create additional beats only when the source contains distinct meaningful phases. "
-        "Write each beat in the two labelled lines HAPPENS (one short sentence of narrative meaning) and DETAILS (the concrete physical facts of that moment, one or two sentences, only what the source states). Each tag's content is plain prose — write it exactly as the story needs, including any "
+        "Each tag's content is plain prose — write it exactly as the story needs, including any "
         "quotation marks, punctuation, or line breaks; there is no JSON and nothing to escape."
     )
 
@@ -161,11 +135,11 @@ def _build_one_macro_user_prompt(a1: dict, macro: dict, *, mode: str, desc_lang:
         f"PRODUCTION REFERENCE\n{_reference_text(a1)}\n\n"
         f"TARGET MACRO EVENT\n{mid}: {macro.get('content', '')}\n\n"
         "Identify the story beats of this target macro event, in order.\n"
+        f"{_beat_guard()}\n"
         "OUTPUT FORMAT:\n"
         "Return one tag per micro-event for this macro event, in this exact form, nothing else:\n"
-        f"<{mid}.1>\nHAPPENS: one short sentence of narrative meaning\nDETAILS: the concrete physical facts of this moment\n</{mid}.1>\n"
-        "One micro beat is valid when the macro contains one coherent dramatic moment. Create additional beats only when the source contains distinct meaningful phases. "
-        f"IDs use the form {mid}.1 (then {mid}.2... only if needed) in order. Write each beat in the two labelled lines HAPPENS (one short sentence of narrative meaning) and DETAILS (the concrete physical facts of that moment, one or two sentences, only what the source states). Each tag's content is plain prose — write "
+        f"<{mid}.1>\nHAPPENS: who is doing what in this beat\nDETAILS: the body and objects at that point of the action\n</{mid}.1>\n"
+        f"IDs use the form {mid}.1 (then {mid}.2... only if needed) in order. Each tag's content is plain prose — write "
         "it exactly as the story needs, including any quotation marks, punctuation, or line "
         "breaks; there is no JSON and nothing to escape."
     )
@@ -181,7 +155,7 @@ def _a2_max_tokens_whole(a1: dict) -> int:
 
 
 async def _call_local_text(wf_template: dict, system_prompt: str, user_prompt: str, *,
-                           max_tokens: int, session_id: str, on_log=None) -> str | None:
+                           max_tokens: int, session_id: str, on_log=None, reset: bool = True) -> str | None:
     wf = copy.deepcopy(wf_template or {})
     hit = False
     for nid, node in wf.items():
@@ -191,7 +165,7 @@ async def _call_local_text(wf_template: dict, system_prompt: str, user_prompt: s
         inputs["user_text"] = user_prompt
         inputs["system_prompt"] = system_prompt
         inputs["session_id"] = session_id
-        inputs["reset_session"] = True
+        inputs["reset_session"] = reset
         inputs["max_tokens"] = max_tokens
         hit = True
     if not hit:
@@ -302,30 +276,89 @@ async def _call_grok_text(system_prompt: str, user_prompt: str, *, api_key: str,
     return text
 
 
-def _parse_micro_tags(raw: str | None, *, allowed_parents: set[str],
-                      require_parents: set[str] | None = None) -> list[dict] | None:
-    """Structural tag parser only. Model-authored content is preserved verbatim (only outer
-    whitespace is trimmed). All-or-nothing when require_parents is set: any macro event missing
-    its tags rejects the whole response, same as the old JSON parser's behavior."""
+_INNER_PROTOCOL_TAG_RE = re.compile(r"</?[A-Za-z][A-Za-z0-9_]*\.\d+>")     # a beat-id shaped tag (E1.2) only: prose, quotes and ordinary words are never looked at
+
+
+def _micro_beat_problems(raw: str | None, *, allowed_parents: set[str], parent_order: list[str] | None = None,
+                         require_parents: set[str] | None = None) -> tuple[list[dict], list[str]]:
+    """STRUCTURE only: (beats, problems). No word, language or meaning is read; the beat content is kept exactly as the model wrote it (outer whitespace trimmed).
+    A reply is refused (problems not empty) when: text or an incomplete / unclosed / unexpected tag sits outside the beat tags; a tag is not <ParentId.N>; the parent is not one of this
+    request's macro events; N is not 1, 2, 3 ... without gaps, in order; an id repeats; a macro event's beats are not together; the macro events are not in their own order (whole story);
+    a beat is empty; a required macro event has no beat. Whether the beats are complete or faithful to the macro event cannot be checked by structure."""
+    problems: list[str] = []
     if not isinstance(raw, str) or not raw.strip():
-        return None
-    fenced = _strip_code_fence(raw)
-    beats = _extract_micro_beats(fenced)
-    if not beats:
-        return None
+        return [], ["the reply is empty"]
+    text = _strip_template_tail(_strip_code_fence(raw))
+    beats: list[dict] = []
+    outside: list[str] = []
+    last = 0
+    for m in _TAG_RE.finditer(text):
+        outside.append(text[last:m.start()])
+        last = m.end()
+        tag_id, content = m.group(1), m.group(2).strip()
+        if "." not in tag_id:
+            problems.append(f"<{tag_id}> is not a beat tag (expected <E1.1> form)")
+            continue
+        parent, child = tag_id.rsplit(".", 1)
+        if not child.isdigit() or int(child) < 1:
+            problems.append(f"<{tag_id}>: the beat number must be 1, 2, 3 ...")
+            continue
+        if parent not in allowed_parents:
+            problems.append(f"<{tag_id}>: {parent} is not a macro event of this request")
+            continue
+        if not content:
+            problems.append(f"<{tag_id}> is empty")
+        _inner = _INNER_PROTOCOL_TAG_RE.findall(content)
+        if _inner:
+            problems.append(f"<{tag_id}> has a beat tag inside its content ({', '.join(dict.fromkeys(_inner))}): every beat tag must open and close with its own id")
+        beats.append({"id": tag_id, "parent": parent, "content": content})
+    outside.append(text[last:])
+    left = "".join(outside).strip()
+    if left:
+        problems.append(("an incomplete, unclosed or unexpected tag is left outside the beat tags: " if re.search(r"</?[A-Za-z0-9_.]+>", left)
+                         else "text outside the beat tags: ") + repr(left[:80]))
+    if not beats and not problems:
+        problems.append("no beat tags found")
+    ids = [b["id"] for b in beats]
+    dup = sorted({i for i in ids if ids.count(i) > 1})
+    if dup:
+        problems.append("duplicate beat id(s): " + ", ".join(dup))
+    groups: list[tuple[str, list[int]]] = []
+    for b in beats:
+        n = int(b["id"].rsplit(".", 1)[1])
+        if groups and groups[-1][0] == b["parent"]:
+            groups[-1][1].append(n)
+        else:
+            groups.append((b["parent"], [n]))
+    seen_parents = [g[0] for g in groups]
+    for par in dict.fromkeys(seen_parents):
+        if seen_parents.count(par) > 1:
+            problems.append(f"the beats of {par} are not together (another macro event's beats come between them)")
+    for par, nums in groups:
+        if par in {d.split(".")[0] for d in dup}:
+            continue                                              # duplicates are reported above; numbering would only repeat the same fault
+        if nums != list(range(1, len(nums) + 1)):
+            problems.append(f"the beats of {par} must be numbered {par}.1, {par}.2 ... without gaps and in order (got {', '.join(f'{par}.{n}' for n in nums)})")
+    if parent_order:
+        pos = {pid: i for i, pid in enumerate(parent_order)}
+        idx = [pos[x] for x in dict.fromkeys(seen_parents) if x in pos]
+        if idx != sorted(idx):
+            problems.append("the macro events are not in their own order: " + ", ".join(dict.fromkeys(seen_parents)))
+    if require_parents is not None:
+        missing = sorted(require_parents - set(seen_parents))
+        if missing:
+            problems.append("no beat for macro event(s): " + ", ".join(missing))
+    return beats, problems
 
-    out: list[dict] = []
-    seen_parents: set[str] = set()
-    for beat in beats:
-        if beat["parent"] not in allowed_parents:
-            return None
-        seen_parents.add(beat["parent"])
-        out.append(beat)
 
-    if require_parents is not None and seen_parents != require_parents:
-        return None
-    return out
-
+def _parse_micro_tags(raw: str | None, *, allowed_parents: set[str], require_parents: set[str] | None = None,
+                      parent_order: list[str] | None = None, problems: list[str] | None = None) -> list[dict] | None:
+    """Structural tag parser only. Model-authored content is preserved verbatim (only outer whitespace is trimmed). All-or-nothing: any structural problem rejects the whole reply
+    (the caller retries, nothing is repaired here). `problems`, when given, receives the reasons."""
+    beats, why = _micro_beat_problems(raw, allowed_parents=allowed_parents, parent_order=parent_order, require_parents=require_parents)
+    if problems is not None:
+        problems[:] = why
+    return None if why else beats
 
 async def run_a2_vnext(a1: dict, llm_wf_file: str, on_err, on_log=None,
                         mode: str = "cinematic", genre: str = "", genre2: str = "",
@@ -343,6 +376,7 @@ async def run_a2_vnext(a1: dict, llm_wf_file: str, on_err, on_log=None,
     if llm_wf_file == GROK_MARKER:
         user_prompt = _build_whole_story_user_prompt(a1, mode=mode, desc_lang=desc_lang)
         last_raw = ""
+        last_why: list[str] = []
         last_user = user_prompt
         for attempt in (1, 2):
             if attempt == 1:
@@ -351,9 +385,8 @@ async def run_a2_vnext(a1: dict, llm_wf_file: str, on_err, on_log=None,
                 _got = {b["parent"] for b in _extract_micro_beats(_strip_code_fence(last_raw))}
                 _missing = sorted(macro_ids - _got)
                 sent = user_prompt + (
-                    "\n\nThe previous response was missing or malformed tags for macro event "
-                    f"id(s): {', '.join(_missing) or 'unknown'}. Return the complete set of tags, "
-                    "covering every macro event in order, in the exact <id>content</id> form."
+                    "\n\nThe previous response could not be accepted: " + ("; ".join(last_why[:6]) or f"missing or malformed tags for macro event id(s): {', '.join(_missing) or 'unknown'}") +
+                    ". Return the complete set of tags, covering every macro event in order, in the exact <id>content</id> form."
                 )
             last_user = sent
             raw = await _call_grok_text(
@@ -362,7 +395,9 @@ async def run_a2_vnext(a1: dict, llm_wf_file: str, on_err, on_log=None,
                 max_tokens=_a2_max_tokens_whole(a1), on_log=on_log,
             )
             last_raw = raw or ""
-            beats = _parse_micro_tags(raw, allowed_parents=macro_ids, require_parents=macro_ids)
+            why: list[str] = []
+            beats = _parse_micro_tags(raw, allowed_parents=macro_ids, require_parents=macro_ids, parent_order=[e["id"] for e in macros], problems=why)
+            last_why = why
             if beats is not None:
                 if chat_capture is not None:
                     chat_capture["sessions"] = [{
@@ -376,7 +411,7 @@ async def run_a2_vnext(a1: dict, llm_wf_file: str, on_err, on_log=None,
                     }]
                 return {"micro_beats": beats}
             if on_log:
-                await on_log(f"⚠ Beat Sheet Grok attempt {attempt}: missing or malformed tags")
+                await on_log(f"⚠ Beat Sheet Grok attempt {attempt}: " + "; ".join(why[:4]))
         if chat_capture is not None and last_raw:
             chat_capture["sessions"] = [{
                 "label": "ALL", "turns": [{
@@ -411,25 +446,35 @@ async def run_a2_vnext(a1: dict, llm_wf_file: str, on_err, on_log=None,
         session_id = uuid.uuid4().hex[:8]
         turns: list[dict] = []
         accepted = None
-        for attempt in (1, 2):
-            sent = base_user if attempt == 1 else base_user + (
-                "\n\nThe previous response was missing or malformed tags. Return non-empty "
-                f'<{mid}.N>content</{mid}.N> tags covering this macro event only, in the exact '
-                "form shown above."
+        why: list[str] = []
+        for attempt in (1, 2, 3):
+            # attempt 2: a short correction in the SAME session (the model sees its own rejected reply); attempt 3: a FRESH session with the full prompt + the correction
+            # (two long replies in one session may overflow a small model's context)
+            fresh = attempt != 2
+            correction = (
+                "Your previous reply could not be accepted: " + ("; ".join(why[:6]) if why else "missing or malformed tags") + ". "
+                f"Answer again for macro event {mid} only. Every tag opens and closes with the same id, for example <{mid}.1>HAPPENS: ...\nDETAILS: ...</{mid}.1>, then <{mid}.2>...</{mid}.2>, "
+                "numbered in order with no gaps, one opening tag and one closing tag per beat, nothing outside the tags."
             )
+            sent = base_user if attempt == 1 else (correction if attempt == 2 else base_user + "\n\n" + correction)
             raw = await _call_local_text(
                 wf_template, _A2_SYSTEM_PROMPT, sent,
                 max_tokens=_a2_max_tokens_for_macro(str(macro.get("content") or "")),
-                session_id=session_id, on_log=on_log,
+                session_id=session_id, on_log=on_log, reset=fresh,
             )
-            turns.append({"system_prompt": _A2_SYSTEM_PROMPT, "user_prompt": sent, "raw_response": raw or ""})
-            accepted = _parse_micro_tags(raw, allowed_parents={mid}, require_parents={mid})
+            turns.append({"system_prompt": _A2_SYSTEM_PROMPT, "user_prompt": sent, "reset_session": fresh, "raw_response": raw or ""})
+            accepted = _parse_micro_tags(raw, allowed_parents={mid}, require_parents={mid}, problems=why)
             if accepted is not None:
                 break
             if on_log:
-                await on_log(f"⚠ Beat Sheet {mid} attempt {attempt}: missing or malformed tags")
+                await on_log(f"⚠ Beat Sheet {mid} attempt {attempt}: " + "; ".join(why[:4]))
         if accepted is None:
-            await on_err(f"Beat Sheet: macro {mid} did not return the required tags after 2 attempts")
+            if chat_capture is not None:        # keep the failed macro's turns so Beats chat can show what the model really answered
+                chat_capture["sessions"] = sessions + [{
+                    "label": mid, "turns": turns, "backend": "local",
+                    "llm_wf_file": llm_wf_file, "session_id": session_id, "grok_model": grok_model,
+                }]
+            await on_err(f"Beat Sheet: macro {mid} did not return the required tags after 3 attempts")
             return None
         all_beats.extend(accepted)
         sessions.append({

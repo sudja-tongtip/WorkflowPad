@@ -30,10 +30,13 @@ from .comfy_api import comfy_queue, comfy_history
 _CODE_FENCE_RE = re.compile(r"^```(?:json|xml)?\s*|```\s*$")
 
 
+from .llm_engine_a1_router import _strip_template_tail  # noqa: E402
+
+
 def _strip_code_fence(raw: str) -> str:
     """Transport-only cleanup: some models wrap output in ```/```json/```xml fences. Strip fence
     markers only — never touch the content itself."""
-    return _CODE_FENCE_RE.sub("", raw.strip()).strip()
+    return _strip_template_tail(_CODE_FENCE_RE.sub("", raw.strip()).strip()).strip()   # also a trailing chat-template marker such as </end_of_turn>
 
 
 # B-TAG-FORMAT-A1: shots are transported as one flat tag per field, <shotN.field>value</shotN.field>

@@ -14,7 +14,7 @@ Differences from llm_engine_a1:
   * transport, tag parser (with scoped character-tag recovery) and Grok call are reused from llm_engine_a1 unchanged.
 """
 
-__version__ = "20261103_a1_novel_f3_conversation"
+__version__ = "20261020_a1_novel_story_sense"
 
 import json
 import re
@@ -100,14 +100,12 @@ _PARTS_RE = re.compile(r"^\s*HAPPENS:\s*(.*?)\s*DETAILS?:\s*(.*?)\s*$", re.DOTAL
 
 
 def _merge_event_parts(result: dict) -> None:
-    """Explicit-label formatting only: 'HAPPENS: a DETAILS: b' -> 'a b'; a lone label is removed, the text is kept."""
+    """Explicit-label formatting only, and only when the WHOLE event text is the legacy form 'HAPPENS: a DETAILS: b' -> 'a b'. Any other text is left exactly as the model wrote it."""
     for e in result.get("macro_events") or []:
         content = str(e.get("content") or "")
         m = _PARTS_RE.match(content)
         if m:
             e["content"] = (m.group(1) + " " + m.group(2)).strip()
-        else:   # only one label (or a stray one): drop the label itself, keep every word of the text
-            e["content"] = re.sub(r"\s*(?<![A-Za-z])DETAILS?:\s*", " ", re.sub(r"^\s*HAPPENS:\s*", "", content)).strip()
 
 
 STATIC_ROUTE = {"route": "static"}

@@ -55,7 +55,8 @@ check(
 )
 check("main opens with the view", "MAIN IMAGE DESCRIPTION opens with the view, then one sentence per fact." in _FILL_SYSTEM_PROMPT)
 check("each fact is one sentence", "Write each fact once, in concrete words, naming the body parts the shot names." in _FILL_SYSTEM_PROMPT)
-check("camera follows the view", "When the shot states none, the angle is the view already written in MAIN, not a new staging." in _FILL_SYSTEM_PROMPT)
+check("the camera is chosen from the shot's emotion", "choose one camera from the Emotion words of this shot" in _FILL_SYSTEM_PROMPT and "behind the person who feels it" in _FILL_SYSTEM_PROMPT)
+check("a recent camera is not repeated without a visual necessity", "repeats a recent one without a visual necessity" in _FILL_SYSTEM_PROMPT and "the camera may stay" not in _FILL_SYSTEM_PROMPT)
 for _banned in ("face down", "cushion", "sofa", "penis", "side of the bed"):
     check(f"not hardcoded: {_banned}", _banned not in _FILL_SYSTEM_PROMPT)
 

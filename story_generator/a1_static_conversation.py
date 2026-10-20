@@ -36,11 +36,11 @@ from . import fill_conversation as _FC
 from . import llm_overrides as _ov
 from .llm_engine_a1 import GROK_MARKER, _CHAR_FIELDS, _CHAR_TAG_RE, _strip_code_fence
 
-__version__ = "20261102_a1_static_conversation_v1"
+__version__ = "20261020_a1_static_r8"
 
 MAX_ATTEMPTS = 3                     # first answer + two corrections per step
 _SESSION_MODE = os.environ.get("WP_A1_SESSION_MODE", "1") != "0"      # env WP_A1_SESSION_MODE=0 (old-path tests) / Local: one real session (system prompt once, then only the new message); False = a fresh session per call with the history sent inside every request
-_EVENTS_PER_STEP = True              # EXPERIMENT: STORY EVENTS is written one call per arc step (step 1 from the source, every later step continues the story with a new pose / expression / mood, a change of place allowed); False = one call for all paragraphs
+_EVENTS_PER_STEP = True              # STORY EVENTS is written one call per arc step (step 1 is the source; every later step is the next plot turn, and its new pose is the result of that turn); False = one call for all paragraphs
 _MAX_EVENT_STEPS = 12
 _PLAN_STAGE = False                 # False: the STORY EVENTS paragraphs ARE the story - no STORY PLAN / PLAN CHECK call; every later step reads the events. True (or _EVENTS_FIRST False) = the plan flow
 _EVENTS_FIRST = True                # story EVENTS first (what happens, why, what it changes), then the plan (poses / state) derived from them
@@ -79,13 +79,16 @@ def _places_rule(vn: bool) -> str:
 _PLAN_ACTION_AS_MACRO = False        # EXPERIMENT: use the final accepted plan's step_N.action as E1..EN and skip the MACRO EVENTS call (False = the previous flow)
 _PLAN_CHALLENGE = False              # one extra request after the first plan (see _req_plan_challenge)
 _ANCHOR_REVISIONS = 1                # plan revisions allowed after a reported source conflict
-_NONE_VALUES = {"", "none", "n/a", "na", "null", "-", "no", "no conflict", "no conflicts", "ไม่มี"}
+# The source-anchor check answers with a protocol token (conflict_status: CLEAR or CONFLICT). Python reads ONLY that token; the details (plan_conflicts) are free text in any language.
+_CONFLICT_STATUSES = ("CLEAR", "CONFLICT")
 
 _SYSTEM_PROMPT = (
-    "You are a professional Visual Novel story writer who turns a static visual source into a coherent sequence of cinematic or illustrated story events. "
-    "Treat the source as the base of the story, and follow the user's genre and Static Arc when they are given. "
+    "You are a professional Visual Novel story writer. You turn one static visual source into one short story that a reader can follow, told in connected events. "
+    "Event 1 is the source moment exactly: who is there, where, what they hold and wear, and how they start. "
+    "Every later event happens because of the event before it: someone acts, the scene or another person responds, and the situation is different afterward. "
+    "The pose a character has at the end of an event is the visible result of what happened; it is never the reason to invent an event. "
+    "Follow the user's genre and Static Arc as the dramatic job of each step, adapted to what this source can support: do not add a character, object or place only because an arc step names one. "
     "You create the characters from the source: if the source gives a character no name, create a fitting personal name for them. "
-    "When you plan a story, every step is a real event: the character does something that changes their pose or the situation (a new position, support, object or clothing state), never only a look, a feeling or a small gesture. "
     "You are in a conversation with the user: answer what they ask, in the form they ask for. When the user asks for tagged output, reply with those tags only."
 )
 
@@ -98,7 +101,7 @@ _CHAR_FORMAT = (
     "(the same twelve tags for char2, char3 ... only if the source has more characters)"
 )
 _PLAN_KEYS = ("action", "end_pose", "state", "leads_to")
-_ANCHOR_KEYS = ("initial_pose", "initial_clothing", "held_objects", "appearance_locks", "environment_anchors", "source_facts", "plan_conflicts")
+_ANCHOR_KEYS = ("initial_pose", "initial_clothing", "held_objects", "appearance_locks", "environment_anchors", "source_facts", "conflict_status", "plan_conflicts")
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------
@@ -109,6 +112,7 @@ def _clean(raw: str | None) -> str:
 
 
 _LONE_MARKER_RE = re.compile(r"</?([A-Za-z_][\w.\-]*)\s*/?>")
+_NOTES: list[str] = []          # what the structure helpers tolerated in the reply being validated; ask() reads and reports it (never a silent change)
 
 
 def _outside(text: str, patterns: list) -> str:
@@ -118,7 +122,12 @@ def _outside(text: str, patterns: list) -> str:
         rest = p.sub("", rest)
     # A lone marker such as </start_turn> or <end_turn> carries no data. Its name is not one of the expected tags, so it is a leaked chat-template
     # token, not content; drop the marker itself. Text that sits next to a marker (or inside an unexpected <x>...</x>) is still a fault.
-    rest = _LONE_MARKER_RE.sub(lambda m: m.group(0) if any(m.group(1) in p.pattern for p in patterns) else "", rest)
+    def _lone(m):
+        if any(m.group(1) in p.pattern for p in patterns):
+            return m.group(0)
+        _NOTES.append(f"lone marker ignored: {m.group(0)}")
+        return ""
+    rest = _LONE_MARKER_RE.sub(_lone, rest)
     return rest.strip()
 
 
@@ -171,8 +180,12 @@ def _parse_characters(raw: str | None) -> tuple[dict | None, list[str]]:
             problems.append(f"<{cid}.{field}> contains another character tag (a tag was not closed correctly)")
             continue
         if field not in _CHAR_FIELDS:
-            problems.append(f"<{cid}.{field}> is not a character field")
+            # Not dropped: dropping would lose what the model wrote (footwear, accessories...). The reply is refused with the reason, the model writes it again inside the listed tags.
+            problems.append(f"<{cid}.{field}> is not a character field (use only the twelve listed tags; write footwear and accessories inside init_cloth)")
         elif field in chars.setdefault(cid, {}):
+            prev = chars[cid][field]
+            if value == prev or not value:
+                continue
             problems.append(f"duplicate <{cid}.{field}>")
         else:
             chars[cid][field] = value
@@ -190,6 +203,12 @@ def _parse_characters(raw: str | None) -> tuple[dict | None, list[str]]:
             problems.append(f"{cid} lacks the tag(s) {', '.join(miss)}")
         if not chars[cid].get("name", "").strip():
             problems.append(f"{cid}.name is empty")
+        if "init_cloth" in chars[cid] and not chars[cid]["init_cloth"].strip():
+            problems.append(f"{cid}.init_cloth is empty")
+        # A placeholder set (every field empty, or every field the same word) is recognised by its STRUCTURE, in any language, never by a list of words. It is refused, not deleted.
+        _vals = {v.strip() for f, v in chars[cid].items() if f != "trigger" and v.strip()}
+        if len(_vals) <= 1:
+            problems.append(f"{cid} is a placeholder (all its fields hold the same value or nothing): remove the set if the source has no such character")
     if problems:
         return None, problems
     lines: list[str] = []
@@ -232,9 +251,21 @@ def _parse_anchors(raw: str | None) -> tuple[dict | None, list[str]]:
         return None, problems
     anchors = _parse_keyed(blk["source_anchors"], "|".join(_ANCHOR_KEYS))
     for k in _ANCHOR_KEYS:
+        if k in ("conflict_status", "plan_conflicts"):
+            continue
         if not anchors.get(k, "").strip():
             problems.append(f"{k} is missing or empty")
-    return (None, problems) if problems else (anchors, [])
+    status = anchors.get("conflict_status", "").strip().upper()
+    if status not in _CONFLICT_STATUSES:
+        problems.append("conflict_status must be exactly one of the words CLEAR or CONFLICT (nothing else on that line)")
+    elif status == "CONFLICT" and not anchors.get("plan_conflicts", "").strip():
+        problems.append("conflict_status is CONFLICT but plan_conflicts does not describe the contradiction")
+    if problems:
+        return None, problems
+    anchors["conflict_status"] = status
+    if status == "CLEAR":
+        anchors["plan_conflicts"] = ""                     # whatever the details line says, the token decides
+    return anchors, []
 
 
 def _parse_events(raw: str | None, n_expected: int) -> tuple[list[dict] | None, list[str]]:
@@ -246,14 +277,36 @@ def _parse_events(raw: str | None, n_expected: int) -> tuple[list[dict] | None, 
     if left:
         problems.append("text outside the event tags: " + repr(left[:80]))
     events = [{"id": f"E{num}", "content": body.strip()} for num, body in found]
-    problems += _S._validate_prose_events(events, "E1", n_expected)
+    problems += _S._validate_prose_events(events, "E1", n_expected, check_stand_in=False)      # structure only: no word list decides whether an event is a "stand-in"
     return (None, problems) if problems else (events, [])
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------
 # the conversation
 # ---------------------------------------------------------------------------------------------------------------------------------
-_TEMPLATE_END_RE = re.compile(r"(?:\s*</?(?:end_of_turn|end_turn|start_turn|eos|start_of_turn)>)+\s*$")      # chat-template end markers a local model may leak after its answer
+_TEMPLATE_END_RE = re.compile(
+    r"(?:\s*(?:</?(?:end_of_turn|end_turn|start_turn|eos|start_of_turn)>|(?<![A-Za-z_])(?:end_of_turn|end_turn|start_turn|start_of_turn)>))+\s*$"
+)      # chat-template end markers a local model may leak after its answer, including a broken tail with the opening bracket missing
+
+
+_LANG_ECHO_RE = re.compile(
+    r"\A\s*(?:user[ \t]*\n)?[ \t]*Write all text inside the tags in [^;\n]+; tag names and keys stay English\.?[ \t]*\n?"
+)
+
+
+def _strip_instruction_echo(raw: str) -> tuple[str, list[str]]:
+    """Transport only: a local model sometimes repeats the language line, with a stray 'user' label, before the tags."""
+    text = raw or ""
+    notes: list[str] = []
+    cleaned = _LANG_ECHO_RE.sub("", text, count=1)
+    if cleaned != text:
+        notes.append("echoed language instruction removed")
+        text = cleaned
+    cleaned = re.sub(r"\A[ \t]*user[ \t]*\n", "", text, count=1)          # only at the very start of the reply, never a line inside the prose
+    if cleaned != text:
+        notes.append("leading user label removed")
+        text = cleaned
+    return text, notes
 
 
 def _strip_template_tail(raw: str) -> tuple[str, list[str]]:
@@ -279,6 +332,50 @@ def _strip_duplicate_closer(raw: str) -> tuple[str, list[str]]:
         text = text[:m.start()]
         notes.append(f"duplicate closing tag </{tag}> at the end removed")
     return text, notes
+
+
+_KNOWN_TAG_RE = re.compile(r"<(/?)([A-Za-z_][\w.]*)>")
+
+
+def _close_unclosed_block(raw: str, tokens: int) -> tuple[str, list[str]]:
+    """Transport only, and REPORTED. A block tag (<important_objects>, <locations>, <world_sheet>, <event_k> ...) that is opened and never closed is closed where it ends:
+      - where the NEXT protocol tag begins (any known block tag, opening or closing): the block is bounded by the following tag, so nothing can have been cut off;
+      - at the end of the reply, only when the reply is far below the output limit (ESTIMATED, over-counts = the safe side). A reply near the limit may have been cut off: it is left alone and refused.
+    Only the closing tag is inserted, just before the boundary (after the text's trailing whitespace). Nothing inside the block is read or changed, and a '<' that is not one of our tags
+    (a comparison sign, markup in the story) is just text. <story_events> holds other tags, so it is never closed this way."""
+    text = raw or ""
+    leaf = {t for t in _BLOCK_TAGS if t != "story_events"}
+    known = set(_BLOCK_TAGS)
+    inserts: list[tuple[int, str]] = []
+    open_tag, open_end = None, 0
+
+    def boundary(pos: int) -> int:
+        while pos > 0 and text[pos - 1].isspace():
+            pos -= 1
+        return pos
+
+    for m in _KNOWN_TAG_RE.finditer(text):
+        closing, name = m.group(1) == "/", m.group(2)
+        if name not in known:
+            continue                                                  # not one of our tags: plain text
+        if open_tag is not None:
+            if closing and name == open_tag:
+                open_tag = None
+                continue
+            if text[open_end:m.start()].strip():                      # a block with content that is bounded by the next tag
+                inserts.append((boundary(m.start()), f"</{open_tag}>"))
+            open_tag = None
+        if not closing and name in leaf:
+            open_tag, open_end = name, m.end()
+    if open_tag is not None and text[open_end:].strip() and (not tokens or _FC.estimate_tokens(text) < 0.85 * tokens):
+        inserts.append((len(text.rstrip()), f"</{open_tag}>"))
+    if not inserts:
+        return text, []
+    notes = []
+    for pos, closer in sorted(inserts, reverse=True):
+        text = text[:pos] + closer + text[pos:]
+        notes.append(f"closing tag {closer} added (the block ended without it)")
+    return text, list(reversed(notes))
 
 
 _KIND = {"CHARACTERS": "CHARACTERS", "STORY EVENTS": "EVENTS", "REVISED STORY EVENTS": "EVENTS", "PLAN CHECK": "PLAN", "STORY PLAN": "PLAN", "REVISED STORY PLAN": "PLAN", "SOURCE ANCHORS": "ANCHORS", "WORLD SHEET": "WORLD", "LOCATIONS": "LOCATIONS",
@@ -335,6 +432,8 @@ class _Conversation:
         self.history: list[dict] = []          # committed pairs: {"role","content","step"[,"short"]}
         self._sess: dict | None = None         # Local session mode: {"id", "tokens" (user + assistant, system excluded), "turns"} = what Python believes the node's history holds
         self._rotate_reason = ""               # set when the NEXT call must open a new session
+        self.last_omitted: list[str] = []      # kinds of accepted answers the last _transcript() did not carry
+        self.last_included = 0                 # how many accepted answers the last _transcript() carried
         self.records: list[dict] = []          # every call (also rejected ones), for debugging
         self._dbg = None                       # conversation_debug.ConversationDebugLog, created on the first call (active only while LLM Debug Logging is ON)
 
@@ -352,8 +451,9 @@ class _Conversation:
         """Local only: the stored conversation written into one user message (the node's own session memory is not relied upon).
         The workflow's context (n_ctx) is small, so a request carries the SOURCE plus the accepted ANSWERS the step depends on (_LOCAL_NEEDS), each with the short
         label of the request it answered; a rejected attempt in this step is carried in full. Nothing is summarised or rewritten."""
-        needed = list(_KIND.values()) if all_kinds else self.needs.get(step, list(_KIND.values()))      # all_kinds: the rebuild of a new session carries every accepted step
         pairs = [(self.history[i], self.history[i + 1]) for i in range(0, len(self.history), 2)]
+        have = list(dict.fromkeys(k for k in (_kind_of(u["step"]) for u, _a in pairs) if k))           # every kind that really is in the accepted history (STORY EVENT k included)
+        needed = have if all_kinds else self.needs.get(step, have)      # all_kinds: the rebuild of a new session carries every accepted step
         pick: dict[str, int] = {}
         for idx, (u, a) in enumerate(pairs):
             if _kind_of(u["step"]) in needed:
@@ -361,6 +461,9 @@ class _Conversation:
         if "EVENTS" in pick:                                          # a revised block of story events replaces the per-step paragraphs
             for k in [k for k in pick if re.fullmatch(r"EVENT\d+", k)]:
                 del pick[k]
+        # accepted answers this message does NOT carry (not replaced by a later answer of the same kind: those are replaced by design): reported by the caller
+        self.last_omitted = [k for k in have if k not in pick and not (re.fullmatch(r"EVENT\d+", k) and "EVENTS" in pick)]
+        self.last_included = len(pick)
         parts = []
         if step != "CHARACTERS":                                      # the first request already contains the source
             parts.append("SOURCE (authoritative):\n" + self.source)
@@ -412,14 +515,21 @@ class _Conversation:
             reset = True
             fresh = not self.history and not working and step == "CHARACTERS"            # the very first request already contains the source
             sent = request if fresh else self._transcript(step, working, request, all_kinds=True)
+            omitted, included = ([], 0) if fresh else (list(self.last_omitted), self.last_included)
             self._sess = {"id": uuid.uuid4().hex[:8], "tokens": 0, "turns": 0}
             if self._need_tokens(sent, tokens) > budget and not fresh:
                 lighter = self._transcript(step, working, request)                      # the steps this request depends on only (the old table)
                 if self._need_tokens(lighter, tokens) < self._need_tokens(sent, tokens):
-                    sent = lighter
+                    sent, omitted, included = lighter, list(self.last_omitted), self.last_included
+            self.cap.setdefault("rebuilds", []).append({"step": step, "session": self._sess["id"], "reason": reason, "accepted_steps_carried": included, "not_carried": omitted})
             if self.on_log:
                 await self.on_log(f"ℹ Story Bible (static conversation): new session {self._sess['id']} for {step} ({reason}); the system prompt is sent once"
-                                  + ("" if fresh else f", with {len([m for m in self.history if m['role'] == 'user'])} accepted step(s) rebuilt"))
+                                  + ("" if fresh else f", with {included} accepted step(s) rebuilt"))
+                if omitted:
+                    await self.on_log(f"⚠ Story Bible (static conversation): the rebuilt context for {step} does NOT contain these accepted answers (context budget): {', '.join(omitted)}. "
+                                      "The history the model sees is not complete.")
+                if not fresh and self._need_tokens(sent, tokens) > budget:
+                    await self.on_log(f"⚠ Story Bible (static conversation): {step} still needs about {self._need_tokens(sent, tokens)} tokens, over the budget of {budget}")
                 await self.on_log(f"📋 Story Bible SYSTEM:\n{self.system}")
         raw = await _FC.call_session(self.wf_template or {}, self.system, sent, session_id=self._sess["id"], reset=reset, max_tokens=tokens, n_ctx=n_ctx, on_log=self.on_log)
         raw = raw or ""
@@ -456,9 +566,15 @@ class _Conversation:
             elapsed = round(time.time() - t0, 1)
             raw_original = raw
             raw, transport_notes = _strip_template_tail(raw)
+            raw, echo_notes = _strip_instruction_echo(raw)
+            transport_notes = transport_notes + echo_notes
             raw, dup_notes = _strip_duplicate_closer(raw)
             transport_notes = transport_notes + dup_notes
+            raw, close_notes = _close_unclosed_block(raw, tokens)
+            transport_notes = transport_notes + close_notes
+            _NOTES.clear()
             parsed, problems = validate(raw) if raw.strip() else (None, ["the reply was empty"])
+            transport_notes = transport_notes + list(dict.fromkeys(_NOTES))
             rec = {"step": step, "attempt": attempt, "backend": self.backend, "model": self.grok_model if self.backend == "grok" else self.cap.get("llm_wf_file"),
                    "arc": (self.cap.get("arc") or {}).get("id"), "session": ("grok messages" if self.backend == "grok" else (f"{self._sess['id']} (one session; system prompt sent once)" if _SESSION_MODE and self._sess else f"{self.session_id} (fresh each call; history sent by Python)")),
                    "system_prompt": self.system, "user_prompt": cur_request, "raw_response": raw_original, "transport_notes": transport_notes, "parsed": parsed, "validation": problems, "ok": not problems,
@@ -562,47 +678,52 @@ def _req_plan(arc: dict, names: list[str], n_chars: int, *, desc_lang: str) -> s
 
 def _req_events(arc: dict, names: list[str], n_chars: int, *, desc_lang: str, vn: bool = False) -> str:
     n = len(arc["steps"])
-    steps = "\n".join(f"{i}. {s}" for i, s in enumerate(arc["steps"], 1))
-    solo = " There is only one character: show a solo story and do not create anyone else." if n_chars == 1 else ""
+    steps = "\n".join(f"{i}. {t}" for i, t in enumerate(arc["steps"], 1))
     keys = "\n".join(f"<event_{i}>...</event_{i}>" for i in range(1, n + 1))
+    solo = " There is only one character: show a solo story and do not create anyone else." if n_chars == 1 else ""
     return ("\n".join(x for x in (
         _lang(desc_lang),
-        f"TASK - STORY EVENTS: write {n} paragraphs - one paragraph for each step of this Static Arc, in order. The focus is the body: each paragraph shows the character in a new pose and the action that gets there.",
+        f"TASK - STORY EVENTS: write {n} paragraphs of connected prose - one paragraph for each step of this Static Arc, in order, as the events of one short story.",
         "SELECTED STATIC ARC\nGenre: %s\nGenre direction: %s\nArc ID: %s\nArc Name: %s\n\nSteps:\n%s" % (arc["genre"], arc.get("goal", ""), arc["id"], arc["name"], steps),
         ("Static Arc rules: " + arc["rules"]) if arc.get("rules") else "",
-        "Paragraph 1 is the source scene exactly (characters, place, pose). In each later paragraph the pose, the support and the body position are clearly different from every earlier paragraph, "
-        "and the facial expression and the mood differ too, following the genre direction and its step. The place and the environment stay the same; only small things change, such as wind, dust, light or "
-        "a small object moving. Do not tell a new story: no new events beyond what the pose change needs. "
+        "Paragraph 1 is the source scene exactly (characters, place, pose, held objects, clothing) and does not start the next event. "
+        "Each later paragraph starts from where the previous one ended and shows what someone does because of that situation, how the scene or another person responds, and what is different "
+        "afterward, as long as the event needs. The step names the dramatic job of its paragraph: do that job with the people, place and objects this source already has. "
+        "A paragraph that only changes a pose, a glance or a feeling is not an event. "
         f"Use only these characters: {'; '.join(names)}.{solo}",
         _places_rule(vn),
         "Reply with this block only, each paragraph inside its own event tag:\n<story_events>\nselected_arc: %s\n%s\n</story_events>" % (arc["id"], keys),
-    ) if x != ""))
-
+    ) if x))
 
 def _parse_event_step(raw: str | None, k: int) -> tuple[str | None, list[str]]:
     """One paragraph, exactly one <event_k>...</event_k> tag and nothing else."""
     problems: list[str] = []
     blk = _single_blocks(_clean(raw), (f"event_{k}",), problems)
-    text = " ".join(blk.get(f"event_{k}", "").split())
+    text = blk.get(f"event_{k}", "").strip()                          # the paragraph exactly as written (outer whitespace only)
     if f"event_{k}" in blk and not text:
         problems.append(f"<event_{k}> is empty")
     return (None, problems) if problems else (text, [])
 
 
-def _req_event_step(arc: dict, k: int, names: list[str], n_chars: int, *, desc_lang: str) -> str:
+def _req_event_step(arc: dict, k: int, names: list[str], n_chars: int, *, desc_lang: str, vn: bool = False) -> str:
     n = len(arc["steps"])
     solo = " There is only one character: show a solo story and do not create anyone else." if n_chars == 1 else ""
-    head = "Genre: %s\nGenre direction: %s\nArc: %s (%s)\nStep %d of %d: %s" % (arc["genre"], arc.get("goal", ""), arc["name"], arc["id"], k, n, arc["steps"][k - 1])
+    head = "Genre: %s\nGenre direction: %s\nArc: %s (%s)\nStep %d of %d, the dramatic job of this paragraph: %s" % (arc["genre"], arc.get("goal", ""), arc["name"], arc["id"], k, n, arc["steps"][k - 1])
     rules = ("Static Arc rules: " + arc["rules"]) if arc.get("rules") else ""
     if k == 1:
-        ask = ("TASK - STORY EVENT 1: write paragraph 1 of the story. It is the source scene: use the characters, the environment and the pose that the source gives, as this Static Arc step says.")
+        ask = ("TASK - STORY EVENT 1: write paragraph 1, the opening of the story, as connected prose. Show the source scene as it is: the same characters, place, pose, held objects and clothing. "
+               "This paragraph only establishes that opening. Do not begin the next event, and do not explain a plot that has not happened yet.")
+        adapt = ""
     else:
-        ask = (f"TASK - STORY EVENT {k}: from the story you have written so far, add paragraph {k}, following this Static Arc step. It carries the story forward from where the previous paragraph ended "
-               "(what happens, why, what it changes). The character takes a new pose that is clearly different from the poses in every earlier paragraph, and the facial expression and the mood are also "
-               "different from the earlier ones. A change of place is allowed. The paragraph may hold as many events as the story needs." + (" It pays off what the earlier paragraphs set up." if k == n else ""))
-    return "\n".join(x for x in (_lang(desc_lang), ask, head, rules, f"Use only these characters: {'; '.join(names)}.{solo}",
+        payoff = (" This is the last paragraph: bring the story to a result the reader can see." if k == n else "")
+        ask = (f"TASK - STORY EVENT {k}: write paragraph {k} of {n} as connected prose, the next event of this same story. "
+               "Start from the exact situation where the previous paragraph ended. Show what someone does because of that situation, how the scene or another person responds, and what is different afterward "
+               "(the action, the reaction and the consequence, as the story needs them). The pose a character has at the end is the visible result of what happened, not the reason for it. "
+               "Do not write only a pose, a glance or a feeling." + payoff)
+        adapt = ("Do the dramatic job of this arc step with the people, place and objects the story already has. If the step names something this source does not have, do the same job with what it has; "
+                 "do not add a person or an object the source does not support.")
+    return "\n".join(x for x in (_lang(desc_lang), ask, head, rules, adapt, _places_rule(vn), f"Use only these characters: {'; '.join(names)}.{solo}",
                                  "Reply with this tag only:\n<event_%d>...</event_%d>" % (k, k)) if x)
-
 
 def _parse_events_block(raw: str | None, arc: dict) -> tuple[dict | None, list[str]]:
     text = _clean(raw)
@@ -613,7 +734,7 @@ def _parse_events_block(raw: str | None, arc: dict) -> tuple[dict | None, list[s
     n = len(arc["steps"])
     inner = blk["story_events"]
     if re.search(r"<event_1>", inner, re.IGNORECASE):          # one tag per paragraph: <event_N>paragraph</event_N> (the model closes a long paragraph itself instead of closing the whole block)
-        ev = {f"event_{i}": " ".join(m.group(1).split()) for i in range(1, n + 1) for m in [re.search(rf"<event_{i}>(.*?)</event_{i}>", inner, re.IGNORECASE | re.DOTALL)] if m}
+        ev = {f"event_{i}": m.group(1).strip() for i in range(1, n + 1) for m in [re.search(rf"<event_{i}>(.*?)</event_{i}>", inner, re.IGNORECASE | re.DOTALL)] if m}
         sel = re.search(r"selected_arc\s*:\s*(\S+)", inner)
         ev["selected_arc"] = sel.group(1) if sel else ""
     else:
@@ -664,11 +785,12 @@ def _req_plan_challenge(arc: dict, names: list[str], *, desc_lang: str) -> str:
 def _req_anchors(*, desc_lang: str, vn: bool = False) -> str:
     sp, p = ("story plan", "plan") if _use_plan() else ("story events", "story events")
     return (f"{_lang(desc_lang)}\nTASK - SOURCE ANCHORS: from the source and the {sp}, list the facts that must stay true. The source is the authority. "
-            f"Check the {p} against the source; do not change the {p} in this reply. If the {p} contradicts the source anywhere, describe the contradiction in plan_conflicts, otherwise write none."
+            f"Check the {p} against the source; do not change the {p} in this reply. If the {p} contradicts the source anywhere, set conflict_status to CONFLICT and describe the contradiction in plan_conflicts; otherwise set conflict_status to CLEAR."
             + (" New places and scenes after the first event are allowed in this Visual Novel and are not a conflict; the facts of the source scene itself must not be contradicted." if vn else "") + "\n"
             "Output format - one block, nothing else:\n<source_anchors>\ninitial_pose: the starting pose, exactly as the source gives it\ninitial_clothing: ...\n"
             "held_objects: what is held and by whom, or none\nappearance_locks: appearance facts that never change\nenvironment_anchors: place, atmosphere, light that stay true\n"
-            "source_facts: other canonical facts of the source\nplan_conflicts: none, or the contradictions between the plan (or story events) and the source\n</source_anchors>")
+            "source_facts: other canonical facts of the source\nconflict_status: exactly one word in capital letters, CLEAR (the plan or story events agree with the source everywhere) or CONFLICT (they contradict it anywhere)\n"
+            "plan_conflicts: when conflict_status is CONFLICT, the contradictions between the plan (or story events) and the source; when it is CLEAR, leave this line empty\n</source_anchors>")
 
 
 def _req_revise_events(conflict: str, arc: dict, names: list[str], *, desc_lang: str) -> str:
@@ -712,7 +834,9 @@ def _req_macros(n_chars: int, n_events: int, *, desc_lang: str, vn: bool = False
         what = ("the story events you wrote", "Keep the order of the events, their cast, their places and every state change (clothing, held objects, contact); do not change the story on your own. ")
     return (f"{_lang(desc_lang)}\nTASK - MACRO EVENTS: now write the macro events E1-E{n_events} from " + what[0] + ", using the character sheet, source anchors, world sheet, locations and "
             "important objects we agreed. " + what[1] +
-            "E1 keeps the source's starting pose exactly. Write each event as connected prose with real actions (not only feelings or gaze), name who does what instead of using pronouns, "
+            "E1 keeps the source's starting pose exactly and does not move past it. "
+            "Each later event keeps the plot of that step: who acts, why, what they do, and what is different at the end. Do not shorten an event down to a pose or a change of position. "
+            "Write connected prose with real actions (not only feelings or gaze), name who does what instead of using pronouns, "
             "and do not add characters. " + ("State where each event takes place when the place changes, and keep the places already given.\n" if vn else "Keep every event in the source scene.\n") + _solo_line(n_chars) +
             "Output format - exactly %d tags, nothing else:\n<E1>connected prose of step 1</E1>\n<E2>connected prose of step 2, starting from where E1 ended</E2>\n(... up to <E%d>) with each tag closed by its own </E#>." % (n_events, n_events))
 
@@ -777,7 +901,7 @@ async def run_a1_static_conversation(story_text, llm_wf_file, on_err, on_log=Non
     if _EVENTS_FIRST and _EVENTS_PER_STEP:
         events = {"selected_arc": arc["id"]}
         for k in range(1, len(arc["steps"]) + 1):
-            para, pr = await conv.ask(f"STORY EVENT {k}", _req_event_step(arc, k, names, n_chars, desc_lang=desc_lang), lambda r, k=k: _parse_event_step(r, k), tokens=2048)
+            para, pr = await conv.ask(f"STORY EVENT {k}", _req_event_step(arc, k, names, n_chars, desc_lang=desc_lang, vn=vn), lambda r, k=k: _parse_event_step(r, k), tokens=3072)
             if para is None:
                 return await fail(f"STORY EVENT {k}", pr)
             events[f"event_{k}"] = para
@@ -820,9 +944,9 @@ async def run_a1_static_conversation(story_text, llm_wf_file, on_err, on_log=Non
         anchors, pr = await conv.ask("SOURCE ANCHORS", _req_anchors(desc_lang=desc_lang, vn=vn), _parse_anchors, tokens=2048)
         if anchors is None:
             return await fail("SOURCE ANCHORS", pr)
-        conflict = anchors["plan_conflicts"].strip()
-        if conflict.lower().strip(" .") in _NONE_VALUES:
+        if anchors["conflict_status"] == "CLEAR":
             break
+        conflict = anchors["plan_conflicts"].strip()
         if on_log:
             await on_log(f"⚠ Story Bible (static): the model reports a plan/source conflict: {conflict[:200]}")
         if rev >= _ANCHOR_REVISIONS:
@@ -863,30 +987,32 @@ async def run_a1_static_conversation(story_text, llm_wf_file, on_err, on_log=Non
     objects, pr = await conv.ask("IMPORTANT OBJECTS", _req_objects(desc_lang=desc_lang), _one("important_objects", allow_empty=True), tokens=1024)
     if objects is None:
         return await fail("IMPORTANT OBJECTS", pr)
-    # 7 macro events
+    # 7 macro events. With no plan, the accepted story events ARE the story: a second call rewrote them into a different, thinner plot.
     n_ev = len(arc["steps"])
-    if _PLAN_ACTION_AS_MACRO:
+    events_are_story = not _use_plan()
+    if _PLAN_ACTION_AS_MACRO or events_are_story:
         src_plan = plan if plan is not None else {f"step_{i}.action": cap["story_events"].get(f"event_{i}", "") for i in range(1, n_ev + 1)}
-        events, pr = _events_from_plan(src_plan, n_ev)       # the final accepted plan (after the plan check and any anchors revision), or the story events when there is no plan
+        events, pr = _events_from_plan(src_plan, n_ev)
         if events is None:
-            await on_err("Story Bible (static): macro events from the plan cannot be built - " + "; ".join(pr) + " (nothing was written in their place)")
+            await on_err("Story Bible (static): macro events from the accepted story cannot be built - " + "; ".join(pr) + " (nothing was written in their place)")
             return None
         if on_log:
-            await on_log("ℹ Story Bible (static): MACRO EVENTS call skipped - E1-E%d are the plan's step actions" % n_ev)
+            await on_log("ℹ Story Bible (static): MACRO EVENTS call skipped - E1-E%d are the accepted %s" % (n_ev, "plan actions" if _use_plan() else "story events"))
     else:
         events, pr = await conv.ask("MACRO EVENTS", _req_macros(n_chars, n_ev, desc_lang=desc_lang, vn=vn), lambda r: _parse_events(r, n_ev), tokens=8192)
         if events is None:
             return await fail("MACRO EVENTS", pr)
     # 8 continuity
-    continuity, pr = await conv.ask("CONTINUITY NOTES", _req_continuity(desc_lang=desc_lang, events=events if _PLAN_ACTION_AS_MACRO else None), _one("continuity_notes"), tokens=2048)
+    continuity, pr = await conv.ask("CONTINUITY NOTES", _req_continuity(desc_lang=desc_lang, events=events if (_PLAN_ACTION_AS_MACRO or events_are_story) else None), _one("continuity_notes"), tokens=2048)
     if continuity is None:
         return await fail("CONTINUITY NOTES", pr)
 
     result = {"macro_events": events, "character_sheet": chars["sheet"], "world_sheet": world.get("world_sheet", ""), "locations": locations,
               "important_objects": objects, "continuity_notes": continuity, "source_style": world.get("source_style", "")}
     _S._merge_event_parts(result)
-    dropped = _S._drop_empty_characters(result)
+    dropped: list[str] = []          # no character set is deleted any more: a placeholder set is refused by _parse_characters (structure), the model writes the sheet again
     ev_text = " ".join(e["content"] for e in result["macro_events"])
+    # LOGGING ONLY (no effect on the output, a retry or the route): a name that never appears literally in the events may just be spelled differently
     missing = [n for n in names if n not in ev_text]
     if missing and on_log:
         await on_log(f"⚠ Story Bible (static): cast name(s) {missing} never appear in the events (the events may use another spelling)")

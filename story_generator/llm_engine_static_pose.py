@@ -260,6 +260,7 @@ async def run_static_pose_fill(
     # 2. PLAN: N different poses
     plan = None
     problems = []
+    best: list[dict] = []                      # the longest plan with FEWER variations than asked that is otherwise sound (complete fields, no repeated pose)
     for attempt in range(1, _MAX_ATTEMPTS + 1):
         if stopped():
             await on_err("Pose Variations: stopped")
@@ -271,6 +272,14 @@ async def run_static_pose_fill(
             await log(f"ℹ Pose Variations: {n} variations planned (attempt {attempt})")
             break
         await log(f"⚠ Pose Variations: plan attempt {attempt}: " + "; ".join(problems))
+        got = len(re.findall(r"^\s*(?:</?shot_\d+\s*>\s*)*pose\s*:", raw or "", re.IGNORECASE | re.MULTILINE))
+        if 0 < got < n:
+            part, _why = _parse_plan(raw, got)         # the same checks, for the number the model really wrote
+            if part and len(part) > len(best):
+                best = part
+    if plan is None and best:
+        plan = best                            # fewer than asked: use them and tell the user (status line), not a failure
+        await log(f"⚠ Pose Variations: the model planned only {len(plan)} of the {n} variations after {_MAX_ATTEMPTS} attempts - continuing with {len(plan)}")
     if plan is None:
         await on_err("Pose Variations: the plan was not accepted after 3 attempts - " + "; ".join(problems))
         return None
@@ -314,4 +323,4 @@ async def run_static_pose_fill(
         shots.append(shot)
         if on_shot:
             await on_shot(i - 1, shot, n)
-    return {"base_prompt": base, "source_style": style, "plan": plan, "shots": shots, "failed": failed}
+    return {"base_prompt": base, "source_style": style, "plan": plan, "shots": shots, "failed": failed, "requested": n}

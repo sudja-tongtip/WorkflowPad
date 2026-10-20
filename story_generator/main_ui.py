@@ -6650,6 +6650,10 @@ def main(page: ft.Page):
                     chat_capture=_a2_chat_capture_local,
                 )
                 if a2 is None:
+                    if _a2_chat_capture_local.get("sessions"):          # A2 failed: Beats chat still shows the calls (the failed macro's replies)
+                        _a2_chat_sessions[0] = _a2_chat_capture_local["sessions"]
+                        _outline_refresh_a2_sessions()
+                        page.update()
                     return
                 # Remember which A2 mode produced these units (persisted with the A2 dict) so B's
                 # strict 1:1 decision — and Refresh B — always follow the mode A2 really ran in.
@@ -6836,6 +6840,10 @@ def main(page: ft.Page):
                     chat_capture=_a2_chat_capture_local,
                 )
                 if a2 is None:
+                    if _a2_chat_capture_local.get("sessions"):          # A2 failed: Beats chat still shows the calls (the failed macro's replies)
+                        _a2_chat_sessions[0] = _a2_chat_capture_local["sessions"]
+                        _outline_refresh_a2_sessions()
+                        page.update()
                     return
                 a2["a2_mode"] = "sequential"
                 _outline_vnext_a2[0] = a2
@@ -7034,7 +7042,10 @@ def main(page: ft.Page):
         llm_busy[0] = False; llm_prog.visible = False
         gen_shots_btn.disabled = False; fill_prompts_btn.disabled = False
         _failed = result.get("failed") or []
-        status_lbl.value = (f"🎭 Pose Variations done — {len(shots_data)} shots" if not _failed else
+        _asked = int(result.get("requested") or len(shots_data))
+        status_lbl.value = (f"⚠ Pose Variations — got {len(shots_data)} of {_asked} variations (the model planned fewer)" + (f", {len(_failed)} without a prompt (shots {', '.join(str(x) for x in _failed)})" if _failed else "")
+                            if len(shots_data) < _asked else
+                            f"🎭 Pose Variations done — {len(shots_data)} shots" if not _failed else
                             f"⚠ Pose Variations — {len(shots_data)} shots, {len(_failed)} without a prompt (shots {', '.join(str(x) for x in _failed)})")
         _outline_review_rebuild()
         _set_outline_phase("READY", status_lbl.value)

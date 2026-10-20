@@ -22,15 +22,17 @@ from . import a1_static_conversation as _C
 from .constants import lang_prompt_name
 from .llm_engine_a1 import GROK_MARKER
 
-__version__ = "20261103_a1_novel_conversation_v1"
+__version__ = "20261020_a1_novel_story_sense"
 
-# One call per step of a Genre Arc: each call REARRANGES a part of the finished story into the next paragraph (nothing is invented). The paragraphs are the macro events E1..En
-# (n = the number of arc steps), so there is no separate MACRO EVENTS call. False = the previous flow (one MACRO EVENTS call, as many events as the story needs).
+# One call per arc step: each call writes the NEXT chronological slice of the finished story. The arc step is emphasis only; nothing is invented, reordered or dropped.
+# The paragraphs are the macro events E1..En (n = the number of arc steps), so there is no separate MACRO EVENTS call.
+# False = the previous flow (one MACRO EVENTS call, as many events as the story needs).
 _NOVEL_PER_STEP = True
 
 _NOVEL_SYSTEM_PROMPT = (
-    "You are a professional story editor. You read a finished story and prepare the reference that a storyboard team uses to draw it as a sequence of images, "
-    "so that the images alone tell the story in order. You create the characters from the story: if the story gives a character no name, create a fitting personal name for them. "
+    "You are a professional story editor. You read a finished story and divide it into ordered passages, so that images of those passages, in order, tell that same story. "
+    "You do not write a new plot. You do not change who does what, the order of events, or the ending, and you do not drop an event because it does not match a genre label. "
+    "You create the characters from the story: if the story gives a character no name, create a fitting personal name for them. "
     "You are in a conversation with the user: answer what they ask, in the form they ask for. When the user asks for tagged output, reply with those tags only."
 )
 
@@ -55,24 +57,45 @@ def _needs_per_step() -> dict:
     return out
 
 
+def _select_novel_arc(genre: str, genre2: str) -> dict:
+    """The arc of A1 Novel: ONE of the story arcs (the same family Groom uses) of the resolved genre. The Static arcs are written for one still picture (their step 1 reproduces the source
+    pose, their rules ask for pose changes), which is wrong for a finished story that has to keep its own beginning, order and ending. All story arcs have five steps, so the five macro
+    events and everything downstream (A2) are unchanged. The arc is emphasis only (see _req_event_step); it is never a reason to add, drop or move an event."""
+    from . import llm_engine_a1_static as _S0
+    key, source = _S0._resolve_genre(genre, genre2)
+    arc = _S0._ARC_RNG.choice(_S0._GENRE_ARCS[key])
+    return {"genre": key, "genre_source": source, "goal": _S0._GENRE_GOALS.get(key, ""), "arc_source": "story", "id": arc["id"], "name": arc["name"], "steps": list(arc["steps"])}
+
+
 def _lang(desc_lang: str) -> str:
     return _C._lang(desc_lang)
 
 
 def _req_event_step(arc: dict, k: int, names: list[str], *, desc_lang: str) -> str:
-    """Paragraph k of n: the part of the finished story that fits arc step k, rearranged. The story is only rearranged; nothing is invented."""
+    """Passage k of n: the next chronological slice of the finished story. The arc step is emphasis only; nothing is invented or reordered."""
     n = len(arc["steps"])
-    where = "It starts from the first event of the story." if k == 1 else "It continues exactly where the previous paragraph ended."
-    rest = ("This last paragraph takes everything that remains, up to the final event of the story." if k == n
-            else "Leave the later parts of the story for the later paragraphs.")
-    head = "Genre direction: %s\nArc: %s (%s)\nStep %d of %d: %s" % (arc.get("goal", ""), arc["name"], arc["id"], k, n, arc["steps"][k - 1])
+    if k == 1:
+        where = "Begin at the first event of the story. Do not skip the opening, and do not start later than the story does."
+    else:
+        where = "Begin at the moment the previous passage ended. Do not repeat events already written in an earlier passage."
+    if k == n:
+        rest = ("This last passage takes only what the previous passages have not already shown, through the story's actual final event and its outcome. "
+                "Do not summarize or retell the passages already written. If the ending was already shown, write that outcome in one sentence and do not narrate the actions again. "
+                "Do not add an ending the story does not have.")
+    else:
+        rest = "Stop before the later parts of the story. Do not preview events that belong in a later passage."
+    head = "Genre direction: %s\nArc: %s (%s)\nStep %d of %d, emphasis only: %s" % (arc.get("goal", ""), arc["name"], arc["id"], k, n, arc["steps"][k - 1])
     return "\n".join(x for x in (
         _lang(desc_lang),
-        f"TASK - STORY EVENT {k}: rearrange the story into paragraph {k} of {n}, following this arc step. Use only what the story says: do not invent events, characters or facts, "
-        "and do not change the chronology or the ending.",
+        f"TASK - STORY EVENT {k}: write passage {k} of {n} of the finished story, in the story's own order. "
+        "The passages together must cover the whole story from the first event to the last, with no gap, no repeated event, and no event moved earlier or later.",
+        where + " " + rest,
+        "The arc step below is only a hint about what to bring forward IF that kind of moment is already inside this part of the story. "
+        "If this part has no such moment, write the part anyway. Never add a character, place, action, object or outcome the story does not contain. Never change the chronology or the ending.",
         head,
-        "Take from the story the part that fits this step and write it as one connected paragraph of flowing prose that names who does what to whom (names, never pronouns or role labels). "
-        f"{where} {rest} A paragraph may hold as many of the story's events as fit. Keep every important fact of that part (clothing, body state, objects and who holds them, place, dialogue).",
+        "Write one connected paragraph of flowing prose that names who does what to whom (names, never pronouns or role labels). "
+        "A reader who has only the previous passage must understand why this passage follows and what has changed. "
+        "Keep every important fact of this part (clothing, body state, objects and who holds them, place, dialogue).",
         f"Use only these characters: {'; '.join(names)}.",
         "Reply with this tag only:\n<event_%d>...</event_%d>" % (k, k),
     ) if x)
@@ -191,12 +214,11 @@ async def run_a1_novel_conversation(story_text, llm_wf_file, on_err, on_log=None
 
     events = None
     if _NOVEL_PER_STEP:                                      # the story rearranged into the arc, one paragraph per call; the paragraphs are the macro events
-        from . import llm_engine_a1_static as _S0
-        arc = _S0._select_arc(genre, genre2)                 # ONCE per run
+        arc = _select_novel_arc(genre, genre2)               # ONCE per run (a story arc, never a Static arc)
         cap["arc"] = arc
         cap["events_per_step"] = True
         if on_log:
-            await on_log(f"ℹ Story Bible (novel): arc={arc['id']} \"{arc['name']}\" genre={arc['genre']} ({arc['genre_source']}); the story is rearranged into {len(arc['steps'])} paragraphs, one call each")
+            await on_log(f"ℹ Story Bible (novel): arc={arc['id']} \"{arc['name']}\" genre={arc['genre']} ({arc['genre_source']}); the story is split in order into {len(arc['steps'])} passages, one call each (the arc is emphasis only)")
         events = []
         for k in range(1, len(arc["steps"]) + 1):
             para, pr = await conv.ask(f"STORY EVENT {k}", _req_event_step(arc, k, chars["names"], desc_lang=desc_lang), lambda r, k=k: _C._parse_event_step(r, k), tokens=3072)
@@ -224,8 +246,9 @@ async def run_a1_novel_conversation(story_text, llm_wf_file, on_err, on_log=None
               "important_objects": objects, "continuity_notes": continuity, "source_style": world.get("source_style", "")}
     from . import llm_engine_a1_static as _S
     _S._merge_event_parts(result)
-    dropped = _S._drop_empty_characters(result)
+    dropped: list[str] = []          # no character set is deleted any more: a placeholder set is refused by _parse_characters (structure), the model writes the sheet again
     ev_text = " ".join(e["content"] for e in result["macro_events"])
+    # LOGGING ONLY (no effect on the output, a retry or the route): a name that never appears literally in the events may just be spelled differently
     missing = [n for n in chars["names"] if n not in ev_text]
     if missing and on_log:
         await on_log(f"⚠ Story Bible (novel): cast name(s) {missing} never appear in the events (the events may use another spelling)")

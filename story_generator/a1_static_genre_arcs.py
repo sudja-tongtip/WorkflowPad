@@ -5,7 +5,7 @@ Every arc has five Macro Event roles: canonical Entry + four consecutive actions
 The roles are adaptable to the source, not compulsory prop, people or garment lists.
 """
 
-_STATIC_GLOBAL_RULES = 'Every later step is an event: Actor -> Action -> Target (if any) -> what it changes in the scene, an object, clothing or the relationship. The body pose at the end of the step follows from the event and must differ clearly from the previous step (body silhouette, support, torso/legs or position); micro-gestures, gaze or feeling alone never count. Preserve hand occupancy, props, wardrobe, contact, distance and feasible transitions; do not invent a partner for solo sources. Follow source constraints; do not force actions of an arc when impossible in this setting.'
+_STATIC_GLOBAL_RULES = 'Every later step is an event of the same story: someone acts because of the event before it, the scene or another person responds, and the situation (an object, clothing, a position, the relationship) is different afterward. The pose a character ends in is the visible result of that event, never the reason to invent it. Use the dramatic job of the step, adapted to what this source can support: if a step names something the source does not have (a prop, a partner, a place), do the same job with what the source does have; do not add a character, object or place only because a step names one, and do not invent a partner for a solo source. Preserve hand occupancy, props, wardrobe and continuity unless an action changes them.'
 
 _STATIC_GENRE_GOALS = {
     'romance': 'Build earned affection and reciprocal decisions through concrete approaches, cooperation, distance changes and visible relationship choices.',

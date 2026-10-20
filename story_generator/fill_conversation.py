@@ -31,6 +31,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .comfy_api import comfy_queue, comfy_history
+from .llm_engine_a1_router import _strip_template_tail
 from . import llm_overrides as _ov
 from .conversation_debug import ConversationDebugLog
 
@@ -107,6 +108,25 @@ def repair_fill_headers(text: str) -> str:
     return out
 
 
+_VIEW_TAG_RE = re.compile(r"[ \t]*<view>([^<]*)</view>[ \t]*\n?", re.IGNORECASE)
+VIEW_HISTORY_MAX = 6                              # how many of the latest accepted CAMERA sections the next request carries
+
+
+def strip_view_ledger(text: str) -> tuple[str, str]:
+    """Transport only, like removing a code fence: every well-formed <view>...</view> working note is taken off the reply, wherever it stands. Returns (the reply without them, the FIRST note as the
+    model wrote it, whitespace collapsed; '' when there is none). An unclosed tag is left alone (the structure check then refuses the reply). No word of the prompt or of the note is read or changed."""
+    t = text or ""
+    found = _VIEW_TAG_RE.findall(t)
+    if not found:
+        return t, ""
+    return _VIEW_TAG_RE.sub("", t).lstrip(), " ".join(found[0].split())
+
+
+def strip_template_tail(text: str) -> str:
+    """Transport only: trailing chat-template markers a local model may leak after its answer (the same as the router's). Only markers at the very end are removed."""
+    return _strip_template_tail(text or "").rstrip()
+
+
 POSE_RULES_ON = False              # EXPERIMENT (default off): POSE_RULES below are appended to the system prompt of the conversation; False = the system prompt of the previous conversation mode
 
 # Pose fidelity and section roles (compact; the base prompt keeps every rule it had). Appended only when POSE_RULES_ON.
@@ -171,10 +191,11 @@ CONVERSATION_RULES = """
 
 CONVERSATION MODE (this overrides only how the work is delivered, not any rule above):
 1. CHARACTERS, WORLD, LOCATIONS, OBJECT REFERENCE, STYLE, and VISUAL DIRECTION are the DATA SHEETS in this system prompt. They are not sent again in the user message. Never answer ACK.
-2. Every user message is one shot: a short request, optionally a PARENT STORY EVENT, and the CURRENT B SHOT. Answer it with the final prompt in exactly the required block structure above and nothing else - no ACK, no commentary, no tags or sections that are not listed, no markdown fences.
+2. Every user message is one shot: a short request, optionally a PARENT STORY EVENT, and the CURRENT B SHOT. Answer it with the final prompt in exactly the required block structure above and nothing else - no ACK, no commentary, no tags or sections that are not listed (except the one <view> line of rule 6), no markdown fences.
 3. Use the DATA SHEETS and the earlier messages of this conversation automatically. "PREVIOUS FRAME LAYOUT", "PREVIOUS CAMERA" and "PREVIOUS SHOT POSE" mean the FRAME LAYOUT and CAMERA of your previous answer and the pose in the previous request's B shot; the screen-space continuity rule and the same-pose camera rule above apply to them.
 4. Keep identity, clothing, object, spatial and state continuity across shots. When the CURRENT B SHOT states a change (clothing, body state, object, location, contact), the new state is the truth from that shot on. Never carry an earlier state into a shot whose B shot contradicts it. Identity, clothing (including damage), held objects, location and where people stand persist until a B shot changes them, so keep them when CURRENT B SHOT is silent. Hand and limb positions, gaze and facial expression do not persist: describe them only as CURRENT B SHOT states them, and never copy such wording from an earlier answer.
-5. CURRENT B SHOT is the only truth for what happens now. Never invent events and never change the action, pose, people, objects or location of the B shot; earlier shots are continuity evidence only."""
+5. CURRENT B SHOT is the only truth for what happens now. Never invent events and never change the action, pose, people, objects or location of the B shot; earlier shots are continuity evidence only.
+6. VIEW LEDGER (the one exception to "Output only"): before the first section header write exactly one line, <view>...</view>, naming ONLY this shot's camera view as a few plain words: its direction (front, back, side, three-quarter, POV through someone's eyes), its height (low, eye-level, high, top-down) and its distance (close, medium, wide), for example <view>back low close</view>. Never an emotion, mood or story word. The request lists the CAMERA of your latest answers as VIEWS SO FAR. Choose this shot's view with the camera rule; if it is the same as, or nearly the same as, one of those and the shot does not need it, choose a view that is clearly different in direction, height or distance. Then write the CAMERA section and the first sentence of MAIN for exactly that view. CURRENT B SHOT's own viewpoint, framing and geometry stay. This line is only your working note: it is removed before the prompt is used, and the required block structure follows it."""
 
 _ESTIMATE_THAI = re.compile(r"[฀-๿]")
 
@@ -360,6 +381,7 @@ class FillConversation:
         self._call = call or call_session
         self.previous_n = previous_n
         self.validator = validator                      # reply text -> '' (ok) or a reason; None = every non-empty reply is accepted (old behaviour)
+        self.pre = None                                 # optional: reply text -> (text, note); transport applied BEFORE the check (e.g. the <view> working note); a note is logged
         self.repair = None                              # optional: refused reply text -> a repaired text; used only when it then passes the validator
         self.last_rejected: dict | None = None          # set by shot() when the validator refused the reply: {'shot', 'reason', 'raw', 'session'}
         self.s: _Session | None = None
@@ -528,6 +550,14 @@ class FillConversation:
             self._dbg_flush()
             return None
         self.last_rejected = None
+        _tail = strip_template_tail(text)             # a chat-template marker (</start_of_turn>, </end_of_turn> ...) at the very end of the reply is not part of the prompt
+        if _tail != text:
+            await self._log(f"ℹ Image Prompts (conversation): shot {shot_no} reply ended with a chat-template marker; it was removed")
+            text = _tail
+        if self.pre:
+            text, _note = self.pre(text)
+            if _note:
+                await self._log(f"ℹ Image Prompts (conversation): shot {shot_no} view ledger: {_note}")
         why = self.validator(text, reply_tokens=await self.counter.count(text), max_tokens=reserve) if self.validator else ""
         if why and self.repair:
             fixed = self.repair(text)
@@ -566,11 +596,20 @@ class FillConversation:
 # ----------------------------------------------------------------------------------------------------------------------------------
 # Fill entry point
 # ----------------------------------------------------------------------------------------------------------------------------------
-def shot_request(F, shot: dict, idx: int, total: int, a1: dict, micro_beats: list[dict]) -> str:
+def _views_block(history: list[tuple[int, str]]) -> str:
+    """'VIEWS SO FAR:' with one 'Shot n: <CAMERA text>' line per entry (the last VIEW_HISTORY_MAX accepted answers, oldest first); '' when there is none. Text only: nothing is classified or compared."""
+    if not history:
+        return ""
+    return "VIEWS SO FAR (the CAMERA of your latest answers, oldest first):\n" + "\n".join(f"Shot {n}: {c}" for n, c in history[-VIEW_HISTORY_MAX:])
+
+
+def shot_request(F, shot: dict, idx: int, total: int, a1: dict, micro_beats: list[dict], views_so_far: str = "") -> str:           # views_so_far: the 'VIEWS SO FAR' block (see _views_block) or ''  
     """The short per-shot request (Local and Grok): the rules live in the system prompt, the sheet and earlier shots in the conversation history."""
     parent = F._parent_macro_text(a1, micro_beats, shot)
     return "\n\n".join(x for x in (
         f"Shot {idx + 1} of {total}: write its final Krea2 prompt, continuing the sequence from the data sheets in the system prompt and your earlier answers.",
+        F._CAMERA_FROM_EMOTION,
+        views_so_far,
         ("PARENT STORY EVENT:\n" + parent) if parent else "",
         "CURRENT B SHOT:\n" + F._shot_payload(shot),
     ) if x)
@@ -584,6 +623,15 @@ async def run_fill_conversation(F, shots: list[dict], a1: dict, wf_template: dic
     sheet = F._production_reference(a1, props_desc=props_desc, image_style=image_style) + "\n\n" + visual_direction
     system = attach_sheets(system_text(F), sheet)
     conv = FillConversation(wf_template, system, "", on_log=on_log, budget_ctx=budget_ctx, counter=counter, call=call, validator=validate_fill_output)
+    ledger = {"now": "", "kept": []}              # now = the <view> note of the latest reply; kept = [(shot number, the CAMERA text of the ACCEPTED answer)], what the next request carries
+
+    def _pre(t: str) -> tuple[str, str]:
+        clean, seen = strip_view_ledger(t)
+        if seen:
+            ledger["now"] = seen
+        return clean, seen
+
+    conv.pre = _pre
     conv.repair = repair_fill_headers
     conv.dbg_meta = {"shots": total}
     await conv._log(f"ℹ Image Prompts (conversation): {total} shots, n_ctx {conv.n_ctx}, budget {conv.budget_ctx}, token counter {conv.counter.mode}" + (f" ({conv.counter.reason})" if conv.counter.reason else ""))
@@ -594,11 +642,13 @@ async def run_fill_conversation(F, shots: list[dict], a1: dict, wf_template: dic
                     await on_log(f"⏹ Stop Image Prompts after {idx}/{total} shots")
                 break
             previous = shot.get("prompt", "")
-            request = shot_request(F, shot, idx, total, a1, micro_beats)
+            request = shot_request(F, shot, idx, total, a1, micro_beats)                              # what the canon keeps
+            request_sent = shot_request(F, shot, idx, total, a1, micro_beats, _views_block(ledger["kept"]))         # what the model gets now (with the CAMERA of the latest accepted answers)
+            ledger["now"] = ""
             has_objects = bool(str(shot.get("objects") or "").strip())
             conv.validator = lambda t, _o=has_objects, **kw: validate_fill_output(t, objects_nonempty=_o, **kw)       # OBJECT LOCK is required exactly when the current B shot has objects
             try:
-                text = await conv.shot(idx + 1, request, F._local_max_tokens(shot))
+                text = await conv.shot(idx + 1, request_sent, F._local_max_tokens(shot))
             except FillConversationError as exc:
                 await on_err(f"Image Prompts (conversation): {exc}")
                 for rest in shots[idx:]:
@@ -607,6 +657,11 @@ async def run_fill_conversation(F, shots: list[dict], a1: dict, wf_template: dic
                     await on_shot(total, total)
                 break
             if text:
+                _cam = " ".join(F._extract_camera(text).split())       # the CAMERA section by its header only: what the model really wrote, not its note
+                if _cam:
+                    ledger["kept"] = (ledger["kept"] + [(idx + 1, _cam)])[-VIEW_HISTORY_MAX:]
+                if on_log:                                           # the note and the CAMERA side by side, for the person reading the log (nothing is compared or refused)
+                    await on_log(f"ℹ Image Prompts (conversation): shot {idx + 1} view note: {ledger['now'] or '(none)'} | CAMERA: {_cam[:140] or '(none)'}")
                 shot["prompt"] = text
                 shot["_fill_engine"] = F.FILL_ENGINE_VNEXT2
                 shot["prompt_style"] = F.FILL_ENGINE_VNEXT2
