@@ -5,6 +5,7 @@ Prompt Lab – used together with image_editor.py
 """
 import asyncio, base64, json, random, time, uuid, urllib.parse, urllib.request, urllib.error
 import sys
+import re
 from pathlib import Path
 import flet as ft
 import os as _os
@@ -110,20 +111,34 @@ LLM_CFG_FILE = Path(_os.environ.get("APPDATA", str(Path.home()))) / "WorkflowPad
 _LEGACY_LLM_CFG = APP_ROOT / "llm_chat_config.json"
 
 # ── LLM Chat config helpers ───────────────────────────────────────────
+_SEP_REPLY = "=========== REPLY ==========="
+_SEP_PROMPT = "=========== PROMPT ==========="
+_SEP_END = "=========== END ==========="
+_OUTPUT_CONTRACT = (
+    "OUTPUT FORMAT - exactly these three marker lines, each alone on its own line, in this order, with nothing before the first or after the last:\n"
+    + _SEP_REPLY + "\n"
+    "<short conversational reply, 1-2 sentences, no labels>\n\n"
+    + _SEP_PROMPT + "\n"
+    "<the complete image prompt in English; several lines are fine; leave this section empty when you are only chatting or no prompt change is needed>\n\n"
+    + _SEP_END
+)
 _DEFAULT_SYS = (
     "You are an AI image prompt engineer for Flux/Krea.\n\n"
     "Reply in the same language the user writes in. Prompt content must be in English.\n\n"
-    "Output ONLY a raw JSON object — no markdown, no code block, no text before or after:\n"
-    '{"reply": "casual reply 1-2 sentences", "prompt": "full prompt in English\\nSubject: ...\\nEnvironment: ...\\nLighting: ...\\nCamera: ...\\nNegative: ..."}\n\n'
+    + _OUTPUT_CONTRACT + "\n\n"
     "RULES:\n"
-    "- reply: casual, 1-2 sentences, no labels\n"
-    "- prompt: include only sections relevant to the image (skip irrelevant ones)\n"
-    "- Each section on its own line inside the prompt string\n"
+    "- The prompt: include only sections relevant to the image (skip irrelevant ones), each section on its own line\n"
     "- Keep ALL details. Never shorten, summarize, or use placeholders\n"
     "- Only modify what user asked, keep everything else word-for-word\n"
-    "- If [No prompt yet] and user just chatting: set prompt to empty string\n"
-    "- Output ONLY valid JSON. Nothing else."
+    "- If [No prompt yet] and user just chatting: leave the PROMPT section empty\n"
+    "- Never write the prompt inside the REPLY section; no markdown, no code block"
 )
+
+
+def _prompt_has_contract(text: str) -> bool:
+    """True when the system prompt carries the three separator lines (each alone on a line). A saved prompt without them (the old JSON one) cannot produce answers this program can read."""
+    lines = {ln.strip() for ln in (text or "").splitlines()}
+    return all(m in lines for m in (_SEP_REPLY, _SEP_PROMPT, _SEP_END))
 
 
 def load_llm_cfg() -> dict:
@@ -338,71 +353,45 @@ def make_thumbnail_bytes(img_bytes: bytes, max_size: int = 500) -> bytes:
         return img_bytes
 
 # ── async run_llm ─────────────────────────────────────────────────────
+class LLMFormatError(ValueError):
+    """The LLM answer does not follow the REPLY / PROMPT / END separator format; str() is the reason, .raw is the answer as received (set by the caller that has it)."""
+    raw = ""
+
+
+_TEMPLATE_TAIL_RE = re.compile(r"(?:\s*</?(?:end_of_turn|end_turn|start_turn|start_of_turn|eos)>)+\s*$")     # chat-template end markers a local model may leak after its answer
+
+
 def _parse_llm_output(raw: str) -> tuple[str, str]:
-    """Parse JSON output from the LLM and return (reply, prompt)."""
-    import re, json as _json
-    raw = raw.strip()
+    """Strict, structure-only parser: (reply, prompt). The answer is the three separator lines in this order, each ALONE on its line and present exactly once, with only blank text before the first and after the
+    last. The text of each section is kept exactly as the LLM wrote it (outer whitespace trimmed). REPLY must not be empty; PROMPT may be. Anything else raises LLMFormatError with the reason; nothing is
+    guessed, repaired or salvaged. A chat-template marker at the very end (</end_of_turn> ...) is transport and is ignored."""
+    text = _TEMPLATE_TAIL_RE.sub("", raw or "").strip()
+    if not text:
+        raise LLMFormatError("the answer is empty")
+    lines = text.splitlines()
+    pos: dict[str, int] = {}
+    for name, marker in (("REPLY", _SEP_REPLY), ("PROMPT", _SEP_PROMPT), ("END", _SEP_END)):
+        found = [k for k, ln in enumerate(lines) if ln.strip() == marker]
+        if not found:
+            hint = " (the answer may have been cut off: raise Max Tokens)" if name == "END" and pos.get("PROMPT") is not None else ""
+            raise LLMFormatError(f"the {name} separator line is missing{hint}")
+        if len(found) > 1:
+            raise LLMFormatError(f"the {name} separator line appears {len(found)} times")
+        pos[name] = found[0]
+    if not (pos["REPLY"] < pos["PROMPT"] < pos["END"]):
+        raise LLMFormatError("the separator lines are not in the order REPLY, PROMPT, END")
+    if "\n".join(lines[:pos["REPLY"]]).strip():
+        raise LLMFormatError("there is text before the REPLY separator")
+    if "\n".join(lines[pos["END"] + 1:]).strip():
+        raise LLMFormatError("there is text after the END separator")
+    reply = "\n".join(lines[pos["REPLY"] + 1:pos["PROMPT"]]).strip()
+    prompt = "\n".join(lines[pos["PROMPT"] + 1:pos["END"]]).strip()
+    if not reply:
+        raise LLMFormatError("the REPLY section is empty")
+    return reply, prompt
 
-    def _clean(s: str) -> str:
-        return s.replace("\\n", "\n").strip()
-
-    # 1. parse directly
-    try:
-        data = _json.loads(raw)
-        return (_clean(str(data.get("reply",""))), _add_section_spacing(_clean(str(data.get("prompt","")))))
-    except Exception:
-        pass
-
-    # 2. code block
-    m = re.search(r'```(?:json)?\s*({.*?})\s*```', raw, re.DOTALL)
-    if m:
-        try:
-            data = _json.loads(m.group(1))
-            return (_clean(str(data.get("reply",""))), _add_section_spacing(_clean(str(data.get("prompt","")))))
-        except Exception:
-            pass
-
-    # 3. regex field extraction — supports pretty-print and unquoted values
-    reply_m  = re.search(r'"reply"\s*:\s*"((?:[^"\\]|\\.)*)"|\"reply\"\s*:\s*([^,}]+)', raw, re.DOTALL)
-    prompt_m = re.search(r'"prompt"\s*:\s*"((?:[^"\\]|\\.)*)"', raw, re.DOTALL)
-
-    # If there is no prompt in quotes, try to find the prompt section directly after "prompt":
-    if not prompt_m:
-        pm2 = re.search(r'"prompt"\s*:\s*([\s\S]*?)(?="reply"|$)', raw)
-        if not pm2:
-            pm2 = re.search(r'"prompt"\s*:[\s\n]*(.*)', raw, re.DOTALL)
-        if pm2:
-            prompt_raw = pm2.group(1).strip().strip('"}').strip()
-        else:
-            prompt_raw = ""
-    else:
-        prompt_raw = prompt_m.group(1)
-
-    reply_raw = ""
-    if reply_m:
-        reply_raw = reply_m.group(1) or reply_m.group(2) or ""
-
-    if reply_raw or prompt_raw:
-        return (_clean(reply_raw), _add_section_spacing(_clean(prompt_raw)))
-
-    # 4. fallback
-    return (raw, "")
-
-def _add_section_spacing(prompt: str) -> str:
-    """Add a blank line before each section header."""
-    import re
-    lines = prompt.splitlines()
-    clean = []
-    section_pattern = re.compile(r'^[A-Za-z][A-Za-z ]+:\s?', re.IGNORECASE)
-    for line in lines:
-        stripped = line.strip()
-        if section_pattern.match(stripped) and clean and clean[-1].strip() != '':
-            clean.append('')
-        clean.append(line)
-    return '\n'.join(clean).strip()
-
-async def run_llm(user_text: str, cfg: dict, session_id: str, on_result, on_err, on_debug=None, wf_file: str = "gemma4_llm.json"):
-    """Run the LLM workflow; on_result(reply, prompt) parses the JSON output."""
+async def run_llm(user_text: str, cfg: dict, session_id: str, on_result, on_err, on_debug=None, wf_file: str = "gemma4_llm.json", on_bad=None):
+    """Run the LLM workflow; on_result(reply, prompt) gets the parsed REPLY / PROMPT answer; a malformed answer goes to on_bad(reason, raw) and nothing is saved."""
     llm_wf_path = LLM_DIR / wf_file
     if not llm_wf_path.exists():
         await on_err(f"Could not find {llm_wf_path}")
@@ -472,7 +461,14 @@ async def run_llm(user_text: str, cfg: dict, session_id: str, on_result, on_err,
             await _dbg(f"[node {node_id}] keys={list(nout.keys())} raw={repr(raw_text)[:120]}")
             if raw_text and raw_text.strip():
                 await _dbg(f"RAW:\n{raw_text.strip()}")
-                t, p = _parse_llm_output(raw_text.strip())
+                try:
+                    t, p = _parse_llm_output(raw_text.strip())
+                except LLMFormatError as exc:
+                    if on_bad:
+                        await on_bad(str(exc), raw_text.strip())
+                    else:
+                        await on_err(f"Answer format error: {exc}")
+                    return
                 await _dbg(f"[parse] thought={repr(t)[:60]} prompt={repr(p)[:60]}")
                 await on_result(t, p)
                 return
@@ -490,6 +486,97 @@ async def run_llm(user_text: str, cfg: dict, session_id: str, on_result, on_err,
             return
 
     await on_err("⏱ Timeout: the LLM did not respond within 5 minutes")
+
+async def grok_chat_turn(history: list, user_text: str, call, sys_prompt: str):
+    """One Grok turn. call(sys_prompt, messages) -> the answer text. The user message and the answer join `history` ONLY after the parser accepts the answer: a failed or malformed turn leaves the history
+    exactly as it was (no wrong answer, no orphan user turn). Returns (raw answer, reply, prompt); raises LLMFormatError (with .raw) for a malformed answer."""
+    user = {"role": "user", "content": user_text}
+    answer = await call(sys_prompt, list(history) + [user])
+    try:
+        reply, prompt = _parse_llm_output(answer)
+    except LLMFormatError as exc:
+        exc.raw = answer
+        raise
+    history.append(user)
+    history.append({"role": "assistant", "content": answer})
+    return answer, reply, prompt
+
+
+def _new_session_id() -> str:
+    return uuid.uuid4().hex[:8]
+
+
+def _rotate_session(state: dict) -> str:
+    """A new ComfyUI session id for this model: the next call starts a fresh conversation, so a wrong answer in the old session's history cannot influence it."""
+    state["session_id"] = _new_session_id()
+    return state["session_id"]
+
+
+def _reset_conversations(model_states: dict, grok_key: str, grok_history: list) -> list[str]:
+    """After a real System Prompt change: every Local model gets a new session, the Grok history is cleared. What is already shown in the chats is not touched. Returns the Local model keys reset."""
+    done = []
+    for key, st in model_states.items():
+        if key != grok_key:
+            _rotate_session(st)
+            done.append(key)
+    grok_history.clear()
+    return done
+
+
+async def local_chat_turn(state: dict, user_text: str, cfg: dict, wf_file: str, on_result, on_err, on_debug=None, on_bad=None):
+    """One Local turn in this model's session (state['session_id']). A good answer keeps the session; a malformed one is refused (on_bad gets reason + raw) and the session is rotated first."""
+    async def _bad(reason: str, raw_answer: str):
+        _rotate_session(state)
+        if on_bad:
+            await on_bad(reason, raw_answer)
+        else:
+            await on_err(f"Answer format error: {reason}")
+    await run_llm(user_text, cfg, state["session_id"], on_result, on_err, on_debug=on_debug, wf_file=wf_file, on_bad=_bad)
+
+
+_OLD_CONTRACT_TOKENS = ("JSON", '"reply"', '\\"reply\\"')      # protocol tokens of the old answer format; nothing else is ever read from a custom prompt
+_MAX_REMOVED_LINES = 8
+
+
+def _old_contract_lines(text: str) -> list[int]:
+    """Indexes of the lines that carry an old-format protocol token (JSON / "reply")."""
+    return [n for n, ln in enumerate((text or "").splitlines()) if any(t in ln for t in _OLD_CONTRACT_TOKENS)]
+
+
+def _convert_system_prompt(text: str) -> tuple[str | None, list[str], str]:
+    """(new text or None, removed lines, note). Removes ONLY the lines that carry an old protocol token and makes sure the prompt ends with exactly one separator Output Contract; every other line of the
+    custom instructions is kept as it is. Returns None (nothing to apply, the original is untouched) when the old format cannot be separated safely: more than _MAX_REMOVED_LINES such lines, a piece of
+    pretty-printed JSON left over, or a prompt that already holds the separator lines more than once."""
+    lines = (text or "").splitlines()
+    idx = set(_old_contract_lines(text))
+    removed = [lines[n] for n in sorted(idx)]
+    if len(idx) > _MAX_REMOVED_LINES:
+        return None, removed, f"{len(idx)} lines mention the old format (more than {_MAX_REMOVED_LINES}); that is too many to remove safely"
+    kept = [ln for n, ln in enumerate(lines) if n not in idx]
+    for ln in kept:
+        t = ln.strip()
+        if t in ("{", "}", "},", "{{", "}}") or '"prompt":' in t or '\\"prompt\\":' in t:
+            return None, removed, f"a piece of the old JSON example is left over ({t[:40]!r}); it cannot be separated safely"
+    stripped = {ln.strip() for ln in kept}
+    present = [m for m in (_SEP_REPLY, _SEP_PROMPT, _SEP_END) if m in stripped]
+    counts = [sum(1 for ln in kept if ln.strip() == m) for m in present]
+    if present and (len(present) != 3 or any(c != 1 for c in counts)):
+        return None, removed, "the prompt already holds some of the separator lines, but not exactly one of each"
+    body = "\n".join(kept).rstrip()
+    new = body if len(present) == 3 else (body + "\n\n" if body else "") + _OUTPUT_CONTRACT
+    return new, removed, ""
+
+
+def _remember_backup(cfg: dict, text: str) -> None:
+    """Keep the original System Prompt before it is replaced: system_prompt_backup (the latest) and system_prompt_backups (every different one). Never deletes a backup."""
+    text = (text or "").strip()
+    if not text:
+        return
+    lst = cfg.setdefault("system_prompt_backups", [])
+    if text not in lst:
+        lst.append(text)
+    cfg["system_prompt_backup"] = text
+
 
 # ── async run_workflow ────────────────────────────────────────────────
 async def run_workflow(wf: dict, on_img, on_err, on_done, stop_event=None, on_stop=None):
@@ -913,6 +1000,12 @@ def main(page: ft.Page):
         question = chat_input.value.strip()
         if not question:
             return
+        if not _prompt_has_contract(llm_cfg[0].get("system_prompt", _DEFAULT_SYS)):
+            # An old saved System Prompt (JSON) cannot produce answers this program reads. It is NOT overwritten here: say so and stop; Settings offers the new default (old text kept as backup).
+            _msg = "The saved System Prompt does not use the new answer format (REPLY / PROMPT / END separator lines). Nothing was sent. Open ⚙ Settings and press 'Use new default prompt' (your current text is kept as a backup), or add the format to your own prompt."
+            _add_chat_bubble("llm", "⚠ " + _msg, C["panel"])
+            _set_model_status(_active_model[0], "❌ System Prompt needs the new format (see ⚙ Settings)", C["red"], busy=False)
+            return
         current_prompt = editor_field.value.strip()
         # Send the current prompt only when it exists
         if current_prompt:
@@ -956,6 +1049,13 @@ def main(page: ft.Page):
                     _autosave_text(prompt.strip())
             page.update()
 
+        async def on_bad(reason: str, raw_answer: str):
+            """The answer did not follow the format: nothing is saved or changed; the reason and the RAW answer are shown."""
+            _set_model_status(_sent_model, f"❌ Answer format error: {reason}", C["red"], busy=False)
+            _pin_bubble("llm", f"⚠ The answer was not accepted ({reason}). The prompt box was not changed, and the wrong answer was not kept in the conversation memory"
+                               + (" (a new session starts with your next message)." if _sent_model != _GROK_TAB else ".") + f"\n\nRAW answer:\n{raw_answer[:3000]}", C["panel"])
+            _pin_log("❌ FORMAT", f"{reason}\n\nRAW:\n{raw_answer}", C["red"])
+
         async def on_err(msg: str):
             _set_model_status(_sent_model, f"❌ {msg}", C["red"], busy=False)
             _pin_log("❌ ERROR", msg, C["red"])
@@ -968,21 +1068,25 @@ def main(page: ft.Page):
             print(f"[GROK DEBUG] api_key set={bool(_grok_api_key[0])}")
             if not _grok_api_key[0]:
                 await on_err("Grok API key not set — go to Settings (⚙)"); return
-            _grok_history[0].append({"role": "user", "content": combined})
             async def _run_grok():
                 try:
                     sys_prompt = llm_cfg[0].get("system_prompt", _DEFAULT_SYS)
                     print(f"[GROK DEBUG] calling API model={_grok_model[0]}")
                     _pin_log("→ GROK", f"model={_grok_model[0]}", C["text2"])
-                    reply = await _call_grok(
-                        _grok_api_key[0], _grok_model[0], sys_prompt,
-                        _grok_history[0],
-                        max_tokens=int(llm_cfg[0].get("max_tokens", 1024)),
-                        temperature=float(llm_cfg[0].get("temperature", 0.7)),
-                    )
+
+                    async def _call(sp, msgs):
+                        return await _call_grok(
+                            _grok_api_key[0], _grok_model[0], sp, msgs,
+                            max_tokens=int(llm_cfg[0].get("max_tokens", 1024)),
+                            temperature=float(llm_cfg[0].get("temperature", 0.7)),
+                        )
+                    try:
+                        # the history gets this turn only when the answer is accepted: a wrong answer or a failed call leaves it exactly as it was
+                        reply, t, p = await grok_chat_turn(_grok_history[0], combined, _call, sys_prompt)
+                    except LLMFormatError as fmt:
+                        await on_bad(str(fmt), fmt.raw)
+                        return
                     _pin_log("← GROK RAW", reply[:500], C["text2"])
-                    _grok_history[0].append({"role": "assistant", "content": reply})
-                    t, p = _parse_llm_output(reply)
                     await on_result(t, p)
                 except Exception as exc:
                     import traceback
@@ -992,7 +1096,7 @@ def main(page: ft.Page):
             asyncio.create_task(_run_grok())
         else:
             _wf_file = f"{_sent_model}.json"
-            asyncio.create_task(run_llm(combined, llm_cfg[0], _model_states[_sent_model]["session_id"], on_result, on_err, on_debug=_on_debug, wf_file=_wf_file))
+            asyncio.create_task(local_chat_turn(_model_states[_sent_model], combined, llm_cfg[0], _wf_file, on_result, on_err, on_debug=_on_debug, on_bad=on_bad))
 
     chat_input.on_submit = _do_ask_llm
 
@@ -1067,8 +1171,51 @@ def main(page: ft.Page):
         text_size=12,
     )
 
+    cfg_sys_note = ft.Text("", size=10, color=C["amber"])
+
+    def _sys_note_refresh():
+        txt = cfg_sys_field.value
+        if not _prompt_has_contract(txt):
+            cfg_sys_note.value = ("⚠ This System Prompt has no REPLY / PROMPT / END separator lines (the old format). Chat will not send until it has them. "
+                                  "'Convert my prompt' keeps your own instructions (it removes only the lines that mention JSON / \"reply\" and adds the new format); "
+                                  "your current text is saved as a backup first.")
+        elif _old_contract_lines(txt):
+            cfg_sys_note.value = "⚠ This System Prompt has the new format AND still mentions the old one (JSON / \"reply\") on some lines. Remove those lines, or press 'Convert my prompt'."
+        else:
+            cfg_sys_note.value = ""
+
+    def _use_new_default(_):
+        old = cfg_sys_field.value.strip()
+        if old and old != _DEFAULT_SYS.strip():
+            _remember_backup(llm_cfg[0], old)                 # kept, never lost
+            save_llm_cfg(llm_cfg[0])
+        cfg_sys_field.value = _DEFAULT_SYS
+        _sys_note_refresh()
+        cfg_sys_note.value = ("The default prompt is in the box. Your own instructions are NOT in it (they are saved as a backup in the settings file: system_prompt_backup). "
+                              "Press Save to use it." + ("" if not cfg_sys_note.value else "  " + cfg_sys_note.value))
+        page.update()
+
+    def _convert_my_prompt(_):
+        original = cfg_sys_field.value
+        new, removed, why = _convert_system_prompt(original)
+        if new is None:
+            # nothing is changed: the text stays in the box, untouched; the user is told where the old format is and edits it by hand
+            listing = "\n".join(f"  - {ln.strip()[:90]}" for ln in removed[:10])
+            cfg_sys_note.value = (f"Could not convert automatically: {why}. Nothing was changed. Edit the System Prompt by hand: remove the old JSON instructions"
+                                  + (" (lines that mention JSON / \"reply\":\n" + listing + ")" if listing else "") + " and add the REPLY / PROMPT / END format.")
+            page.update()
+            return
+        _remember_backup(llm_cfg[0], original)                 # the original is saved BEFORE the box changes
+        save_llm_cfg(llm_cfg[0])
+        cfg_sys_field.value = new
+        listing = "\n".join(f"  - {ln.strip()[:90]}" for ln in removed)
+        cfg_sys_note.value = (f"Converted: {len(removed)} old-format line(s) removed" + (":\n" + listing if listing else "") + "\nThe new format was added once at the end. "
+                              "Your original text is saved as a backup in the settings file. Review the text, then press Save.")
+        page.update()
+
     def _open_llm_config(_):
         cfg_sys_field.value         = llm_cfg[0].get("system_prompt", _DEFAULT_SYS)
+        _sys_note_refresh()
         cfg_dir_field.value         = llm_cfg[0].get("history_dir", "")
         cfg_max_tokens_field.value  = str(llm_cfg[0].get("max_tokens", 1024))
         cfg_temperature_field.value = str(llm_cfg[0].get("temperature", 0.7))
@@ -1080,7 +1227,9 @@ def main(page: ft.Page):
         page.update()
 
     def _save_llm_config(_):
+        _old_sys = llm_cfg[0].get("system_prompt", _DEFAULT_SYS)
         llm_cfg[0]["system_prompt"] = cfg_sys_field.value.strip() or _DEFAULT_SYS
+        _sys_changed = llm_cfg[0]["system_prompt"].strip() != (_old_sys or "").strip()
         llm_cfg[0]["history_dir"]   = cfg_dir_field.value.strip()
         try:
             llm_cfg[0]["max_tokens"] = int(cfg_max_tokens_field.value.strip())
@@ -1101,6 +1250,11 @@ def main(page: ft.Page):
         _grok_api_key[0] = new_key
         _grok_model[0]   = new_model
         _save_grok_creds(new_key, new_model)
+        if _sys_changed:
+            # the models were talking under the OLD System Prompt: start every Local session fresh and clear the Grok history; the chats on screen stay as they are
+            _reset_conversations(_model_states, _GROK_TAB, _grok_history[0])
+            for _m in _ALL_TABS:
+                _add_chat_bubble("llm", "ℹ The System Prompt was changed: the model's conversation memory was started fresh (new session). The messages above stay on screen.", C["panel"], model=_m)
         config_dialog.open = False
         llm_status.value = "💾 Settings saved"
         llm_status.color = C["green"]
@@ -1155,6 +1309,11 @@ def main(page: ft.Page):
     cfg_local_content = ft.Column([
         _label("System Prompt"),
         cfg_sys_field,
+        cfg_sys_note,
+        ft.Row([
+            ft.TextButton("Convert my prompt to the new format (keeps my instructions)", on_click=_convert_my_prompt),
+            ft.TextButton("Use new default prompt (does NOT keep my instructions; saved as backup)", on_click=_use_new_default),
+        ], wrap=True, spacing=4),
         ft.Divider(height=1, color=C["border"]),
         _label("Generation"),
         ft.Row([cfg_max_tokens_field, cfg_temperature_field, cfg_nctx_field],
