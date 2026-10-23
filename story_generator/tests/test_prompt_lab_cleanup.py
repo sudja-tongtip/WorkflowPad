@@ -182,6 +182,20 @@ def main():
     res, _r, why = PL._convert_system_prompt(twice)
     check("migration failure: a prompt holding the separators more than once is refused", res is None and "exactly one" in why, (res, why))
 
+    # ---- 8. the old app default is replaced on its own (backup first, nothing else reset); a custom prompt is never touched ------------------------------------------------------
+    saved_files: list = []
+    PL.save_llm_cfg = lambda c: saved_files.append(dict(c))          # never write the user's real settings file from a test
+    cfg = {"system_prompt": PL._OLD_DEFAULT_SYS, "max_tokens": 2048}
+    note = PL._auto_upgrade_default_prompt(cfg)
+    check("old default: replaced by the new default, with a notice", cfg["system_prompt"] == PL._DEFAULT_SYS and "backup" in note, (note,))
+    check("old default: the previous one is kept as a backup", cfg["system_prompt_backup"] == PL._OLD_DEFAULT_SYS and PL._OLD_DEFAULT_SYS in cfg["system_prompt_backups"])
+    check("old default: Max Tokens and the other settings are left as they are", cfg["max_tokens"] == 2048 and saved_files)
+    cfg2 = {"system_prompt": OLD_CUSTOM}
+    check("custom old prompt: not touched by the automatic upgrade", PL._auto_upgrade_default_prompt(cfg2) == "" and cfg2["system_prompt"] == OLD_CUSTOM and "system_prompt_backup" not in cfg2)
+    cfg3 = {"system_prompt": PL._DEFAULT_SYS}
+    check("new default: nothing to do", PL._auto_upgrade_default_prompt(cfg3) == "" and cfg3["system_prompt"] == PL._DEFAULT_SYS)
+    check("the default Max Tokens is 8192", PL._DEFAULT_MAX_TOKENS == 8192)
+
     print("ALL PASS" if not _fails else f"{len(_fails)} FAILED: {_fails}")
     return 0 if not _fails else 1
 

@@ -19,12 +19,13 @@ from pathlib import Path
 
 import flet as ft
 import update_check as _update_check
+import app_error as _app_error
 import export_util as _export_util
 
 # ── App metadata ──────────────────────
 APP_ID      = "gallery_generator"
 APP_NAME    = "Gallery Generator"
-APP_VERSION = "0.1.8"   # SemVer; see RELEASE.md
+APP_VERSION = "0.1.9"   # SemVer; see RELEASE.md
 
 # ── Config ────────────────────────────────────────────────────────────
 COMFY_HOST = "127.0.0.1:8188"
@@ -1925,21 +1926,29 @@ async def main(page: ft.Page):
                 status, level = _api_status(f)
                 left_list.controls.append(_row(
                     Path(f).stem, f"{f} · {status}", level, f in hl_left,
-                    lambda e, _f=f: toggle(hl_left, _f), f))
+                    lambda e, _f=f: toggle(hl_left, _f, add_files), f))
             if not avail:
                 left_list.controls.append(ft.Text("No more APIs available", size=10, color=C["text3"], italic=True))
             for i, w in enumerate(work):
                 status, level = _api_status(w["file"])
                 right_list.controls.append(_row(
                     f"{i + 1}.  {_entry_alias(w)}", f"{w['file']} · {status}", level, w["file"] in hl_right,
-                    lambda e, _f=w["file"]: toggle(hl_right, _f),
+                    lambda e, _f=w["file"]: toggle(hl_right, _f, remove_files),
                     f"{_entry_alias(w)}\n{w['file']}"))
             if not work:
                 right_list.controls.append(ft.Text("No APIs selected", size=10, color=C["text3"], italic=True))
             clear_btn.visible = bool(hl_left or hl_right)
             page.update()
 
-        def toggle(group: set, f: str):
+        last_tap = [None, 0.0]
+
+        def toggle(group: set, f: str, move_one):
+            now = time.monotonic()
+            if last_tap[0] == f and now - last_tap[1] < 0.5:    # two taps on the same row = double click: move it to the other side
+                last_tap[0] = None
+                move_one([f])
+                return
+            last_tap[0], last_tap[1] = f, now
             group.symmetric_difference_update({f}); render()
 
         def clear_selection(e=None):
@@ -1960,6 +1969,12 @@ async def main(page: ft.Page):
 
         def do_remove(e):
             remove_files(list(hl_right))
+
+        def do_add_all(e):
+            add_files([f for f in files[0] if f not in _chosen()])
+
+        def do_remove_all(e):
+            remove_files([w["file"] for w in work])
 
         def move(delta: int):
             idx = [i for i, w in enumerate(work) if w["file"] in hl_right]
@@ -2007,8 +2022,10 @@ async def main(page: ft.Page):
             ft.Row([
                 _panel("AVAILABLE APIs", left_list),
                 ft.Column([
+                    _mid_btn(ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED, "Add all", do_add_all),
                     _mid_btn(ft.Icons.CHEVRON_RIGHT_ROUNDED, "Add selected", do_add),
                     _mid_btn(ft.Icons.CHEVRON_LEFT_ROUNDED, "Remove selected", do_remove),
+                    _mid_btn(ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, "Remove all", do_remove_all),
                     ft.Container(height=14),
                     _mid_btn(ft.Icons.ARROW_UPWARD_ROUNDED, "Move up", lambda ev: move(-1)),
                     _mid_btn(ft.Icons.ARROW_DOWNWARD_ROUNDED, "Move down", lambda ev: move(1)),
@@ -2316,4 +2333,4 @@ async def main(page: ft.Page):
     _update_check.start_notice(ft, page, APP_NAME, APP_VERSION)      # a notice only (GitHub releases, once a day, silent when offline); see update_check.py
 
 
-ft.app(target=main)
+ft.app(target=_app_error.guard(ft, main, APP_NAME, APP_VERSION))   # friendly error dialog instead of Flet's red 'application crashed' page

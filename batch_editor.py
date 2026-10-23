@@ -11,6 +11,7 @@ import sys
 import time
 import urllib.parse
 import update_check as _update_check
+import app_error as _app_error
 import export_util as _export_util
 import urllib.request
 import uuid
@@ -30,7 +31,7 @@ APP_ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False
 API_DIR = APP_ROOT / "comfy_apis" / "image_edit"         # Folder containing the .json workflow files (exported with Export (API))
 APP_ID      = "batch_editor"
 APP_NAME    = "Batch Editor"
-APP_VERSION = "0.1.8"   # SemVer; see RELEASE.md
+APP_VERSION = "0.1.9"   # SemVer; see RELEASE.md
 USER_CONFIG_DIR = Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming") / "WorkflowPad"     # user data: never next to the program
 PROMPT_SAVE_PATH = USER_CONFIG_DIR / "saved_prompt.json"
 try:
@@ -447,6 +448,7 @@ async def main(page: ft.Page):
     page.spacing = 0
 
     selected_files: list[str] = []
+    _exported: dict[str, str] = {}      # input path -> the file that was exported for it (this session): what "Open exported folder" opens
     output_dir: list[str] = []
     card_map: dict[str, ft.Container] = {}
 
@@ -753,95 +755,130 @@ async def main(page: ft.Page):
     )
     prompt_save_lbl = ft.Text("", size=10, color="#27AE60")
 
-    # ── History bottom sheet ──────────────────────────────────────────
-    history_list_col = ft.Column(scroll=ft.ScrollMode.AUTO, spacing=0, expand=True)
-    history_empty_lbl = ft.Text(
-        "No prompt history yet", size=11, color="#AAA", italic=True,
-        text_align=ft.TextAlign.CENTER,
+    # ── History dialog: filter, click = select + full preview, double click = use ──
+    hist_state = {"sel": None}
+    hist_rows: list = []        # (text, container) of the rows on screen, so a click can recolour them without rebuilding (a rebuild would swallow the double click)
+    history_list_col = ft.Column(scroll=ft.ScrollMode.AUTO, spacing=4, expand=True)
+    history_count_lbl = ft.Text("", size=11, color="#888")
+    history_preview = ft.Text("", size=11, color="#333", selectable=True)
+    history_preview_box = ft.Container(
+        content=ft.Column([history_preview], scroll=ft.ScrollMode.AUTO),
+        height=96, bgcolor="#F6F8FB", border_radius=br(8),
+        border=ft.Border.all(1, "#E3E8EF"), padding=po(left=12, right=12, top=8, bottom=8),
+    )
+    history_use_btn = ft.FilledButton("Use prompt", icon=ft.Icons.CHECK_ROUNDED, disabled=True)
+    history_search = ft.TextField(
+        hint_text="Filter prompts...", prefix_icon=ft.Icons.SEARCH_ROUNDED,
+        text_size=12, height=40, border_radius=br(10), border_color="#D5DAE1",
+        focused_border_color="#2979FF", bgcolor="#FFFFFF",
+        content_padding=po(left=8, right=8, top=0, bottom=0),
     )
 
-    def _make_history_row(idx: int, text: str) -> ft.Container:
-        preview = text[:80].replace("\n", " ") + ("…" if len(text) > 80 else "")
+    def _hist_paint():
+        for t, c in hist_rows:
+            on = t == hist_state["sel"]
+            c.bgcolor = "#E8F0FE" if on else "#FFFFFF"
+            c.border = ft.Border.all(1, "#2979FF" if on else "#ECEFF3")
+        history_preview.value = hist_state["sel"] or "Click a prompt to preview it. Double-click to use it."
+        history_preview.color = "#333" if hist_state["sel"] else "#9AA3AF"
+        history_use_btn.disabled = hist_state["sel"] is None
 
-        def _use(e, t=text):
-            prompt_field.value = t
-            history_bs.open = False
-            page.update()
+    def _hist_use(text: str):
+        prompt_field.value = text
+        page.pop_dialog()
+        page.update()
 
-        def _del(e, i=idx):
-            new_hist = delete_prompt_from_history(i)
-            _rebuild_history_list(new_hist)
-            page.update()
+    def _hist_select(text: str):
+        now = time.monotonic()
+        if hist_state["sel"] == text and now - hist_state.get("t", 0) < 0.5:   # two taps on the same row = double click (own timer: it also works where the platform sends no double-tap)
+            _hist_use(text)
+            return
+        hist_state["t"] = now
+        hist_state["sel"] = text
+        _hist_paint()
+        page.update()
 
-        return ft.Container(
+    def _hist_delete(text: str):
+        history = load_prompt_history()
+        if text in history:
+            delete_prompt_from_history(history.index(text))
+        if hist_state["sel"] == text:
+            hist_state["sel"] = None
+        _rebuild_history_list()
+        page.update()
+
+    def _make_history_row(n: int, text: str) -> ft.Control:
+        preview = text.replace("\n", " ")
+        card = ft.Container(
             content=ft.Row([
                 ft.Container(
-                    content=ft.Text(preview, size=10, color="#333",
-                                    max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
-                    expand=True,
-                    on_click=_use,
-                    ink=True,
-                    border_radius=br(4),
-                    padding=po(left=8, right=4, top=6, bottom=6),
+                    ft.Text(str(n), size=10, color="#6B7686", weight=ft.FontWeight.W_600),
+                    width=24, height=24, bgcolor="#EEF1F5", border_radius=12, alignment=ft.Alignment(0, 0),
                 ),
+                ft.Text(preview, size=11, color="#222", max_lines=2, overflow=ft.TextOverflow.ELLIPSIS, expand=True),
                 ft.IconButton(
-                    icon=ft.Icons.DELETE_OUTLINE_ROUNDED,
-                    icon_color="#CCCCCC",
-                    icon_size=16,
-                    tooltip="Delete",
-                    on_click=_del,
-                    width=32, height=32,
-                    padding=0,
+                    icon=ft.Icons.DELETE_OUTLINE_ROUNDED, icon_color="#B0B7C3", icon_size=16,
+                    tooltip="Delete from history", on_click=lambda e, t=text: _hist_delete(t),
+                    width=30, height=30, padding=0,
                 ),
-            ], vertical_alignment=ft.CrossAxisAlignment.CENTER, spacing=0),
-            border=ft.Border(bottom=ft.BorderSide(1, "#F0F0F0")),
+            ], vertical_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
+            padding=po(left=10, right=6, top=7, bottom=7),
+            border_radius=br(8), bgcolor="#FFFFFF", border=ft.Border.all(1, "#ECEFF3"),
+        )
+        hist_rows.append((text, card))
+        return ft.GestureDetector(
+            content=card, mouse_cursor=ft.MouseCursor.CLICK,
+            on_tap=lambda e, t=text: _hist_select(t),
         )
 
-    def _rebuild_history_list(history: list[str]):
+    def _rebuild_history_list(history: list[str] | None = None):
+        history = load_prompt_history() if history is None else history
+        words = (history_search.value or "").lower().split()
+        shown = [t for t in history if all(w in t.lower() for w in words)]
+        hist_rows.clear()
         history_list_col.controls.clear()
-        if not history:
+        if not shown:
+            msg = "No prompt history yet" if not history else "No prompt matches the filter"
             history_list_col.controls.append(
-                ft.Container(history_empty_lbl, padding=po(top=20), alignment=ft.Alignment(0, 0))
+                ft.Container(ft.Text(msg, size=12, color="#AAA", italic=True), padding=po(top=30), alignment=ft.Alignment(0, 0))
             )
         else:
-            for i, txt in enumerate(history):
+            for i, txt in enumerate(shown, 1):
                 history_list_col.controls.append(_make_history_row(i, txt))
+        history_count_lbl.value = f"{len(shown)} of {len(history)}" if words else f"{len(history)} saved"
+        _hist_paint()
 
-    _rebuild_history_list(load_prompt_history())
+    def _hist_filter_changed(e):
+        _rebuild_history_list()
+        page.update()
 
-    history_bs = ft.BottomSheet(
+    history_search.on_change = _hist_filter_changed
+    history_use_btn.on_click = lambda e: hist_state["sel"] and _hist_use(hist_state["sel"])
+
+    history_dlg = ft.AlertDialog(
+        shape=ft.RoundedRectangleBorder(radius=14),
+        bgcolor="#FFFFFF",
+        title=ft.Row([
+            ft.Icon(ft.Icons.HISTORY_ROUNDED, size=20, color="#2979FF"),
+            ft.Text("Prompt History", size=15, weight=ft.FontWeight.W_700, color="#1A1A1A", expand=True),
+            history_count_lbl,
+        ], vertical_alignment=ft.CrossAxisAlignment.CENTER, spacing=8),
         content=ft.Container(
-            content=ft.Column([
-                ft.Container(
-                    content=ft.Row([
-                        ft.Text("📋  Prompt History", size=13,
-                                weight=ft.FontWeight.W_700, color="#1A1A1A",
-                                expand=True),
-                        ft.IconButton(
-                            icon=ft.Icons.CLOSE_ROUNDED,
-                            icon_color="#888", icon_size=18,
-                            on_click=lambda e: setattr(history_bs, "open", False) or page.update(),
-                            width=32, height=32, padding=0,
-                        ),
-                    ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
-                    padding=po(left=16, right=8, top=14, bottom=10),
-                    border=ft.Border(bottom=ft.BorderSide(1, "#EBEBEB")),
-                ),
-                history_list_col,
-            ], spacing=0, expand=True),
-            height=420,
-            bgcolor="#FFFFFF",
-            border_radius=ft.BorderRadius(12, 12, 0, 0),
-            clip_behavior=ft.ClipBehavior.HARD_EDGE,
+            ft.Column([history_search, history_list_col, history_preview_box], spacing=10, expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH),
+            width=640, height=470,
         ),
-        open=False,
+        actions=[
+            ft.TextButton("Close", on_click=lambda e: page.pop_dialog()),
+            history_use_btn,
+        ],
+        actions_padding=po(left=16, right=16, bottom=12),
     )
-    page.overlay.append(history_bs)
 
     def open_history(e):
-        _rebuild_history_list(load_prompt_history())
-        history_bs.open = True
-        page.update()
+        hist_state["sel"] = None
+        history_search.value = ""
+        _rebuild_history_list()
+        page.show_dialog(history_dlg)
 
     def save_prompt(e):
         txt = prompt_field.value or ""
@@ -987,6 +1024,7 @@ async def main(page: ft.Page):
                     clear_card_loading(input_card)
                 if out_path:
                     done_count += 1
+                    _exported[path] = out_path
                     if input_card:
                         replace_card_with_result(input_card, out_path)
                 else:
@@ -1231,6 +1269,30 @@ async def main(page: ft.Page):
             else: _select_only(path)
         page.run_task(_focus_anchor)
 
+    def _open_original_folder(e=None):
+        """Open Explorer on the ORIGINAL picture(s) of the selected card(s): one card = its folder with the file selected; several = each distinct folder."""
+        chosen = [p for p in selected_files if p in _sel]
+        res = _export_util.reveal_in_explorer(chosen)
+        if res["opened"] == 0:
+            status_text.value = "⚠  The folder of the original picture was not found (moved or deleted?)"
+        elif res["skipped"]:
+            status_text.value = f"ℹ  Opened {res['opened']} folders; {res['skipped']} more were not opened"
+        page.update()
+
+    def _open_exported_folder(e=None):
+        """Open Explorer on the EXPORTED picture(s) (the result files of this run) of the selected card(s)."""
+        chosen = [_exported[p] for p in selected_files if p in _sel and p in _exported]
+        if not chosen:
+            status_text.value = "⚠  Nothing exported yet for the selected picture(s): run them first"
+            page.update()
+            return
+        res = _export_util.reveal_in_explorer(chosen)
+        if res["opened"] == 0:
+            status_text.value = "⚠  The exported file was not found (moved or deleted?)"
+        elif res["skipped"]:
+            status_text.value = f"ℹ  Opened {res['opened']} folders; {res['skipped']} more were not opened"
+        page.update()
+
     def _tile_for(path: str) -> ft.Control:
         if path not in _tiles:
             card = card_map[path]
@@ -1242,6 +1304,8 @@ async def main(page: ft.Page):
             page.run_task(_focus_anchor)
         gd = ft.GestureDetector(content=_tiles[path], on_tap_down=lambda e, p_=path: _on_tile_down(e, p_), on_secondary_tap_down=_secondary_down)
         return ft.ContextMenu(content=gd, secondary_items=[
+            ft.PopupMenuItem(content=ft.Text("Open original folder", size=12, color="#1A1A1A"), icon=ft.Icons.FOLDER_OPEN_OUTLINED, on_click=lambda e: _open_original_folder()),
+            ft.PopupMenuItem(content=ft.Text("Open exported folder", size=12, color="#1A1A1A"), icon=ft.Icons.FOLDER_SPECIAL_OUTLINED, on_click=lambda e: _open_exported_folder()),
             ft.PopupMenuItem(content=ft.Text("Remove from list", size=12, color="#E53935"), icon=ft.Icons.DELETE_OUTLINE_ROUNDED, on_click=lambda e: _request_remove()),
         ], tertiary_trigger=None)
 
@@ -1264,7 +1328,7 @@ async def main(page: ft.Page):
     def _set_paths(paths: list, append: bool):
         """Browse replaces the list, a drop adds to it. Existing cards (and their results) are kept."""
         if not append:
-            selected_files.clear(); card_map.clear(); _tiles.clear(); _sel.clear(); _sel_anchor[0] = None
+            selected_files.clear(); card_map.clear(); _tiles.clear(); _sel.clear(); _sel_anchor[0] = None; _exported.clear()
         for pth in paths:
             if pth in selected_files: continue
             selected_files.append(pth)
@@ -1359,7 +1423,7 @@ async def main(page: ft.Page):
     )
 
     def clear_all(e):
-        selected_files.clear()
+        selected_files.clear(); _exported.clear()
         card_map.clear(); _tiles.clear(); _rects.clear(); _sel.clear(); _sel_anchor[0] = None
         preview_wrap.controls.clear()
         _show_list(False)
@@ -1515,4 +1579,4 @@ async def main(page: ft.Page):
     _update_check.start_notice(ft, page, APP_NAME, APP_VERSION)      # a notice only (GitHub releases, once a day, silent when offline); see update_check.py
 
 
-ft.app(target=main)
+ft.app(target=_app_error.guard(ft, main, APP_NAME, APP_VERSION))   # friendly error dialog instead of Flet's red 'application crashed' page

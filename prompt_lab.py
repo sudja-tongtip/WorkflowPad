@@ -10,6 +10,7 @@ from pathlib import Path
 import flet as ft
 import os as _os
 import update_check as _update_check
+import app_error as _app_error
 import export_util as _export_util
 
 # ── Force UTF-8 stdout/stderr (fix UnicodeEncodeError on Windows) ──────
@@ -23,7 +24,7 @@ if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
 # ── App metadata ──────────────────────
 APP_ID      = "prompt_lab"
 APP_NAME    = "Prompt Lab"
-APP_VERSION = "0.1.8"   # SemVer; see RELEASE.md
+APP_VERSION = "0.1.9"   # SemVer; see RELEASE.md
 
 # ── Config ────────────────────────────────────────────────────────────
 COMFY_HOST   = "127.0.0.1:8188"
@@ -136,10 +137,38 @@ _DEFAULT_SYS = (
 )
 
 
+_SEP_WORDS = ("REPLY", "PROMPT", "END")
+
+
+def _is_sep_line(line: str, name: str) -> bool:
+    """A separator line: the protocol word (REPLY / PROMPT / END, any case) ALONE on a line with only decoration around it, and at least one decoration character. So '=== END ===', '=END=', '= END =',
+    '=========== END ==========', '--- END ---', '**END**', '[END]', '<END>', '### END ###', 'END ===', '═══ END ═══' are all the END separator. The kind and the NUMBER of decoration characters are not the
+    protocol (models vary them all the time); the word on a line of its own is. A bare word with no decoration (an ordinary line of text) and a word with other words beside it ('THE END', 'END of prompt',
+    'ENDING') are NOT separators."""
+    m = re.fullmatch(r"([\W_]*)\b" + name + r"\b([\W_]*)", (line or "").strip(), re.IGNORECASE)
+    return bool(m and re.search(r"[^\w\s]|_", m.group(1) + m.group(2)))
+
+
+_INLINE_DECO = r"[=\-_*#~<>+—–═━─＝]{2,}"          # decoration only (no quotes, braces, colons or commas: a JSON key like {"reply": ...} must never look like a separator)
+_INLINE_SEP_RE = re.compile(_INLINE_DECO + r"[ \t]*\b(?:REPLY|PROMPT|END)\b[ \t]*" + _INLINE_DECO, re.IGNORECASE)
+
+
+def _split_inline_separators(lines: list[str]) -> list[str]:
+    """A fully decorated separator ('=== END ===': two or more decoration characters on BOTH sides of the word) that sits in the same line as text ('=== REPLY === Hi' or 'the last words === END ===') is
+    moved onto its own line; the text stays exactly as it was. A line that already is a separator line, and every ordinary line ('Prompt: a woman', 'a == b'), is left alone."""
+    out: list[str] = []
+    for ln in lines:
+        if "\n" in ln or not _INLINE_SEP_RE.search(ln) or any(_is_sep_line(ln, n) for n in _SEP_WORDS):
+            out.append(ln)
+            continue
+        out.extend(part for part in _INLINE_SEP_RE.sub(lambda m: "\n" + m.group(0) + "\n", ln).split("\n"))
+    return out
+
+
 def _prompt_has_contract(text: str) -> bool:
     """True when the system prompt carries the three separator lines (each alone on a line). A saved prompt without them (the old JSON one) cannot produce answers this program can read."""
-    lines = {ln.strip() for ln in (text or "").splitlines()}
-    return all(m in lines for m in (_SEP_REPLY, _SEP_PROMPT, _SEP_END))
+    lines = (text or "").splitlines()
+    return all(any(_is_sep_line(ln, n) for ln in lines) for n in _SEP_WORDS)
 
 
 def load_llm_cfg() -> dict:
@@ -157,7 +186,7 @@ def load_llm_cfg() -> dict:
             pass
     # history_dir stays empty: ComfyUI resolves a relative path against its own
     # installation, so we must not guess where that is.
-    return {"system_prompt": _DEFAULT_SYS, "history_dir": "user/llm_session"}
+    return {"system_prompt": _DEFAULT_SYS, "history_dir": "user/llm_session", "max_tokens": _DEFAULT_MAX_TOKENS}
 
 def save_llm_cfg(cfg: dict):
     LLM_CFG_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -176,7 +205,7 @@ C = {
     "amber"   : "#F59E0B",
     "text1"   : "#F1F5F9",
     "text2"   : "#94A3B8",
-    "text3"   : "#4B5563",
+    "text3"   : "#8391A3",          # hints, placeholders, secondary text (was #4B5563: too dark on the dark panels)
     "toolbar" : "#161616",
 }
 
@@ -185,6 +214,40 @@ def po(left=0, top=0, right=0, bottom=0):
 
 def br(r):
     return ft.BorderRadius(r, r, r, r)
+
+# ── the APIs ticked in the APIs dialog (kept between runs of the program) ──────────────────────────
+APIS_SEL_FILE = Path(_os.environ.get("APPDATA", str(Path.home()))) / "WorkflowPad" / "prompt_lab_apis.json"
+
+def load_api_selection() -> list[str]:
+    data, _problem = _export_util.read_json_safe(APIS_SEL_FILE)
+    items = data.get("selected") if isinstance(data, dict) else None
+    out: list[str] = []
+    for f in items if isinstance(items, list) else []:
+        if isinstance(f, str) and f and f not in out:
+            out.append(f)
+    return out
+
+def save_api_selection(files: list[str]) -> None:
+    try:
+        _export_util.write_json_atomic(APIS_SEL_FILE, {"selected": list(files)}, keep_backup=False, ensure_ascii=False, indent=2)
+    except OSError:
+        pass
+
+def api_file_info(file: str) -> tuple[str, str]:
+    """(status text, level 'ok'|'bad') of a workflow file for the APIs dialog."""
+    p = API_DIR / file
+    if not p.is_file():
+        return "Missing workflow", "bad"
+    try:
+        wf = json.loads(p.read_text(encoding="utf-8"))
+        if not isinstance(wf, dict):
+            raise ValueError("not an object")
+    except Exception:
+        return "Can't read workflow", "bad"
+    nodes = [v for v in wf.values() if isinstance(v, dict)]
+    has_prompt = any(n.get("class_type", "") in _PCLS for n in nodes)
+    has_seed = any(any("seed" in k.lower() for k in (n.get("inputs") or {})) for n in nodes)
+    return ("Prompt ✓" if has_prompt else "No prompt input") + " · " + ("Seed ✓" if has_seed else "Seed fixed"), ("ok" if has_prompt else "bad")
 
 # ── scan_apis ─────────────────────────────────────────────────────────
 def scan_apis() -> list[str]:
@@ -334,6 +397,7 @@ def apply_llm_prompt(prompts: list[dict], target_id, text: str) -> tuple[str, in
 
 
 LOAD_NOTICES: list[str] = []          # what the person must be told at start (a damaged data file); shown once the window is up
+_IDS_UNSAVED: list = [False]          # True while ids made at load time exist only in memory (the prompt file could not be written): the image list must not refer to them
 
 
 def _preserve_damaged(path: Path) -> str:
@@ -366,7 +430,12 @@ def load_prompts() -> list[dict]:
             p.setdefault("name", "")
             p.setdefault("text", "")
             out.append(p)
-    ensure_prompt_ids(out)
+    if ensure_prompt_ids(out):                              # an older file has no ids: write them NOW (the old file stays as .bak), so the image list can refer to them and still find the prompts after a restart
+        try:
+            save_prompts(out)
+        except OSError as ex:
+            _IDS_UNSAVED[0] = True
+            LOAD_NOTICES.append(f"The prompt list could not be updated on disk ({ex}); images made now are not saved to the image list until it can.")
     return out
 
 def thumb_to_bytes(b64str: str) -> bytes:
@@ -375,6 +444,7 @@ def thumb_to_bytes(b64str: str) -> bytes:
 def save_prompts(prompts: list[dict]):
     """Atomic: the file is the old list or the new one, never half of it; the last good copy is kept as .bak. A failed save raises and leaves the old file untouched."""
     _export_util.write_json_atomic(PROMPTS_FILE, prompts, keep_backup=True, ensure_ascii=False, indent=2)
+    _IDS_UNSAVED[0] = False
 
 _PROMPT_LIST: list = [[]]            # the live prompt list (set by main): the image tabs are translated between list positions (the screen) and prompt ids (the file) with it
 _ORPHAN_IMAGES: dict = {}            # image entries found in the file whose prompt is not in the list right now: written back untouched, never dropped
@@ -445,6 +515,8 @@ def save_img_tabs(img_dict: dict, prompts: list | None = None):
     """Save the image tabs, keyed by prompt id. img_dict is {position: [entries]}; the id of each position comes from `prompts` (default: the live list). A position with no prompt, and the entries that
     were found for prompts not in the list, go under 'unmapped' untouched. Keeps everything the screen needs to show an image again AND to reuse its settings (workflow, size, steps)."""
     prompts = _PROMPT_LIST[0] if prompts is None else prompts
+    if _IDS_UNSAVED[0]:
+        save_prompts(prompts)        # the ids this file is keyed by must be on disk first; when that fails this raises and no mapping is written
     keep = ("path", "seed", "label", "api", "size", "steps")
 
     def ser(entries):
@@ -467,6 +539,45 @@ def save_img_tabs(img_dict: dict, prompts: list | None = None):
     _export_util.write_json_atomic(IMAGES_FILE, out, keep_backup=True, ensure_ascii=False, indent=2)
 
 
+_IMG_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp"}
+
+
+def image_save_path(chosen: str, data: bytes) -> str:
+    """The file name to save `data` under: its extension always matches the bytes (a JPEG is never written as .png). A typed image extension that does not match is replaced, a missing one is added."""
+    ext = _export_util.image_ext(data, ".png")
+    p = Path(chosen)
+    suffix = p.suffix.lower()
+    if suffix == ext or (ext == ".jpg" and suffix == ".jpeg"):
+        return chosen
+    return str(p.with_suffix(ext)) if suffix in _IMG_SUFFIXES else chosen + ext
+
+
+_EDITOR_MIN_H = 130          # the prompt editor always keeps this much height
+_CHAT_MIN_H = 150            # the chat panel needs room for its tabs, the history and the input row with the Send button
+
+
+def llm_height_limits(window_h: float, mode: str) -> tuple[float, float]:
+    """(smallest, largest) height of the chat panel for this window: the title bar, the tab bar of the narrow layouts and the editor's own minimum height (name, find/replace, the editor) are kept free.
+    Dragging the divider and resizing the window both use it, so the chat can never push the editor or its own input row out of the window."""
+    reserved = 40 + (48 if mode != "wide" else 0) + 150 + _EDITOR_MIN_H
+    return float(_CHAT_MIN_H), float(max(_CHAT_MIN_H, window_h - reserved))
+
+
+_GEN_MIN = 560               # the generation panel keeps at least this much width in the three-column layout
+_MID_MIN = 320               # ... the editor column at least this much
+_LEFT_MIN, _LEFT_MAX = 140, 400
+
+
+def wide_widths(window_w: float, left: float, mid: float) -> tuple[float, float]:
+    """The widths of the prompt list and of the editor column for the three-column layout, clamped so that the generation panel keeps _GEN_MIN and the list stays between _LEFT_MIN and _LEFT_MAX.
+    Dragging either divider and resizing the window all go through this."""
+    left = max(_LEFT_MIN, min(_LEFT_MAX, left))
+    mid_max = max(_MID_MIN, window_w - left - 10 - _GEN_MIN)          # 10 = the two divider bars
+    mid = max(_MID_MIN, min(mid_max, mid))
+    left = max(_LEFT_MIN, min(left, window_w - mid - 10 - _GEN_MIN))
+    return left, mid
+
+
 def make_thumbnail_bytes(img_bytes: bytes, max_size: int = 500) -> bytes:
     """Resize the image so it stays within max_size and return it as bytes."""
     try:
@@ -481,6 +592,44 @@ def make_thumbnail_bytes(img_bytes: bytes, max_size: int = 500) -> bytes:
         return img_bytes
 
 # ── async run_llm ─────────────────────────────────────────────────────
+_DEFAULT_MAX_TOKENS = 8192            # Grok's thinking counts inside Max Tokens too, and a full image prompt is long
+
+# The System Prompt this app shipped before the separator format (JSON). Compared without spaces / punctuation, so only a prompt that is still the untouched old default is treated as "the default".
+_OLD_DEFAULT_SYS = (
+    "You are an AI image prompt engineer for Flux/Krea.\n\n"
+    "Reply in the same language the user writes in. Prompt content must be in English.\n\n"
+    "Output ONLY a raw JSON object - no markdown, no code block, no text before or after:\n"
+    '{"reply": "casual reply 1-2 sentences", "prompt": "full prompt in English\\nSubject: ...\\nEnvironment: ...\\nLighting: ...\\nCamera: ...\\nNegative: ..."}\n\n'
+    "RULES:\n"
+    "- reply: casual, 1-2 sentences, no labels\n"
+    "- prompt: include only sections relevant to the image (skip irrelevant ones)\n"
+    "- Each section on its own line inside the prompt string\n"
+    "- Keep ALL details. Never shorten, summarize, or use placeholders\n"
+    "- Only modify what user asked, keep everything else word-for-word\n"
+    "- If [No prompt yet] and user just chatting: set prompt to empty string\n"
+    "- Output ONLY valid JSON. Nothing else."
+)
+
+
+def _norm_prompt(text: str) -> str:
+    return re.sub(r"\W+", "", text or "")
+
+
+def _auto_upgrade_default_prompt(cfg: dict) -> str:
+    """If the saved System Prompt is exactly the OLD app default (not the user's own text), keep it as a backup and switch to the new default at once; returns the notice text ('' when nothing changed).
+    A custom prompt is never touched here. Nothing else is reset."""
+    saved = cfg.get("system_prompt")
+    if not saved or _prompt_has_contract(saved) or _norm_prompt(saved) != _norm_prompt(_OLD_DEFAULT_SYS):
+        return ""
+    _remember_backup(cfg, saved)
+    cfg["system_prompt"] = _DEFAULT_SYS
+    try:
+        save_llm_cfg(cfg)
+    except Exception:
+        pass
+    return "The default System Prompt was updated to the new answer format (REPLY / PROMPT / END). The previous one is saved as a backup (system_prompt_backup in the settings file)."
+
+
 class LLMFormatError(ValueError):
     """The LLM answer does not follow the REPLY / PROMPT / END separator format; str() is the reason, .raw is the answer as received (set by the caller that has it)."""
     raw = ""
@@ -490,28 +639,28 @@ _TEMPLATE_TAIL_RE = re.compile(r"(?:\s*</?(?:end_of_turn|end_turn|start_turn|sta
 
 
 def _parse_llm_output(raw: str) -> tuple[str, str]:
-    """Strict, structure-only parser: (reply, prompt). The answer is the three separator lines in this order, each ALONE on its line and present exactly once, with only blank text before the first and after the
-    last. The text of each section is kept exactly as the LLM wrote it (outer whitespace trimmed). REPLY must not be empty; PROMPT may be. Anything else raises LLMFormatError with the reason; nothing is
+    """Strict, structure-only parser: (reply, prompt). The answer is the three separator lines in this order, each ALONE on its line and present exactly once, with the text before the first and after the
+    last ignored. The text of each section is kept exactly as the LLM wrote it (outer whitespace trimmed). REPLY must not be empty; PROMPT may be. Anything else raises LLMFormatError with the reason; nothing is
     guessed, repaired or salvaged. A chat-template marker at the very end (</end_of_turn> ...) is transport and is ignored."""
     text = _TEMPLATE_TAIL_RE.sub("", raw or "").strip()
     if not text:
         raise LLMFormatError("the answer is empty")
     lines = text.splitlines()
+    if len(lines) >= 2 and re.fullmatch(r"\s*```[A-Za-z]*\s*", lines[0]) and re.fullmatch(r"\s*```\s*", lines[-1]):
+        lines = lines[1:-1]                    # the whole answer wrapped in a code fence: transport, like the chat-template marker
+    lines = _split_inline_separators(lines)
     pos: dict[str, int] = {}
-    for name, marker in (("REPLY", _SEP_REPLY), ("PROMPT", _SEP_PROMPT), ("END", _SEP_END)):
-        found = [k for k, ln in enumerate(lines) if ln.strip() == marker]
+    for name in _SEP_WORDS:
+        found = [k for k, ln in enumerate(lines) if _is_sep_line(ln, name)]
         if not found:
-            hint = " (the answer may have been cut off: raise Max Tokens)" if name == "END" and pos.get("PROMPT") is not None else ""
+            hint = " (check that it is written as =========== END ===========; if the answer stops in the middle of a sentence it was cut off: raise Max Tokens)" if name == "END" and pos.get("PROMPT") is not None else ""
             raise LLMFormatError(f"the {name} separator line is missing{hint}")
         if len(found) > 1:
             raise LLMFormatError(f"the {name} separator line appears {len(found)} times")
         pos[name] = found[0]
     if not (pos["REPLY"] < pos["PROMPT"] < pos["END"]):
         raise LLMFormatError("the separator lines are not in the order REPLY, PROMPT, END")
-    if "\n".join(lines[:pos["REPLY"]]).strip():
-        raise LLMFormatError("there is text before the REPLY separator")
-    if "\n".join(lines[pos["END"] + 1:]).strip():
-        raise LLMFormatError("there is text after the END separator")
+    # Only the two blocks count: REPLY -> PROMPT and PROMPT -> END. Whatever is before the REPLY line or after the END line (a greeting, <|eos|>, a chat-template token, a stray sentence) is not part of the answer and is dropped.
     reply = "\n".join(lines[pos["REPLY"] + 1:pos["PROMPT"]]).strip()
     prompt = "\n".join(lines[pos["PROMPT"] + 1:pos["END"]]).strip()
     if not reply:
@@ -539,7 +688,7 @@ async def run_llm(user_text: str, cfg: dict, session_id: str, on_result, on_err,
             wf[nid]["inputs"]["history_dir"]   = cfg.get("history_dir", "")
             wf[nid]["inputs"]["session_id"]    = session_id
             wf[nid]["inputs"]["reset_session"] = False
-            wf[nid]["inputs"]["max_tokens"]    = int(cfg.get("max_tokens", 1024))
+            wf[nid]["inputs"]["max_tokens"]    = int(cfg.get("max_tokens", _DEFAULT_MAX_TOKENS))
             wf[nid]["inputs"]["temperature"]   = float(cfg.get("temperature", 0.7))
             wf[nid]["inputs"]["n_ctx"]         = int(cfg.get("n_ctx", 16384))
 
@@ -685,9 +834,9 @@ def _convert_system_prompt(text: str) -> tuple[str | None, list[str], str]:
         t = ln.strip()
         if t in ("{", "}", "},", "{{", "}}") or '"prompt":' in t or '\\"prompt\\":' in t:
             return None, removed, f"a piece of the old JSON example is left over ({t[:40]!r}); it cannot be separated safely"
-    stripped = {ln.strip() for ln in kept}
-    present = [m for m in (_SEP_REPLY, _SEP_PROMPT, _SEP_END) if m in stripped]
-    counts = [sum(1 for ln in kept if ln.strip() == m) for m in present]
+    counts = [sum(1 for ln in kept if _is_sep_line(ln, n)) for n in _SEP_WORDS]
+    present = [n for n, c in zip(_SEP_WORDS, counts) if c]
+    counts = [c for c in counts if c]
     if present and (len(present) != 3 or any(c != 1 for c in counts)):
         return None, removed, "the prompt already holds some of the separator lines, but not exactly one of each"
     body = "\n".join(kept).rstrip()
@@ -731,7 +880,7 @@ async def run_workflow(wf: dict, on_img, on_err, on_done, stop_event=None, on_st
                             img_info.get("subfolder", ""),
                             img_info.get("type", "output"),
                         )
-                        dst = TEMP_DIR / f"pt_{uuid.uuid4().hex[:8]}.png"
+                        dst = TEMP_DIR / f"pt_{uuid.uuid4().hex[:8]}{_export_util.image_ext(raw, '.png')}"
                         dst.write_bytes(raw)
                         await on_img(str(dst))
                         await on_done()
@@ -779,8 +928,13 @@ def main(page: ft.Page):
         page.window.icon = str(_icon)
     page.window_width  = 1100
     page.window_height = 700
-    page.window_min_width  = 1200
-    page.window_min_height = 500
+    page.window_min_width  = 860
+    page.window_min_height = 520
+    try:
+        page.window.min_width = 860
+        page.window.min_height = 520
+    except Exception:
+        pass
     page.padding   = 0
     page.bgcolor   = C["bg"]
     page.theme_mode = ft.ThemeMode.DARK
@@ -825,7 +979,7 @@ def main(page: ft.Page):
                     border_radius=br(5),
                     bgcolor=C["accent"] if is_sel else C["panel"],
                     ink=True, data=i,
-                    on_click=lambda e: _select(e.control.data),
+                    on_click=lambda e: (_select(e.control.data), _after_pick()),
                 )
             )
         page.update()
@@ -896,8 +1050,9 @@ def main(page: ft.Page):
     )
 
     def on_left_drag(e: ft.DragUpdateEvent):
-        left_w[0] = max(140, min(400, left_w[0] + e.local_delta.x))
+        left_w[0], _m = wide_widths(_win_w(), left_w[0] + e.local_delta.x, (mid_panel.width or mid_w[0]))
         left_container.width = left_w[0]
+        mid_panel.width = _m
         page.update()
 
     # ── Mid panel ────────────────────────────────────────────────────
@@ -911,7 +1066,7 @@ def main(page: ft.Page):
     )
     editor_field = ft.TextField(
         hint_text="Write your prompt here...",
-        multiline=True, min_lines=22, expand=True,
+        multiline=True, min_lines=4, expand=True,
         border=ft.InputBorder.OUTLINE,
         border_color=C["border"], focused_border_color=C["accent"],
         bgcolor=C["panel"], color=C["text1"],
@@ -1000,7 +1155,7 @@ def main(page: ft.Page):
             replace_field,
             btn_replace_all,
             replace_count,
-        ], spacing=4, tight=True, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+        ], spacing=4, run_spacing=4, wrap=True, vertical_alignment=ft.CrossAxisAlignment.CENTER),
     )
 
     # ── LLM Chat panel ───────────────────────────────────────────────
@@ -1043,6 +1198,7 @@ def main(page: ft.Page):
     _grok_history: list[list] = [[]]   # conversation history [{"role","content"}]
 
     llm_cfg: list[dict] = [load_llm_cfg()]
+    _sys_notice: list[str] = [_auto_upgrade_default_prompt(llm_cfg[0])]       # shown in the Settings page
     _thumb_cb: list = [None]
 
     # shared UI
@@ -1061,8 +1217,16 @@ def main(page: ft.Page):
     llm_status = ft.Text("", size=10, color=C["text3"])
     llm_progress = ft.ProgressRing(width=14, height=14, color=C["accent"], visible=False)
 
-    def _refresh_list(lv):
-        """Update the list itself, not just its container: a list swapped in by a tab switch otherwise showed new bubbles only after switching tabs again."""
+    def _refresh_list(lv, holder=None, model=None):
+        """Show a new bubble / log line at once. The visible container is pointed at this model's list again when that model's tab is the open one (a list swapped in by a tab switch, e.g. Grok, otherwise
+        showed new lines only after switching tabs again), then the container and the list itself are updated."""
+        try:
+            if holder is not None and model == _active_model[0] and holder.content is not lv:
+                holder.content = lv
+            if holder is not None:
+                holder.update()
+        except Exception:
+            pass
         try: lv.update()
         except Exception: pass
 
@@ -1095,7 +1259,7 @@ def main(page: ft.Page):
                 ),
             )
         )
-        _refresh_list(ch)
+        _refresh_list(ch, chat_view, model)
         page.update()
 
     def _set_model_status(m: str, text: str, color: str, busy: bool | None = None):
@@ -1206,7 +1370,7 @@ def main(page: ft.Page):
                     async def _call(sp, msgs):
                         return await _call_grok(
                             _grok_api_key[0], _grok_model[0], sp, msgs,
-                            max_tokens=int(llm_cfg[0].get("max_tokens", 1024)),
+                            max_tokens=int(llm_cfg[0].get("max_tokens", _DEFAULT_MAX_TOKENS)),
                             temperature=float(llm_cfg[0].get("temperature", 0.7)),
                         )
                     try:
@@ -1258,7 +1422,6 @@ def main(page: ft.Page):
     cfg_sys_field = ft.TextField(
         value=llm_cfg[0].get("system_prompt", _DEFAULT_SYS),
         multiline=True, min_lines=5, max_lines=10,
-        label="System Prompt",
         border_color=C["border"], focused_border_color=C["accent"],
         bgcolor=C["panel"], color=C["text1"],
         label_style=ft.TextStyle(color=C["text2"]),
@@ -1273,7 +1436,7 @@ def main(page: ft.Page):
         text_size=12, expand=True,
     )
     cfg_max_tokens_field = ft.TextField(
-        value=str(llm_cfg[0].get("max_tokens", 1024)),
+        value=str(llm_cfg[0].get("max_tokens", _DEFAULT_MAX_TOKENS)),
         label="Max Tokens (response length)",
         keyboard_type=ft.KeyboardType.NUMBER,
         border_color=C["border"], focused_border_color=C["accent"],
@@ -1300,18 +1463,28 @@ def main(page: ft.Page):
         text_size=12,
     )
 
-    cfg_sys_note = ft.Text("", size=10, color=C["amber"])
+    cfg_sys_note = ft.Text("", size=10, color=C["amber"], visible=False)
+    cfg_sys_notice = ft.Text("", size=10, color=C["accent"], visible=False)
+    cfg_sys_chip_text = ft.Text("", size=10, weight=ft.FontWeight.W_600, color=C["green"])
+    cfg_sys_chip = ft.Container(content=cfg_sys_chip_text, padding=po(left=9, top=2, right=9, bottom=2), border_radius=20, bgcolor="#12301F")
 
     def _sys_note_refresh():
         txt = cfg_sys_field.value
-        if not _prompt_has_contract(txt):
-            cfg_sys_note.value = ("⚠ This System Prompt has no REPLY / PROMPT / END separator lines (the old format). Chat will not send until it has them. "
-                                  "'Convert my prompt' keeps your own instructions (it removes only the lines that mention JSON / \"reply\" and adds the new format); "
-                                  "your current text is saved as a backup first.")
-        elif _old_contract_lines(txt):
-            cfg_sys_note.value = "⚠ This System Prompt has the new format AND still mentions the old one (JSON / \"reply\") on some lines. Remove those lines, or press 'Convert my prompt'."
+        has = _prompt_has_contract(txt)
+        mixed = has and bool(_old_contract_lines(txt))
+        if not has:
+            cfg_sys_chip_text.value, cfg_sys_chip_text.color, cfg_sys_chip.bgcolor = "Old format", C["amber"], "#33260A"
+            cfg_sys_note.value = ("This System Prompt has no REPLY / PROMPT / END lines, so chat will not send. 'Convert my prompt' keeps your own instructions "
+                                  "(it removes only the lines that mention JSON / \"reply\" and adds the new format); your current text is saved as a backup first.")
+        elif mixed:
+            cfg_sys_chip_text.value, cfg_sys_chip_text.color, cfg_sys_chip.bgcolor = "Mixed formats", C["amber"], "#33260A"
+            cfg_sys_note.value = "The new format is there, but some lines still mention the old one (JSON / \"reply\"). Remove them, or press 'Convert my prompt'."
         else:
+            cfg_sys_chip_text.value, cfg_sys_chip_text.color, cfg_sys_chip.bgcolor = "New format ✓", C["green"], "#12301F"
             cfg_sys_note.value = ""
+        cfg_sys_note.visible = bool(cfg_sys_note.value)
+        cfg_sys_notice.value = _sys_notice[0]
+        cfg_sys_notice.visible = bool(_sys_notice[0])
 
     def _use_new_default(_):
         old = cfg_sys_field.value.strip()
@@ -1321,7 +1494,8 @@ def main(page: ft.Page):
         cfg_sys_field.value = _DEFAULT_SYS
         _sys_note_refresh()
         cfg_sys_note.value = ("The default prompt is in the box. Your own instructions are NOT in it (they are saved as a backup in the settings file: system_prompt_backup). "
-                              "Press Save to use it." + ("" if not cfg_sys_note.value else "  " + cfg_sys_note.value))
+                              "Press Save to use it.")
+        cfg_sys_note.visible = True
         page.update()
 
     def _convert_my_prompt(_):
@@ -1332,6 +1506,7 @@ def main(page: ft.Page):
             listing = "\n".join(f"  - {ln.strip()[:90]}" for ln in removed[:10])
             cfg_sys_note.value = (f"Could not convert automatically: {why}. Nothing was changed. Edit the System Prompt by hand: remove the old JSON instructions"
                                   + (" (lines that mention JSON / \"reply\":\n" + listing + ")" if listing else "") + " and add the REPLY / PROMPT / END format.")
+            cfg_sys_note.visible = True
             page.update()
             return
         _remember_backup(llm_cfg[0], original)                 # the original is saved BEFORE the box changes
@@ -1340,13 +1515,14 @@ def main(page: ft.Page):
         listing = "\n".join(f"  - {ln.strip()[:90]}" for ln in removed)
         cfg_sys_note.value = (f"Converted: {len(removed)} old-format line(s) removed" + (":\n" + listing if listing else "") + "\nThe new format was added once at the end. "
                               "Your original text is saved as a backup in the settings file. Review the text, then press Save.")
+        cfg_sys_note.visible = True
         page.update()
 
     def _open_llm_config(_):
         cfg_sys_field.value         = llm_cfg[0].get("system_prompt", _DEFAULT_SYS)
         _sys_note_refresh()
         cfg_dir_field.value         = llm_cfg[0].get("history_dir", "")
-        cfg_max_tokens_field.value  = str(llm_cfg[0].get("max_tokens", 1024))
+        cfg_max_tokens_field.value  = str(llm_cfg[0].get("max_tokens", _DEFAULT_MAX_TOKENS))
         cfg_temperature_field.value = str(llm_cfg[0].get("temperature", 0.7))
         cfg_nctx_field.value        = str(llm_cfg[0].get("n_ctx", 16384))
         cfg_grok_key_field.value    = _grok_api_key[0]
@@ -1363,7 +1539,7 @@ def main(page: ft.Page):
         try:
             llm_cfg[0]["max_tokens"] = int(cfg_max_tokens_field.value.strip())
         except ValueError:
-            llm_cfg[0]["max_tokens"] = 1024
+            llm_cfg[0]["max_tokens"] = _DEFAULT_MAX_TOKENS
         try:
             llm_cfg[0]["temperature"] = float(cfg_temperature_field.value.strip())
         except ValueError:
@@ -1432,41 +1608,62 @@ def main(page: ft.Page):
     cfg_tab_local_btn = ft.TextButton("Local LLM", style=_cfg_tab_style(True))
     cfg_tab_grok_btn  = ft.TextButton("Grok (xAI)", style=_cfg_tab_style(False))
 
-    def _label(txt: str):
-        return ft.Text(txt, size=10, weight=ft.FontWeight.W_600, color=C["text2"])
+    def _bd(color):
+        side = ft.BorderSide(1, color)
+        return ft.Border(top=side, right=side, bottom=side, left=side)
+
+    def _hint(txt: str):
+        return ft.Text(txt, size=10, color=C["text3"])
+
+    def _card(title: str, subtitle: str, body: list, right=None):
+        head = ft.Row([
+            ft.Column([ft.Text(title, size=13, weight=ft.FontWeight.W_600, color=C["text1"]),
+                       ft.Text(subtitle, size=10, color=C["text3"])], spacing=1, tight=True, expand=True),
+            *([right] if right is not None else []),
+        ], vertical_alignment=ft.CrossAxisAlignment.START)
+        return ft.Container(
+            content=ft.Column([head] + body, spacing=10, tight=True),
+            bgcolor=C["panel"], border=_bd(C["border"]), border_radius=10,
+            padding=po(left=14, top=12, right=14, bottom=12),
+        )
 
     cfg_local_content = ft.Column([
-        _label("System Prompt"),
-        cfg_sys_field,
-        cfg_sys_note,
-        ft.Row([
-            ft.TextButton("Convert my prompt to the new format (keeps my instructions)", on_click=_convert_my_prompt),
-            ft.TextButton("Use new default prompt (does NOT keep my instructions; saved as backup)", on_click=_use_new_default),
-        ], wrap=True, spacing=4),
-        ft.Divider(height=1, color=C["border"]),
-        _label("Generation"),
-        ft.Row([cfg_max_tokens_field, cfg_temperature_field, cfg_nctx_field],
-               spacing=8, alignment=ft.MainAxisAlignment.START),
-        ft.Divider(height=1, color=C["border"]),
-        _label("Session"),
-        cfg_dir_field,
-        ft.Text(
-            "💡 LLM workflow files (*.json) must be in the comfy_apis/llm/ folder next to this file",
-            size=10, color=C["text3"], italic=True,
-        ),
-        ft.Divider(height=1, color=C["border"]),
-        _label("Updates"),
-        _update_check.settings_row(ft, page, APP_NAME, APP_VERSION),
-    ], spacing=6, tight=True, scroll=ft.ScrollMode.AUTO, expand=True)
+        _card("System Prompt", "The instructions the model follows. The answer format (REPLY / PROMPT / END) must be in it.", [
+            cfg_sys_field,
+            cfg_sys_notice,
+            cfg_sys_note,
+            ft.Row([
+                ft.OutlinedButton("Convert my prompt", icon=ft.Icons.AUTO_FIX_HIGH, on_click=_convert_my_prompt,
+                                  tooltip="Keeps your own instructions: removes only the lines that mention JSON / \"reply\" and adds the new format. Your original is saved as a backup first."),
+                ft.TextButton("Reset to default prompt", icon=ft.Icons.RESTART_ALT, on_click=_use_new_default,
+                              tooltip="Puts the app's default prompt in the box. Your own instructions are NOT kept in it (they are saved as a backup).",
+                              style=ft.ButtonStyle(color=C["text2"])),
+            ], wrap=True, spacing=6),
+        ], right=cfg_sys_chip),
+        _card("Generation", "Applies to the Local models and to Grok.", [
+            ft.Row([
+                ft.Column([cfg_max_tokens_field, _hint("Answer length. Grok's thinking counts too: 8192 is a good default.")], spacing=4, expand=True),
+                ft.Column([cfg_temperature_field, _hint("Lower = more literal, higher = more varied.")], spacing=4, expand=True),
+                ft.Column([cfg_nctx_field, _hint("Context window of the local model.")], spacing=4, expand=True),
+            ], spacing=10, vertical_alignment=ft.CrossAxisAlignment.START),
+        ]),
+        _card("Session", "Where the local models keep their conversations.", [
+            cfg_dir_field,
+            _hint("LLM workflow files (*.json) go in the comfy_apis/llm/ folder next to this program."),
+        ]),
+        _card("Updates", "A notice only; nothing is downloaded or installed.", [
+            _update_check.settings_row(ft, page, APP_NAME, APP_VERSION),
+        ]),
+    ], spacing=12, tight=True, scroll=ft.ScrollMode.AUTO, expand=True)
 
     cfg_grok_content = ft.Column([
-        cfg_grok_key_field,
-        cfg_grok_model_dd,
-        ft.Text(
-            "💡 Credentials shared with story_generator (%APPDATA%\\StoryGenerator\\credentials.json)",
-            size=10, color=C["text3"], italic=True,
-        ),
-    ], spacing=10, tight=True, visible=False)
+        _card("Grok (xAI)", "Used by the Grok tab of the chat.", [
+            cfg_grok_key_field,
+            cfg_grok_model_dd,
+            _hint("The key is shared with Story Generator (%APPDATA%\\StoryGenerator\\credentials.json)."),
+            _hint("Max Tokens and Temperature from the Local LLM tab apply to Grok as well."),
+        ]),
+    ], spacing=12, tight=True, visible=False)
 
     cfg_body = ft.Container(
         expand=True,
@@ -1492,7 +1689,7 @@ def main(page: ft.Page):
         bgcolor=C["surface"],
         content=ft.Container(
             width=_CFG_W,
-            height=520,
+            height=580,
             content=ft.Column([
                 ft.Container(
                     content=ft.Row([cfg_tab_local_btn, cfg_tab_grok_btn], spacing=4),
@@ -1525,7 +1722,8 @@ def main(page: ft.Page):
     _active_view: list[str] = ["chat"]  # "chat" or "logs"
 
     def _add_log(label: str, text: str, color: str, model: str | None = None):
-        lg = _model_states[model or _active_model[0]]["logs"]
+        model = model or _active_model[0]
+        lg = _model_states[model]["logs"]
         lg.controls.append(
             ft.Container(
                 content=ft.Column([
@@ -1537,7 +1735,7 @@ def main(page: ft.Page):
                 padding=po(left=8, top=4, right=8, bottom=4),
             )
         )
-        _refresh_list(lg)
+        _refresh_list(lg, logs_view, model)
         page.update()
 
     def _tab_style(active: bool):
@@ -1643,7 +1841,8 @@ def main(page: ft.Page):
 
     def _on_llm_divider_drag(e: ft.DragUpdateEvent):
         # drag up = delta_y negative = increase chat panel height
-        _llm_h[0] = max(120.0, min(600.0, _llm_h[0] - e.local_delta.y))
+        lo, hi = llm_height_limits(_win_h(), _layout["mode"] or "wide")
+        _llm_h[0] = max(lo, min(hi, _llm_h[0] - e.local_delta.y))
         llm_panel.height = _llm_h[0]
         page.update()
 
@@ -1675,7 +1874,72 @@ def main(page: ft.Page):
     )
 
     # ── Right panel ───────────────────────────────────────────────────
-    api_dd = _dd([ft.dropdown.Option(f) for f in scan_apis()], "Select Workflow")
+    sel_apis: list[str] = [f for f in load_api_selection() if (API_DIR / f).is_file()]     # the APIs a Run goes through, in this order
+    apis_col = ft.Column(spacing=4, scroll=ft.ScrollMode.AUTO)       # the APIs a Run goes through, numbered, always visible
+    apis_box = ft.Container(content=apis_col, expand=True)
+    apis_count = ft.Text("", size=10, color=C["text2"])
+    _lvl_color = {"ok": C["text3"], "warn": C["amber"], "bad": C["red"]}
+
+    def _apis_label():
+        """Redraw the visible list of selected APIs (name, file, status) under the Add API button's header."""
+        apis_col.controls.clear()
+        if not sel_apis:
+            apis_col.controls.append(ft.Text("No APIs selected: press Add API", size=11, color=C["amber"], italic=True))
+        for i, f in enumerate(sel_apis):
+            status, level = api_file_info(f)
+            apis_col.controls.append(ft.Container(
+                content=ft.Row([
+                    ft.Container(content=ft.Text(str(i + 1), size=9, color=C["accent"], weight=ft.FontWeight.W_700),
+                                 width=18, height=18, bgcolor="#1E3A5F", border_radius=br(9), alignment=ft.Alignment(0, 0)),
+                    ft.Column([
+                        ft.Text(Path(f).stem, size=11, color=C["text1"], weight=ft.FontWeight.W_600, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                        ft.Text(f"{f} · {status}", size=9, color=_lvl_color[level], max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                    ], spacing=0, expand=True),
+                ], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                bgcolor=C["panel"], border_radius=br(6), tooltip=f"{Path(f).stem}\n{f}\n{status}",
+                padding=po(left=6, right=6, top=4, bottom=4),
+                border=ft.Border.all(1, C["red"] if level == "bad" else C["border"]),
+            ))
+        apis_count.value = f"{len(sel_apis)} selected" if sel_apis else ""
+        try: page.update()
+        except Exception: pass
+
+    add_api_btn = ft.OutlinedButton(
+        content=ft.Row([ft.Icon(ft.Icons.ADD_ROUNDED, size=13, color=C["accent"]),
+                        ft.Text("Add API", size=10, color=C["accent"])], tight=True, spacing=4),
+        height=28, tooltip="Choose which APIs a Run uses, and their order",
+        style=ft.ButtonStyle(side=ft.BorderSide(1, C["accent"]), padding=po(left=8, right=10)))
+    apis_fold_btn = ft.IconButton(ft.Icons.EXPAND_LESS_ROUNDED, icon_size=16, icon_color=C["text2"], tooltip="Collapse the APIs list", width=28, height=28, padding=0)
+
+    def _toggle_apis(_=None):
+        opened = not apis_box.visible
+        apis_box.visible = opened
+        api_dd.height = 168 if opened else 46
+        apis_fold_btn.icon = ft.Icons.EXPAND_LESS_ROUNDED if opened else ft.Icons.EXPAND_MORE_ROUNDED
+        apis_fold_btn.tooltip = "Collapse the APIs list" if opened else "Show the APIs list"
+        page.update()
+
+    apis_fold_btn.on_click = _toggle_apis
+    # the APIs panel sits between the thumbnail and the controls: a header (title, count, refresh, Add API) and a list that scrolls
+    api_dd = ft.Container(          # (named api_dd for the layout below)
+        width=340, height=168, bgcolor=C["panel"], border_radius=br(8), border=ft.Border.all(1, C["border"]),
+        padding=po(left=10, right=8, top=8, bottom=8),
+        content=ft.Column([
+            ft.Row([
+                ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED, size=14, color=C["accent"]),
+                ft.Text("APIs", size=12, weight=ft.FontWeight.W_700, color=C["text1"]),
+                apis_count,
+                ft.Container(expand=True),
+                apis_fold_btn,
+                ft.IconButton(ft.Icons.REFRESH, icon_size=16, icon_color=C["text2"], tooltip="Refresh API list", width=28, height=28, padding=0,
+                              on_click=lambda e: on_refresh_api(e)),
+                add_api_btn,
+            ], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            ft.Divider(height=1, color=C["border"]),
+            apis_box,
+        ], spacing=6, expand=True),
+    )
+    _apis_label()
 
     # fixed sizes per aspect ratio (multiple of 64, sizes S/M/L/XL)
     _ALL_SIZES = [
@@ -1823,15 +2087,22 @@ def main(page: ft.Page):
     async def on_save_click(_):
         if not _img_bytes[0] or _img_bytes[0] == _BLANK: return
         fp = ft.FilePicker()
+        _ext = _export_util.image_ext(_img_bytes[0], ".png")
         result = await fp.save_file(
             dialog_title="Save image",
-            file_name=f"output_{time.strftime('%Y%m%d_%H%M%S')}.png",
-            allowed_extensions=["png"],
+            file_name=f"output_{time.strftime('%Y%m%d_%H%M%S')}{_ext}",
+            allowed_extensions=[_ext.lstrip(".")],
         )
         if result:
-            p = result if result.endswith(".png") else result + ".png"
-            Path(p).write_bytes(_img_bytes[0])
-            set_status(f"💾 Saved: {Path(p).name}", C["green"])
+            p = image_save_path(result, _img_bytes[0])
+            if p != result and Path(p).exists():
+                # the extension was corrected to match the bytes and the file picker never asked about THAT name: another file lives there, so it is not replaced, the next free name is used
+                _t0 = time.perf_counter()
+                p = str(await _export_util.write_bytes_unique(p, _img_bytes[0]))
+                _secs = time.perf_counter() - _t0
+            else:
+                _secs = await _export_util.write_bytes(p, _img_bytes[0])      # in a worker thread: the window stays responsive; the name is the one the person confirmed
+            set_status(f"💾 Saved: {Path(p).name} ({_secs:.1f}s)", C["green"])
 
     btn_save.on_click = on_save_click
 
@@ -1964,7 +2235,7 @@ def main(page: ft.Page):
         preview_ph.visible = True
         btn_save.disabled = True
         img_tab_info.value = ""
-        if preview_img.page: preview_img.page.update()
+        page.update()                  # (a control in a panel that is not on screen right now has no .page: asking for it raises)
 
     def _show_tab(prompt_idx: int, tab_idx: int):
         imgs = _prompt_images.get(prompt_idx, [])
@@ -1986,16 +2257,18 @@ def main(page: ft.Page):
         preview_ph.visible = False
         btn_save.disabled = False
         seed = entry.get("seed", -1)
-        if seed and seed >= 0:
+        if isinstance(seed, int) and not isinstance(seed, bool) and seed >= 0:      # 0 is a real seed
             seed_field.value = str(seed)
             seed_field.color = C["amber"]
             _current_seed[0] = seed
+        # The seed field is the GENERATION seed (what Run uses): an image with a seed loads it, an image without one leaves it alone. The image's own seed is shown in its info line below.
         meta_parts = []
         if entry.get("api"): meta_parts.append(entry["api"])
         if entry.get("size"): meta_parts.append(entry["size"])
         if entry.get("steps"): meta_parts.append(f"steps={entry['steps']}")
+        if isinstance(seed, int) and not isinstance(seed, bool) and seed >= 0: meta_parts.append(f"seed {seed}")
         img_tab_info.value = "  ·  ".join(meta_parts)
-        if preview_img.page: preview_img.page.update()
+        page.update()                  # (a control in a panel that is not on screen right now has no .page: asking for it raises)
 
     def _rebuild_tabs():
         pi = sel[0]
@@ -2032,23 +2305,26 @@ def main(page: ft.Page):
                     on_click=_on_select,
                 )
             img_tab_row.controls.append(_make_tab())
-        if img_tab_row.page:
-            img_tab_row.update()
+        page.update()
 
-    async def _do_run(force_new_seed: bool):
+    async def _run_apis(mode: str):
+        """mode: 'new' (new random seed), 'seed' (current seed), 'quick' (the workflow's own size/steps, current seed).
+        Goes through every selected API in order with the SAME prompt and the SAME seed (so the results can be compared); every image becomes a tab of the prompt."""
+        quick = mode == "quick"; force_new_seed = mode == "new"
         prompt_text = editor_field.value.strip()
         if not prompt_text:
             set_status("⚠ No prompt", C["amber"]); return
-        api_fn = api_dd.value
-        if not api_fn:
-            set_status("⚠ Workflow not selected", C["amber"]); return
-        api_path = API_DIR / api_fn
-        if not api_path.exists():
-            set_status(f"⚠ File not found: {api_fn}", C["red"]); return
+        apis = list(sel_apis)
+        if not apis:
+            set_status("⚠ No API selected: press the APIs button", C["amber"]); return
+        gone = [f for f in apis if not (API_DIR / f).exists()]
+        if gone:
+            set_status(f"⚠ File not found: {', '.join(gone)}", C["red"]); return
 
         size_label = size_dd.value or _DEFAULT_SIZE
         w, h = _size_map.get(size_label, (2304, 1296))
         s = int(steps_dd.value or 20)
+        icon, col = ("⚡", C["amber"]) if quick else ("⏳", C["accent"])
 
         run_prompt_id = prompts[sel[0]].get("id") if 0 <= sel[0] < len(prompts) else None   # the prompt Run was pressed for, by id
         btn_new_run.disabled = True
@@ -2056,179 +2332,260 @@ def main(page: ft.Page):
         btn_quick.disabled = True; _gen_state(True)
         progress.visible = True
         _start_time = time.time()
-        set_status("⏳ 0s", C["accent"])
+        where = [""]
+        set_status(f"{icon} 0s", col)
         page.update()
 
         async def _tick():
             while progress.visible:
-                elapsed = time.time() - _start_time
-                set_status(f"⏳ {elapsed:.0f}s", C["accent"])
+                set_status(f"{icon} {where[0]}{time.time() - _start_time:.0f}s", col)
                 await asyncio.sleep(1)
         asyncio.create_task(_tick())
 
-        try:
-            wf = json.loads(api_path.read_text(encoding="utf-8"))
-            wf = inject_prompt(wf, prompt_text)
-            wf = inject_size(wf, w, h, s)
-            # New Run = always random, Run = use the current seed
-            fixed = -1 if force_new_seed else (_current_seed[0] if _current_seed[0] >= 0 else -1)
-            wf, used_seed = inject_seed(wf, fixed)
-            _current_seed[0] = used_seed
-            seed_field.value = str(used_seed)
-            seed_field.color = C["text2"] if force_new_seed else C["amber"]
-        except Exception as e:
-            set_status(f"❌ Failed to load workflow: {e}", C["red"])
-            btn_new_run.disabled = False; btn_seed_run.disabled = False
-            btn_quick.disabled = False; _gen_state(False)
-            progress.visible = False; page.update(); return
+        done_ok = 0; problems: list[str] = []; stopped = False; target_deleted = False
+        fixed = -1 if force_new_seed else (_current_seed[0] if _current_seed[0] >= 0 else -1)
+        for n, api_fn in enumerate(apis, 1):
+            if _stop_event.is_set():
+                stopped = True; break
+            where[0] = f"[{n}/{len(apis)}] " if len(apis) > 1 else ""
+            try:
+                wf = json.loads((API_DIR / api_fn).read_text(encoding="utf-8"))
+                wf = inject_prompt(wf, prompt_text)
+                _q_size = ""; _q_steps = ""
+                if quick:
+                    for node in wf.values():          # the size / steps the workflow itself has, for the tab's meta line
+                        if not isinstance(node, dict): continue
+                        inp = node.get("inputs", {})
+                        if node.get("class_type", "") in _LATENT_CLS and "width" in inp:
+                            _q_size = f"{inp['width']}×{inp['height']}"
+                        if node.get("class_type", "") in _SCLS and "steps" in inp:
+                            _q_steps = inp["steps"]
+                else:
+                    wf = inject_size(wf, w, h, s)
+                    _q_size, _q_steps = size_label, s
+                wf, used_seed = inject_seed(wf, fixed)
+                fixed = used_seed                        # the next API gets the same seed
+                _current_seed[0] = used_seed
+                seed_field.value = str(used_seed)
+                if not quick:
+                    seed_field.color = C["text2"] if force_new_seed else C["amber"]
+            except Exception as e:
+                problems.append(f"{Path(api_fn).stem}: failed to load workflow: {e}")
+                continue
 
-        _run_api    = api_fn
-        _run_size   = size_label
-        _run_steps  = s
-        async def on_img(path: str, _rid=run_prompt_id):
-            _pi = find_prompt_index(prompts, _rid)          # where that prompt is NOW (-1: it was deleted while the image was being made)
-            if _pi < 0:
-                set_status("⚠ The prompt was deleted while the image was being made: the image was not attached to any prompt", C["amber"])
-                page.update()
-                return
-            data = Path(path).read_bytes()
-            imgs = _prompt_images.setdefault(_pi, [])
-            label = f"#{len(imgs)+1} {time.strftime('%H:%M')}"
-            imgs.append({"path": path, "seed": _current_seed[0], "label": label,
-                         "api": _run_api, "size": _run_size, "steps": _run_steps})
-            new_ti = len(imgs) - 1
-            save_img_tabs(_prompt_images)
-            # อัปเดต thumbnail ของ prompt นั้น
-            if 0 <= _pi < len(prompts):
-                tb = make_thumbnail_bytes(data)
-                prompts[_pi]["thumbnail"]  = base64.b64encode(tb).decode()
-                prompts[_pi]["thumb_time"] = time.strftime("%d/%m %H:%M")
-                save_prompts(prompts)
+            outcome = {"state": "", "msg": "", "deleted": False}
+
+            async def on_img(path: str, _rid=run_prompt_id, _api=api_fn, _sz=_q_size, _st=_q_steps, _oc=outcome, _sd=used_seed):
+                _pi = find_prompt_index(prompts, _rid)          # where that prompt is NOW (-1: it was deleted while the image was being made)
+                if _pi < 0:
+                    _oc["deleted"] = True
+                    set_status("⚠ The prompt was deleted while the image was being made: the image was not attached to any prompt", C["amber"])
+                    page.update()
+                    return
+                data = Path(path).read_bytes()
+                imgs = _prompt_images.setdefault(_pi, [])
+                label = f"{'⚡' if quick else ''}#{len(imgs)+1} {time.strftime('%H:%M')}"
+                imgs.append({"path": path, "seed": _sd, "label": label,          # the seed this job was started with, not whatever the screen shows when the image arrives
+                             "api": _api, "size": _sz, "steps": _st})
+                new_ti = len(imgs) - 1
+                save_img_tabs(_prompt_images)
+                if 0 <= _pi < len(prompts):
+                    tb = make_thumbnail_bytes(data)
+                    prompts[_pi]["thumbnail"]  = base64.b64encode(tb).decode()
+                    prompts[_pi]["thumb_time"] = time.strftime("%d/%m %H:%M")
+                    save_prompts(prompts)
+                    if sel[0] == _pi:
+                        load_thumb_for_prompt(_pi)
                 if sel[0] == _pi:
-                    load_thumb_for_prompt(_pi)
-            # แสดงรูปเฉพาะถ้ากำลัง view prompt นั้นอยู่
-            if sel[0] == _pi:
-                _active_img_tab[0] = new_ti
-                _show_tab(_pi, new_ti)
-                _rebuild_tabs()
-            page.update()
+                    _active_img_tab[0] = new_ti
+                    _show_tab(_pi, new_ti)
+                    _rebuild_tabs()
+                page.update()
 
-        async def on_err(msg: str):
-            set_status(f"❌ {msg}", C["red"])
-            btn_new_run.disabled = False
-            btn_seed_run.disabled = False
-            btn_quick.disabled = False; _gen_state(False)
-            progress.visible = False
-            page.update()
+            async def on_err(msg: str, _o=outcome):
+                _o["state"] = "err"; _o["msg"] = msg
 
-        async def on_done():
-            elapsed = time.time() - _start_time
-            set_status(f"✅ Done! ({elapsed:.1f}s)", C["green"])
-            btn_new_run.disabled = False
-            btn_seed_run.disabled = False
-            btn_quick.disabled = False; _gen_state(False)
-            progress.visible = False
-            page.update()
+            async def on_done(_o=outcome):
+                _o["state"] = "ok"
 
-        asyncio.create_task(run_workflow(wf, on_img, on_err, on_done, stop_event=_stop_event, on_stop=_on_gen_stopped))
+            async def on_stop(_o=outcome):
+                _o["state"] = "stopped"
+
+            await run_workflow(wf, on_img, on_err, on_done, stop_event=_stop_event, on_stop=on_stop)
+            if outcome["deleted"]:                          # the image came back but its prompt is gone: it is attached to nothing and the rest of the list is not run (the job that finished is left alone)
+                target_deleted = True; break
+            if outcome["state"] == "ok":
+                done_ok += 1
+            elif outcome["state"] == "stopped":
+                stopped = True; break
+            else:
+                problems.append(f"{Path(api_fn).stem}: {outcome['msg'] or 'no image came back'}")
+
+        elapsed = time.time() - _start_time
+        btn_new_run.disabled = False
+        btn_seed_run.disabled = False
+        btn_quick.disabled = False; _gen_state(False)
+        progress.visible = False
+        if stopped:
+            set_status("⏹ Stopped" + (f" ({done_ok} of {len(apis)} done)" if len(apis) > 1 else ""), C["text2"])
+        elif target_deleted:
+            set_status("⚠ The prompt was deleted while the image was being made: the image was not attached to any prompt" + (f" ({done_ok} of {len(apis)} done before)" if done_ok else ""), C["amber"])
+        elif problems:
+            head = f"{done_ok} of {len(apis)} done · " if len(apis) > 1 else ""
+            set_status(f"❌ {head}{problems[0]}" + (f" (+{len(problems) - 1} more)" if len(problems) > 1 else ""), C["red"])
+        elif quick:
+            set_status(f"⚡ Quick Run done ({elapsed:.1f}s)" if len(apis) == 1 else f"⚡ Quick Run done: {done_ok} APIs ({elapsed:.1f}s)", C["green"])
+        else:
+            set_status(f"✅ Done! ({elapsed:.1f}s)" if len(apis) == 1 else f"✅ Done: {done_ok} APIs ({elapsed:.1f}s)", C["green"])
+        page.update()
+
+    async def _do_run(force_new_seed: bool):
+        await _run_apis("new" if force_new_seed else "seed")
 
     btn_new_run.on_click  = lambda _: asyncio.ensure_future(_do_run(force_new_seed=True))
     btn_seed_run.on_click = lambda _: asyncio.ensure_future(_do_run(force_new_seed=False))
 
     async def _do_quick_run(_):
-        """Quick Gen: 2304×1296, steps=8, same seed."""
-        prompt_text = editor_field.value.strip()
-        if not prompt_text:
-            set_status("⚠ No prompt", C["amber"]); return
-        api_fn = api_dd.value
-        if not api_fn:
-            set_status("⚠ Workflow not selected", C["amber"]); return
-        api_path = API_DIR / api_fn
-        if not api_path.exists():
-            set_status(f"⚠ File not found: {api_fn}", C["red"]); return
-
-        run_prompt_id = prompts[sel[0]].get("id") if 0 <= sel[0] < len(prompts) else None
-        btn_new_run.disabled = True
-        btn_seed_run.disabled = True
-        btn_quick.disabled = True; _gen_state(True)
-        progress.visible = True
-        _start_time = time.time()
-        set_status("⚡ 0s", C["amber"])
-
-        async def _tick():
-            while progress.visible:
-                elapsed = time.time() - _start_time
-                set_status(f"⚡ {elapsed:.0f}s", C["amber"])
-                await asyncio.sleep(1)
-        asyncio.create_task(_tick())
-
-        try:
-            wf = json.loads(api_path.read_text(encoding="utf-8"))
-            wf = inject_prompt(wf, prompt_text)
-            fixed = _current_seed[0] if _current_seed[0] >= 0 else -1
-            wf, used_seed = inject_seed(wf, fixed)
-            _current_seed[0] = used_seed
-            seed_field.value = str(used_seed)
-            # read actual size/steps from workflow nodes for meta display
-            _q_size = ""; _q_steps = ""
-            for node in wf.values():
-                if not isinstance(node, dict): continue
-                inp = node.get("inputs", {})
-                if node.get("class_type", "") in _LATENT_CLS and "width" in inp:
-                    _q_size = f"{inp['width']}×{inp['height']}"
-                if node.get("class_type", "") in _SCLS and "steps" in inp:
-                    _q_steps = inp["steps"]
-        except Exception as e:
-            set_status(f"❌ Failed to load workflow: {e}", C["red"])
-            btn_new_run.disabled = False; btn_seed_run.disabled = False
-            btn_quick.disabled = False; _gen_state(False); progress.visible = False; page.update(); return
-
-        async def on_img(path: str, _rid=run_prompt_id):
-            _pi = find_prompt_index(prompts, _rid)          # where that prompt is NOW (-1: it was deleted while the image was being made)
-            if _pi < 0:
-                set_status("⚠ The prompt was deleted while the image was being made: the image was not attached to any prompt", C["amber"])
-                page.update()
-                return
-            data = Path(path).read_bytes()
-            imgs = _prompt_images.setdefault(_pi, [])
-            label = f"⚡#{len(imgs)+1} {time.strftime('%H:%M')}"
-            imgs.append({"path": path, "seed": _current_seed[0], "label": label,
-                         "api": api_fn, "size": _q_size, "steps": _q_steps})
-            new_ti = len(imgs) - 1
-            save_img_tabs(_prompt_images)
-            if 0 <= _pi < len(prompts):
-                tb = make_thumbnail_bytes(data)
-                prompts[_pi]["thumbnail"]  = base64.b64encode(tb).decode()
-                prompts[_pi]["thumb_time"] = time.strftime("%d/%m %H:%M")
-                save_prompts(prompts)
-                if sel[0] == _pi:
-                    load_thumb_for_prompt(_pi)
-            if sel[0] == _pi:
-                _active_img_tab[0] = new_ti
-                _show_tab(_pi, new_ti)
-                _rebuild_tabs()
-            page.update()
-
-        async def on_err(msg: str):
-            set_status(f"❌ {msg}", C["red"])
-            btn_new_run.disabled = False; btn_seed_run.disabled = False
-            btn_quick.disabled = False; _gen_state(False); progress.visible = False; page.update()
-
-        async def on_done():
-            elapsed = time.time() - _start_time
-            set_status(f"⚡ Quick Run done ({elapsed:.1f}s)", C["green"])
-            btn_new_run.disabled = False; btn_seed_run.disabled = False
-            btn_quick.disabled = False; _gen_state(False); progress.visible = False; page.update()
-
-        asyncio.create_task(run_workflow(wf, on_img, on_err, on_done, stop_event=_stop_event, on_stop=_on_gen_stopped))
+        """Quick Gen: the workflow's own size/steps, same seed."""
+        await _run_apis("quick")
 
     btn_quick.on_click = _do_quick_run
 
+    def _open_apis_dialog(e=None):
+        """APIs dialog (same as Gallery Generator): AVAILABLE | SELECTED in generation order, edited on a copy; double click moves a row; » / « move all."""
+        work: list[str] = list(sel_apis)
+        files = [scan_apis()]
+        hl_left: set = set(); hl_right: set = set()
+        left_list = ft.ListView(spacing=2, expand=True)
+        right_list = ft.ListView(spacing=2, expand=True)
+        note = ft.Text("", size=10, color=C["text3"])
+        lvl = {"ok": C["text3"], "warn": C["amber"], "bad": C["red"]}
+        last_tap = [None, 0.0]
+
+        def _row(title, sub, level, highlighted, on_tap):
+            return ft.GestureDetector(
+                content=ft.Container(
+                    content=ft.Column([
+                        ft.Text(title, size=12, color=C["text1"], weight=ft.FontWeight.W_600, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                        ft.Text(sub, size=10, color=lvl[level], max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                    ], spacing=1),
+                    padding=po(left=10, right=10, top=6, bottom=6), border_radius=br(6),
+                    bgcolor="#1E3A5F" if highlighted else C["panel2"],
+                    border=ft.Border.all(1, C["accent"] if highlighted else C["border"])),
+                on_tap=on_tap, mouse_cursor=ft.MouseCursor.CLICK)
+
+        def render():
+            left_list.controls.clear(); right_list.controls.clear()
+            hl_left.intersection_update(set(files[0])); hl_right.intersection_update(set(work))
+            avail = [f for f in files[0] if f not in work]
+            for f in avail:
+                status, level = api_file_info(f)
+                left_list.controls.append(_row(Path(f).stem, f"{f} · {status}", level, f in hl_left,
+                                               lambda e, _f=f: toggle(hl_left, _f, add_files)))
+            if not avail:
+                left_list.controls.append(ft.Text("No more APIs available", size=10, color=C["text3"], italic=True))
+            for i, f in enumerate(work):
+                status, level = api_file_info(f)
+                right_list.controls.append(_row(f"{i + 1}.  {Path(f).stem}", f"{f} · {status}", level, f in hl_right,
+                                                lambda e, _f=f: toggle(hl_right, _f, remove_files)))
+            if not work:
+                right_list.controls.append(ft.Text("No APIs selected", size=10, color=C["text3"], italic=True))
+            page.update()
+
+        def toggle(group: set, f: str, move_one):
+            now = time.monotonic()
+            if last_tap[0] == f and now - last_tap[1] < 0.5:      # two taps on the same row = double click: move it to the other side
+                last_tap[0] = None
+                move_one([f]); return
+            last_tap[0], last_tap[1] = f, now
+            group.symmetric_difference_update({f}); render()
+
+        def clear_selection(e=None):
+            hl_left.clear(); hl_right.clear(); render()
+
+        def add_files(names):
+            for f in names:
+                if f not in work:
+                    work.append(f)
+            hl_left.clear(); render()
+
+        def remove_files(names):
+            work[:] = [f for f in work if f not in set(names)]
+            hl_right.clear(); render()
+
+        def move(delta: int):
+            idx = [i for i, f in enumerate(work) if f in hl_right]
+            for i in (idx if delta < 0 else reversed(idx)):
+                j = i + delta
+                if 0 <= j < len(work) and work[j] not in hl_right:
+                    work[i], work[j] = work[j], work[i]
+            render()
+
+        def do_refresh(e):
+            files[0] = scan_apis()
+            note.value = f"{len(files[0])} API(s) found"
+            render()
+
+        def do_apply(e):
+            sel_apis[:] = list(work)
+            save_api_selection(sel_apis)
+            _apis_label()
+            page.pop_dialog(); page.update()
+
+        def _mid_btn(icon, tip, on_click):
+            return ft.IconButton(icon=icon, tooltip=tip, on_click=on_click, icon_size=18, width=36, height=36, icon_color=C["text1"],
+                                 style=ft.ButtonStyle(side=ft.BorderSide(1, C["border"]), shape=ft.RoundedRectangleBorder(radius=6)))
+
+        def _panel(title, lst):
+            return ft.Column([
+                ft.Text(title, size=10, weight=ft.FontWeight.W_700, color=C["text3"]),
+                ft.GestureDetector(
+                    content=ft.Container(content=lst, expand=True, padding=6, bgcolor=C["panel"], border_radius=br(8), border=ft.Border.all(1, C["border"])),
+                    on_tap=clear_selection, expand=True),
+            ], spacing=4, expand=True)
+
+        try:
+            pw = float(page.width or page.window.width or 1200); ph = float(page.height or page.window.height or 700)
+        except Exception:
+            pw, ph = 1200.0, 700.0
+        dw, dh = int(max(560, min(900, pw * 0.8))), int(max(360, min(560, ph * 0.7)))
+        body = ft.Container(width=dw, height=dh, content=ft.Column([
+            ft.Row([
+                _panel("AVAILABLE APIs", left_list),
+                ft.Column([
+                    _mid_btn(ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED, "Add all", lambda ev: add_files([f for f in files[0] if f not in work])),
+                    _mid_btn(ft.Icons.CHEVRON_RIGHT_ROUNDED, "Add selected", lambda ev: add_files([f for f in files[0] if f in hl_left])),
+                    _mid_btn(ft.Icons.CHEVRON_LEFT_ROUNDED, "Remove selected", lambda ev: remove_files(list(hl_right))),
+                    _mid_btn(ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, "Remove all", lambda ev: remove_files(list(work))),
+                    ft.Container(height=14),
+                    _mid_btn(ft.Icons.ARROW_UPWARD_ROUNDED, "Move up", lambda ev: move(-1)),
+                    _mid_btn(ft.Icons.ARROW_DOWNWARD_ROUNDED, "Move down", lambda ev: move(1)),
+                ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=6),
+                _panel("SELECTED APIs — generation order", right_list),
+            ], expand=True, spacing=12, vertical_alignment=ft.CrossAxisAlignment.STRETCH),
+            ft.Row([
+                ft.TextButton(content=ft.Row([ft.Icon(ft.Icons.REFRESH_ROUNDED, size=14, color=C["text2"]),
+                                              ft.Text("Refresh", size=11, color=C["text2"])], tight=True, spacing=4), on_click=do_refresh),
+                note,
+            ], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+        ], spacing=8))
+        render()
+        page.show_dialog(ft.AlertDialog(
+            modal=True, bgcolor=C["surface"],
+            title=ft.Text("APIs", size=15, weight=ft.FontWeight.W_700, color=C["text1"]),
+            content=body,
+            actions=[ft.TextButton("Cancel", on_click=lambda ev: page.pop_dialog(), style=ft.ButtonStyle(color=C["text2"])),
+                     ft.FilledButton("Apply", on_click=do_apply, bgcolor=C["accent"])],
+            actions_alignment=ft.MainAxisAlignment.END))
+
+    add_api_btn.on_click = _open_apis_dialog
+
     def on_refresh_api(_):
-        opts = [ft.dropdown.Option(f) for f in scan_apis()]
-        api_dd.options = opts
-        api_dd.value   = None
-        set_status(f"🔄 Found {len(opts)} workflow(s)", C["text2"])
+        found = scan_apis()
+        sel_apis[:] = [f for f in sel_apis if f in found]       # a selected file that is gone drops out
+        save_api_selection(sel_apis)
+        _apis_label()
+        set_status(f"🔄 Found {len(found)} workflow(s)", C["text2"])
         page.update()
 
     right_w: list[float] = [235]
@@ -2283,20 +2640,12 @@ def main(page: ft.Page):
 
     # Column on the right: controls
     ctrl_col = ft.Container(
-        expand=True,
-        content=ft.Column(spacing=8, expand=True, controls=[
-            ft.Row([
-                ft.Container(content=api_dd, expand=True),
-                ft.IconButton(
-                    ft.Icons.REFRESH, icon_color=C["text2"], tooltip="Refresh API list",
-                    on_click=on_refresh_api,
-                    style=ft.ButtonStyle(padding=po(4,4,4,4)),
-                ),
-            ], spacing=4),
-            ft.Row([size_dd, steps_dd], spacing=6, tight=True),
-            ft.Row([seed_field, btn_seed_run, btn_quick], spacing=6, tight=True,
+        width=340,
+        content=ft.Column(spacing=8, controls=[
+            ft.Row([size_dd, steps_dd], spacing=6, run_spacing=6, wrap=True),
+            ft.Row([seed_field, btn_seed_run, btn_quick], spacing=6, run_spacing=6, wrap=True,
                    vertical_alignment=ft.CrossAxisAlignment.CENTER),
-            ft.Row([btn_new_run, btn_stop], spacing=6, tight=True),
+            ft.Row([btn_new_run, btn_stop], spacing=6, run_spacing=6, wrap=True),
         ]),
     )
 
@@ -2306,8 +2655,8 @@ def main(page: ft.Page):
         padding=po(left=12, top=12, right=12, bottom=10),
         content=ft.Column(spacing=8, expand=True, controls=[
             ft.Text("Generation", size=13, weight=ft.FontWeight.BOLD, color=C["text1"]),
-            ft.Row([thumb_col, ft.VerticalDivider(width=1, color=C["border"]), ctrl_col],
-                   spacing=10, expand=False, vertical_alignment=ft.CrossAxisAlignment.START),
+            ft.Row([thumb_col, api_dd, ctrl_col], spacing=12, run_spacing=10, wrap=True, expand=False,
+                   vertical_alignment=ft.CrossAxisAlignment.START),
             ft.Divider(height=1, color=C["border"]),
             preview_stack,
         ]),
@@ -2315,7 +2664,8 @@ def main(page: ft.Page):
 
     def on_right_drag(e: ft.DragUpdateEvent):
         # drag left = negative delta_x = expand the right side
-        mid_panel.width = max(180, (mid_panel.width or 300) + e.local_delta.x)
+        left_w[0], mid_panel.width = wide_widths(_win_w(), left_w[0], (mid_panel.width or mid_w[0]) + e.local_delta.x)
+        left_container.width = left_w[0]
         page.update()
 
     # ── Title bar ─────────────────────────────────────────────────────
@@ -2332,27 +2682,118 @@ def main(page: ft.Page):
         ], vertical_alignment=ft.CrossAxisAlignment.CENTER, spacing=8),
     )
 
-    page.add(ft.Column(spacing=0, expand=True, controls=[
-        title_bar,
-        ft.Row(spacing=0, expand=True, controls=[
-            left_container,
-            _resize_divider(on_left_drag),
-            mid_panel,
-            _resize_divider(on_right_drag),
-            right_container,
-        ]),
-    ]))
+    # ── Responsive workspace ─────────────────────────────────────────────────────────────────────────────────
+    # The real window width decides: >= 1600 three columns (list / editor+chat / generation); 1100-1599 the list plus ONE workspace that switches Editor <-> Generate;
+    # < 1100 a single column with tabs Prompts / Editor / Generate. The same controls are re-parented, so text, selection, chat and logs are untouched by a resize.
+    BP_WIDE, BP_MEDIUM = 1600, 1100
+    _layout = {"mode": "", "tab": "editor"}
+    mid_w: list[float] = [420.0]
+    workspace = ft.Container(expand=True)
+
+    def _win_w() -> float:
+        try:
+            return float(page.width or page.window.width or 1400)
+        except Exception:
+            return 1400.0
+
+    def _win_h() -> float:
+        try:
+            return float(page.height or page.window.height or 800)
+        except Exception:
+            return 800.0
+
+    def _mode_for(w: float) -> str:
+        return "wide" if w >= BP_WIDE else ("medium" if w >= BP_MEDIUM else "compact")
+
+    def _tab_button(label, icon, key, active):
+        col = "#FFFFFF" if active else C["text2"]
+        return ft.Container(
+            content=ft.Row([ft.Icon(icon, size=15, color=col), ft.Text(label, size=12, color=col, weight=ft.FontWeight.W_600 if active else ft.FontWeight.NORMAL)],
+                           spacing=6, tight=True, alignment=ft.MainAxisAlignment.CENTER),
+            expand=True, height=36, alignment=ft.Alignment(0, 0), border_radius=br(6), ink=True,
+            bgcolor=C["accent"] if active else C["panel"], on_click=lambda e, k=key: _set_tab(k))
+
+    def _tabbar(items):
+        return ft.Container(
+            content=ft.Row([_tab_button(lbl, ic, k, k == _layout["tab"]) for lbl, ic, k in items], spacing=6),
+            padding=po(left=10, right=10, top=6, bottom=6), bgcolor=C["toolbar"], border=ft.Border(bottom=ft.BorderSide(1, C["border"])))
+
+    _T_PROMPTS = ("Prompts", ft.Icons.LIST_ALT_ROUNDED, "prompts")
+    _T_EDITOR = ("Editor", ft.Icons.EDIT_NOTE_ROUNDED, "editor")
+    _T_GEN = ("Generate", ft.Icons.AUTO_AWESOME_ROUNDED, "generate")
+
+    def _apply_layout(force: bool = False):
+        mode = _mode_for(_win_w())
+        if mode == _layout["mode"] and not force:
+            return
+        if _layout["mode"] == "wide" and mid_panel.width:
+            mid_w[0] = mid_panel.width                       # remember the dragged width of the editor column
+        _layout["mode"] = mode
+        thumb_col.visible = mode == "wide"                   # the viewer shows the same image: the small thumbnail is only kept where there is room
+        if mode == "wide":
+            left_w[0], mid_w[0] = wide_widths(_win_w(), left_w[0], mid_w[0])
+            left_container.width = left_w[0]; left_container.expand = False
+            mid_panel.width = mid_w[0]; mid_panel.expand = False
+            workspace.content = ft.Row(spacing=0, expand=True, controls=[
+                left_container, _resize_divider(on_left_drag), mid_panel, _resize_divider(on_right_drag), right_container])
+        elif mode == "medium":
+            if _layout["tab"] not in ("editor", "generate"):
+                _layout["tab"] = "editor"
+            left_container.width = min(left_w[0], 220); left_container.expand = False
+            mid_panel.width = None; mid_panel.expand = True
+            body = mid_panel if _layout["tab"] == "editor" else right_container
+            workspace.content = ft.Row(spacing=0, expand=True, controls=[
+                left_container, ft.VerticalDivider(width=1, color=C["border"]),
+                ft.Column(spacing=0, expand=True, controls=[_tabbar([_T_EDITOR, _T_GEN]), body])])
+        else:
+            left_container.width = None; left_container.expand = True
+            mid_panel.width = None; mid_panel.expand = True
+            body = {"prompts": left_container, "editor": mid_panel, "generate": right_container}.get(_layout["tab"], mid_panel)
+            workspace.content = ft.Column(spacing=0, expand=True, controls=[_tabbar([_T_PROMPTS, _T_EDITOR, _T_GEN]), body])
+
+    def _fit_sizes():
+        """Parts with a remembered height / width follow the window: the chat panel keeps room for the editor, dialogs never outgrow the window."""
+        w, h = _win_w(), _win_h()
+        lo, hi = llm_height_limits(h, _layout["mode"] or "wide")
+        llm_panel.height = max(lo, min(hi, _llm_h[0]))
+        try:
+            config_dialog.content.width = min(_CFG_W, max(320, w - 80))
+            config_dialog.content.height = min(580, max(280, h - 200))
+        except Exception:
+            pass
+
+    def _set_tab(key: str):
+        _layout["tab"] = key
+        _apply_layout(force=True)
+        _fit_sizes()
+        page.update()
+
+    def _after_pick():
+        """A prompt was picked from the list: in the single-column layout go on to its editor."""
+        if _layout["mode"] == "compact":
+            _set_tab("editor")
+
+    def _on_page_resize(e=None):
+        _apply_layout()
+        if _layout["mode"] == "wide":                         # a window made smaller must not leave the editor wider than the room it has
+            left_w[0], _m = wide_widths(_win_w(), left_w[0], mid_panel.width or mid_w[0])
+            left_container.width = left_w[0]; mid_panel.width = _m
+        _fit_sizes()
+        page.update()
+
+    page.on_resize = _on_page_resize
+    _apply_layout()
+    _fit_sizes()
+    page.add(ft.Column(spacing=0, expand=True, controls=[title_bar, workspace]))
     _update_check.start_notice(ft, page, APP_NAME, APP_VERSION)      # a notice only (GitHub releases, once a day, silent when offline); see update_check.py
 
-    refresh_list(sel[0])
-    load_thumb_for_prompt(sel[0])
-    # restore image tabs for the initially selected prompt
-    _imgs0 = _prompt_images.get(sel[0], [])
-    _active_img_tab[0] = max(0, len(_imgs0) - 1)
-    if _imgs0:
-        _show_tab(sel[0], _active_img_tab[0])
-    _rebuild_tabs()
+    if prompts:
+        _select(len(prompts) - 1)                      # the newest prompt (top of the list) is open on start: editor, chat and image tabs are not empty. Nothing is created
+    else:
+        refresh_list(-1)                               # no prompts: the empty state; nothing is created for the person
+        load_thumb_for_prompt(-1)
+        _rebuild_tabs()
     if LOAD_NOTICES:                                   # a damaged data file was found at start: say so (the damaged file itself is kept)
         set_status("⚠ " + " ".join(LOAD_NOTICES), C["amber"])
 
-ft.app(target=main)
+ft.app(target=_app_error.guard(ft, main, APP_NAME, APP_VERSION))   # friendly error dialog instead of Flet's red 'application crashed' page

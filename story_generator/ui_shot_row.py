@@ -8,6 +8,7 @@ import asyncio, base64, io, json, time, uuid
 from pathlib import Path
 
 import flet as ft
+import export_util as _export_util
 
 from .constants  import C, STYLE_MAP
 from .comfy_api  import apply_dialogue_overlay, apply_dual_text_overlay
@@ -461,8 +462,8 @@ def build_shot_col(
                 try:
                     dest = Path(result_path)
                     if not dest.suffix: dest = dest.with_suffix(".jpg")
-                    _sh.copy2(p, str(dest))
-                    status_lbl.value = f"✅ Saved: {dest.name}"
+                    _secs = await _export_util.copy_one(p, dest)          # in a worker thread: the window stays responsive
+                    status_lbl.value = f"✅ Saved: {dest.name} ({_secs:.1f}s)"
                 except Exception as ex:
                     status_lbl.value = f"⚠ Save failed: {ex}"
                 page.update()

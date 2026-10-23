@@ -118,11 +118,32 @@ async def copy_unique(src, dst) -> Path:
     return await asyncio.to_thread(_copy_atomic, src, dst, False)
 
 
+def _write_bytes_replace(path, data: bytes) -> None:
+    """The data goes to a temporary file next to `path` and replaces it in one step: a failure (full disk, access denied) leaves the file that was there as it was and removes the temporary file."""
+    path = Path(path)
+    tmp = _tmp_name(path.parent, path.name)
+    try:
+        with open(tmp, "xb") as f:
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        _remove_quietly(tmp)
+        raise
+
+
 async def write_bytes(path, data: bytes) -> float:
-    """Write bytes to a file in a worker thread; returns the seconds it took."""
+    """'Save As' for bytes: the person chose this file name (and was asked about replacing it), so an existing file IS replaced - in one step, through a temporary file. Returns the seconds it took."""
     t0 = time.perf_counter()
-    await asyncio.to_thread(Path(path).write_bytes, data)
+    await asyncio.to_thread(_write_bytes_replace, path, data)
     return time.perf_counter() - t0
+
+
+async def write_bytes_unique(path, data: bytes) -> Path:
+    """Write bytes to `path`, or to the next free name (name_1, name_2 ...) when it is taken, never replacing a file. Returns the path written."""
+    path = Path(path)
+    return await asyncio.to_thread(write_unique, path.parent, path.name, data)
 
 
 # ── names that never collide ─────────────────────────────────────────────────────────────────────────────────
@@ -245,3 +266,43 @@ def read_json_safe(path):
         return json.loads(path.read_text(encoding="utf-8")), ""
     except (ValueError, OSError) as ex:
         return None, f"{type(ex).__name__}: {ex}"
+
+
+# ── show files in Explorer ──────────────────────────────────────────────────────────────────────────────────
+def _explorer_open(target: Path, select: bool) -> None:
+    """Windows Explorer: the folder of a file with the file selected, or just a folder. Never raises."""
+    import subprocess
+    try:
+        if select:
+            subprocess.Popen(f'explorer /select,"{target}"')                 # one command-line string: Explorer parses the quotes itself (commas and spaces in the name are fine)
+        else:
+            os.startfile(str(target))                                         # type: ignore[attr-defined]  (Windows)
+    except Exception:
+        pass
+
+
+def reveal_in_explorer(paths, max_folders: int = 5, opener=None) -> dict:
+    """Open Explorer for these files. One existing file: its folder with the file selected. Several: every distinct folder once (at most `max_folders`, so a big selection does not open a wall of windows).
+    A file that no longer exists falls back to its folder when that still exists. Returns {"opened", "skipped" (folders not opened because of the limit), "missing" (nothing to open)}.
+    `opener(target, select)` can be replaced (tests); by default Explorer is started."""
+    opener = opener or _explorer_open
+    paths = [Path(str(p)) for p in paths if p]
+    result = {"opened": 0, "skipped": 0, "missing": 0}
+    if len(paths) == 1 and paths[0].exists():
+        opener(paths[0], True)
+        result["opened"] = 1
+        return result
+    folders: list[Path] = []
+    for p in paths:
+        folder = p.parent
+        if not folder.exists():
+            result["missing"] += 1
+            continue
+        key = os.path.normcase(str(folder))
+        if all(os.path.normcase(str(f)) != key for f in folders):
+            folders.append(folder)
+    for folder in folders[:max_folders]:
+        opener(folder, False)
+        result["opened"] += 1
+    result["skipped"] = max(0, len(folders) - max_folders)
+    return result

@@ -38,6 +38,15 @@ def refused(raw, needle):
     return False, "accepted"
 
 
+def _try(raw):
+    """True when the parser accepted `raw` (used to prove that something is NOT accepted)."""
+    try:
+        PL._parse_llm_output(raw)
+        return True
+    except PL.LLMFormatError:
+        return False
+
+
 def main():
     ok = f"{R}\nDone, here it is.\n\n{P}\nA woman stands in a field.\n\nLighting: soft\nCamera: 35mm\n\n{E}"
     reply, prompt = PL._parse_llm_output(ok)
@@ -55,10 +64,11 @@ def main():
     check("duplicate REPLY is refused", refused(f"{R}\na\n{R}\nb\n{P}\nx\n{E}", "REPLY separator line appears 2 times")[0])
     check("duplicate END is refused", refused(f"{R}\na\n{P}\nx\n{E}\n{E}", "END separator line appears 2 times")[0])
     check("wrong order is refused", refused(f"{P}\nx\n{R}\na\n{E}", "not in the order")[0])
-    check("text before REPLY is refused", refused(f"Sure!\n{R}\na\n{P}\nx\n{E}", "text before the REPLY")[0])
-    check("text after END is refused", refused(f"{R}\na\n{P}\nx\n{E}\nBye", "text after the END")[0])
+    check("text before REPLY is not part of the answer (only the blocks count)", PL._parse_llm_output(f"Sure!\n{R}\na\n{P}\nx\n{E}") == ("a", "x"))
+    check("text after END is not part of the answer (only the blocks count)", PL._parse_llm_output(f"{R}\na\n{P}\nx\n{E}\nBye") == ("a", "x"))
     check("empty REPLY is refused", refused(f"{R}\n\n{P}\nx\n{E}", "REPLY section is empty")[0])
-    check("a separator inside a longer line does not count", refused(f"{R}\na\nsee {P} here\n{E}", "PROMPT separator line is missing")[0])
+    check("a single '=' marker word inside a sentence does not count", refused(f"{R}\na\nsee =PROMPT= here\n{E}", "PROMPT separator line is missing")[0])
+    check("a fully decorated marker in a longer line is still a marker (text before goes to the section before, text after to the next)", PL._parse_llm_output(f"{R}\na\nsee {P} here\n{E}") == ("a\nsee", "here"))
     check("truncated output (cut inside the prompt) is refused", refused(f"{R}\na\n{P}\nA woman stands in", "END separator line is missing")[0])
     check("the old JSON answer is refused, not salvaged", refused('{"reply": "hi", "prompt": "a woman"}', "REPLY separator line is missing")[0])
     check("an empty answer is refused", refused("   ", "empty")[0])
@@ -102,6 +112,41 @@ def main():
     check("run_llm: a truncated answer goes to on_bad with its RAW text and is never saved", not results and bad and "END" in bad[0][0] and "Half a prompt" in bad[0][1], (results, bad))
     asyncio.run(run('{"reply": "hi", "prompt": "x"}'))
     check("run_llm: an old JSON answer is refused", not results and bad, (results, bad))
+
+    # a model often writes a different NUMBER of '=' (real answer from Grok: ten at the end); the word on a line of its own is the protocol
+    real = "=========== REPLY ===========\nได้ครับ ปรับผ้าให้บางลงแล้ว\n\n=========== PROMPT ===========\nA Thai woman steps out of a mural.\nLine two.\n\n=========== END =========="
+    check("a separator with a different number of '=' is accepted (real Grok answer)", PL._parse_llm_output(real) == ("ได้ครับ ปรับผ้าให้บางลงแล้ว", "A Thai woman steps out of a mural.\nLine two."))
+    check("lower case and extra spaces around the word are accepted", PL._parse_llm_output("=== reply ===\nHi\n==== Prompt ====\nx\n====== end ======")[0] == "Hi")
+    check("a separator word with other text on the line does not count", refused(f"{R}\na\n{P}\nx\n=========== END of prompt ===========", "END separator line is missing")[0])
+
+    # ---- many ways a model decorates the same three words ----------------------------------------------------------------------------------------------------------------------
+    def with_end(end_line):
+        return f"{R}\nHi\n{P}\nx\n{end_line}"
+
+    ends = ["=== END ===", "=END=", "= END =", "==END==", "===END", "END===", "=========== END ==========", "============= END =============", "--- END ---", "*** END ***", "**END**",
+            "[END]", "<END>", "### END ###", "## end ##", "~~~ End ~~~", "___ END ___", "═══ END ═══", "＝＝ END ＝＝", "=== END ===   ", "  === END ===", "=== END ===\r", "= = END = =", "END:", "<<< END >>>", "-=- END -=-"]
+    bad_ends = [x for x in ends if PL._parse_llm_output(with_end(x)) != ("Hi", "x")]
+    check("26 decorations of END are all accepted", not bad_ends, bad_ends)
+    replies = ["=== REPLY ===", "=REPLY=", "**REPLY**", "[reply]", "### Reply ###", "--- REPLY ---", "REPLY:", "<REPLY>"]
+    prompts = ["=== PROMPT ===", "=PROMPT=", "**PROMPT**", "[prompt]", "### Prompt ###", "--- PROMPT ---", "PROMPT:", "<PROMPT>"]
+    bad = [(a, b) for a, b in zip(replies, prompts) if PL._parse_llm_output(f"{a}\nHi\n{b}\nx\n=== END ===") != ("Hi", "x")]
+    check("REPLY and PROMPT decorations are accepted the same way", not bad, bad)
+    check("mixed decorations in one answer", PL._parse_llm_output("**REPLY**\nHi\n=== PROMPT ===\nx\n--- END ---") == ("Hi", "x"))
+    not_sep = ["END", "end", "THE END", "END of prompt", "ENDING", "=== THE END ===", "= ENDS =", "== SEND ==", "=== PREEND ===", "=== END PROMPT ===", "--- END 2 ---", "=== E N D ===", "==="]
+    leaked = [x for x in not_sep if _try(with_end(x))]
+    check("a bare word, extra words, other words or no word are NOT an END separator", not leaked, leaked)
+    check("the wrapping code fence around the whole answer is ignored", PL._parse_llm_output("```\n" + with_end("=== END ===") + "\n```") == ("Hi", "x") and PL._parse_llm_output("```text\n" + with_end("=END=") + "\n```") == ("Hi", "x"))
+    check("a code fence inside the prompt is kept as written", PL._parse_llm_output(f"{R}\nHi\n{P}\n```\nx\n```\n=== END ===")[1] == "```\nx\n```")
+    check("an ordinary line 'End' inside the prompt text does not split it", PL._parse_llm_output(f"{R}\nHi\n{P}\nThe story: start\nEnd\nmiddle end of day\n=== END ===")[1] == "The story: start\nEnd\nmiddle end of day")
+    check("a decorated marker followed by text on the same line", PL._parse_llm_output("=== REPLY === Hi there\n=== PROMPT === A woman\nsecond line\n=== END ===") == ("Hi there", "A woman\nsecond line"))
+    check("a decorated END glued to the last words", PL._parse_llm_output("=== REPLY ===\nHi\n=== PROMPT ===\nA woman stands === END ===") == ("Hi", "A woman stands"))
+    check("ordinary lines with '=' or a label are not split", PL._parse_llm_output("=== REPLY ===\nHi: a == b\n=== PROMPT ===\nPrompt: a woman\nCamera = 35mm\n=== END ===") == ("Hi: a == b", "Prompt: a woman\nCamera = 35mm"))
+    check("a single '=' next to the word inside a sentence is not a marker", _try("=== REPLY ===\nHi\n=== PROMPT ===\nx =END= y\n=== END ===") is True and PL._parse_llm_output("=== REPLY ===\nHi\n=== PROMPT ===\nx =END= y\n=== END ===")[1] == "x =END= y")
+    check("two END lines are still refused (not guessed)", refused(f"{R}\nHi\n{P}\nx\n=== END ===\n--- END ---", "END separator line appears 2 times")[0])
+    check("a custom system prompt with decorated separators counts as having the format", PL._prompt_has_contract("rules\n=== REPLY ===\n...\n=== PROMPT ===\n...\n=== END ==="))
+    check("a system prompt that only mentions the words in sentences does not", not PL._prompt_has_contract("Write a reply, then the prompt, then THE END."))
+    r = refused(f"{R}\na\n{P}\nx", "END separator line is missing")
+    check("the missing-END message tells how it must be written, and mentions a cut-off only as a possibility", r[0] and "=========== END ===========" in r[1] and "stops in the middle" in r[1], r)
 
     print("ALL PASS" if not _fails else f"{len(_fails)} FAILED: {_fails}")
     return 0 if not _fails else 1

@@ -203,6 +203,7 @@ from .help_docs import load_help_tabs
 from . import comfy_api as _comfy_api_mod
 from . import llm_overrides as _llm_overrides
 import update_check as _update_check
+import export_util as _export_util
 from . import fill_conversation as _fc_tokens
 from .storage    import (_load, _save, list_stories, list_projects, project_exists, format_project_time,
                          save_story, load_story, delete_story, load_credentials, save_credentials)
@@ -8427,17 +8428,29 @@ def main(page: ft.Page):
         if not name: status_lbl.value = "⚠ Enter export name first"; export_dialog.open = False; page.update(); return
         export_dialog.open = False; page.update()
         fp = ft.FilePicker()
+        _t_pick = time.perf_counter()
         dest_dir = await fp.get_directory_path("Select export folder")
+        _t_pick = time.perf_counter() - _t_pick
         if not dest_dir: status_lbl.value = "Export cancelled"; page.update(); return
-        dest = Path(dest_dir); copied = 0
+        dest = Path(dest_dir)
+        jobs = []
         for shot_idx, shot in enumerate(shots_data):
             for run_num, img_item in enumerate(gallery_images.get(shot_idx, []), start=1):
                 src = Path(img_item["path"])
                 if not src.exists(): continue
-                new_name = f"{name}_{shot_idx+1:02d}_{run_num:02d}{src.suffix or '.jpg'}"
-                try: shutil.copy2(str(src), str(dest / new_name)); copied += 1
-                except Exception as ex: print(f"[export] error: {ex}")
-        status_lbl.value = f"✅ Exported {copied} images to {dest_dir}"; page.update()
+                jobs.append((src, dest / f"{name}_{shot_idx+1:02d}_{run_num:02d}{src.suffix or '.jpg'}"))
+
+        def _export_progress(done, total):
+            status_lbl.value = f"⏳ Exporting {done}/{total}..."
+            try: status_lbl.update()
+            except Exception: pass
+        if jobs: _export_progress(0, len(jobs))
+        res = await _export_util.copy_files(jobs, _export_progress, overwrite=True)    # each copy in a worker thread: the window stays responsive; the same names are replaced (as this export always did), whole or not at all
+        for _err in res["errors"]: print(f"[export] error: {_err}")
+        print(f"[export] folder dialog {_t_pick:.1f}s, copy {res['seconds']:.1f}s, {res['copied']} copied, {res['failed']} failed")
+        status_lbl.value = (f"✅ Exported {res['copied']} images to {dest_dir} ({res['seconds']:.1f}s)" if not res["failed"]
+                            else f"⚠ Exported {res['copied']} images to {dest_dir}, {res['failed']} failed")
+        page.update()
 
     export_dialog = ft.AlertDialog(
         modal=True, bgcolor=C["surface"],

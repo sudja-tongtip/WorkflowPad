@@ -98,6 +98,33 @@ def main():
         check("copy_one copies and returns the seconds", (dst / "one.bin").read_bytes() == srcs[1].read_bytes() and secs >= 0)
         secs = asyncio.run(X.write_bytes(dst / "w.bin", b"abc"))
         check("write_bytes writes and returns the seconds", (dst / "w.bin").read_bytes() == b"abc" and secs >= 0)
+
+        # ---- show in Explorer (Batch Editor: Open original folder / Open exported folder) -----------------------------------------------------------------------------------------------
+        opened: list = []
+        op = lambda target, select: opened.append((str(target), select))
+        a = tmp / "A"; b = tmp / "B"; a.mkdir(exist_ok=True); b.mkdir(exist_ok=True)
+        f1, f2, f3 = a / "one.png", a / "two.png", b / "three.png"
+        for p in (f1, f2, f3):
+            p.write_bytes(b"x")
+        r = X.reveal_in_explorer([f1], opener=op)
+        check("reveal: one existing file opens its folder with the file selected", r["opened"] == 1 and opened == [(str(f1), True)], (r, opened))
+        opened.clear()
+        r = X.reveal_in_explorer([f1, f2, f3], opener=op)
+        check("reveal: several files open each distinct folder once (not one window per file)", r["opened"] == 2 and sorted(t for t, _ in opened) == sorted([str(a), str(b)]) and not any(sel for _, sel in opened), (r, opened))
+        opened.clear()
+        many = []
+        for i in range(8):
+            d = tmp / f"F{i}"; d.mkdir(exist_ok=True); (d / "x.png").write_bytes(b"x"); many.append(d / "x.png")
+        r = X.reveal_in_explorer(many, opener=op)
+        check("reveal: a big selection is limited to 5 folders and says how many were skipped", r["opened"] == 5 and r["skipped"] == 3 and len(opened) == 5, (r, len(opened)))
+        opened.clear()
+        gone = a / "deleted.png"
+        r = X.reveal_in_explorer([gone], opener=op)
+        check("reveal: a file that is gone falls back to its folder", r["opened"] == 1 and opened == [(str(a), False)], (r, opened))
+        opened.clear()
+        r = X.reveal_in_explorer([tmp / "no_such_folder" / "x.png"], opener=op)
+        check("reveal: nothing exists -> nothing is opened and it is reported", r["opened"] == 0 and r["missing"] == 1 and opened == [], (r, opened))
+        check("reveal: an empty list opens nothing", X.reveal_in_explorer([], opener=op)["opened"] == 0)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

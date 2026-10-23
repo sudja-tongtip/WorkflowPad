@@ -5,6 +5,7 @@ import asyncio, base64, json, os, random, shutil, sys, time, urllib.parse, urlli
 from pathlib import Path
 import flet as ft
 import update_check as _update_check
+import app_error as _app_error
 import export_util as _export_util
 try:
     import flet_code_editor as fce
@@ -15,7 +16,7 @@ except ImportError:
 # ── App metadata ──────────────────────
 APP_ID      = "image_editor"
 APP_NAME    = "Image Editor"
-APP_VERSION = "0.1.8"   # SemVer; see RELEASE.md
+APP_VERSION = "0.1.9"   # SemVer; see RELEASE.md
 
 # ── Config ────────────────────────────────────────────────────────────
 COMFY_HOST  = "127.0.0.1:8188"
@@ -4580,4 +4581,4 @@ async def main(page:ft.Page):
 
 
 
-ft.app(target=main)
+ft.app(target=_app_error.guard(ft, main, APP_NAME, APP_VERSION))   # friendly error dialog instead of Flet's red 'application crashed' page
