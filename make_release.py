@@ -60,11 +60,15 @@ LEAK_PATTERNS = [
     ("xai key",            re.compile(r"\bxai-[A-Za-z0-9]{16,}")),
     ("assigned api key",   re.compile(r"api[_-]?key\s*[:=]\s*[\"'][A-Za-z0-9._\-]{16,}[\"']", re.I)),
 ]
-SCAN_SUFFIXES = {".json", ".md", ".txt", ".cfg", ".ini"}
+# Text files that are read for leaks (paths of the build machine, keys, tokens): every text file of the STAGED release, not only the ones this script copied itself (the PyInstaller output, the manual
+# and the bundled libraries' data files are in the release too). Binaries are never read.
+SCAN_SUFFIXES = {".json", ".md", ".txt", ".cfg", ".ini", ".html", ".htm", ".yaml", ".yml", ".toml", ".csv", ".tsv", ".xml", ".rst", ".bat", ".ps1", ".sh", ".js", ".css", ".conf"}
+CRED_ONLY_SUFFIXES = {".py"}          # source files of bundled libraries: only keys / tokens are looked for (a path in a library's own text is not a leak)
+CREDENTIAL_LABELS = {"bearer token", "openai-style key", "xai key", "assigned api key"}
 
 # Files that must not be in the release at all (checked over the whole staged tree).
 FORBIDDEN_NAME = re.compile(r"(\.pt$|\.pth$|^saved_.*\.json$|^credentials.*\.json$|^session\.log$|"
-                            r"^llm_chat_config\.json$|^image_editor_config\.json$)", re.I)
+                            r"^llm_chat_config\.json$|^image_editor_config\.json$|^update_check\.json$|^prompts_tester\.json$|^prompt_images\.json$|^\.env$|^id_rsa)", re.I)
 CUDA_LIB = re.compile(r"(cudart|cublas|cudnn|cufft|curand|cusolver|cusparse|nvrtc|nvjitlink|nvtx|nccl)", re.I)
 
 README = ROOT / "build_tools" / "README_release.txt"
@@ -207,10 +211,20 @@ def write_notices(dest: Path) -> list[Path]:
 
 
 # ── 4. validate ───────────────────────────────────────────────────────
+def _mask(label: str, text: str) -> str:
+    """What the report shows of a match. A key or token is NEVER printed whole (the report ends up in a terminal, a log, a chat): only its start and its length."""
+    if label in CREDENTIAL_LABELS:
+        return f"{text[:4]}... ({len(text)} characters, hidden)"
+    return text[:60]
+
+
 def scan(files: list[Path], dest: Path) -> list[str]:
     problems = []
     for f in files:
-        if f.suffix.lower() not in SCAN_SUFFIXES or "licenses" in f.relative_to(dest).parts:
+        suffix = f.suffix.lower()
+        if suffix not in SCAN_SUFFIXES and suffix not in CRED_ONLY_SUFFIXES:
+            continue
+        if "licenses" in f.relative_to(dest).parts:
             continue
         try:
             text = f.read_text(encoding="utf-8", errors="replace")
@@ -219,12 +233,19 @@ def scan(files: list[Path], dest: Path) -> list[str]:
             continue
         for lineno, line in enumerate(text.splitlines(), 1):
             for label, pat in LEAK_PATTERNS:
-                if label == "absolute drive path" and f.suffix.lower() == ".md":
+                if suffix in CRED_ONLY_SUFFIXES and label not in CREDENTIAL_LABELS:
+                    continue
+                if label == "absolute drive path" and suffix == ".md":
                     continue
                 m = pat.search(line)
                 if m:
-                    problems.append(f"{f.relative_to(dest)}:{lineno}: {label}: {m.group(0)[:60]}")
+                    problems.append(f"{f.relative_to(dest)}:{lineno}: {label}: {_mask(label, m.group(0))}")
     return problems
+
+
+def scan_tree(dest: Path) -> list[str]:
+    """Scan every text file that is in the staged release (not just the files copied by stage())."""
+    return scan([p for p in sorted(dest.rglob("*")) if p.is_file()], dest)
 
 
 def validate_workflows(dest: Path) -> list[str]:
@@ -322,7 +343,7 @@ def main() -> int:
     copied = stage(dest)
 
     print("4/4 Validating")
-    problems = validate_layout(dest) + validate_workflows(dest) + scan(copied, dest)
+    problems = validate_layout(dest) + validate_workflows(dest) + scan_tree(dest)
     if problems:
         print("\nRELEASE BLOCKED:\n")
         for p in problems:

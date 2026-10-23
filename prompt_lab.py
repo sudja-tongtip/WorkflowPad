@@ -3,13 +3,14 @@ Prompt Lab – used together with image_editor.py
 - same folder, same COMFY_HOST, same scan_apis()
 - stores the prompt list in prompts_tester.json
 """
-import asyncio, base64, json, random, time, uuid, urllib.parse, urllib.request, urllib.error
+import asyncio, base64, json, random, shutil, time, uuid, urllib.parse, urllib.request, urllib.error
 import sys
 import re
 from pathlib import Path
 import flet as ft
 import os as _os
 import update_check as _update_check
+import export_util as _export_util
 
 # ── Force UTF-8 stdout/stderr (fix UnicodeEncodeError on Windows) ──────
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -290,54 +291,181 @@ def inject_seed(wf: dict, fixed_seed: int = -1) -> tuple[dict, int]:
     return wf, seed
 
 # ── JSON helpers ──────────────────────────────────────────────────────
-def load_prompts() -> list[dict]:
+def new_prompt_id() -> str:
+    return uuid.uuid4().hex[:12]
+
+
+def ensure_prompt_ids(prompts: list[dict]) -> bool:
+    """Every prompt has its own stable id (older files have none; a duplicated id is replaced). True when something was added or changed. The id, not the position in the list, is what an operation that
+    finishes later (an LLM answer, a finished image) uses to find its prompt: positions move when a prompt above it is deleted."""
+    seen: set[str] = set()
+    changed = False
+    for p in prompts:
+        pid = p.get("id")
+        if not isinstance(pid, str) or not pid or pid in seen:
+            p["id"] = new_prompt_id()
+            changed = True
+        seen.add(p["id"])
+    return changed
+
+
+def find_prompt_index(prompts: list[dict], pid) -> int:
+    """The current position of the prompt with this id, or -1 when it no longer exists (it was deleted)."""
+    if not pid:
+        return -1
+    for i, p in enumerate(prompts):
+        if p.get("id") == pid:
+            return i
+    return -1
+
+
+def apply_llm_prompt(prompts: list[dict], target_id, text: str) -> tuple[str, int]:
+    """Put an LLM answer into ITS prompt. ('updated', index) for the prompt the question was about, ('created', index) when the question was asked with no prompt selected (a new prompt is added), and
+    ('target_deleted', -1) when that prompt was deleted while the LLM was working: nothing is written, so no other prompt is ever changed."""
+    text = (text or "").strip()
+    if target_id is None:
+        prompts.append({"id": new_prompt_id(), "name": "LLM prompt", "text": text})
+        return "created", len(prompts) - 1
+    i = find_prompt_index(prompts, target_id)
+    if i < 0:
+        return "target_deleted", -1
+    prompts[i]["text"] = text
+    return "updated", i
+
+
+LOAD_NOTICES: list[str] = []          # what the person must be told at start (a damaged data file); shown once the window is up
+
+
+def _preserve_damaged(path: Path) -> str:
+    """Keep a damaged data file under its own name (<name>.corrupt-<time>) before anything can overwrite it. Returns the new file name, or '' when even that copy fails."""
     try:
-        data = json.loads(PROMPTS_FILE.read_text(encoding="utf-8"))
-    except Exception:
-        return []
-    if not isinstance(data, list):
-        return []
+        keep = _export_util.unique_dest(path.parent, f"{path.stem}.corrupt-{time.strftime('%Y%m%d-%H%M%S')}{path.suffix}")     # a second damaged copy in the same second gets _1, never overwrites the first
+        shutil.copy2(str(path), str(keep))
+        return keep.name
+    except OSError:
+        return ""
+
+
+def load_prompts() -> list[dict]:
+    data, problem = _export_util.read_json_safe(PROMPTS_FILE)
+    if problem == "missing":
+        return []                                           # first start: no file yet is normal
+    if problem or not isinstance(data, list):
+        # A damaged file is NOT "no prompts": keep it, try the last good backup, and say so. Starting empty here would let the next save replace the damaged file for good.
+        kept = _preserve_damaged(PROMPTS_FILE)
+        bak, bak_problem = _export_util.read_json_safe(str(PROMPTS_FILE) + ".bak")
+        if not bak_problem and isinstance(bak, list):
+            LOAD_NOTICES.append("The prompt list file was damaged. It was restored from the last good backup" + (f"; the damaged file is kept as {kept}." if kept else "."))
+            data = bak
+        else:
+            LOAD_NOTICES.append("The prompt list file was damaged and no backup could be used, so the list starts empty" + (f". The damaged file is kept as {kept}." if kept else "."))
+            return []
     out = []
     for p in data:
         if isinstance(p, dict):
             p.setdefault("name", "")
             p.setdefault("text", "")
             out.append(p)
+    ensure_prompt_ids(out)
     return out
 
 def thumb_to_bytes(b64str: str) -> bytes:
     return base64.b64decode(b64str)
 
 def save_prompts(prompts: list[dict]):
-    PROMPTS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    PROMPTS_FILE.write_text(json.dumps(prompts, ensure_ascii=False, indent=2), encoding="utf-8")
+    """Atomic: the file is the old list or the new one, never half of it; the last good copy is kept as .bak. A failed save raises and leaves the old file untouched."""
+    _export_util.write_json_atomic(PROMPTS_FILE, prompts, keep_backup=True, ensure_ascii=False, indent=2)
 
-def load_img_tabs() -> dict[int, list]:
-    """Load persisted image tab entries. Filters out missing files."""
-    if not IMAGES_FILE.exists():
+_PROMPT_LIST: list = [[]]            # the live prompt list (set by main): the image tabs are translated between list positions (the screen) and prompt ids (the file) with it
+_ORPHAN_IMAGES: dict = {}            # image entries found in the file whose prompt is not in the list right now: written back untouched, never dropped
+
+
+def _clean_entry(e: dict, n: int):
+    if not isinstance(e, dict) or not Path(str(e.get("path", ""))).exists():
+        return None                                                          # a missing image file is skipped, as before
+    e.setdefault("seed", -1)                                                 # an older file has no seed / label / settings: the fields the screen reads get a default
+    e.setdefault("label", f"#{n}")
+    return e
+
+
+def load_img_tabs(prompts: list | None = None) -> dict[int, list]:
+    """Load the persisted image tabs as {position in the prompt list: [entries]}. The file is keyed by prompt id (older files by position: they are migrated with the current list). Entries whose prompt
+    is not in the list are kept aside (_ORPHAN_IMAGES) and written back by save_img_tabs, so nothing is lost when the list and this file disagree. Missing image files are skipped."""
+    prompts = _PROMPT_LIST[0] if prompts is None else prompts
+    _ORPHAN_IMAGES.clear()
+    raw, problem = _export_util.read_json_safe(IMAGES_FILE)
+    if problem == "missing":
         return {}
-    try:
-        raw = json.loads(IMAGES_FILE.read_text(encoding="utf-8"))
-        result = {}
+    if problem or not isinstance(raw, dict):
+        kept = _preserve_damaged(IMAGES_FILE)
+        bak, bak_problem = _export_util.read_json_safe(str(IMAGES_FILE) + ".bak")
+        LOAD_NOTICES.append("The image list file was damaged. " + ("It was restored from the last good backup" if not bak_problem and isinstance(bak, dict) else "No backup could be used, so the image list starts empty")
+                            + (f"; the damaged file is kept as {kept}." if kept else "."))
+        if bak_problem or not isinstance(bak, dict):
+            return {}
+        raw = bak
+    index_of = {p.get("id"): i for i, p in enumerate(prompts) if p.get("id")}
+    by_id: dict = {}
+    legacy_positions = "by_id" not in raw
+    if legacy_positions:                                                      # older file: {"<position>": [entries]}
         for k, entries in raw.items():
-            valid = [e for e in entries if Path(e.get("path", "")).exists()]
-            if valid:
-                result[int(k)] = valid
-        return result
-    except Exception:
-        return {}
+            try:
+                pos = int(k)
+            except (TypeError, ValueError):
+                continue
+            if 0 <= pos < len(prompts) and prompts[pos].get("id"):
+                by_id.setdefault(prompts[pos]["id"], []).extend(entries if isinstance(entries, list) else [])
+            else:
+                _ORPHAN_IMAGES.setdefault(f"pos{pos}", []).extend(entries if isinstance(entries, list) else [])
+    else:
+        for pid, entries in (raw.get("by_id") or {}).items():
+            by_id[pid] = entries if isinstance(entries, list) else []
+        for key, entries in (raw.get("unmapped") or {}).items():
+            entries = entries if isinstance(entries, list) else []
+            if key in index_of:                                               # the prompt is back in the list: its images come back with it
+                by_id.setdefault(key, []).extend(entries)
+            else:
+                _ORPHAN_IMAGES.setdefault(key, []).extend(entries)
+    result: dict = {}
+    for pid, entries in by_id.items():
+        if pid not in index_of:
+            _ORPHAN_IMAGES.setdefault(pid, []).extend(e for e in entries if isinstance(e, dict))
+            continue
+        valid = []
+        for e in entries:
+            c = _clean_entry(e, len(valid) + 1)
+            if c is not None:
+                valid.append(c)
+        if valid:
+            result[index_of[pid]] = valid
+    return result
 
-def save_img_tabs(img_dict: dict):
-    """Save image tab entries (path-based only) to disk."""
-    IMAGES_FILE.parent.mkdir(parents=True, exist_ok=True)
-    serialisable = {
-        str(k): [
-            {"path": e["path"], "seed": e.get("seed", -1), "label": e["label"]}
-            for e in entries if "path" in e
-        ]
-        for k, entries in img_dict.items()
-    }
-    IMAGES_FILE.write_text(json.dumps(serialisable, ensure_ascii=False, indent=2), encoding="utf-8")
+
+def save_img_tabs(img_dict: dict, prompts: list | None = None):
+    """Save the image tabs, keyed by prompt id. img_dict is {position: [entries]}; the id of each position comes from `prompts` (default: the live list). A position with no prompt, and the entries that
+    were found for prompts not in the list, go under 'unmapped' untouched. Keeps everything the screen needs to show an image again AND to reuse its settings (workflow, size, steps)."""
+    prompts = _PROMPT_LIST[0] if prompts is None else prompts
+    keep = ("path", "seed", "label", "api", "size", "steps")
+
+    def ser(entries):
+        return [{**{f: e[f] for f in keep if f in e}, "seed": e.get("seed", -1), "label": e.get("label", "")} for e in entries if isinstance(e, dict) and "path" in e]
+
+    by_id: dict = {}
+    unmapped: dict = {k: list(v) for k, v in _ORPHAN_IMAGES.items()}
+    for pos, entries in img_dict.items():
+        try:
+            pos = int(pos)
+        except (TypeError, ValueError):
+            continue
+        pid = prompts[pos].get("id") if 0 <= pos < len(prompts) else None
+        if pid:
+            by_id[pid] = ser(entries)
+            unmapped.pop(pid, None)
+        else:
+            unmapped.setdefault(f"pos{pos}", []).extend(ser(entries))
+    out = {"version": 2, "by_id": by_id, "unmapped": {k: ser(v) for k, v in unmapped.items() if v}}
+    _export_util.write_json_atomic(IMAGES_FILE, out, keep_backup=True, ensure_ascii=False, indent=2)
+
 
 def make_thumbnail_bytes(img_bytes: bytes, max_size: int = 500) -> bytes:
     """Resize the image so it stays within max_size and return it as bytes."""
@@ -658,6 +786,7 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.DARK
 
     prompts: list[dict] = load_prompts()
+    _PROMPT_LIST[0] = prompts                       # the image tabs are saved by prompt id: they need the live list
     sel: list[int] = [-1]
 
     # ── Status ───────────────────────────────────────────────────────
@@ -717,7 +846,7 @@ def main(page: ft.Page):
 
     def on_new(_):
         name = f"Prompt {len(prompts)+1}"
-        prompts.append({"name": name, "text": ""})
+        prompts.append({"id": new_prompt_id(), "name": name, "text": ""})
         save_prompts(prompts)
         sel[0] = len(prompts) - 1
         name_field.value = name
@@ -1014,7 +1143,7 @@ def main(page: ft.Page):
             combined = f"[No prompt yet]\n\nUser: {question}"
 
         # snapshot the selection first — prevent the user from changing the prompt while waiting for the LLM
-        target_idx = sel[0]
+        target_id = prompts[sel[0]].get("id") if 0 <= sel[0] < len(prompts) else None     # the prompt's id, not its position: the list can change while the LLM works
         # Pin chat/log output to the tab the question was sent from, so a reply that
         # arrives after switching tabs doesn't land in (or vanish from) the wrong one.
         _sent_model = _active_model[0]
@@ -1033,20 +1162,20 @@ def main(page: ft.Page):
             if prompt:
                 _pin_log("← PROMPT", prompt, C["accent"])
             if prompt and prompt.strip():
-                i = target_idx
-                if i < 0 or i >= len(prompts):
-                    # There is no prompt selected yet — create a new one
-                    new_p = {"name": "LLM prompt", "text": prompt.strip()}
-                    prompts.append(new_p)
-                    i = len(prompts) - 1
-                    sel[0] = i
-                    refresh_list(i)
-                prompts[i]["text"] = prompt.strip()
-                save_prompts(prompts)
-                # Update the editor only when the selected prompt is still the same one
-                if sel[0] == i:
-                    editor_field.value = prompt.strip()
-                    _autosave_text(prompt.strip())
+                outcome, i = apply_llm_prompt(prompts, target_id, prompt)
+                if outcome == "target_deleted":
+                    # the prompt this answer was for is gone: nothing is written anywhere else; the answer stays in the chat
+                    set_status("⚠ The prompt was deleted while the LLM was working: the answer was not applied (it is in the chat)", C["amber"])
+                else:
+                    if outcome == "created":
+                        # There is no prompt selected yet — a new one was created
+                        sel[0] = i
+                        refresh_list(i)
+                    save_prompts(prompts)
+                    # Update the editor only when the selected prompt is still the same one
+                    if sel[0] == i:
+                        editor_field.value = prompt.strip()
+                        _autosave_text(prompt.strip())
             page.update()
 
         async def on_bad(reason: str, raw_answer: str):
@@ -1606,7 +1735,7 @@ def main(page: ft.Page):
     _BLANK = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==")
 
     # ── Per-prompt image tabs (state only — UI functions defined after UI elements) ──
-    _prompt_images: dict[int, list] = load_img_tabs()
+    _prompt_images: dict[int, list] = load_img_tabs(prompts)
     _active_img_tab: list[int] = [0]
     img_tab_row = ft.Row(spacing=4, scroll=ft.ScrollMode.AUTO,
                          vertical_alignment=ft.CrossAxisAlignment.CENTER)
@@ -1921,7 +2050,7 @@ def main(page: ft.Page):
         w, h = _size_map.get(size_label, (2304, 1296))
         s = int(steps_dd.value or 20)
 
-        run_prompt_idx = sel[0]   # จำ prompt ที่กด Run ไว้ก่อนเลย
+        run_prompt_id = prompts[sel[0]].get("id") if 0 <= sel[0] < len(prompts) else None   # the prompt Run was pressed for, by id
         btn_new_run.disabled = True
         btn_seed_run.disabled = True
         btn_quick.disabled = True; _gen_state(True)
@@ -1956,7 +2085,12 @@ def main(page: ft.Page):
         _run_api    = api_fn
         _run_size   = size_label
         _run_steps  = s
-        async def on_img(path: str, _pi=run_prompt_idx):
+        async def on_img(path: str, _rid=run_prompt_id):
+            _pi = find_prompt_index(prompts, _rid)          # where that prompt is NOW (-1: it was deleted while the image was being made)
+            if _pi < 0:
+                set_status("⚠ The prompt was deleted while the image was being made: the image was not attached to any prompt", C["amber"])
+                page.update()
+                return
             data = Path(path).read_bytes()
             imgs = _prompt_images.setdefault(_pi, [])
             label = f"#{len(imgs)+1} {time.strftime('%H:%M')}"
@@ -2013,7 +2147,7 @@ def main(page: ft.Page):
         if not api_path.exists():
             set_status(f"⚠ File not found: {api_fn}", C["red"]); return
 
-        run_prompt_idx = sel[0]
+        run_prompt_id = prompts[sel[0]].get("id") if 0 <= sel[0] < len(prompts) else None
         btn_new_run.disabled = True
         btn_seed_run.disabled = True
         btn_quick.disabled = True; _gen_state(True)
@@ -2049,7 +2183,12 @@ def main(page: ft.Page):
             btn_new_run.disabled = False; btn_seed_run.disabled = False
             btn_quick.disabled = False; _gen_state(False); progress.visible = False; page.update(); return
 
-        async def on_img(path: str, _pi=run_prompt_idx):
+        async def on_img(path: str, _rid=run_prompt_id):
+            _pi = find_prompt_index(prompts, _rid)          # where that prompt is NOW (-1: it was deleted while the image was being made)
+            if _pi < 0:
+                set_status("⚠ The prompt was deleted while the image was being made: the image was not attached to any prompt", C["amber"])
+                page.update()
+                return
             data = Path(path).read_bytes()
             imgs = _prompt_images.setdefault(_pi, [])
             label = f"⚡#{len(imgs)+1} {time.strftime('%H:%M')}"
@@ -2213,5 +2352,7 @@ def main(page: ft.Page):
     if _imgs0:
         _show_tab(sel[0], _active_img_tab[0])
     _rebuild_tabs()
+    if LOAD_NOTICES:                                   # a damaged data file was found at start: say so (the damaged file itself is kept)
+        set_status("⚠ " + " ".join(LOAD_NOTICES), C["amber"])
 
 ft.app(target=main)

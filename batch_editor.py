@@ -11,6 +11,7 @@ import sys
 import time
 import urllib.parse
 import update_check as _update_check
+import export_util as _export_util
 import urllib.request
 import uuid
 from pathlib import Path
@@ -73,7 +74,7 @@ def comfy_upload_image(image_path: str) -> str:
     body = (
         f"--{boundary}\r\n"
         f'Content-Disposition: form-data; name="image"; filename="{filename}"\r\n'
-        f"Content-Type: image/jpeg\r\n\r\n"
+        f"Content-Type: {_export_util.image_mime(data, Path(image_path).suffix)}\r\n\r\n"
     ).encode() + data + f"\r\n--{boundary}--\r\n".encode()
     req = urllib.request.Request(
         f"http://{COMFY_HOST}/upload/image", data=body,
@@ -426,9 +427,9 @@ async def run_comfy_job(image_path: str, prompt_text: str, out_dir: Path,
                             None, comfy_get_image,
                             info["filename"], info.get("subfolder", ""), info.get("type", "output")
                         )
-                        out_dir.mkdir(parents=True, exist_ok=True)
-                        out_path = out_dir / f"{Path(image_path).stem}_comfy.jpg"
-                        out_path.write_bytes(img_bytes)
+                        # a name that is free on the disk and in this run (cat.png and cat.webp both give "cat"), and an extension that matches the bytes: never overwrite, never a PNG named .jpg
+                        out_path = await loop.run_in_executor(
+                            None, _export_util.write_unique, out_dir, f"{Path(image_path).stem}_comfy{_export_util.image_ext(img_bytes)}", img_bytes)
                         return str(out_path)
                 break
     finally:

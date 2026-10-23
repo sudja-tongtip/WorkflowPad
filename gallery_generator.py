@@ -19,6 +19,7 @@ from pathlib import Path
 
 import flet as ft
 import update_check as _update_check
+import export_util as _export_util
 
 # ── App metadata ──────────────────────
 APP_ID      = "gallery_generator"
@@ -74,7 +75,7 @@ def comfy_upload_image(path: str) -> str:
     boundary = "----B" + uuid.uuid4().hex
     body = (
         f"--{boundary}\r\nContent-Disposition: form-data; name=\"image\"; "
-        f"filename=\"{filename}\"\r\nContent-Type: image/jpeg\r\n\r\n"
+        f"filename=\"{filename}\"\r\nContent-Type: {_export_util.image_mime(data, Path(path).suffix)}\r\n\r\n"
     ).encode() + data + f"\r\n--{boundary}--\r\n".encode()
     req = urllib.request.Request(
         f"http://{COMFY_HOST}/upload/image", data=body,
@@ -237,6 +238,21 @@ def resolve_wildcards(text: str) -> str:
         return random.choice(options) if options else ""
     return _WILDCARD_RE.sub(_pick, text)
 
+def generation_summary(attempted: int, succeeded: int, failed: int, stopped: bool, total: int) -> str:
+    """The status line at the end of a run, from what really happened: `succeeded` counts only images that were saved, `failed` the ones that raised an error or returned nothing (a stop is not a failure).
+    Never says 'Completed' for a run in which some image failed or no image was made."""
+    made = f"{succeeded} image(s) saved"
+    if stopped:
+        return f"⏹ Stopped — {made}" + (f", {failed} failed" if failed else "") + f" ({attempted} of {total} started)"
+    if failed and not succeeded:
+        return f"⚠ Finished with errors — no image was saved, {failed} failed"
+    if failed:
+        return f"⚠ Finished with errors — {made}, {failed} failed (of {attempted})"
+    if not succeeded:
+        return "⚠ Finished — no image was saved"
+    return f"✓ Completed — {made}"
+
+
 async def run_one(prompt_text: str, out_dir: Path, api_filename: str,
                   image_path: str | None = None, on_progress=None,
                   index: int = 0, width: int = 0, height: int = 0,
@@ -264,10 +280,10 @@ async def run_one(prompt_text: str, out_dir: Path, api_filename: str,
                         info = out["images"][0]
                         img  = await loop.run_in_executor(None, comfy_get_image,
                                info["filename"], info.get("subfolder", ""), info.get("type", "output"))
-                        out_dir.mkdir(parents=True, exist_ok=True)
                         ts = time.strftime("%Y%m%d_%H%M%S")
-                        dst = out_dir / f"gen_{ts}_{uuid.uuid4().hex[:6]}.jpg"
-                        dst.write_bytes(img)
+                        # the extension matches the bytes (a PNG is never named .jpg); the file is created exclusively, so nothing is ever overwritten
+                        dst = await loop.run_in_executor(None, _export_util.write_unique, out_dir,
+                                                         f"gen_{ts}_{uuid.uuid4().hex[:6]}{_export_util.image_ext(img)}", img)
                         return str(dst)
                 break
     finally:
@@ -284,11 +300,9 @@ def _to_src(path: str) -> str:
         if cached:
             return cached
         data = p.read_bytes()
-        ext  = p.suffix.lower().lstrip(".")
-        mime = {"jpg": "jpeg", "jpeg": "jpeg", "png": "png",
-                "webp": "webp", "bmp": "bmp"}.get(ext, "jpeg")
+        mime = _export_util.image_mime(data, p.suffix)      # from the bytes (a PNG saved as .jpg earlier is still shown right), the extension only when the bytes are not recognised
         b64  = base64.b64encode(data).decode()
-        src  = f"data:image/{mime};base64,{b64}"
+        src  = f"data:{mime};base64,{b64}"
         _SRC_CACHE[cache_key] = src
         return src
     except Exception:
@@ -2115,7 +2129,8 @@ async def main(page: ft.Page):
 
         rounds = rounds_count[0]
         total = len(prompts_list) * len(_apis) * rounds
-        n = 0
+        n = 0                       # attempted: the number of the image being made now
+        succeeded = failed = 0      # saved for real / raised an error or returned no image (a stop is neither)
 
         # Source Image is hidden: no workflow here needs one (checked above) and no saved image is ever sent.
         _api_needs_img = {_api: _api_info(_api)["needs_image"] for _api in _apis}
@@ -2162,12 +2177,16 @@ async def main(page: ft.Page):
                             }
                             gallery_add_one(base_prompt, new_item)      # mutate state + UI first ...
                             _save_state()                               # ... then persist, so the file never lags
+                            succeeded += 1                              # counted only after the image is really saved and listed
+                        elif not _stop_event.is_set():
+                            failed += 1                                 # no image came back and nobody pressed Stop
                     except Exception as ex:
+                        failed += 1
                         status_lbl.value = f"⚠ #{n} error: {ex}"
                         page.update()
 
         stopped = _stop_event.is_set()
-        status_lbl.value = f"⏹ Stopped — generated {n} image(s)" if stopped else f"✓ Completed — generated {n} image(s)"
+        status_lbl.value = generation_summary(n, succeeded, failed, stopped, total)
         gen_count_lbl.value = ""
         _set_running(False)
         page.update()

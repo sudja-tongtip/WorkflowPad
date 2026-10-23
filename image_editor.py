@@ -5,6 +5,7 @@ import asyncio, base64, json, os, random, shutil, sys, time, urllib.parse, urlli
 from pathlib import Path
 import flet as ft
 import update_check as _update_check
+import export_util as _export_util
 try:
     import flet_code_editor as fce
     _HAS_FCE = True
@@ -991,12 +992,9 @@ def write_workspace(folder: Path, history: list, current_id: str, ignored: list)
         ws_path(folder, sub).mkdir(parents=True, exist_ok=True)
 
 
-def unique_dest(directory: Path, name: str) -> Path:
-    dst = directory / name
-    stem, suf, n = Path(name).stem, Path(name).suffix, 1
-    while dst.exists():
-        dst = directory / f"{stem}_{n}{suf}"; n += 1
-    return dst
+def unique_dest(directory: Path, name: str, reserved: set | None = None) -> Path:
+    """A free destination name (see export_util.unique_dest). Pass the same `reserved` set for every file of a batch whose destinations are prepared before the first copy."""
+    return _export_util.unique_dest(directory, name, reserved)
 
 # ════════════════════════════════════════════════════════════════════════
 async def main(page:ft.Page):
@@ -1226,7 +1224,7 @@ async def main(page:ft.Page):
         )
         if result:
             dst=Path(result)
-            shutil.copy2(item["path"],dst)
+            await _export_util.copy_one(item["path"],dst)         # in a worker thread: the window stays responsive
             _replaced=bool(_arg_mode and item.get("is_temp"))   # an original opened from the command line is never re-pointed at the copy
             if _replaced:                                     # argument mode: the saved file replaces the TEMP result
                 item["path"]=str(dst); item["is_temp"]=False
@@ -3643,7 +3641,7 @@ async def main(page:ft.Page):
                 _hide_progress()
                 if result:
                     dst = unique_dest(dst_dir, Path(item["path"]).stem + "_4x" + Path(result).suffix)   # re-exports keep the earlier files
-                    shutil.copy2(result, dst)
+                    dst = await _export_util.copy_unique(result, dst)    # in a worker thread: the window stays responsive; never replaces a file (the next free name if taken meanwhile)
                     # Delete the temp file
                     try: Path(result).unlink()
                     except: pass
@@ -4376,16 +4374,16 @@ async def main(page:ft.Page):
         fp=ft.FilePicker()
         result=await fp.get_directory_path(dialog_title="Select a folder to save to")
         if not result: return
-        dst_dir=Path(result); saved=failed=0
+        dst_dir=Path(result); missing=0; jobs=[]; reserved=set()      # the destinations are all chosen before the first copy: reserve each one
         for item in sel_items:
             src=Path(item["path"])
-            if not src.exists(): failed+=1; continue
-            try:
-                shutil.copy2(src,unique_dest(dst_dir,src.name))   # never overwrites: same names (different folders, earlier exports) get _1, _2…
-                saved+=1
-            except OSError as ex:
-                print(f"save copy failed {src}: {ex}"); failed+=1
-        show_snack(f"✓ Saved {saved} image(s) → {dst_dir.name}" if not failed
+            if not src.exists(): missing+=1; continue
+            jobs.append((src,unique_dest(dst_dir,src.name,reserved)))     # never overwrites: same names (different folders, earlier exports) get _1, _2…
+        res=await _export_util.copy_files(jobs, lambda d,n: _show_progress("",f"⏳ Saving {d}/{n}..."))    # each copy in a worker thread: the window stays responsive
+        _hide_progress()
+        saved=res["copied"]; failed=res["failed"]+missing
+        for _err in res["errors"]: print(f"save copy failed {_err}")
+        show_snack(f"✓ Saved {saved} image(s) → {dst_dir.name} ({res['seconds']:.1f}s)" if not failed
                    else f"⚠ Saved {saved} image(s) → {dst_dir.name}, {failed} failed",
                    C["green"] if not failed else C["amber"])
 
