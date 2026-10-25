@@ -6,9 +6,9 @@
 flet>=0.85,<0.86
 Pillow>=10.0
 
-# Optional: enables the syntax-highlighting editor in the Image Editor.
-# Without it the app falls back to a plain text field.
-# flet-code-editor
+# Required by Music Studio (the lyrics editor, with line numbers). Optional for the Image Editor, which
+# falls back to a plain text field without it.
+flet-code-editor>=0.85,<0.86
 
 # Not installed by pip — ComfyUI must be running separately.
 # Default server: 127.0.0.1:8188
