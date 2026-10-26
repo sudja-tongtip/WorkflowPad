@@ -2683,9 +2683,9 @@ def main(page: ft.Page):
     )
 
     # ── Responsive workspace ─────────────────────────────────────────────────────────────────────────────────
-    # The real window width decides: >= 1600 three columns (list / editor+chat / generation); 1100-1599 the list plus ONE workspace that switches Editor <-> Generate;
+    # The real window width decides: >= 1300 three columns (list / editor+chat / generation; they need ~1030 px at the least); 1100-1299 the list plus ONE workspace that switches Editor <-> Generate;
     # < 1100 a single column with tabs Prompts / Editor / Generate. The same controls are re-parented, so text, selection, chat and logs are untouched by a resize.
-    BP_WIDE, BP_MEDIUM = 1600, 1100
+    BP_WIDE, BP_MEDIUM = 1300, 1100
     _layout = {"mode": "", "tab": "editor"}
     mid_w: list[float] = [420.0]
     workspace = ft.Container(expand=True)

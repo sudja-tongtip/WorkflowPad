@@ -52,6 +52,18 @@ BUILTIN_TEMPLATES = [
      "structure": _blocks("Intro", "Verse 1", "Verse 2", "Chorus", "Bridge", "Final Chorus", "Outro")},
     {"id": "builtin:acoustic", "name": "Acoustic", "description": "A short, simple form.",
      "structure": _blocks("Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Outro")},
+    # Added later (data only; the ids above never change). Every tag is a section the program knows (Intro, Verse, Pre-Chorus, Chorus, Bridge, Outro, Instrumental, Build, Drop, Breakdown):
+    # nothing here is an experimental tag, and no vocal or production instruction is put into a tag.
+    {"id": "builtin:alt_rock", "name": "Alternative Rock", "description": "Loud and quiet contrast: a breakdown after the second chorus, then a bridge and a final chorus.",
+     "structure": _blocks("Intro", "Verse 1", "Pre-Chorus", "Chorus", "Verse 2", "Chorus", "Breakdown", "Bridge", "Final Chorus", "Outro")},
+    {"id": "builtin:indie_pop", "name": "Indie Pop", "description": "A compact form with an instrumental transition before the bridge.",
+     "structure": _blocks("Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Instrumental", "Bridge", "Final Chorus", "Outro")},
+    {"id": "builtin:edm", "name": "EDM", "description": "Energy builds into a drop, twice, with a breakdown in between.",
+     "structure": _blocks("Intro", "Verse 1", "Build", "Drop", "Breakdown", "Verse 2", "Build", "Drop", "Outro")},
+    {"id": "builtin:rnb", "name": "R&B", "description": "Verse, pre-chorus and chorus, then straight to a bridge and a final chorus.",
+     "structure": _blocks("Intro", "Verse 1", "Pre-Chorus", "Chorus", "Verse 2", "Bridge", "Final Chorus", "Outro")},
+    {"id": "builtin:hiphop", "name": "Hip-Hop", "description": "Three verses with a repeating hook (the chorus) between them.",
+     "structure": _blocks("Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Verse 3", "Chorus", "Outro")},
 ]
 
 

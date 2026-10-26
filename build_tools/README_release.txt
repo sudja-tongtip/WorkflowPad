@@ -7,6 +7,8 @@ WorkflowPad — Windows portable (extract & run)
      PromptLab.exe        Prompt Lab
      BatchEditor.exe      Batch Editor
      GalleryGenerator.exe Gallery Generator
+     MusicStudio.exe      Music Studio (write lyrics, make songs with ACE-Step 1.5 through ComfyUI)
+     SimpleChat.exe       Simple Chat Studio (chat with a local LLM workflow)
    No Python installation is needed.
 
 ComfyUI is separate
@@ -26,7 +28,7 @@ WorkflowPad-Manual.html  the illustrated user manual (double-click to open it in
 Folders
 -------
 comfy_workflow\  example ComfyUI workflows + a README that shows how to set up your ComfyUI
-comfy_apis\      YOUR exported ComfyUI workflows (Export (API)) go here: image_create, image_edit, llm, caption, enhance
+comfy_apis\      YOUR exported ComfyUI workflows (Export (API)) go here: image_create, image_edit, llm, caption, enhance, audio (Music Studio)
 icons\           program icons
 _internal\ program runtime — do not edit
 

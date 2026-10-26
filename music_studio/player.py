@@ -200,6 +200,6 @@ class PlayerService:
             if self.index + 1 < len(self.queue):
                 self._start(self.index + 1)
             else:
-                self.mci.seek(0, resume=False)
+                self.mci.stop()                           # really stop (stop + back to the start): a bare seek(0) left the Windows-media backend playing from the beginning while the program showed "stopped"
                 self.state = "stopped"
                 self._notify()

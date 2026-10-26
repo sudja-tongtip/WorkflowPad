@@ -16,6 +16,8 @@ Each app owns its own version and is released independently. Nothing forces the 
 | Prompt Lab        | `prompt_lab`        | `prompt_lab.py`                    |
 | Image Editor      | `image_editor`      | `image_editor.py`                  |
 | Gallery Generator | `gallery_generator` | `gallery_generator.py`             |
+| Music Studio      | `music_studio`      | `music_studio.py`                  |
+| Simple Chat Studio | `simple_chat`      | `simple_chat.py`                   |
 | Batch Editor      | `batch_editor`      | `batch_editor.py`                  |
 
 `update.json` (repository root) is keyed by `APP_ID`. `app_version.py` provides `parse_version()` and
@@ -23,14 +25,14 @@ Each app owns its own version and is released independently. Nothing forces the 
 
 ## Git tags / GitHub Release names
 
-The portable ZIP ships all five apps together, so one release = one tag:
+The portable ZIP ships all seven apps together, so one release = one tag:
 
 ```
-v0.1.9
+v0.2.0
 ```
 
-- GitHub Release title: `WorkflowPad v0.1.9 Beta`, with "Set as a pre-release" ticked while the version is 0.x.
-- ZIP name: `WorkflowPad-v0.1.9-Beta.zip` (`RELEASE_NAME` in `make_release.py`).
+- GitHub Release title: `WorkflowPad v0.2.0 Beta`, with "Set as a pre-release" ticked while the version is 0.x.
+- ZIP name: `WorkflowPad-v0.2.0-Beta.zip` (`RELEASE_NAME` in `make_release.py`).
 - `APP_VERSION` and `update.json` stay plain `MAJOR.MINOR.PATCH` (no `-beta` suffix): `app_version.parse_version()` only accepts digits.
 - Each app still owns its own `APP_VERSION`; the release tag is the highest version that the ZIP contains.
 

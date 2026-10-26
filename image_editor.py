@@ -4071,6 +4071,16 @@ async def main(page:ft.Page):
         _select_mode[0] = not _select_mode[0]
         _refresh_cards(); _refresh_toolbar(); page.update()
 
+    def _step_image(delta: int):
+        """Arrow keys: open the previous / next image of the filmstrip (display order) and select just it."""
+        if fs_overlay.visible or _ctx_layer.visible or not _order: return
+        i = _order.index(current_id[0]) if current_id[0] in _order else -1
+        j = max(0, min(len(_order) - 1, (0 if i < 0 else i + delta)))
+        if j == i: return
+        iid = _order[j]
+        _set_sel({iid}, anchor=iid)
+        _open_item(iid)
+
     # ── keyboard (Ctrl/Shift state, Ctrl+A, Esc). The listener only hears keys while it has focus, so it is
     # re-focused whenever the mouse enters / presses in the panel; modifiers are reset when the window loses focus. ──
     def _on_kb_down(e):
@@ -4078,6 +4088,8 @@ async def main(page:ft.Page):
         if "control" in k or k.startswith("ctrl"): _mods["ctrl"] = True
         elif "shift" in k: _mods["shift"] = True
         elif k == "a" and _mods["ctrl"]: _select_all()
+        elif k in ("arrow left", "arrow right", "arrow up", "arrow down"):
+            _step_image(-1 if k in ("arrow left", "arrow up") else 1)
         elif k in ("escape", "esc"):
             if _ctx_layer.visible: _ctx_close()
             elif _mq["on"]: _mq_cancel()

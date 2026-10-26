@@ -2,7 +2,7 @@
 
 Copyright (c) 2026 Sudja. Free software under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0).
 
-WorkflowPad is a set of five desktop programs (Python + [Flet](https://flet.dev)) that turn a story, a prompt or a folder of pictures into images through **your own ComfyUI**. It does not include ComfyUI or any image / LLM model: you bring your workflows and models.
+WorkflowPad is a set of seven desktop programs (Python + [Flet](https://flet.dev)) that turn a story, a prompt or a folder of pictures into images, and lyrics into songs, through **your own ComfyUI**. It does not include ComfyUI or any image / LLM model: you bring your workflows and models.
 
 | Program | What it does |
 |---|---|
@@ -10,11 +10,13 @@ WorkflowPad is a set of five desktop programs (Python + [Flet](https://flet.dev)
 | **Image Editor** (`image_editor.py`) | Working-folder picture editor: create, edit, mask-inpaint, extend (outpaint), enhance (face restore / upscale), picture → prompt, zoom / pan viewer, multi-select |
 | **Prompt Lab** (`prompt_lab.py`) | A notebook of prompts: rewrite them with a local LLM or Grok, run them against an image workflow |
 | **Batch Editor** (`batch_editor.py`) | Apply one workflow and one prompt to many pictures; select pictures like in a file browser and run only those |
+| **Music Studio** (`music_studio.py`) | Write lyrics in a section-aware editor, choose a music style (or let an AI recommend directions and write the caption) and make songs with ACE-Step 1.5; keep every take |
+| **Simple Chat Studio** (`simple_chat.py`) | Chat with a local LLM workflow: many conversations, system prompts, Markdown, export |
 | **Gallery Generator** (`gallery_generator.py`) | Generate pictures again and again from a list of prompts (with `{a|b|c}` wildcards) into a gallery of thumbnails |
 
 ## Manual
 
-An illustrated user manual for all five programs: [`docs/WorkflowPad-Manual.html`](docs/WorkflowPad-Manual.html) (download the file and open it in a browser; it is also inside the release ZIP).
+An illustrated user manual for all seven programs: [`docs/WorkflowPad-Manual.html`](docs/WorkflowPad-Manual.html) (download the file and open it in a browser; it is also inside the release ZIP).
 
 ## Download (Windows)
 
@@ -29,7 +31,7 @@ pip install -r requirements.txt
 python story_generator.py
 ```
 
-The other programs start the same way (`python image_editor.py`, `python prompt_lab.py`, `python batch_editor.py`, `python gallery_generator.py`). ComfyUI must be running separately (default `127.0.0.1:8188`, changeable in Settings → Connection).
+The other programs start the same way (`python image_editor.py`, `python prompt_lab.py`, `python batch_editor.py`, `python gallery_generator.py`, `python music_studio.py`, `python simple_chat.py`). ComfyUI must be running separately (default `127.0.0.1:8188`, changeable in Settings → Connection).
 
 ## Set up ComfyUI for WorkflowPad
 
@@ -48,7 +50,8 @@ Each folder holds one kind of workflow, and each program lists in its dialogs th
 | `comfy_apis/image_edit/` | workflows that need a source picture: edit, img2img, inpaint / mask edit | Image Editor (Edit, Mask), Batch Editor, Story Generator (Inpaint / Img2Img mode) |
 | `comfy_apis/enhance/` | face restore / upscale, and outpaint (a Pad Image for Outpainting node) | Image Editor (Enhance, Scale & Export, Extend) |
 | `comfy_apis/caption/` | picture → text workflows (JoyCaption, Florence2) | Image Editor (Prompt), Story Generator (vision Check / Direct) |
-| `comfy_apis/llm/` | LLM chat workflows (a `LLMSessionChatNode`) | Story Generator, Prompt Lab |
+| `comfy_apis/llm/` | LLM chat workflows (a `LLMSessionChatNode`) | Story Generator, Prompt Lab, Music Studio, Simple Chat Studio |
+| `comfy_apis/audio/` | ACE-Step 1.5 music workflows | Music Studio |
 
 The example workflows use Subgraphs, so ComfyUI needs to be recent enough to open them. Details, the list of custom nodes and what a workflow must contain: [`comfy_workflow/README.txt`](comfy_workflow/README.txt).
 
@@ -82,7 +85,8 @@ Needs PyInstaller and a CPU build of PyTorch (see `requirements.txt`). Versions:
 | Path | What |
 |---|---|
 | `story_generator.py`, `story_generator/` | Story Generator |
-| `image_editor.py`, `prompt_lab.py`, `batch_editor.py`, `gallery_generator.py` | the other four programs |
+| `image_editor.py`, `prompt_lab.py`, `batch_editor.py`, `gallery_generator.py` | the other four image programs |
+| `music_studio.py`, `music_studio/`, `simple_chat.py` | Music Studio and Simple Chat Studio |
 | `comfy_workflow/` | example ComfyUI workflows and the set-up README |
 | `comfy_apis/` | your exported API workflows (only the folder READMEs are tracked) |
 | `docs/` | the illustrated manual |

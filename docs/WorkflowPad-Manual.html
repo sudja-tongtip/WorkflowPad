@@ -22,14 +22,16 @@ table{border-collapse:collapse;width:100%;margin:1em 0;font-size:15px}th,td{bord
 .steps>li::before{content:counter(s);position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;background:var(--acc);color:var(--bg);font-weight:700;display:grid;place-items:center}
 footer{margin-top:4em;padding-top:1em;border-top:1px solid var(--line);color:var(--mut);font-size:14px}
 @media (max-width:860px){.wrap{grid-template-columns:1fr}nav{position:static;max-height:none}ol.legend{columns:1}}
-</style></head><body><div class="wrap"><nav><b>WorkflowPad manual</b><a class="" href="#start">Start here</a><a class="" href="#sg">Story Generator</a><a class="sub" href="#sg-flow">From story to images</a><a class="sub" href="#sg-screen">The main screen</a><a class="sub" href="#sg-dialogs">Dialogs</a><a class="sub" href="#sg-settings">Settings</a><a class="" href="#ie">Image Editor</a><a class="" href="#pl">Prompt Lab</a><a class="" href="#be">Batch Editor</a><a class="" href="#gg">Gallery Generator</a><a class="" href="#data">Where your data is</a><a class="" href="#trouble">Troubleshooting</a><a class="" href="#lic">License</a></nav><main><h1>WorkflowPad manual</h1>
-<p class="lead">Five desktop programs that turn a story, a prompt or a folder of pictures into images through <b>your own ComfyUI</b>. Version 0.1.0 Beta.</p>
+</style></head><body><div class="wrap"><nav><b>WorkflowPad manual</b><a class="" href="#start">Start here</a><a class="" href="#sg">Story Generator</a><a class="sub" href="#sg-flow">From story to images</a><a class="sub" href="#sg-screen">The main screen</a><a class="sub" href="#sg-dialogs">Dialogs</a><a class="sub" href="#sg-settings">Settings</a><a class="" href="#ie">Image Editor</a><a class="" href="#pl">Prompt Lab</a><a class="" href="#be">Batch Editor</a><a class="" href="#gg">Gallery Generator</a><a class="" href="#ms">Music Studio</a><a class="sub" href="#ms-start">First song</a><a class="sub" href="#ms-editor">The editor</a><a class="sub" href="#ms-style">Style / Output</a><a class="sub" href="#ms-ai">AI help</a><a class="" href="#sc">Simple Chat Studio</a><a class="" href="#data">Where your data is</a><a class="" href="#trouble">Troubleshooting</a><a class="" href="#lic">License</a></nav><main><h1>WorkflowPad manual</h1>
+<p class="lead">Seven desktop programs that turn a story, a prompt or a folder of pictures into images, and lyrics into songs, through <b>your own ComfyUI</b>. Version 0.2.0 Beta.</p>
 <table><tr><th>Program</th><th>Use it to</th></tr>
 <tr><td><b>Story Generator</b> (<code>StoryGenerator.exe</code>)</td><td>Write a story, let an AI plan the shots, write the image prompts and render the pictures.</td></tr>
 <tr><td><b>Image Editor</b> (<code>ImageEditor.exe</code>)</td><td>Open a folder of pictures and edit, extend, enhance or caption them with ComfyUI workflows.</td></tr>
 <tr><td><b>Prompt Lab</b> (<code>PromptLab.exe</code>)</td><td>Keep a list of prompts, chat with an LLM about them and test them against a workflow.</td></tr>
 <tr><td><b>Batch Editor</b> (<code>BatchEditor.exe</code>)</td><td>Edit images with one workflow and one prompt.</td></tr>
-<tr><td><b>Gallery Generator</b> (<code>GalleryGenerator.exe</code>)</td><td>Generate many pictures from a list of prompts and workflows into a folder gallery.</td></tr></table>
+<tr><td><b>Gallery Generator</b> (<code>GalleryGenerator.exe</code>)</td><td>Generate many pictures from a list of prompts and workflows into a folder gallery.</td></tr>
+<tr><td><b>Music Studio</b> (<code>MusicStudio.exe</code>)</td><td>Write lyrics, choose a music style and make songs with ACE-Step 1.5; keep and compare every take.</td></tr>
+<tr><td><b>Simple Chat Studio</b> (<code>SimpleChat.exe</code>)</td><td>Chat with a local LLM workflow: many conversations, personas, export.</td></tr></table>
 
 <h2 id="start">Start here</h2>
 <h3>What you need</h3>
@@ -156,6 +158,49 @@ footer{margin-top:4em;padding-top:1em;border-top:1px solid var(--line);color:var
 <ul><li>Click a picture to select it; <kbd>Ctrl</kbd> or <kbd>Shift</kbd> adds more, and dragging a box selects a group.</li>
 <li>Double-click to view large. In the viewer use <kbd>&larr;</kbd> and <kbd>&rarr;</kbd> to move, <kbd>Esc</kbd> to close and <kbd>Del</kbd> to delete.</li>
 <li><kbd>Del</kbd> deletes the selected pictures.</li></ul>
+<h2 id="ms">Music Studio</h2>
+<p>Music Studio turns your lyrics into songs. You write the lyrics, choose a style, press <b>Generate</b>, and ACE-Step 1.5 (running in your ComfyUI) makes a song. Every song you make is kept as a <b>take</b>, so you can compare versions.</p>
+<div class="note need"><b>Needs ComfyUI</b> An ACE-Step 1.5 workflow exported with <i>Export (API)</i> in <code>comfy_apis/audio</code> (the example is <code>comfy_workflow/audio_ace_step_1_5_split.json</code>). The AI helpers (caption writing, AI Recommend, AI Actions, analysis) also need an LLM: a workflow in <code>comfy_apis/llm</code> or a Grok key. Writing lyrics works without either.</div>
+<h3 id="ms-start">Your first song</h3>
+<ol class="steps">
+<li><b>My Music</b> is the library. Press <i>New Song</i>, give it a title and open it in the editor (the pencil icon).</li>
+<li><b>Write or paste your lyrics</b> in the editor. Put a section tag on its own line, such as <code>[Verse 1]</code>, <code>[Chorus]</code> or <code>[Bridge]</code>. Thai, English and mixed lyrics all work.</li>
+<li>In <b>Style / Output</b> (right side) stay on <i>Basic</i>, choose a <i>Genre</i> and, if you like, a mood, vocal style and energy.</li>
+<li>Press <b>Generate</b>. In Basic mode the AI first writes a music caption from your choices and your lyrics (<i>Creating Music Caption&hellip;</i>), then the song is made (<i>Generating Audio&hellip;</i>).</li>
+<li>The new take appears under <b>Output</b>. Press play, mark favourites with the star, or use the <b>&#8942;</b> menu (view the settings it was made with, open it as an editable sheet, export the audio, delete).</li>
+</ol>
+<div class="note tip"><b>Tip</b> The program never changes your lyrics by itself. AI results are shown first and nothing is applied until you press the apply icon.</div>
+<h3 id="ms-editor">The editor</h3>
+<ul>
+<li><b>Lyrics editor</b> with line numbers. <kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd> undo and redo, including everything the tools below do.</li>
+<li><b>Sheets</b> (tabs under the editor): keep several versions of the same lyrics, each with its own style settings. The <b>+</b> button adds a sheet; the sheet menu renames, duplicates, closes or deletes it. A take remembers the sheet it came from.</li>
+<li><b>Section Options</b> (the tag icon in the header, or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd> with the cursor on a tag): choose cues such as <i>powerful belting</i> or <i>soft vocals</i>; the tag becomes <code>[Chorus - powerful belting]</code>. Cues are hints to the model, not guarantees.</li>
+<li><b>Songwriting Assistant</b> (left): chat with the AI about the lyrics or ask for a new verse. With text selected it changes only that text. Nothing changes until you press <i>Apply to Editor</i>.</li>
+</ul>
+<h3>The Workspace (under the editor)</h3>
+<table><tr><th>Tab</th><th>What it does</th></tr>
+<tr><td><b>Lyrics</b></td><td>The sections of the song and a summary of the open sheet.</td></tr>
+<tr><td><b>AI Actions</b></td><td><i>Continue Lyrics</i>, <i>Increase Emotion</i>, <i>Improve Singability</i> and <i>Translate Lyrics</i> work on the selected text (or the whole sheet). <i>Song Structures</i> opens the structure dialog: pick a built-in or your own structure (Pop, Rock, Ballad, EDM &hellip;); with no lyrics it inserts the section tags, with lyrics the AI arranges <i>your</i> lines into it and you preview the result first.</td></tr>
+<tr><td><b>Lyrics Tools</b></td><td>A ribbon of small icon buttons in labelled groups: <i>Sections</i> (Intro, Verse, Pre-Chorus, Chorus, Bridge, Outro), <i>Instrumental</i>, <i>Vocal Delivery</i>, <i>Backing</i> and <i>Timing &amp; Editing</i>. Hover an icon to see what it does. Click to apply at the cursor, or drag an icon onto the editor.</td></tr></table>
+<p>The Analysis tab of the Songwriting Assistant counts syllables, finds rhymes, checks singability and suggests alternatives for a selected phrase (press the replace icon next to a suggestion to use it).</p>
+<h3 id="ms-style">Style / Output</h3>
+<table><tr><th>Tab</th><th>Use it to</th></tr>
+<tr><td><b>Basic</b></td><td>Pick Genre, Mood, Vocal Style, Energy and extra tags. When you generate, an AI turns these and your lyrics into one detailed music caption (see <i>Effective Caption</i> below). Your BPM, key, time signature, language and duration are never changed by the AI.</td></tr>
+<tr><td><b>Advanced</b></td><td>Write the music caption yourself. It is sent exactly as written. <i>Prompt History</i> keeps the prompts you used.</td></tr>
+<tr><td><b>&#10024; AI Recommend</b></td><td>Press <i>Analyze Lyrics</i>: the AI describes the feeling of the song and suggests three different directions, each with a full caption and suggested settings. Click a direction to preview it. Tick what you want, then press the <b>check</b> icon beside Generate to apply it (it switches to Advanced). The <b>undo</b> icon restores the previous settings. If you edit the lyrics or settings meanwhile, the suggestions are marked <i>Reanalyze</i> and cannot be applied.</td></tr></table>
+<p><b>Model</b> chooses the ACE-Step workflow. <b>Song Metadata</b> holds BPM, key, time signature, duration, language (<i>Auto</i> reads it from the lyrics) and seed (<i>-1</i> is a random seed). <b>Effective Caption</b> shows the caption that was really sent to ACE-Step for the last song (or your Advanced prompt).</p>
+<div class="note warn"><b>If the AI fails</b> Music Studio tells you why and asks whether to generate with the plain Basic tags instead. It never switches by itself and never sends a broken AI answer to ACE-Step.</div>
+<h3 id="ms-ai">The player and the library</h3>
+<p>The player at the bottom plays any take; the queue follows the list you started from. <b>My Music</b> lists all songs with their takes, favourites and a <i>Song List</i> you can play through. Exported audio goes to <code>Documents\WorkflowPad\Music\Exports</code>.</p>
+<h2 id="sc">Simple Chat Studio</h2>
+<p>A plain chat window for a local LLM workflow in your ComfyUI. Each conversation keeps its own history, system prompt (persona), workflow and settings.</p>
+<div class="note need"><b>Needs ComfyUI</b> An LLM workflow with a <code>LLMSessionChatNode</code> in <code>comfy_apis/llm</code>.</div>
+<ul>
+<li><b>New conversation</b> starts a chat; the list on the left searches, pins, renames and deletes conversations.</li>
+<li>Type in the box at the bottom. <kbd>Enter</kbd> sends, <kbd>Shift</kbd>+<kbd>Enter</kbd> adds a new line. A running answer can be stopped.</li>
+<li><b>Chat settings</b>: workflow, ComfyUI host, temperature, maximum response tokens and the system prompt. <b>Settings</b>: the default host and workflow, Markdown rendering and auto-scroll.</li>
+<li>The menu exports a conversation as Markdown or JSON, clears it or deletes it. Conversations are saved in <code>%APPDATA%\WorkflowPad\simple_chat.json</code>.</li>
+</ul>
 <h2 id="data">Where your data is</h2>
 <p>Your work is <b>not</b> stored in the program folder, so you can update or move the program without losing anything.</p>
 <table><tr><th>What</th><th>Where</th></tr>
@@ -163,7 +208,9 @@ footer{margin-top:4em;padding-top:1em;border-top:1px solid var(--line);color:var
 <tr><td>Your Grok key and shared credentials</td><td><code>%APPDATA%\StoryGenerator</code></td></tr>
 <tr><td>Temporary files, debug logs, optional detection models</td><td><code>%LOCALAPPDATA%\WorkflowPad</code></td></tr>
 <tr><td>Pictures</td><td>The folders you choose (Working Folder, Output Folder, export folders)</td></tr>
-<tr><td>Your workflows</td><td><code>comfy_apis</code> next to the program: <code>image_create</code> (text-to-image), <code>image_edit</code> (editing a picture), <code>enhance</code>, <code>caption</code>, <code>llm</code></td></tr></table>
+<tr><td>Music Studio songs, takes and exports</td><td><code>Documents\WorkflowPad\Music</code>; its settings are in <code>%APPDATA%\WorkflowPad\music_studio.json</code></td></tr>
+<tr><td>Simple Chat conversations</td><td><code>%APPDATA%\WorkflowPad\simple_chat.json</code></td></tr>
+<tr><td>Your workflows</td><td><code>comfy_apis</code> next to the program: <code>image_create</code> (text-to-image), <code>image_edit</code> (editing a picture), <code>enhance</code>, <code>caption</code>, <code>llm</code>, <code>audio</code> (Music Studio)</td></tr></table>
 <p>To back up, copy those folders. To start fresh, close the programs and delete the files you want to reset.</p>
 
 <h2 id="trouble">Troubleshooting</h2>
@@ -176,9 +223,12 @@ footer{margin-top:4em;padding-top:1em;border-top:1px solid var(--line);color:var
 <tr><td>ComfyUI says <i>Invalid image file</i>, or asks for a mask (Inpaint Mode)</td><td>The chosen Inpaint/Img2Img workflow needs a mask or a second picture, which Story Generator does not send. Pick an edit workflow with one Load Image node and no mask, from <code>comfy_apis/image_edit</code>.</td></tr>
 <tr><td>A manga page shows fewer panels than planned</td><td>Pages of 2 to 5 panels use a fixed grid layout that the image model draws reliably; a page with more panels, or a model that merges panels, can still show fewer. Plan fewer panels per page if you need every panel.</td></tr>
 <tr><td>A picture looks different from run to run</td><td>Turn on <i>Seed Lock</i> in Story Generator, or use <i>Run</i> (not <i>New Run</i>) in Prompt Lab.</td></tr>
+<tr><td>Music Studio: <i>Generate</i> says there is no workflow</td><td>Put an ACE-Step 1.5 workflow exported with <i>Export (API)</i> in <code>comfy_apis/audio</code>, then press the refresh button next to <i>Model</i>.</td></tr>
+<tr><td>Music Studio: the AI caption could not be created</td><td>Check that an LLM workflow is in <code>comfy_apis/llm</code> (or a Grok key is set) and that ComfyUI is running. You can choose <i>Use Basic Tags</i> in the message, or write the caption yourself in the Advanced tab.</td></tr>
+<tr><td>Music Studio: a take plays with no sound</td><td>Open the take&#8217;s <i>&#8942; &rarr; View Generation Settings</i> and check the ComfyUI result; play the exported file in another player to tell a model problem from a player problem.</td></tr>
 <tr><td>Windows warns about the program</td><td>The program is not code-signed. Choose <i>More info &rarr; Run anyway</i> if you downloaded it from the official release page.</td></tr></table>
 
 <h2 id="lic">License</h2>
 <p>WorkflowPad is Copyright &copy; 2026 Sudja and is free software under the <b>GNU Affero General Public License v3.0</b> (see <code>LICENSE.txt</code>). The release also contains third-party software (including Ultralytics, AGPL-3.0); see <code>THIRD_PARTY_NOTICES.txt</code> for the list and licenses. Source code: the repository linked in <code>README.txt</code>.</p>
-<footer>WorkflowPad 0.1.0 Beta &middot; The screenshots show a demo project and demo pictures.</footer>
+<footer>WorkflowPad 0.2.0 Beta &middot; The screenshots show a demo project and demo pictures.</footer>
 </main></div></body></html>

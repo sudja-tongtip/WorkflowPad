@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller one-folder build: StoryGenerator.exe (Story Generator), ImageEditor.exe, PromptLab.exe, BatchEditor.exe and
-GalleryGenerator.exe in ONE shared folder.
+"""PyInstaller one-folder build: StoryGenerator.exe (Story Generator), ImageEditor.exe, PromptLab.exe, BatchEditor.exe,
+GalleryGenerator.exe, MusicStudio.exe and SimpleChat.exe in ONE shared folder.
 
     python make_release.py            # runs this spec, validates, stages and zips (the normal way)
     python -m PyInstaller WorkflowPad.spec --noconfirm --distpath dist/_build/dist --workpath dist/_build/work
@@ -73,11 +73,14 @@ exe_ie = EXE(
 parts = [exe_sg, a_sg.binaries, a_sg.datas, exe_ie, a_ie.binaries, a_ie.datas, flet_client]
 
 # Prompt Lab, Batch Editor, Gallery Generator: Flet + Pillow apps, same lean excludes as Image Editor.
-for _script, _name, _icon in (("prompt_lab.py", "PromptLab", "prompt_lab.ico"),
-                              ("batch_editor.py", "BatchEditor", "batch_editor.ico"),
-                              ("gallery_generator.py", "GalleryGenerator", "gallery_generator.ico")):
+# Music Studio (the music_studio package + the lyrics editor control) and Simple Chat Studio are the same kind of Flet app.
+for _script, _name, _icon, _extra in (("prompt_lab.py", "PromptLab", "prompt_lab.ico", []),
+                                      ("batch_editor.py", "BatchEditor", "batch_editor.ico", []),
+                                      ("gallery_generator.py", "GalleryGenerator", "gallery_generator.ico", []),
+                                      ("music_studio.py", "MusicStudio", "music_studio.ico", collect_submodules("music_studio") + ["flet_code_editor"]),
+                                      ("simple_chat.py", "SimpleChat", "simple_chat.ico", [])):
     _a = Analysis([_script], pathex=[str(ROOT)], binaries=[], datas=collect_data_files("flet"),
-                  hiddenimports=collect_submodules("flet") + collect_submodules("flet_desktop"), hookspath=[],
+                  hiddenimports=collect_submodules("flet") + collect_submodules("flet_desktop") + _extra, hookspath=[],
                   runtime_hooks=[str(ROOT / "build_tools" / "flet_view_hook.py")], excludes=ie_excludes, noarchive=False)
     _exe = EXE(PYZ(_a.pure), _a.scripts, [], exclude_binaries=True, name=_name, console=CONSOLE,
                icon=str(ROOT / "icons" / _icon), contents_directory="_internal")
