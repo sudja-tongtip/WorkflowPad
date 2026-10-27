@@ -43,7 +43,7 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
 
 APP_ID = "music_studio"
 APP_NAME = "WorkflowPad - Music Studio"
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.2.1"
 APP_ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
 AUDIO_API_DIR = APP_ROOT / "comfy_apis" / "audio"
 LLM_DIR = APP_ROOT / "comfy_apis" / "llm"

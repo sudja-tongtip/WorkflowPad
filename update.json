@@ -1,44 +1,44 @@
 {
   "story_generator": {
     "name": "Story Generator",
-    "version": "0.2.0",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.0/WorkflowPad-v0.2.0-Beta.zip",
-    "notes": "New: Music Studio (write lyrics and make songs with ACE-Step 1.5 through ComfyUI) and Simple Chat Studio (chat with a local LLM workflow); Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
+    "version": "0.2.1",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.1/WorkflowPad-v0.2.1-Beta.zip",
+    "notes": "Music Studio: the Songwriting Assistant can now just talk and advise (it only proposes lyrics when you ask for lyrics); new Music Studio and Simple Chat Studio programs; Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
   },
   "prompt_lab": {
     "name": "Prompt Lab",
-    "version": "0.2.0",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.0/WorkflowPad-v0.2.0-Beta.zip",
-    "notes": "New: Music Studio (write lyrics and make songs with ACE-Step 1.5 through ComfyUI) and Simple Chat Studio (chat with a local LLM workflow); Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
+    "version": "0.2.1",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.1/WorkflowPad-v0.2.1-Beta.zip",
+    "notes": "Music Studio: the Songwriting Assistant can now just talk and advise (it only proposes lyrics when you ask for lyrics); new Music Studio and Simple Chat Studio programs; Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
   },
   "image_editor": {
     "name": "Image Editor",
-    "version": "0.2.0",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.0/WorkflowPad-v0.2.0-Beta.zip",
-    "notes": "New: Music Studio (write lyrics and make songs with ACE-Step 1.5 through ComfyUI) and Simple Chat Studio (chat with a local LLM workflow); Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
+    "version": "0.2.1",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.1/WorkflowPad-v0.2.1-Beta.zip",
+    "notes": "Music Studio: the Songwriting Assistant can now just talk and advise (it only proposes lyrics when you ask for lyrics); new Music Studio and Simple Chat Studio programs; Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
   },
   "gallery_generator": {
     "name": "Gallery Generator",
-    "version": "0.2.0",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.0/WorkflowPad-v0.2.0-Beta.zip",
-    "notes": "New: Music Studio (write lyrics and make songs with ACE-Step 1.5 through ComfyUI) and Simple Chat Studio (chat with a local LLM workflow); Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
+    "version": "0.2.1",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.1/WorkflowPad-v0.2.1-Beta.zip",
+    "notes": "Music Studio: the Songwriting Assistant can now just talk and advise (it only proposes lyrics when you ask for lyrics); new Music Studio and Simple Chat Studio programs; Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
   },
   "batch_editor": {
     "name": "Batch Editor",
-    "version": "0.2.0",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.0/WorkflowPad-v0.2.0-Beta.zip",
-    "notes": "New: Music Studio (write lyrics and make songs with ACE-Step 1.5 through ComfyUI) and Simple Chat Studio (chat with a local LLM workflow); Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
+    "version": "0.2.1",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.1/WorkflowPad-v0.2.1-Beta.zip",
+    "notes": "Music Studio: the Songwriting Assistant can now just talk and advise (it only proposes lyrics when you ask for lyrics); new Music Studio and Simple Chat Studio programs; Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
   },
   "music_studio": {
     "name": "Music Studio",
-    "version": "0.2.0",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.0/WorkflowPad-v0.2.0-Beta.zip",
-    "notes": "New: Music Studio (lyrics editor with sheets, Lyrics Tools ribbon, Song Structures, AI music captions in Basic mode, AI Recommend, takes and player) and Simple Chat Studio"
+    "version": "0.2.1",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.1/WorkflowPad-v0.2.1-Beta.zip",
+    "notes": "Music Studio: the Songwriting Assistant can now just talk and advise (it only proposes lyrics when you ask for lyrics); new Music Studio and Simple Chat Studio programs; Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
   },
   "simple_chat": {
     "name": "Simple Chat Studio",
-    "version": "0.2.0",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.0/WorkflowPad-v0.2.0-Beta.zip",
-    "notes": "New: Simple Chat Studio, a chat with a local LLM workflow"
+    "version": "0.2.1",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.1/WorkflowPad-v0.2.1-Beta.zip",
+    "notes": "Simple Chat Studio: a chat with a local LLM workflow"
   }
 }

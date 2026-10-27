@@ -23,7 +23,7 @@ import flet as ft
 import app_error as _app_error
 
 APP_NAME = "Simple Chat Studio"
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.2.1"
 APP_ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
 LLM_DIR = APP_ROOT / "comfy_apis" / "llm"
 DATA_DIR = Path(os.environ.get("APPDATA", str(Path.home()))) / "WorkflowPad"

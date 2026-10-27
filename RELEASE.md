@@ -28,11 +28,11 @@ Each app owns its own version and is released independently. Nothing forces the 
 The portable ZIP ships all seven apps together, so one release = one tag:
 
 ```
-v0.2.0
+v0.2.1
 ```
 
-- GitHub Release title: `WorkflowPad v0.2.0 Beta`, with "Set as a pre-release" ticked while the version is 0.x.
-- ZIP name: `WorkflowPad-v0.2.0-Beta.zip` (`RELEASE_NAME` in `make_release.py`).
+- GitHub Release title: `WorkflowPad v0.2.1 Beta`, with "Set as a pre-release" ticked while the version is 0.x.
+- ZIP name: `WorkflowPad-v0.2.1-Beta.zip` (`RELEASE_NAME` in `make_release.py`).
 - `APP_VERSION` and `update.json` stay plain `MAJOR.MINOR.PATCH` (no `-beta` suffix): `app_version.parse_version()` only accepts digits.
 - Each app still owns its own `APP_VERSION`; the release tag is the highest version that the ZIP contains.
 
