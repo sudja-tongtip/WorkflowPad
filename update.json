@@ -1,33 +1,33 @@
 {
   "story_generator": {
     "name": "Story Generator",
-    "version": "0.1.9",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.9/WorkflowPad-v0.1.9-Beta.zip",
-    "notes": "A friendly error screen instead of the red crash page (disk full and other errors keep the program running); outputs and prompt files are never overwritten or left half-written; saving and exporting images no longer freezes the window; Prompt Lab: pick several APIs for one prompt (same dialog as Gallery Generator), REPLY / PROMPT / END answers read only the two blocks, layouts for small windows (down to 900x600), redesigned LLM Settings, default Max Tokens 8192; Batch Editor: Open original / exported folder in the card menu, searchable Prompt History (double-click to use); Gallery Generator: Add all / Remove all and double-click in Add APIs"
+    "version": "0.2.0",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.0/WorkflowPad-v0.2.0-Beta.zip",
+    "notes": "New: Music Studio (write lyrics and make songs with ACE-Step 1.5 through ComfyUI) and Simple Chat Studio (chat with a local LLM workflow); Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
   },
   "prompt_lab": {
     "name": "Prompt Lab",
-    "version": "0.1.9",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.9/WorkflowPad-v0.1.9-Beta.zip",
-    "notes": "A friendly error screen instead of the red crash page (disk full and other errors keep the program running); outputs and prompt files are never overwritten or left half-written; saving and exporting images no longer freezes the window; Prompt Lab: pick several APIs for one prompt (same dialog as Gallery Generator), REPLY / PROMPT / END answers read only the two blocks, layouts for small windows (down to 900x600), redesigned LLM Settings, default Max Tokens 8192; Batch Editor: Open original / exported folder in the card menu, searchable Prompt History (double-click to use); Gallery Generator: Add all / Remove all and double-click in Add APIs"
+    "version": "0.2.0",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.0/WorkflowPad-v0.2.0-Beta.zip",
+    "notes": "New: Music Studio (write lyrics and make songs with ACE-Step 1.5 through ComfyUI) and Simple Chat Studio (chat with a local LLM workflow); Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
   },
   "image_editor": {
     "name": "Image Editor",
-    "version": "0.1.9",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.9/WorkflowPad-v0.1.9-Beta.zip",
-    "notes": "A friendly error screen instead of the red crash page (disk full and other errors keep the program running); outputs and prompt files are never overwritten or left half-written; saving and exporting images no longer freezes the window; Prompt Lab: pick several APIs for one prompt (same dialog as Gallery Generator), REPLY / PROMPT / END answers read only the two blocks, layouts for small windows (down to 900x600), redesigned LLM Settings, default Max Tokens 8192; Batch Editor: Open original / exported folder in the card menu, searchable Prompt History (double-click to use); Gallery Generator: Add all / Remove all and double-click in Add APIs"
+    "version": "0.2.0",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.0/WorkflowPad-v0.2.0-Beta.zip",
+    "notes": "New: Music Studio (write lyrics and make songs with ACE-Step 1.5 through ComfyUI) and Simple Chat Studio (chat with a local LLM workflow); Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
   },
   "gallery_generator": {
     "name": "Gallery Generator",
-    "version": "0.1.9",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.9/WorkflowPad-v0.1.9-Beta.zip",
-    "notes": "A friendly error screen instead of the red crash page (disk full and other errors keep the program running); outputs and prompt files are never overwritten or left half-written; saving and exporting images no longer freezes the window; Prompt Lab: pick several APIs for one prompt (same dialog as Gallery Generator), REPLY / PROMPT / END answers read only the two blocks, layouts for small windows (down to 900x600), redesigned LLM Settings, default Max Tokens 8192; Batch Editor: Open original / exported folder in the card menu, searchable Prompt History (double-click to use); Gallery Generator: Add all / Remove all and double-click in Add APIs"
+    "version": "0.2.0",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.0/WorkflowPad-v0.2.0-Beta.zip",
+    "notes": "New: Music Studio (write lyrics and make songs with ACE-Step 1.5 through ComfyUI) and Simple Chat Studio (chat with a local LLM workflow); Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
   },
   "batch_editor": {
     "name": "Batch Editor",
-    "version": "0.1.9",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.1.9/WorkflowPad-v0.1.9-Beta.zip",
-    "notes": "A friendly error screen instead of the red crash page (disk full and other errors keep the program running); outputs and prompt files are never overwritten or left half-written; saving and exporting images no longer freezes the window; Prompt Lab: pick several APIs for one prompt (same dialog as Gallery Generator), REPLY / PROMPT / END answers read only the two blocks, layouts for small windows (down to 900x600), redesigned LLM Settings, default Max Tokens 8192; Batch Editor: Open original / exported folder in the card menu, searchable Prompt History (double-click to use); Gallery Generator: Add all / Remove all and double-click in Add APIs"
+    "version": "0.2.0",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.0/WorkflowPad-v0.2.0-Beta.zip",
+    "notes": "New: Music Studio (write lyrics and make songs with ACE-Step 1.5 through ComfyUI) and Simple Chat Studio (chat with a local LLM workflow); Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
   },
   "music_studio": {
     "name": "Music Studio",

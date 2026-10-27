@@ -31,7 +31,7 @@ APP_ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False
 API_DIR = APP_ROOT / "comfy_apis" / "image_edit"         # Folder containing the .json workflow files (exported with Export (API))
 APP_ID      = "batch_editor"
 APP_NAME    = "Batch Editor"
-APP_VERSION = "0.1.9"   # SemVer; see RELEASE.md
+APP_VERSION = "0.2.0"   # SemVer; see RELEASE.md
 USER_CONFIG_DIR = Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming") / "WorkflowPad"     # user data: never next to the program
 PROMPT_SAVE_PATH = USER_CONFIG_DIR / "saved_prompt.json"
 try:
