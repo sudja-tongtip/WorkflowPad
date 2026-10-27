@@ -16,7 +16,11 @@ from typing import Callable
 
 from .compiler import HOLD_PREFIX, TAG_LINE
 
-PROMPT_VERSION = "syl-v1"
+PROMPT_VERSION = "syl-v2"
+# Starting points, not a tuned optimum. Syllables and rhymes must follow a strict format. Rhythm is a judgement.
+# Thesaurus has to offer several wordings. A set analysis_temperature_<kind> wins over the shared analysis_temperature.
+# Neither one reads the chat temperature.
+ANALYSIS_TEMP_DEFAULTS = {"syl": 0.2, "rhyme": 0.2, "rhythm": 0.4, "thes": 0.7}
 BATCH_LINES = 25                                # lines per LLM request (keeps the answer well inside the model's token limit)
 UNIT_SEPS = "·•"                                # the separator the prompt asks for (+ a bullet some models write instead)
 _INLINE_TAG = re.compile(r"\[[^\[\]\n]*\]")
@@ -33,7 +37,12 @@ SYSTEM_PROMPT = (
     "RULES\n"
     "- <lang> is the ISO 639-1 code of the words in that part (th, en, ja, zh, ko, es, fr, de ...). Decide it yourself from the words.\n"
     "- A unit is ONE sung syllable written the way it is PRONOUNCED. Put every unit of the part in one flat list, separated only by the middle dot `·`.\n"
-    "- Thai: write each syllable in Thai script as it is spoken, including hidden vowels (สวัสดี -> สะ·หวัด·ดี, ฤดู -> รึ·ดู, ความรัก -> ความ·รัก). The mark ๆ repeats the previous word.\n"
+    "- Thai: write each syllable in Thai script as it is SPOKEN, one sung syllable each. This is the spoken syllable count, not the number of notes: you have not heard the melody.\n"
+    "  Hidden vowels: สวัสดี -> สะ·วัด·ดี, ฤดู -> รึ·ดู, ทะเล -> ทะ·เล, สนุก -> สะ·หนุก, ตลาด -> ตะ·หลาด.\n"
+    "  A leading ห or อ stays inside the syllable: หนาว -> หนาว, อยู่ -> อยู่, หญิง -> หญิง, หนู -> หนู. Do not split them.\n"
+    "  A true cluster stays one syllable: กล้า -> กล้า, กลับ -> กลับ, เพราะ -> เพราะ. ความรัก -> ความ·รัก.\n"
+    "  ๆ repeats the previous word: เด็กๆ -> เด็ก·เด็ก.\n"
+    "  A loanword uses the usual spoken reading (คอมพิวเตอร์ -> คอม·พิว·เต้อ, or the reading you would actually sing). Do not invent extra syllables.\n"
     "- English and other alphabetic languages: split by sound, not by spelling rules (love -> love, beautiful -> beau·ti·ful, sunshine -> sun·shine). Numbers as spoken.\n"
     "- Japanese: one unit per MORA, written in kana (きょう -> きょ·う, がっこう -> が·っ·こ·う, ラーメン -> ラ·ー·メ·ン). Write kanji as their kana reading.\n"
     "- Chinese: one unit per character. Korean: one unit per Hangul syllable block.\n"
@@ -123,6 +132,29 @@ class Snapshot:
     @property
     def cache_key(self) -> tuple:
         return (self.kind, self.text_hash, self.backend, self.model, self.params, self.prompt_version)   # not the song id: the same text gives the same answer
+
+
+def analysis_temperature(cfg: dict, kind: "str | None" = None) -> "float | None":
+    """Temperature for one lyrics analysis. `kind` None: the shared analysis override, or None when it is unset (the chat path is unchanged).
+    A real kind never reads the chat temperature."""
+    if not isinstance(cfg, dict):
+        cfg = {}
+    if kind not in ANALYSIS_TEMP_DEFAULTS:
+        raw = cfg.get("analysis_temperature")
+        if raw in (None, ""):
+            return None
+        try:
+            return max(0.0, min(2.0, float(raw)))
+        except (TypeError, ValueError):
+            return None
+    specific = cfg.get(f"analysis_temperature_{kind}")
+    raw = specific if specific not in (None, "") else cfg.get("analysis_temperature")
+    if raw in (None, ""):
+        return ANALYSIS_TEMP_DEFAULTS[kind]
+    try:
+        return max(0.0, min(2.0, float(raw)))
+    except (TypeError, ValueError):
+        return ANALYSIS_TEMP_DEFAULTS[kind]
 
 
 def text_hash(text: str) -> str:

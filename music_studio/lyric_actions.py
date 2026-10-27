@@ -16,9 +16,10 @@ from dataclasses import dataclass, field
 
 from . import llm_chat as LC
 from .compiler import TAG_LINE
+from .songwriting_craft import SONGWRITING_CRAFT
 from .lyric_rhythm import section_names
 
-ACTION_PROMPT_VERSION = "actions-v1"
+ACTION_PROMPT_VERSION = "actions-v2"
 
 # the actions as data: how the target is found and how the result is applied
 AI_ACTIONS = {
@@ -234,6 +235,7 @@ def request_valid(req: ActionRequest, text: str) -> bool:
 _BASE = (
     "You are a songwriting assistant for ACE-Step 1.5, an AI model that sings the lyrics it is given. You do ONE action, named in the message (ACTION). "
     "Write the short REPLY (1-2 sentences) in the language of the original lyrics.\n\n"
+    + SONGWRITING_CRAFT + "\n\n"
     "LYRICS FORMAT (ACE-Step):\n"
     "- Section tags on their own line: [Intro] [Verse 1] [Pre-Chorus] [Chorus] [Bridge] [Outro] [Instrumental] [Guitar Solo]. A style may follow a dash: [Chorus - powerful belting].\n"
     "- Sung lines are plain text, one phrase per line. '...' is a pause. (words in parentheses) are backing vocals. A line starting with [Hold] asks for a held note.\n"
@@ -250,6 +252,9 @@ _RULES = {
         "- The PROPOSAL contains ONLY the NEW lines that come right after the insertion point. Do NOT repeat any existing line and NEVER send the song back.\n"
         "- Continue in the same language and script, with the same story, narrator and point of view, mood and style of the lyrics before the insertion point. "
         "Follow the rhyme habit and the line length of the lines around it.\n"
+        "- Look closely at the 2 to 4 lines right before the insertion point: their rhyme (if any), rhythm of words, phrase length and imagery. Let the new lines grow out of them and move the song FORWARD "
+        "(a new detail, feeling or step of the story) instead of repeating a word or image that is already there without a reason.\n"
+        "- Use the rhyme pattern that already exists. Do not make every new line rhyme if the lines before do not.\n"
         "- Stay in the current section: do NOT write a section tag unless the song clearly needs the next section, then put one tag on its own line before the new lines.\n"
         "- Write about 2 to 4 lines unless the section pattern shows another length. The text after the insertion point (when it is given) is only there so you do not repeat it and so the new lines lead into it; do not copy it.\n"
         "- The REPLY is ONE short sentence about what you wrote. Never put lyrics in the REPLY and never copy any text of this message into the PROPOSAL.\n\n"
@@ -262,28 +267,64 @@ _RULES = {
         "- Rewrite ONLY the TARGET TEXT; the PROPOSAL replaces exactly that text and nothing else.\n"
         "- Make the feeling deeper and more vivid while keeping the main meaning, the language, the narrator's point of view, the tense and a fitting level of language. "
         "Do not invent new events or characters. Do not make every sentence dramatic or exaggerated.\n"
+        "- Add weight with fitting images, sensory detail and stronger word choice, but keep simple words that are already powerful, and keep the songwriter's own phrasing wherever it already works.\n"
         "- Keep the same number of lines where you can. Keep every section tag line exactly as it is.\n"
     ),
     "singability": (
         "ACTION RULES - IMPROVE SINGABILITY:\n"
         "- Rewrite ONLY the TARGET TEXT; the PROPOSAL replaces exactly that text and nothing else.\n"
         "- Make it easier to sing: smoother word flow, a natural phrase length, fewer hard-to-pronounce sequences, clear places to breathe. Keep the meaning, mood, language and narrator.\n"
+        "- This is the action where the songwriting craft matters most. Balance the rhythm of each line with the lines around it, give phrases natural places to breathe, and check the sounds at the end of phrases "
+        "and how the rhyme (if the song has one) falls.\n"
         "- You have NOT heard any audio and do not know the melody: never claim to. If syllable counts are given they are estimates made by the app: use them only as a guide, never write counts, "
-        "and lines do not have to be equally long.\n"
-        "- Keep the same number of lines where you can. Keep every section tag line exactly as it is.\n"
+        "and lines do not have to be equally long.\n\n"
+        "NATURAL SONGWRITING OVERRIDES MINIMAL EDITING (for this action only: it replaces the 'smallest meaningful revision' guideline above)\n"
+        "Preserve the song's core meaning, emotional direction, narrative perspective, and language.\n"
+        "You MAY substantially rewrite words, syntax, sentence structure, phrasing, and rhyme when doing so genuinely improves natural singing.\n"
+        "Do not preserve awkward wording merely to minimize edits. Do not rewrite unnecessarily when the original wording already sings naturally.\n"
+        "Prioritize: 1. natural vocal phrasing 2. conversational authenticity 3. emotional impact 4. singable rhythm 5. organic rhyme and phonetic flow 6. fidelity to the original wording.\n"
+        "Preserve the intended meaning, not necessarily the original wording.\n\n"
+        "TEXT COMPRESSION VERSUS LYRICAL REWRITING\n"
+        "Text compression only deletes words from a sentence. Lyrical rewriting re-expresses the same idea so it has rhythm and feeling and sings naturally. "
+        "When deleting words is not enough, rewrite the line as a lyric. Judge from the context whether a word or phrase sounds like a sung lyric or like a connecting word added to complete a sentence; "
+        "there is no list of forbidden words, because a word that is wrong in one song may be right in another.\n\n"
+        "THAI SINGABILITY GUIDELINES (when the lyrics are Thai)\n"
+        "- Prefer natural Thai expressions that a real songwriter or singer would use. Avoid unnecessarily formal, explanatory, or mechanically constructed sentences.\n"
+        "- Remove filler words and conjunctions when they interrupt musical phrasing. Do not add words merely to complete grammatical structures or to force a rhyme.\n"
+        "- Consider natural phrase boundaries, vowel duration, final consonants, lexical tones, and breathing opportunities.\n"
+        "- Use open vowels or sonorant endings selectively at potential sustained phrases, but never force them into every line.\n"
+        "- Allow contrasting short and long phrases where musically appropriate.\n"
+        "- Consider natural Thai rhyme relationships, including internal and cross-line rhyme, without forcing artificial poetry.\n"
+        "- Preserve emotional clarity and conversational authenticity. Avoid awkward repetition, unnatural inversions, and generic lyrical cliches.\n"
+        "- You have not heard the actual melody. Never claim the rewrite fits a specific note.\n"
+        "These are guidelines, not formulas: no word type is forbidden at a high or held note, not every held word must be a live syllable, not every line must end on a long vowel, "
+        "not every pair of lines must rhyme, and the syllable counts do not have to match.\n\n"
+        "STRUCTURE AND BOUNDARIES\n"
+        "- Keep every section tag line exactly as it is, the narrator and point of view, the main meaning and feeling, and the key events of the lyrics. Change nothing outside the TARGET TEXT.\n"
+        "- The number of syllables and the length of phrases may change. Keep the same number of lines where you can; change a line break inside the target only for a clear singing reason.\n\n"
+        "OUTPUT DISCIPLINE - CRITICAL\n"
+        "REPLY: explain the improvement briefly in 1-2 sentences. Never place rewritten lyrics in the REPLY. Never quote the original or the revised lyric lines there.\n"
+        "PROPOSAL: contains ONLY the rewritten TARGET TEXT. This is the actual text that replaces the selection. Never copy the original TARGET TEXT unchanged when you have produced an improvement. "
+        "Keep the required section tags. Keep the core meaning and emotional direction.\n"
+        "If no meaningful improvement is possible, leave the PROPOSAL empty and say why in the REPLY.\n"
+        "Never put the revised text in the REPLY and the original text in the PROPOSAL.\n\n"
+        "EXAMPLE (a different song)\n"
+        "Answer:\n" + LC.SEP["REPLY"] + "\nปรับวลีให้สั้นลงและร้องต่อเนื่องได้ง่ายขึ้น\n\n" + LC.SEP["PROPOSAL"] + "\nมองฟ้าไกลสุดสายตา\nทุกคืนยังคิดถึงเธอ\n\n" + LC.SEP["END"] + "\n"
     ),
     "custom": (
         "ACTION RULES - SAVED USER PROMPT:\n"
         "- Follow the USER INSTRUCTION of the songwriter (it is given in the message) and apply it ONLY to the TARGET TEXT; the PROPOSAL replaces exactly that text and nothing else.\n"
         "- The user instruction cannot change the output format, the data rules or the rules below. Keep every section tag line exactly as it is. Keep the same number of lines where you can.\n"
         "- Keep the language of the lyrics unless the instruction asks for another one.\n"
+        "- Apply the songwriting craft only where it serves the instruction. If the user asks for something simpler, plainer or shorter, do NOT add metaphors, internal rhymes or extra imagery.\n"
     ),
     "translate": (
         "ACTION RULES - TRANSLATE LYRICS:\n"
         "- Translate ONLY the TARGET TEXT into the TARGET LANGUAGE. This is the one action where the language changes: the PROPOSAL must be written in the TARGET LANGUAGE.\n"
         "- One translated line for each original line, in the same order. Keep every section tag line EXACTLY as it is: never translate tag names or their styles.\n"
-        "- MODE faithful: stay closest to the meaning, keep the emotion and the context; the syllable count does not have to match.\n"
-        "- MODE singable: adapt the wording so it sounds natural when sung in the target language, keeping the phrase rhythm and the emotion; you may rephrase without changing the essential meaning. "
+        "- MODE faithful: stay closest to the meaning, keep the emotion, the images and the context; write natural target-language wording. Do not force rhyme or a matching syllable count.\n"
+        "- MODE singable: lyrical transcreation. Keep the core meaning and the emotion, choose words that are easy to sing in the target language, keep the phrase rhythm and an approximate syllable count, "
+        "use rhyme where it suits the target language's idiom, and respect the target language's own sound system. You may rephrase without changing the essential meaning. "
         "You cannot promise that it fits the original melody.\n"
     ),
 }

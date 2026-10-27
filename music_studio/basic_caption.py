@@ -63,6 +63,22 @@ Do not write lyrics, explanations, role
 instructions, system prompts, or metadata
 into the caption.
 
+High energy means the track feels driving.
+It is not belting, soaring, falsetto, or a
+high singing register.
+Do not turn rain, night, or fire in the
+lyrics into sound effects unless the user
+asked for that.
+For Thai lyrics, describe natural
+pronunciation, a comfortable range, natural
+phrasing, breath, and controlled peaks.
+Put emotional impact in the arrangement.
+Name belting, soaring, falsetto, or an
+operatic delivery only when the user's
+settings ask for it.
+Do not force every song into a mid-range
+vocal.
+
 Return exactly:
 
 =========== CAPTION ===========
@@ -124,7 +140,23 @@ def build_messages(snap: Snapshot) -> tuple:
     return SYSTEM, user
 
 
-def parse(raw: str, lyrics: str = "") -> Result:
+_FORCED_HIGH = re.compile(
+    r"\b(?:soaring(?:\s+vocals?)?|powerful\s+belting|belting|explosive\s+high(?:\s+notes?)?|falsetto|operatic)\b",
+    re.IGNORECASE)
+_ASKED_HIGH = re.compile(r"\b(?:soaring|belting|belted|falsetto|operatic|high\s+notes?)\b", re.IGNORECASE)
+
+
+def vocal_range_warning(caption: str, *settings: str) -> str:
+    """A note when the caption asks for a high or belted delivery the user did not request. Never a rejection, and never a reason to rewrite the caption."""
+    if _ASKED_HIGH.search(" ".join(s or "" for s in settings)):
+        return ""
+    if _FORCED_HIGH.search(caption or ""):
+        return ("The caption names a high or belted delivery the settings did not ask for. "
+                "High energy is not a high singing register. A powerful vocal stays available if you ask for it.")
+    return ""
+
+
+def parse(raw: str, lyrics: str = "", vocal: str = "", energy: str = "", extra: str = "") -> Result:
     """The AI answer -> Result. Raises CaptionError for anything that must not reach ACE-Step. A missing END marker only warns (the real Gemma4 sometimes forgets it)."""
     text = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", raw or "").strip()
     lines = [l for l in text.splitlines() if not re.fullmatch(r"\s*(?:```[A-Za-z]*|<<<|>>>)\s*", l)]
@@ -161,6 +193,9 @@ def parse(raw: str, lyrics: str = "") -> Result:
         raise CaptionError("The caption contains lyric lines.", ["The caption repeats a line of the lyrics; lyrics must stay out of the caption."], raw)
     if re.search(r"\b\d{2,3}\s*bpm\b|\b[A-G][#b]?\s*(?:major|minor)\b|\b[2346]/[48]\b", cap, re.IGNORECASE):
         warns.append("The caption mentions a BPM, key or time signature; they are sent as separate parameters.")
+    note = vocal_range_warning(cap, vocal, energy, extra)
+    if note:
+        warns.append(note)
     return Result(cap, warns, raw)
 
 
@@ -168,4 +203,4 @@ def compose_basic_caption(snap: Snapshot, ask) -> Result:
     """One question, one answer, no automatic retry. Raises CaptionError (carrying `raw`) when the answer cannot be used."""
     system, user = build_messages(snap)
     raw = ask(system, user)
-    return parse(raw, snap.lyrics)
+    return parse(raw, snap.lyrics, snap.vocal, snap.energy, snap.extra_tags)

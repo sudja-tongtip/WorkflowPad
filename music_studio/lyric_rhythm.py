@@ -20,7 +20,7 @@ from typing import Callable
 from .compiler import TAG_LINE
 from .lyric_analysis import AnalysisError, SEP_END, _is_sep, _norm, sung_lines
 
-RHYTHM_PROMPT_VERSION = "rhythm-v1"
+RHYTHM_PROMPT_VERSION = "rhythm-v2"
 KIND = "rhythm"                                 # the analysis type that is part of the cache key
 SEP_RHYTHM = "=========== RHYTHM ==========="
 WINDOW_LINES = 60                               # a whole song normally goes in one request; sections are never cut unless one section is longer than this
@@ -133,7 +133,8 @@ def similar_sections(groups: list) -> list:
 # ── B. LLM: singability ──────────────────────────────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = (
     "You review song lyrics for SINGABILITY: how easily the WORDS can be phrased and sung. You judge the TEXT only. You have NOT heard any audio and you know nothing about "
-    "the tempo, beat, melody or note lengths: never claim to, and never invent them.\n\n"
+    "the tempo, beat, melody, groove or note lengths: never claim to, and never invent a BPM, a groove or a melody.\n"
+    "A breath_point is allowed only when the count on that line is long next to the other lines in the input. Do not suggest a breath on a short line.\n\n"
     "INPUT: one line per lyric line: `N | section | count unit | text`. The count is the number of sung units (syllables, or mora for Japanese) already worked out and "
     "checked: treat it as a FIXED FACT. Never recount, never write a count, never argue with it. A line with a different count from its neighbours is NOT an error: "
     "the melody may give it more or fewer notes. Do not call it wrong just because it is longer or shorter.\n\n"
@@ -245,6 +246,11 @@ def _check_row(row: str, by_num: dict) -> tuple:
         sugg = re.sub(r"\[[^\[\]]*\]", "", sugg).strip()                          # a suggestion never carries a section tag
     if issue == "breath_point" and sugg and _norm(sugg) not in _norm(ln.text):
         sugg = ""                                                                 # a breath point names a word of the line; anything else is not shown as one
+    if issue == "breath_point":
+        counts = [x.count for x in by_num.values()]
+        med = statistics.median(counts) if counts else 0
+        if ln.count < 16 and ln.count < med + DIFF_MIN:
+            return None, f"Line {num}: a breath point was ignored because this line is not long next to the others ({ln.count} units)."
     return Item(int(num), issue, sev, reason, sugg, ln.section), ""
 
 

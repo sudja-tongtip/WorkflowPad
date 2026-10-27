@@ -2000,7 +2000,7 @@ def main(page: ft.Page):
             SH.apply_settings(S.song, sh, plan.changes)         # the analyzed sheet, by id; never the lyrics
         except SH.SheetError as ex:
             toast(str(ex), C["amber"]); return
-        dr["undo"] = {"song": sid, "sheet": sh, "previous": plan.previous, "name": d.name}
+        dr["undo"] = {"song": sid, "sheet": sh, "previous": plan.previous, "applied": dict(plan.changes), "name": d.name}
         dr_rebase(sid, sh, ly)                                   # the draft stays usable: it now describes the sheet as applied
         dr["fields"] = AD.default_selection(dr["snap"], dr["prop"], d)
         mark_dirty(); build_settings()
@@ -2010,15 +2010,24 @@ def main(page: ft.Page):
         u = dr["undo"]
         if not u or not S.song or S.song.id != u["song"]:
             toast("The song changed. Nothing was restored.", C["amber"]); return
+        sheet = SH.sheet_of(S.song.book, u["sheet"]) if S.song.book.active_id != u["sheet"] else None
+        if S.song.book.active_id != u["sheet"] and sheet is None:
+            toast("That sheet no longer exists. Nothing was restored.", C["amber"]); return
+        now = SH.settings_to_dict(S.song.settings) if S.song.book.active_id == u["sheet"] else dict(sheet.settings)
+        back, kept = AD.plan_restore(u["previous"], u.get("applied", u["previous"]), now)       # what the user changed after Apply is not overwritten
         try:
-            SH.apply_settings(S.song, u["sheet"], u["previous"])
+            if back:
+                SH.apply_settings(S.song, u["sheet"], back)
         except SH.SheetError as ex:
             toast(str(ex), C["amber"]); return
         dr["undo"] = None
         if S.song.book.active_id == u["sheet"]:
             dr_rebase(S.song.id, u["sheet"], lyr())
         mark_dirty(); build_settings()
-        toast("Previous settings restored.", C["green"])
+        if kept:
+            toast("Restored what Apply had changed. Kept your later changes: " + ", ".join(AD.LABELS.get(k, k) for k in kept) + ".", C["amber"])
+        else:
+            toast("Previous settings restored.", C["green"])
 
     def dr_head(t: str):
         return ft.Text(t, size=11, weight=ft.FontWeight.BOLD, color=C["text3"])
@@ -2471,7 +2480,29 @@ def main(page: ft.Page):
             await asyncio.sleep(3)
 
     # Basic mode: the AI-enhanced Music Caption (basic_caption.py). The widgets show the caption that was really sent for the open song.
-    basic_cap_view = {"song": "", "text": "", "basic": "", "src": ""}
+    basic_cap_view = {"song": "", "text": "", "basic": "", "src": "", "sheet": "", "lyr": "", "key": None, "warns": []}
+
+    def _cap_key(st) -> tuple:
+        return tuple(str(getattr(st, k, "")) for k in ("genre", "mood", "vocal", "energy", "extra_tags", "language", "bpm", "keyscale", "timesignature", "duration"))
+
+    def cap_stale_why() -> str:
+        """"" when the shown caption was written for the song, sheet, lyrics and Basic settings that are open now; else what changed."""
+        song = S.song
+        if not song or basic_cap_view["song"] != song.id:
+            return ""
+        if basic_cap_view["sheet"] != song.book.active_id:
+            return "written for another sheet"
+        if basic_cap_view["lyr"] != AC.text_hash(lyr()):
+            return "the lyrics changed since"
+        if basic_cap_view["key"] != _cap_key(song.settings):
+            return "the settings changed since"
+        return ""
+    cap_state = {"why": None}
+    def _cap_tick():
+        """Whenever the song changes: redraw the Effective Caption only when 'is it still about these lyrics / settings' changed."""
+        if cap_card.visible and cap_state.get("why") != (cap_stale_why() if (S.song and S.song.settings.style_mode != "advanced") else cap_state.get("why")):
+            render_basic_caption()
+    dr_hooks.append(_cap_tick)
     cap_open = {"v": False}
     cap_text = ft.Text("", size=12, color=C["text1"], selectable=True)
     cap_src = ft.Text("", size=10, color=C["text3"], expand=True)
@@ -2498,16 +2529,26 @@ def main(page: ft.Page):
             cap_card.visible = False
             safe_update(cap_card)
             return
+        warns = []
         if song.settings.style_mode == "advanced":
+            cap_state["why"] = ""                                   # old Basic-caption staleness must not dim the current Advanced prompt
             text, src = (song.settings.style_prompt or "").strip(), "Your Music Style Prompt"
             empty = "Write a Music Style Prompt (Advanced tab) to see what is sent."
         else:
             ok = basic_cap_view["song"] == song.id and bool(basic_cap_view["text"])
             text, src = (basic_cap_view["text"], "Written by the AI from your Basic settings and lyrics" if basic_cap_view["src"] == "ai" else "Plain Basic tags (the fallback you chose)") if ok else ("", "")
+            warns = list(basic_cap_view.get("warns") or []) if ok else []
+            why = cap_stale_why() if ok else ""
+            cap_state["why"] = why
+            if why:
+                src += f" · OUTDATED: {why} (it is what the last Generate sent)"
+            if warns:
+                src += " · " + " ".join(warns)
             empty = "Generate a song to view the effective caption."
         cap_text.value = text or empty
-        cap_text.color = C["text1"] if text else C["text3"]
+        cap_text.color = C["text1"] if text and not cap_state.get("why") else C["text3"]
         cap_src.value = src
+        cap_src.color = C["amber"] if warns else C["text3"]
         cap_copy.visible = bool(text)
         cap_card.visible = True
         safe_update(cap_card, cap_text, cap_src, cap_copy)
@@ -2529,17 +2570,19 @@ def main(page: ft.Page):
         return await fut
 
     async def basic_caption_for(cap_snap, basic_tags: str, gen: dict):
-        """The caption to generate with, or None (cancelled / the user declined the fallback). Runs the AI off the UI thread; the lyrics stay editable meanwhile."""
+        """(caption, warnings) to generate with, or None (cancelled / the user declined the fallback). Runs the AI off the UI thread; the lyrics stay editable meanwhile.
+        The warnings belong to the caption that was accepted. A fallback to plain Basic tags carries none."""
         backend, host = S.backend, S.host
         err = None
         caption = None
+        warns = []
         if not backend:
             err = BC.CaptionError("No AI backend is available.", ["No AI backend: put an LLM workflow in comfy_apis/llm or set a Grok key in Prompt Lab."])
         else:
             S.chat_busy_song = cap_snap.song_id
             try:
                 res = await asyncio.get_running_loop().run_in_executor(None, lambda: BC.compose_basic_caption(cap_snap, dr_ask_fn(backend, host)))
-                caption = res.caption
+                caption, warns = res.caption, list(res.warnings)
             except BC.CaptionError as ex:
                 err = ex
                 log.debug("basic caption refused: %s\nRAW:\n%s", ex.problems, ex.raw)
@@ -2550,8 +2593,8 @@ def main(page: ft.Page):
         if gen.get("cancel"):
             return None
         if err is not None:
-            return basic_tags if await ask_use_basic_tags(err.problems, basic_tags) else None
-        return caption
+            return (basic_tags, []) if await ask_use_basic_tags(err.problems, basic_tags) else None
+        return caption, warns
 
     async def generate():
         if not S.song:
@@ -2574,25 +2617,31 @@ def main(page: ft.Page):
         sheet = SH.active_sheet(song)
         before = SH.settings_to_dict(song.settings)               # the options exactly as the user had them (seed -1, language "auto"), before they are resolved
         song_id, title = snap.id, snap.title
+        pending_basic_caption = None                              # publish to the viewer only after the generation workflow has been prepared
         if s.style_mode != "advanced":                            # Basic: the LLM writes ONE music caption from the Basic choices and the lyrics (nothing is applied to the sheet)
             if S.chat_busy_song or S.an_busy or tp["busy"] or dr["busy"]:
                 toast("The AI is still busy with another request. Try again in a moment.", C["amber"]); return
             cap_snap = BC.make_snapshot(song_id, sheet.id, title, song.lyrics, snap.settings)
             S.gen = {"song_id": song_id, "status": "captioning", "pid": "", "cancel": False}
             update_generate_button(); rebuild_output()
-            caption = await basic_caption_for(cap_snap, tags, S.gen)
-            if S.gen is None or S.gen.get("cancel") or caption is None:
+            got = await basic_caption_for(cap_snap, tags, S.gen)
+            if S.gen is None or S.gen.get("cancel") or got is None:
                 S.gen = None
                 update_generate_button(); rebuild_output(); return
+            caption, cap_warns = got
             S.gen = None
-            basic_cap_view["song"], basic_cap_view["text"], basic_cap_view["basic"] = song_id, caption, tags
-            basic_cap_view["src"] = "basic" if caption == tags else "ai"
-            render_basic_caption()
+            pending_basic_caption = (song_id, caption, tags, sheet.id, AC.text_hash(song.lyrics), _cap_key(snap.settings), cap_warns)
             tags = caption                                        # the effective caption: what G.prepare / G.execute send and what the Take stores
         try:
             wf, used = G.prepare(AUDIO_API_DIR, snap, tags, comp.ace)
         except Exception as ex:
             toast(f"Cannot prepare the workflow: {ex}", C["red"]); return
+        if pending_basic_caption is not None:
+            sid, caption_text, original_tags, sheet_id, lyrics_hash, settings_key, cap_warns = pending_basic_caption
+            basic_cap_view.update(song=sid, text=caption_text, basic=original_tags,
+                                  src="basic" if caption_text == original_tags else "ai",
+                                  sheet=sheet_id, lyr=lyrics_hash, key=settings_key, warns=list(cap_warns))
+            render_basic_caption()
         gen_snapshot = TS.snapshot_extra(sheet.id, sheet.name, song.lyrics, before, snap.settings.language)
         if s.style_mode == "advanced" and S.song is not None and S.song.id == song_id and M.add_prompt_history(s, tags):      # the prompt that is really sent is remembered (no duplicates)
             mark_dirty(); rebuild_history()
@@ -3268,18 +3317,26 @@ def main(page: ft.Page):
     an_reask.visible = False
     LANG_NAMES = dict(LANGS)
 
-    def an_identity(backend: str) -> tuple:
+    def an_temp(kind=None):
+        """Temperature for one analysis. kind None: the shared analysis_temperature, or None when it is unset, so chat and songwriting actions stay on the chat temperature.
+        A real kind (syl, rhyme, rhythm, thes) never reads the chat temperature. The value is part of the saved-result key, so a different temperature never reuses another answer.
+        The per-kind defaults are starting points, not a tuned optimum."""
+        return LA.analysis_temperature(LC.load_cfg(), kind)
+
+    def an_identity(backend: str, kind=None) -> tuple:
         """(model identity, request parameters) that decide whether a saved answer may be reused. A local workflow is identified by its file name AND a hash of its content
-        (so another model inside the same file name is a different answer); Grok by its model name."""
+        (so another model inside the same file name is a different answer); Grok by its model name.
+        kind None keeps the chat temperature in the key. A real analysis kind records its own temperature."""
+        at = an_temp(kind)
         if backend == "grok":
-            return LC.grok_creds()["model"], "t=0.7,max=4096,effort=low"
+            return LC.grok_creds()["model"], f"t={0.7 if at is None else at},max=4096,effort=low"
         wf = LLM_DIR / backend.split(":", 1)[1]
         try:
             ident = f"{wf.name}@{LA.text_hash(wf.read_text(encoding='utf-8'))[:10]}"
         except Exception:
             ident = wf.name + "@unreadable"
         c = LC.load_cfg()
-        return ident, f"t={c.get('temperature', 0.7)},max={c.get('max_tokens', 4096)}"
+        return ident, f"t={c.get('temperature', 0.7) if at is None else at},max={c.get('max_tokens', 4096)}"
 
     def persist_analysis(sess):
         """analysis.json of this song: the last good syllable result + the manual corrections + the last good rhyme result (atomic write; nothing that failed validation is ever
@@ -3376,6 +3433,7 @@ def main(page: ft.Page):
         cur = LA.text_hash(lyr()) if S.song else ""
         has_result = bool(info and "result" in info)
         fresh = has_result and info["snap"].text_hash == cur
+        version_current = (not has_result) or info["snap"].prompt_version == LA.PROMPT_VERSION
         an_state["fresh"] = fresh if has_result else None
         err = (info or {}).get("last_error")
         err_here = bool(err and err.get("text_hash") == cur)
@@ -3385,7 +3443,9 @@ def main(page: ft.Page):
         an_err.value = (f"The last analysis failed: {err['message']}" + (" The earlier result below is kept." if has_result else "")) if err_here else ""
         an_err.visible = bool(an_err.value)
         an_warn.value = ("The lyrics changed after this analysis. Press Analyze Lyrics to update it. Your manual corrections are kept and apply again only to lines that still match."
-                         if (has_result and not fresh) else "")
+                         if (has_result and not fresh) else
+                         "These splits came from an older prompt. The count is a spoken-syllable estimate, not the number of sung notes. Press Analyze Lyrics to split again."
+                         if (has_result and not version_current) else "")
         an_warn.visible = bool(an_warn.value)
         rows, summary, status, note = [], "", "", ""
         if busy_here:
@@ -3395,7 +3455,7 @@ def main(page: ft.Page):
             effs, inactive = LA.effective_lines(res, sess.an_corr)
             rows = [_an_row(e, editable=fresh and not S.an_busy) for e in effs]
             n_manual = sum(1 for e in effs if e.manual)
-            summary = f"Total: {LA.effective_total(effs)} syllables · {len(effs)} lines" + (f" · {n_manual} edited by you" if n_manual else "")
+            summary = f"Total: {LA.effective_total(effs)} spoken units · {len(effs)} lines · not a sung-note count" + (f" · {n_manual} edited by you" if n_manual else "")
             if not busy_here:
                 status = f"{info['snap'].backend.replace('local:', 'Local: ')} · {info.get('at', '')}" + (" · saved result" if (info.get("cached") or info.get("loaded")) else "") + ("" if fresh else " · outdated")
             if fresh and inactive:
@@ -3403,8 +3463,8 @@ def main(page: ft.Page):
         elif err_here and not busy_here:
             status = "The analysis failed"
         if not rows and not busy_here and not an_err.value:
-            rows = [ft.Text("Press Analyze Lyrics: the AI splits every sung line into syllables and says which language it hears. Section tags like [Verse] are skipped. "
-                            "The count is made here from the syllables it returns, so it is an estimate: use Edit to correct a line.", size=12, color=C["text3"])]
+            rows = [ft.Text("Press Analyze Lyrics: the AI splits every sung line into spoken syllables (mora for Japanese) and says which language it hears. Section tags like [Verse] are skipped. "
+                            "The count is made here from those units. It is not the number of notes in a melody, because no audio was heard. Use Edit to correct a line.", size=12, color=C["text3"])]
         an_list.controls = rows
         an_note.value, an_note.visible = note, bool(note)
         an_summary.value, an_status.value = summary, status
@@ -3420,9 +3480,13 @@ def main(page: ft.Page):
             return
         cur = LA.text_hash(lyr())
         for info, key in ((sess.analysis, "fresh"), (sess.rhyme, "rh_fresh")):
-            if info and "result" in info and (cur == info["snap"].text_hash) != an_state.get(key):
-                render_analysis()
-                return
+            if info and "result" in info:
+                is_current = cur == info["snap"].text_hash
+                if key == "rh_fresh":
+                    is_current = is_current and info["snap"].prompt_version == LR.RHYME_PROMPT_VERSION
+                if is_current != an_state.get(key):
+                    render_analysis()
+                    return
         if sess.rhythm and "result" in sess.rhythm and rhythm_fresh(sess) != an_state.get("rt_fresh"):
             render_analysis()
             return
@@ -3514,7 +3578,7 @@ def main(page: ft.Page):
             toast("No AI backend: put an LLM workflow in comfy_apis/llm or set a Grok key in Prompt Lab", C["amber"]); return
         song_id, text, backend, host = S.song.id, lyr(), S.backend, S.host
         sess = sessions.get(song_id)
-        model, params = an_identity(backend)
+        model, params = an_identity(backend, "syl")
         snap = LA.Snapshot(song_id, text, _ui["epoch"], backend, model, params)
         lines = LA.sung_lines(text)
         at = time.strftime("%H:%M:%S")
@@ -3540,8 +3604,8 @@ def main(page: ft.Page):
         def ask(system: str, user: str) -> str:
             if backend == "grok":
                 g = LC.grok_creds()
-                return LC.ask_grok(g["key"], g["model"], system, user)
-            return LC.ask_local(host, LLM_DIR / backend.split(":", 1)[1], system, user)
+                return LC.ask_grok(g["key"], g["model"], system, user, temperature=an_temp("syl"))
+            return LC.ask_local(host, LLM_DIR / backend.split(":", 1)[1], system, user, temperature=an_temp("syl"))
 
         def progress(k: int, n: int):
             S.an_progress = f"Asking the AI… (part {k} of {n})" if n > 1 else "Asking the AI…"
@@ -3589,12 +3653,14 @@ def main(page: ft.Page):
                              style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF", shape=ft.RoundedRectangleBorder(radius=8)))
     rh_reask = ibtn(ft.Icons.REFRESH_ROUNDED, "Refresh: ask the AI again (does not use the saved result)", lambda e: page.run_task(run_rhymes, True), 18)
     rh_reask.visible = False
-    _RH_COLOR = {"end": C["accent"], "internal": C["green"], "near": C["amber"]}
+    _RH_COLOR = {"end": C["accent"], "cross": C["accent"], "internal": C["green"], "near": C["amber"]}
 
     def _rh_card(p: "LR.RhymePair", texts: list):
         a_line, a_word, b_line, b_word = (p.a_line, p.a_word, p.b_line, p.b_word) if p.a_line <= p.b_line else (p.b_line, p.b_word, p.a_line, p.a_word)
         langs = " + ".join(LANG_NAMES.get(c, c.upper()) for c in p.lang.split("+"))
-        conf_col = C["green"] if p.confidence == "high" else (C["amber"] if p.confidence == "medium" else C["red"])
+        verify = getattr(p, "verify", "unverified")
+        v_label = {"verified": "Verified", "unverified": "Unverified", "rejected": "Rejected"}.get(verify, "Unverified")
+        v_col = C["green"] if verify == "verified" else (C["red"] if verify == "rejected" else C["amber"])
 
         def side(num, word):
             return ft.Column([ft.Text(f"Line {num}: {word}", size=13, weight=ft.FontWeight.BOLD, color=C["text1"], selectable=True),
@@ -3604,11 +3670,16 @@ def main(page: ft.Page):
                     ft.Text(texts[a_line - 1] if 0 < a_line <= len(texts) else "", size=11, color=C["text3"], max_lines=2, overflow=ft.TextOverflow.ELLIPSIS)]
         else:
             body = [side(a_line, a_word), ft.Text("↕", size=14, color=_RH_COLOR[p.type]), side(b_line, b_word)]
-        body.append(ft.Row([ft.Text(LR.TYPE_TITLES[p.type], size=11, weight=ft.FontWeight.W_600, color=_RH_COLOR[p.type]), ft.Text(f"· {langs} ·", size=11, color=C["text3"]),
-                            ft.Text(p.confidence, size=11, weight=ft.FontWeight.W_600, color=conf_col)], spacing=4))
+        body.append(ft.Row([ft.Text(LR.TYPE_TITLES.get(p.type, p.type), size=11, weight=ft.FontWeight.W_600, color=_RH_COLOR.get(p.type, C["text2"])),
+                            ft.Text(f"· {langs} ·", size=11, color=C["text3"]),
+                            ft.Text(v_label, size=11, weight=ft.FontWeight.W_600, color=v_col),
+                            ft.Text(f"AI: {p.confidence}", size=11, color=C["text3"])], spacing=4))
+        if getattr(p, "verify_note", ""):
+            body.append(ft.Text(p.verify_note, size=11, color=C["text2"], selectable=True))
         if p.reason:
-            body.append(ft.Text("Explanation: " + p.reason, size=11, color=C["text2"], selectable=True))
-        return ft.Container(ft.Column(body, spacing=2), bgcolor=C["panel2"], border_radius=8, padding=po(8, 6, 8, 6), border=ft.Border.all(1, C["amber"]) if p.confidence in ("low", "uncertain") else None)
+            body.append(ft.Text("AI explanation: " + p.reason, size=11, color=C["text2"], selectable=True))
+        return ft.Container(ft.Column(body, spacing=2), bgcolor=C["panel2"], border_radius=8, padding=po(8, 6, 8, 6),
+                            border=ft.Border.all(1, C["amber"]) if verify != "verified" else None)
 
     def render_rhymes():
         """Show the rhyme analysis of the ACTIVE song (read-only: nothing here touches the lyrics field, its selection or its scroll)."""
@@ -3617,7 +3688,9 @@ def main(page: ft.Page):
         busy_here = bool(S.song) and S.an_busy == S.song.id and S.an_kind == "rhyme"
         cur = LA.text_hash(lyr()) if S.song else ""
         has_result = bool(info and "result" in info)
-        fresh = has_result and info["snap"].text_hash == cur
+        same_lyrics = has_result and info["snap"].text_hash == cur
+        version_current = has_result and info["snap"].prompt_version == LR.RHYME_PROMPT_VERSION
+        fresh = same_lyrics and version_current
         an_state["rh_fresh"] = fresh if has_result else None
         err = (info or {}).get("last_error")
         err_here = bool(err and err.get("text_hash") == cur)
@@ -3626,18 +3699,26 @@ def main(page: ft.Page):
         rh_reask.visible, rh_reask.disabled = has_result, rh_btn.disabled
         rh_err.value = (f"The last rhyme analysis failed: {err['message']}" + (" The earlier result below is kept." if has_result else "")) if err_here else ""
         rh_err.visible = bool(rh_err.value)
-        rh_warn.value = "The lyrics changed after this analysis. Press Analyze Rhymes to update it. The pairs below belong to the old lyrics." if (has_result and not fresh) else ""
+        rh_warn.value = ("The lyrics changed after this analysis. Press Analyze Rhymes to update it. The pairs below belong to the old lyrics."
+                         if has_result and not same_lyrics else
+                         "These pairs came from an older prompt. Thai sounds were checked again on this machine. Press Analyze Rhymes to search again with the current rules."
+                         if has_result and not version_current else "")
         rh_warn.visible = bool(rh_warn.value)
         rows, summary, status, note = [], "", "", ""
         if busy_here:
             status = S.an_progress or "Asking the AI…"
         if has_result:
             res: LR.RhymeResult = info["result"]
-            for t, title in (("end", "END RHYMES"), ("internal", "INTERNAL RHYMES"), ("near", "NEAR RHYMES")):
+            for t, title in (("end", "END RHYMES"), ("cross", "CROSS-LINE RHYMES"), ("internal", "INTERNAL RHYMES"), ("near", "NEAR RHYMES")):
                 rows.append(ft.Text(title, size=11, weight=ft.FontWeight.BOLD, color=_RH_COLOR[t]))
                 ps = res.of_type(t)
                 rows += [_rh_card(p, res.lines) for p in ps] if ps else [ft.Text("No matches found", size=11, color=C["text3"])]
-            summary = (f"{len(res.pairs)} rhyme pair(s) found" if res.pairs else "The AI found no rhymes") + " · an AI judgement of the sound, not a proof"
+            if res.rejected:
+                rows.append(ft.Text("NOT A RHYME", size=11, weight=ft.FontWeight.BOLD, color=C["red"]))
+                rows += [_rh_card(p, res.lines) for p in res.rejected]
+            n_ver = sum(1 for p in res.pairs if p.verify == "verified")
+            n_un = sum(1 for p in res.pairs if p.verify != "verified")
+            summary = f"{n_ver} verified · {n_un} unverified" + (f" · {len(res.rejected)} rejected" if res.rejected else "") + " · Verified is a Thai spelling check, not the AI confidence"
             if not busy_here:
                 status = f"{info['snap'].backend.replace('local:', 'Local: ')} · {info.get('at', '')}" + (" · saved result" if (info.get("cached") or info.get("loaded")) else "") + ("" if fresh else " · outdated")
             if res.ignored:
@@ -3645,8 +3726,8 @@ def main(page: ft.Page):
         elif err_here and not busy_here:
             status = "The rhyme analysis failed"
         if not rows and not busy_here and not rh_err.value:
-            rows = [ft.Text("Press Analyze Rhymes: the AI looks for end, internal and near rhymes by how the words SOUND, in any language. Not every line rhymes, and nothing is invented to "
-                            "fill the list. This only reads your lyrics; it never changes them.", size=12, color=C["text3"])]
+            rows = [ft.Text("Press Analyze Rhymes: the AI looks for end, cross-line, internal and near rhymes. For Thai, Python then checks the vowel and the final consonant. "
+                            "Verified means that check agreed. Unverified means the sound could not be read. Rejected means the sounds do not match. The AI confidence is shown separately.", size=12, color=C["text3"])]
         rh_list.controls = rows
         rh_note.value, rh_note.visible = note, bool(note)
         rh_summary.value, rh_status.value = summary, status
@@ -3664,7 +3745,7 @@ def main(page: ft.Page):
             toast("No AI backend: put an LLM workflow in comfy_apis/llm or set a Grok key in Prompt Lab", C["amber"]); return
         song_id, text, backend, host = S.song.id, lyr(), S.backend, S.host
         sess = sessions.get(song_id)
-        model, params = an_identity(backend)
+        model, params = an_identity(backend, "rhyme")
         snap = LA.Snapshot(song_id, text, _ui["epoch"], backend, model, f"{params},w={LR.WINDOW_LINES}/{LR.WINDOW_OVERLAP}", LR.RHYME_PROMPT_VERSION, kind=LR.KIND)
         lines = LA.sung_lines(text)
         at = time.strftime("%H:%M:%S")
@@ -3690,8 +3771,8 @@ def main(page: ft.Page):
         def ask(system: str, user: str) -> str:
             if backend == "grok":
                 g = LC.grok_creds()
-                return LC.ask_grok(g["key"], g["model"], system, user)
-            return LC.ask_local(host, LLM_DIR / backend.split(":", 1)[1], system, user)        # a fresh session every call: never the Chat's or the syllable analysis' history
+                return LC.ask_grok(g["key"], g["model"], system, user, temperature=an_temp("rhyme"))
+            return LC.ask_local(host, LLM_DIR / backend.split(":", 1)[1], system, user, temperature=an_temp("rhyme"))        # a fresh session every call: never the Chat's or the syllable analysis' history
 
         def progress(k: int, n: int):
             S.an_progress = f"Asking the AI… (part {k} of {n})" if n > 1 else "Asking the AI…"
@@ -3749,6 +3830,8 @@ def main(page: ft.Page):
     def rhythm_fresh(sess) -> bool:
         info = sess.rhythm if sess else None
         if not (info and "result" in info and info["snap"].text_hash == LA.text_hash(lyr())):
+            return False
+        if info["snap"].prompt_version != RT.RHYTHM_PROMPT_VERSION:
             return False
         rl = rhythm_lines(sess)
         return rl is not None and RT.counts_hash(rl) == info["result"].counts_hash
@@ -3812,22 +3895,26 @@ def main(page: ft.Page):
         err = (info or {}).get("last_error")
         err_here = bool(err and err.get("text_hash") == cur and err.get("counts_hash") == (RT.counts_hash(rl) if rl else None))
         rt_ring.visible = busy_here
-        rt_btn.disabled = (not S.song) or bool(S.an_busy) or rl is None
+        rt_btn.disabled = (not S.song) or bool(S.an_busy)                  # without syllables the button analyzes them first (one click)
         rt_reask.visible, rt_reask.disabled = has_result, rt_btn.disabled
         rt_err.value = (f"The last rhythm analysis failed: {err['message']}" + (" The earlier result below is kept." if has_result else "")) if err_here else ""
         rt_err.visible = bool(rt_err.value)
         why = ""
         if has_result and not fresh:
             same_text = info["snap"].text_hash == cur
-            why = ("The syllable counts changed after this analysis (the lyrics did not). " if same_text else "The lyrics changed after this analysis. ") + \
-                  "Press Analyze Rhythm to update it. The AI remarks below belong to the older version."
+            counts_ok = rl is not None and RT.counts_hash(rl) == info["result"].counts_hash
+            if same_text and counts_ok and info["snap"].prompt_version != RT.RHYTHM_PROMPT_VERSION:
+                why = "These remarks came from an older prompt. Press Analyze Rhythm to judge again. They do not describe a melody or a BPM."
+            else:
+                why = ("The syllable counts changed after this analysis (the lyrics did not). " if same_text else "The lyrics changed after this analysis. ") + \
+                      "Press Analyze Rhythm to update it. The AI remarks below belong to the older version."
         rt_warn.value, rt_warn.visible = why, bool(why)
         rows, status, note, summary = [], "", "", ""
         if busy_here:
             status = S.an_progress or "Asking the AI…"
         if rl is None:
-            rows = [ft.Text("Analyze Syllables First: the rhythm comparison uses the syllable counts (and your manual corrections). Open the Syllables tab and press Analyze Lyrics. "
-                            "Nothing is counted again by the AI here.", size=12, color=C["amber"])]
+            rows = [ft.Text("Press Analyze Rhythm: the syllables of these lyrics are analyzed first (one click), then the rhythm. The comparison uses the syllable counts and your manual corrections; "
+                            "the AI never counts here, and it does not invent a melody, a groove, or a BPM.", size=12, color=C["amber"])]
             if has_result:
                 rows.append(ft.Text("The earlier rhythm result is kept and shown again once the syllables match these lyrics.", size=11, color=C["text3"]))
         else:
@@ -3865,10 +3952,16 @@ def main(page: ft.Page):
         song_id, text, backend, host = S.song.id, lyr(), S.backend, S.host
         sess = sessions.get(song_id)
         rl = rhythm_lines(sess)
-        if rl is None:
-            toast("Analyze Syllables First: the rhythm analysis needs the syllable counts of these lyrics.", C["amber"]); return
+        if rl is None:                                                  # no syllables for exactly these lyrics: analyze them first, then continue (one click)
+            await run_analysis(False)                                   # reuses the saved result when it exists; refuses by itself while another request runs
+            if S.an_busy or not S.song or S.song.id != song_id or lyr() != text:
+                return                                                  # something else started, or the song / lyrics changed meanwhile: nothing more is started
+            sess = sessions.get(song_id)
+            rl = rhythm_lines(sess)
+            if rl is None:
+                toast("The syllables could not be analyzed, so the rhythm was not started. The reason is shown in the Syllables tab.", C["amber"]); return
         ch = RT.counts_hash(rl)
-        model, params = an_identity(backend)
+        model, params = an_identity(backend, "rhythm")
         snap = LA.Snapshot(song_id, text, _ui["epoch"], backend, model, f"{params},w={RT.WINDOW_LINES}/{RT.WINDOW_OVERLAP},c={ch[:16]}", RT.RHYTHM_PROMPT_VERSION, kind=RT.KIND)
         at = time.strftime("%H:%M:%S")
 
@@ -3891,8 +3984,8 @@ def main(page: ft.Page):
         def ask(system: str, user: str) -> str:
             if backend == "grok":
                 g = LC.grok_creds()
-                return LC.ask_grok(g["key"], g["model"], system, user)
-            return LC.ask_local(host, LLM_DIR / backend.split(":", 1)[1], system, user)        # a fresh session every call: never the Chat's, syllable or rhyme history
+                return LC.ask_grok(g["key"], g["model"], system, user, temperature=an_temp("rhythm"))
+            return LC.ask_local(host, LLM_DIR / backend.split(":", 1)[1], system, user, temperature=an_temp("rhythm"))        # a fresh session every call: never the Chat's, syllable or rhyme history
 
         def progress(k: int, n: int):
             S.an_progress = f"Asking the AI… (part {k} of {n})" if n > 1 else "Asking the AI…"
@@ -3971,6 +4064,8 @@ def main(page: ft.Page):
         info = sess.thes if sess else None
         if not (info and "result" in info and info["snap"].text_hash == LA.text_hash(lyr())):
             return False
+        if info["snap"].prompt_version != TH.THESAURUS_PROMPT_VERSION:
+            return False
         r = info["result"]
         v = TH.validate_selection(lyr(), r.start, r.end)
         return isinstance(v, TH.Selection) and v.phrase == r.phrase and TH.build_context(lyr(), v, th_line_count(sess, v)).hash == r.ctx_hash
@@ -4022,9 +4117,13 @@ def main(page: ft.Page):
                        ft.IconButton(ft.Icons.FIND_REPLACE_ROUNDED, icon_size=20, icon_color="#FFFFFF", bgcolor=C["accent"], width=34, height=34, padding=0, tooltip="Replace the selected phrase with this",
                                      on_click=lambda e, i=it: th_replace(i))],
                       spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+        raw_diff = (it.difference or "").strip()
+        shifted = TH.meaning_shifted(raw_diff)
+        shown_diff = raw_diff.split(":", 1)[1].strip() if (shifted or raw_diff.lower().startswith("same:")) else raw_diff
         body = [head, ft.Row([ft.Text(TH.TYPE_TITLES[it.type], size=11, weight=ft.FontWeight.W_600, color=C["accent"]), ft.Text("· AI Suggestion", size=11, color=C["amber"])], spacing=4),
                 ft.Text(it.explanation, size=11, color=C["text2"], selectable=True),
-                ft.Text("Meaning difference: " + it.difference, size=11, color=C["text2"], selectable=True)]
+                ft.Text(("Meaning changes: " if shifted else "Meaning difference: ") + (shown_diff or raw_diff), size=11,
+                        color=C["amber"] if shifted else C["text2"], selectable=True)]
         if it.singability:
             body.append(ft.Text("Singability: " + it.singability, size=11, color=C["text3"], selectable=True))
         return ft.Container(ft.Column(body, spacing=2), bgcolor=C["panel2"], border_radius=8, padding=po(8, 6, 8, 6))
@@ -4045,7 +4144,17 @@ def main(page: ft.Page):
         th_reask.visible = has_result
         th_err.value = (f"The last attempt failed: {err['message']}" + (" The earlier suggestions below are kept." if has_result else "")) if err_here else ""
         th_err.visible = bool(th_err.value)
-        th_warn.value = ("The lyrics, or the syllable count of this line, changed after these suggestions were made. They belong to the older version." if (has_result and not fresh) else "")
+        if has_result and not fresh:
+            r = info["result"]
+            same_text = info["snap"].text_hash == cur
+            v = TH.validate_selection(lyr(), r.start, r.end) if same_text else None
+            same_phrase = isinstance(v, TH.Selection) and v.phrase == r.phrase
+            if same_phrase and info["snap"].prompt_version != TH.THESAURUS_PROMPT_VERSION:
+                th_warn.value = "These suggestions came from an older prompt. Press Suggest Alternatives to ask again."
+            else:
+                th_warn.value = "The lyrics, or the syllable count of this line, changed after these suggestions were made. They belong to the older version."
+        else:
+            th_warn.value = ""
         th_warn.visible = bool(th_warn.value)
         rows, status = [], ""
         if busy_here:
@@ -4086,7 +4195,7 @@ def main(page: ft.Page):
         if sel is None:
             toast(msg, C["amber"]); return
         ctx = TH.build_context(text, sel, th_line_count(sess, sel))
-        model, params = an_identity(backend)
+        model, params = an_identity(backend, "thes")
         snap = LA.Snapshot(song_id, text, _ui["epoch"], backend, model, f"{params},s={song_id},r={sel.start}-{sel.end},p={sel.phrase_hash},x={ctx.hash}", TH.THESAURUS_PROMPT_VERSION, kind=TH.KIND)
         at = time.strftime("%H:%M:%S")
 
@@ -4109,8 +4218,8 @@ def main(page: ft.Page):
         def ask(system: str, user: str) -> str:
             if backend == "grok":
                 g = LC.grok_creds()
-                return LC.ask_grok(g["key"], g["model"], system, user)
-            return LC.ask_local(host, LLM_DIR / backend.split(":", 1)[1], system, user)        # a fresh session every call: never the Chat's or another analysis' history
+                return LC.ask_grok(g["key"], g["model"], system, user, temperature=an_temp("thes"))
+            return LC.ask_local(host, LLM_DIR / backend.split(":", 1)[1], system, user, temperature=an_temp("thes"))        # a fresh session every call: never the Chat's or another analysis' history
         result, error = None, ""
         try:
             result = await loop.run_in_executor(None, lambda: TH.suggest(sel, ctx, ask))

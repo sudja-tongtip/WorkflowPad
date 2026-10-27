@@ -17,7 +17,7 @@ from .compiler import TAG_LINE
 from .lyric_analysis import AnalysisError, SEP_END, _is_sep, _norm
 from .lyric_rhythm import section_names
 
-THESAURUS_PROMPT_VERSION = "thesaurus-v1"
+THESAURUS_PROMPT_VERSION = "thesaurus-v2"
 KIND = "thesaurus"
 SEP_SUGGESTIONS = "=========== SUGGESTIONS ==========="
 OPEN, CLOSE = "⟦", "⟧"                          # mark the selected phrase inside its line (a word that occurs twice is told apart by position)
@@ -27,6 +27,11 @@ CONTEXT_AROUND = 4                              # lines of the same section kept
 MAX_ITEMS = 8
 TYPES = ("similar_meaning", "emotional", "singable", "poetic", "alternative")
 TYPE_TITLES = {"similar_meaning": "Similar Meaning", "emotional": "Emotional", "singable": "Singable", "poetic": "Poetic", "alternative": "Alternative"}
+
+
+def meaning_shifted(difference: str) -> bool:
+    """True when the suggestion itself says the meaning changes. A row without this prefix is left unmarked."""
+    return (difference or "").lstrip().lower().startswith("changed:")
 _INLINE_TAG = re.compile(r"\[[^\[\]\n]*\]")
 
 SYSTEM_PROMPT = (
@@ -42,6 +47,8 @@ SYSTEM_PROMPT = (
     "Never pad the list with weak or invented words.\n"
     "- Keep the narrator's point of view, the tense, the person (I / you / he) and the key meaning. Never add new names, people or events. "
     "If a suggestion shifts the meaning, the mood or the person, say so in the meaning-difference field: never present it as an exact synonym.\n"
+    "- Thai suggestions must be natural Thai a singer would say in that line. Do not offer a stiff dictionary gloss.\n"
+    "- Start the meaning-difference field with `same:` when the meaning stays, or `changed:` when the mood, the person or the meaning shifts, then one short sentence.\n"
     "- Words must be real words or natural phrases of that language. Never make up words.\n"
     "- Never repeat the original phrase as a suggestion.\n\n"
     "TYPES (first column; a label for the songwriter, not a claim that the suggestion is better)\n"
@@ -60,9 +67,9 @@ SYSTEM_PROMPT = (
     "EXAMPLE\n"
     "Input:\nSECTION: Verse 1\nLYRICS:\n<<<\nฝนตกทั้งคืน\nฉันนั่ง⟦เหงาใจ⟧คนเดียว\n>>>\nSELECTED PHRASE: เหงาใจ\n"
     "Output:\n" + SEP_SUGGESTIONS + "\n"
-    "similar_meaning | ว้าเหว่ | ยังบอกความเดียวดายในใจเหมือนเดิม | ใกล้เคียงมาก เป็นคำที่เป็นทางการกว่าเล็กน้อย | สองพยางค์เท่าเดิม ออกเสียงง่าย\n"
-    "emotional | ใจสลาย | ให้น้ำหนักความเศร้าที่หนักกว่าความเหงา | ความหมายเปลี่ยนจากเหงาเป็นเสียใจมาก | -\n"
-    "alternative | เดียวดาย | เน้นการอยู่ตัวคนเดียวมากกว่าความรู้สึก | ซ้ำกับคำว่า คนเดียว ในบรรทัดเดียวกัน | -\n" + SEP_END
+    "similar_meaning | ว้าเหว่ | ยังบอกความเดียวดายในใจเหมือนเดิม | same: ใกล้เคียงมาก เป็นคำที่เป็นทางการกว่าเล็กน้อย | สองพยางค์เท่าเดิม ออกเสียงง่าย\n"
+    "emotional | ใจสลาย | ให้น้ำหนักความเศร้าที่หนักกว่าความเหงา | changed: ความหมายเปลี่ยนจากเหงาเป็นเสียใจมาก | -\n"
+    "alternative | เดียวดาย | เน้นการอยู่ตัวคนเดียวมากกว่าความรู้สึก | changed: ซ้ำกับคำว่า คนเดียว ในบรรทัดเดียวกัน | -\n" + SEP_END
 )
 
 

@@ -167,7 +167,7 @@ def _num(token: str, letter: str) -> "int | None":
 
 # ── hints vocabulary ─────────────────────────────────────────────────────────────────────────────────────────
 _SYN = {"whisper": "whispered", "whispered vocals": "whispered", "whispered vocal": "whispered", "breathy": "breathy vocals", "breathy vocal": "breathy vocals",
-        "raspy": "raspy vocals", "raspy vocal": "raspy vocals", "belting": "powerful belting", "powerful vocals": "powerful belting", "soft vocal": "soft vocals", "spoken": "spoken word",
+        "raspy": "raspy vocals", "raspy vocal": "raspy vocals", "belting": "powerful belting", "soft vocal": "soft vocals", "spoken": "spoken word",
         "falsetto vocals": "falsetto", "choir": "choir vocals", "harmony": "harmonies", "adlib": "ad-lib", "ad lib": "ad-lib", "fade-out": "fade out", "fadeout": "fade out"}
 
 

@@ -20,6 +20,7 @@ from pathlib import Path
 
 from . import ace_step_knowledge as AK
 from . import comfy_audio as CA
+from .songwriting_craft import SONGWRITING_CRAFT
 
 APPDATA = Path(os.environ.get("APPDATA", str(Path.home())))
 LLM_CFG_FILE = APPDATA / "WorkflowPad" / "llm_chat_config.json"          # shared with Prompt Lab (read only here)
@@ -30,6 +31,7 @@ SEP = {"REPLY": "=========== REPLY ===========", "PROPOSAL": "=========== PROPOS
 SYSTEM_PROMPT = (
     "You are a songwriting assistant for ACE-Step 1.5, an AI model that sings the lyrics it is given.\n"
     "Reply in the language the user writes in. Lyrics stay in the language of the song.\n\n"
+    + SONGWRITING_CRAFT + "\n\n"
     "LYRICS FORMAT (ACE-Step):\n"
     "- Section tags on their own line: [Intro] [Verse 1] [Pre-Chorus] [Chorus] [Bridge] [Outro] [Instrumental] [Guitar Solo]. A style may follow a dash: [Chorus - powerful belting].\n"
     "- Sung lines are plain text, one phrase per line. '...' is a pause. (words in parentheses) are backing vocals.\n"
@@ -126,7 +128,7 @@ def list_local_workflows(llm_dir: Path) -> list[str]:
     return out
 
 
-def ask_local(host: str, wf_path: Path, system: str, user_text: str, timeout_s: float = 300.0) -> str:
+def ask_local(host: str, wf_path: Path, system: str, user_text: str, timeout_s: float = 300.0, temperature: float | None = None) -> str:
     """Run the local LLM workflow once with a fresh session (the app sends everything the model needs; no server-side history is mixed in)."""
     wf = json.loads(wf_path.read_text(encoding="utf-8"))
     cfg = load_cfg()
@@ -141,7 +143,7 @@ def ask_local(host: str, wf_path: Path, system: str, user_text: str, timeout_s: 
             i["reset_session"] = True
             i["history_dir"] = cfg.get("history_dir", "user/llm_session")
             i["max_tokens"] = int(cfg.get("max_tokens", 4096))
-            i["temperature"] = float(cfg.get("temperature", 0.7))
+            i["temperature"] = float(cfg.get("temperature", 0.7)) if temperature is None else float(temperature)      # None: the shared setting, as always
     if not found:
         raise RuntimeError("This workflow has no LLMSessionChatNode")
     pid = CA.submit(host, wf)
@@ -164,11 +166,11 @@ def ask_local(host: str, wf_path: Path, system: str, user_text: str, timeout_s: 
     raise RuntimeError("The LLM did not answer in time")
 
 
-def ask_grok(key: str, model: str, system: str, user_text: str, max_tokens: int = 4096) -> str:
+def ask_grok(key: str, model: str, system: str, user_text: str, max_tokens: int = 4096, temperature: float | None = None) -> str:
     if not key:
         raise RuntimeError("Grok API key is not set (set it in Prompt Lab or Story Generator)")
     body = {"model": model, "messages": [{"role": "system", "content": system}, {"role": "user", "content": user_text}],
-            "max_tokens": max_tokens, "temperature": 0.7, "reasoning_effort": "low"}
+            "max_tokens": max_tokens, "temperature": 0.7 if temperature is None else float(temperature), "reasoning_effort": "low"}
 
     def post(b):
         req = urllib.request.Request("https://api.x.ai/v1/chat/completions", data=json.dumps(b).encode(), method="POST",

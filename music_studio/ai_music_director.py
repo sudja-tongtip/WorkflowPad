@@ -17,6 +17,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from . import basic_caption as BC
 from . import llm_chat as LC
 from . import music_options as MO
 from . import template_arrange as TA
@@ -42,6 +43,11 @@ RULES
 - The user owns the lyrics. NEVER rewrite, translate, shorten, or extend them. Never copy lyric lines into a caption.
 - Lyrics may be Thai, English or mixed. Read them in their own language. Do not assume a language; if the vocal language setting is "auto", leave it auto unless the lyrics clearly need otherwise.
 - Respect what the user has already chosen (genre, vocal, style prompt, mood, energy). The three directions may differ in arrangement, vocal delivery, instrumentation and production WITHOUT changing the genre the user chose.
+- The three directions must differ in at least two of these: instrumentation, groove, vocal delivery, arrangement, production. A different name is not enough.
+- BPM, key and duration are proposals. They are not a measurement of a melody you have not heard.
+- High energy means the track feels driving. It is not belting, soaring, falsetto, or a high singing register.
+- Do not turn rain, night, or fire in the lyrics into sound effects unless the user asked for that.
+- For Thai lyrics, describe natural pronunciation, a comfortable range, breath, and controlled peaks, and put impact in the arrangement. Use belting, soaring, falsetto, or operatic only when the user asked. One direction may still be a powerful vocal when that is its point. Do not make all three mid-range, and do not make all three belted.
 - A caption is a rich musical description in flowing sentences, not a keyword list. Cover: genre identity, mood, vocal character, instrumentation, groove and rhythm, how the arrangement develops across the song, contrast between sections, and production texture.
 - Describe how the song should SOUND, not how the AI should behave. Never write instructions to the model such as "you must" or "make sure".
 - Do not put BPM, key or time signature in a caption; they go in the metadata.
@@ -300,6 +306,19 @@ def _check_values(raw: dict) -> tuple:
     return values, problems, notes
 
 
+def caption_overlap_warning(captions: list) -> str:
+    """A soft note when the three captions are mostly the same words. Identical captions are already rejected. This does not reject a proposal."""
+    toks = [set(re.findall(r"[a-z0-9]+", (c or "").lower())) for c in captions]
+    worst = 0.0
+    for i, a in enumerate(toks):
+        for b in toks[i + 1:]:
+            if a and b:
+                worst = max(worst, len(a & b) / len(a | b))
+    if worst >= 0.72:
+        return "These captions share a lot of the same words. They may not differ enough in arrangement, instrumentation, or production."
+    return ""
+
+
 def _caption_warnings(caption: str, lyrics: str) -> list:
     out = []
     if re.search(r"\b\d{2,3}\s*bpm\b|\b[A-G][#b]?\s*(?:major|minor)\b|\b[2346]/[48]\b", caption, re.IGNORECASE):
@@ -367,6 +386,9 @@ def parse(raw: str, lyrics: str = "") -> Proposal:
         warns.append("Text after END was ignored.")
     if blocks.get("_no_end"):
         warns.append("The AI did not write the END marker; every required block was present, so the answer is shown, but the last lines may be cut off.")
+    overlap = caption_overlap_warning([d.caption for d in directions])
+    if overlap:
+        warns.append(overlap)
     return Proposal(analysis, directions, meta, meta_problems, cues, warns, raw)
 
 
@@ -374,7 +396,13 @@ def analyze(ask, snap: Snapshot) -> Proposal:
     """One question, one answer, no automatic retry. Raises DirectorError (carrying `raw`) when the answer cannot be used."""
     system, user = build_messages(snap)
     raw = ask(system, user)
-    return parse(raw, snap.lyrics)
+    prop = parse(raw, snap.lyrics)
+    asked = (snap.setting("vocal", ""), snap.setting("energy", ""), snap.setting("extra_tags", ""), snap.setting("style_prompt", ""))
+    for d in prop.directions:
+        note = BC.vocal_range_warning(d.caption, *asked)
+        if note and note not in d.warnings:
+            d.warnings.append(note)
+    return prop
 
 
 # ── settings: user-selected / AI-suggested / effective ───────────────────────────────────────────────────────
@@ -431,6 +459,18 @@ class ApplyPlan:
     changes: dict            # SongSettings field -> new value
     previous: dict           # the same fields -> the value they had (for Restore)
     caption: str
+
+
+def plan_restore(previous: dict, applied: dict, current: dict) -> tuple:
+    """(fields to put back, fields kept). A field is put back only while the sheet still holds exactly what Apply wrote: a value the user changed after Apply is theirs and is never
+    overwritten by Restore. `previous` = the values before Apply, `applied` = what Apply wrote, `current` = the sheet's settings now."""
+    back, kept = {}, []
+    for k, old in previous.items():
+        if current.get(k) == applied.get(k):
+            back[k] = old
+        else:
+            kept.append(k)
+    return back, kept
 
 
 def plan_apply(snap: Snapshot, prop: Proposal, d: Direction, selected: set, song_id: str, sheet_id: str, lyrics: str, current: dict) -> ApplyPlan:
