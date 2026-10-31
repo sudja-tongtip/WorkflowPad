@@ -1,0 +1,1889 @@
+{
+  "_meta": {
+    "lang": "th",
+    "note": "UI texts only; lyrics, captions and AI prompts are never translated"
+  },
+  "strings": {
+    "Song title": "ชื่อเพลง",
+    "Edit the cues of this [tag] (Section Options)": "แก้ cue ของ [แท็ก] นี้ (Section Options)",
+    "Undo": "ย้อนกลับ",
+    "Redo": "ทำซ้ำ",
+    "Copy / export lyrics": "คัดลอก / ส่งออกเนื้อเพลง",
+    "Hold Note: select the word first (or put the cursor right after it).": "Hold Note: เลือกคำก่อน (หรือวางเคอร์เซอร์ไว้หลังคำนั้น)",
+    "Search songs...": "ค้นหาเพลง...",
+    "Describe the music style, for example: A cinematic alternative rock ballad with emotional male vocals, atmospheric guitars, powerful drums and a dramatic final chorus.": "อธิบายสไตล์ดนตรี เช่น: A cinematic alternative rock ballad with emotional male vocals, atmospheric guitars, powerful drums and a dramatic final chorus. (เขียนเป็นภาษาอังกฤษ)",
+    "Prompt History": "ประวัติ Prompt",
+    "Generate": "สร้างเพลง",
+    "Output": "ผลลัพธ์",
+    "Copy the caption": "คัดลอก caption",
+    "Ask the AI to write or change lyrics...": "ให้ AI เขียนหรือแก้เนื้อเพลง...",
+    "ComfyUI not connected": "ไม่ได้เชื่อมต่อ ComfyUI",
+    "Analyze Lyrics": "วิเคราะห์พยางค์",
+    "Ask the AI again (does not use the saved result)": "ถาม AI ใหม่ (ไม่ใช้ผลที่บันทึกไว้)",
+    "Analyze Rhymes": "วิเคราะห์สัมผัส",
+    "Refresh: ask the AI again (does not use the saved result)": "รีเฟรช: ถาม AI ใหม่ (ไม่ใช้ผลที่บันทึกไว้)",
+    "Analyze Rhythm": "วิเคราะห์จังหวะ",
+    "Suggest Alternatives": "แนะนำคำทางเลือก",
+    "Refresh: ask the AI again for the selected phrase (does not use the saved result)": "รีเฟรช: ถาม AI ใหม่สำหรับวลีที่เลือก (ไม่ใช้ผลที่บันทึกไว้)",
+    "Open the Lyrics Tools (Right Panel)": "เปิด Lyrics Tools (แผงขวา)",
+    "All Tools": "เครื่องมือทั้งหมด",
+    "Every tool: sections, instrumental parts, vocal delivery, backing vocals, timing and your own tools": "ทุกเครื่องมือ: ท่อนเพลง ส่วนดนตรีล้วน การร้อง เสียงประสาน จังหวะ และเครื่องมือของคุณเอง",
+    "Pick a built-in or your own song structure. With no sung lyrics it inserts the section tags; with lyrics the AI arranges YOUR lines into it (you preview first).": "เลือกโครงสร้างเพลงสำเร็จรูปหรือของคุณเอง ถ้าไม่มีเนื้อร้อง จะใส่แท็กท่อนให้ ถ้ามีเนื้อ AI จะจัดบรรทัดของคุณเข้าโครงสร้าง (ดูตัวอย่างก่อน)",
+    "No Section Selected": "ยังไม่ได้เลือกท่อน",
+    "Cues, type and BPM are only a test until you press Apply to Section.": "Cue, type และ BPM เป็นแค่การทดลอง จนกว่าจะกด Apply to Section",
+    "Apply": "นำไปใช้",
+    "Apply to Section: write the type and cues of the tag into the lyrics (one undo step)": "Apply to Section: เขียน type และ cue ของแท็กลงในเนื้อเพลง (ย้อนกลับได้ 1 ขั้น)",
+    "Delete the selected preview": "ลบตัวอย่างที่เลือก",
+    "Collapse Workspace": "ย่อ Workspace",
+    "Insert Structure": "แทรกโครงสร้าง",
+    "Duplicate to Edit": "ทำสำเนาเพื่อแก้ไข",
+    "Play Selected Take": "เล่นเทคที่เลือก",
+    "+ Add at Playback Position": "+ เพิ่มที่ตำแหน่งที่กำลังเล่น",
+    "+ Add Manually": "+ เพิ่มเอง",
+    "Back": "กลับ",
+    "Tag text": "ข้อความแท็ก",
+    "Remove tag": "ลบแท็ก",
+    "Sheet name": "ชื่อชีต",
+    "New sheet / reopen a closed sheet": "ชีตใหม่ / เปิดชีตที่ปิดไว้อีกครั้ง",
+    "Title of the copy": "ชื่อของสำเนา",
+    "Preview this direction (nothing is changed)": "ดูทิศทางนี้ (ยังไม่เปลี่ยนอะไร)",
+    "Model": "โมเดล",
+    "Genre": "แนวเพลง",
+    "Mood": "อารมณ์",
+    "Vocal Style": "สไตล์เสียงร้อง",
+    "Energy": "พลัง",
+    "Language": "ภาษา",
+    "Key": "คีย์",
+    "Time": "จังหวะ",
+    "Play / pause": "เล่น / หยุดชั่วคราว",
+    "Favorite": "รายการโปรด",
+    "Target Language": "ภาษาปลายทาง",
+    "Section tags such as [Verse] and [Chorus - powerful] stay as they are. The result appears in the Chat; nothing changes until you press Apply.": "แท็กท่อนเช่น [Verse] และ [Chorus - powerful] จะคงไว้ตามเดิม ผลลัพธ์แสดงใน Chat และยังไม่เปลี่ยนอะไรจนกว่าจะกดนำไปใช้",
+    "Nothing playing": "ไม่ได้เล่นอยู่",
+    "Previous": "ก่อนหน้า",
+    "Next": "ถัดไป",
+    "Stop": "หยุด",
+    "More Options": "ตัวเลือกเพิ่มเติม",
+    "ComfyUI address": "ที่อยู่ ComfyUI",
+    "Manual Segmentation  (separate units with | )": "แบ่งพยางค์เอง  (คั่นหน่วยด้วย | )",
+    "Count Override  (empty = Auto)": "กำหนดจำนวนเอง  (ว่าง = อัตโนมัติ)",
+    "Auto": "อัตโนมัติ",
+    "e.g. Modern K-Pop": "เช่น Modern K-Pop",
+    "Describe the arrangement": "อธิบายการเรียบเรียง",
+    "Duration (s)": "ความยาว (วินาที)",
+    "Time Signature": "ลายเซ็นจังหวะ",
+    "Name": "ชื่อ",
+    "Type": "ประเภท",
+    "Content (the text or [tag] to insert)": "เนื้อหา (ข้อความหรือ [แท็ก] ที่จะแทรก)",
+    "Prefix": "ส่วนหน้า",
+    "Suffix": "ส่วนหลัง",
+    "With nothing selected, insert an empty pair": "ถ้าไม่ได้เลือกข้อความ ให้แทรกคู่ว่าง",
+    "Description": "คำอธิบาย",
+    "Target Scope (default)": "ขอบเขตเป้าหมาย (ค่าเริ่มต้น)",
+    "Section": "ท่อน",
+    "Time (mm:ss or mm:ss.mmm)": "เวลา (mm:ss หรือ mm:ss.mmm)",
+    "Open or create a song first": "เปิดหรือสร้างเพลงก่อน",
+    "Open a song first": "เปิดเพลงก่อน",
+    "Click inside a [tag] first, then open Section Options (Ctrl+Shift+E).": "คลิกใน [แท็ก] ก่อน แล้วเปิด Section Options (Ctrl+Shift+E)",
+    "The song or sheet changed since this tag was chosen. Nothing was changed.": "เพลงหรือชีตเปลี่ยนไปหลังเลือกแท็กนี้ จึงไม่ได้เปลี่ยนอะไร",
+    "Cancel": "ยกเลิก",
+    "This is your own tag, not a section, so no cues are suggested for it.": "นี่เป็นแท็กของคุณเอง ไม่ใช่ท่อน จึงไม่มี cue แนะนำ",
+    "Edit this tag…": "แก้แท็กนี้…",
+    "An analysis of this song is still running. Switch sheets when it has finished.": "การวิเคราะห์เพลงนี้ยังทำงานอยู่ รอให้เสร็จก่อนค่อยสลับชีต",
+    "A song needs at least one sheet. Create another sheet before deleting this one.": "เพลงต้องมีอย่างน้อยหนึ่งชีต สร้างชีตอื่นก่อนลบชีตนี้",
+    "Advanced Options": "ตัวเลือกขั้นสูง",
+    "Open or create a song first.": "เปิดหรือสร้างเพลงก่อน",
+    "The AI is still busy. Try again in a moment.": "AI ยังไม่ว่าง ลองใหม่ในอีกสักครู่",
+    "No AI backend: put an LLM workflow in comfy_apis/llm or set a Grok key in Prompt Lab": "ไม่มี AI backend: วาง LLM workflow ไว้ใน comfy_apis/llm หรือตั้งค่า Grok key ใน Prompt Lab",
+    "Write some lyrics first: the AI Music Director reads them.": "เขียนเนื้อเพลงก่อน: AI Music Director จะอ่านเนื้อเพลงของคุณ",
+    "The song changed. Nothing was restored.": "เพลงเปลี่ยนไป จึงไม่ได้กู้คืนอะไร",
+    "That sheet no longer exists. Nothing was restored.": "ชีตนั้นไม่มีอยู่แล้ว จึงไม่ได้กู้คืนอะไร",
+    "Previous settings restored.": "กู้คืนค่าเดิมแล้ว",
+    "Reads your lyrics and settings and suggests three music directions. Your lyrics are never changed, and nothing is applied until you press Apply to Settings.": "อ่านเนื้อเพลงและค่าตั้งของคุณ แล้วแนะนำทิศทางดนตรี 3 แบบ เนื้อเพลงจะไม่ถูกแก้ และจะไม่มีอะไรถูกใช้จนกว่าจะกด Apply to Settings",
+    "EMOTIONAL ANALYSIS": "การวิเคราะห์อารมณ์",
+    "AI DIRECTIONS": "ทิศทางจาก AI",
+    "ACE-STEP CAPTION PREVIEW": "ตัวอย่าง CAPTION ของ ACE-STEP",
+    "SUGGESTED SETTINGS  (tick what Apply should write)": "ค่าที่แนะนำ  (ติ๊กสิ่งที่ Apply จะเขียน)",
+    "Output format: MP3 • BPM, key, language and duration are also sent to the model as separate parameters": "รูปแบบไฟล์: MP3 · BPM คีย์ ภาษา และความยาว ยังส่งให้โมเดลเป็นพารามิเตอร์แยกด้วย",
+    "The audio file of this take is missing": "ไม่พบไฟล์เสียงของเทคนี้",
+    "This take belongs to another song.": "เทคนี้เป็นของเพลงอื่น",
+    "A song is already being generated": "กำลังสร้างเพลงอยู่แล้ว",
+    "Write some lyrics first (or only [Instrumental] for a song without singing)": "เขียนเนื้อเพลงก่อน (หรือใส่แค่ [Instrumental] สำหรับเพลงที่ไม่มีเสียงร้อง)",
+    "No ACE-Step workflow in comfy_apis/audio. Export one in API format and put it there.": "ไม่มี ACE-Step workflow ใน comfy_apis/audio ให้ส่งออกเป็นรูปแบบ API แล้ววางไว้ที่นั่น",
+    "The AI is still answering": "AI ยังตอบอยู่",
+    "The song changed. Nothing was sent.": "เพลงเปลี่ยนไป จึงไม่ได้ส่งอะไร",
+    "The lyrics changed since you chose the target. Nothing was sent: choose the target again.": "เนื้อเพลงเปลี่ยนไปหลังเลือกเป้าหมาย จึงไม่ได้ส่งอะไร: เลือกเป้าหมายใหม่",
+    "That chat message no longer exists. Nothing was sent.": "ข้อความแชตนั้นไม่มีอยู่แล้ว จึงไม่ได้ส่งอะไร",
+    "The song changed. Nothing was applied.": "เพลงเปลี่ยนไป จึงไม่ได้นำอะไรไปใช้",
+    "That chat message no longer exists. Nothing was applied.": "ข้อความแชตนั้นไม่มีอยู่แล้ว จึงไม่ได้นำอะไรไปใช้",
+    "Applied (Undo restores the previous lyrics)": "นำไปใช้แล้ว (Undo ย้อนกลับได้)",
+    "This track has no playable audio file.": "แทร็กนี้ไม่มีไฟล์เสียงที่เล่นได้",
+    "Send": "ส่ง",
+    "An analysis is already running": "กำลังวิเคราะห์อยู่แล้ว",
+    "The AI is still answering in Chat. Try again in a moment.": "AI ยังตอบใน Chat อยู่ ลองใหม่ในอีกสักครู่",
+    "The lyrics changed after these suggestions were made. Nothing was replaced: ask for new suggestions.": "เนื้อเพลงเปลี่ยนไปหลังสร้างคำแนะนำนี้ จึงไม่ได้แทนที่อะไร: ขอคำแนะนำใหม่",
+    "The phrase is no longer at its place. Nothing was replaced.": "วลีไม่อยู่ที่เดิมแล้ว จึงไม่ได้แทนที่อะไร",
+    "Selected Phrase": "วลีที่เลือก",
+    "At the cursor": "ที่เคอร์เซอร์",
+    "THIS SHEET": "ชีตนี้",
+    "SECTIONS": "ท่อน",
+    "No Section Selected: put the cursor inside a section first.": "ยังไม่ได้เลือกท่อน: วางเคอร์เซอร์ในท่อนก่อน",
+    "A full song is being generated. Wait for it to finish, then make the preview.": "กำลังสร้างเพลงเต็มอยู่ รอให้เสร็จก่อนแล้วค่อยสร้างตัวอย่าง",
+    "The song or sheet changed. Choose the section again.": "เพลงหรือชีตเปลี่ยนไป เลือกท่อนใหม่",
+    "The section was changed or removed. Put the cursor in the section you want and try again.": "ท่อนถูกเปลี่ยนหรือลบไปแล้ว วางเคอร์เซอร์ในท่อนที่ต้องการแล้วลองใหม่",
+    "No Section Selected.": "ยังไม่ได้เลือกท่อน",
+    "The song or sheet changed since this section was chosen. Nothing was changed.": "เพลงหรือชีตเปลี่ยนไปหลังเลือกท่อนนี้ จึงไม่ได้เปลี่ยนอะไร",
+    "The section tag was changed or removed. Choose the section again; nothing was written.": "แท็กท่อนถูกเปลี่ยนหรือลบไปแล้ว เลือกท่อนใหม่ ยังไม่ได้เขียนอะไร",
+    "Nothing was changed: no lyrics were edited, no sheet was created and no undo step was added. The AI is not asked again automatically.": "ไม่ได้เปลี่ยนอะไร: ไม่มีการแก้เนื้อเพลง ไม่ได้สร้างชีต และไม่ได้เพิ่มขั้นเลิกทำ AI จะไม่ถูกถามซ้ำโดยอัตโนมัติ",
+    "DESTINATION": "ปลายทาง",
+    "Create your own song structure": "สร้างโครงสร้างเพลงของคุณเอง",
+    "The take is not playing. Start it with “Play Selected Take”, or use “Add Manually”.": "เทคไม่ได้เล่นอยู่ เริ่มเล่นด้วย “เล่นเทคที่เลือก” หรือใช้ “+ เพิ่มเอง”",
+    "The audio file of this take is missing.": "ไม่พบไฟล์เสียงของเทคนี้",
+    "The player reports a position outside this take. Nothing was added.": "ตัวเล่นรายงานตำแหน่งนอกช่วงของเทคนี้ จึงไม่ได้เพิ่มอะไร",
+    "That marker no longer exists.": "ไม่มี marker นั้นอยู่แล้ว",
+    "The lyrics changed since this tag was chosen, so nothing was applied.": "เนื้อเพลงเปลี่ยนไปหลังเลือกแท็กนี้ จึงไม่ได้นำอะไรไปใช้",
+    "Remove Tag": "ลบแท็ก",
+    "CURRENT": "ปัจจุบัน",
+    "No songs yet. Press New Song.": "ยังไม่มีเพลง กด เพลงใหม่",
+    "Sheet options": "ตัวเลือกชีต",
+    "Close Tab": "ปิดแท็บ",
+    "Saved": "บันทึกแล้ว",
+    "Nothing yet. Each prompt you generate with is saved here automatically.": "ยังไม่มี Prompt ที่ใช้สร้างเพลงจะถูกบันทึกที่นี่อัตโนมัติ",
+    "SECTION CUE SUGGESTIONS  (ideas only: nothing is inserted into your lyrics)": "คำแนะนำ CUE ของท่อน  (เป็นแค่ไอเดีย: ไม่มีอะไรถูกแทรกลงในเนื้อเพลง)",
+    "Open or create a song": "เปิดหรือสร้างเพลง",
+    "Another song is being generated. Its result will appear in that song.": "กำลังสร้างอีกเพลงอยู่ ผลลัพธ์จะปรากฏในเพลงนั้น",
+    "No takes yet. Press Generate to make the first one.": "ยังไม่มีเทค กด สร้างเพลง เพื่อทำเทคแรก",
+    "You can generate with the plain Basic tags instead (the old way, without an AI-written caption):": "คุณสร้างด้วยแท็ก Basic ธรรมดาแทนได้ (วิธีเดิม ไม่มี caption ที่ AI เขียน):",
+    "The AI is still busy with another request. Try again in a moment.": "AI ยังติดคำขออื่นอยู่ ลองใหม่ในอีกสักครู่",
+    "Generation cancelled": "ยกเลิกการสร้างแล้ว",
+    "Open or create a song to chat about its lyrics.": "เปิดหรือสร้างเพลงเพื่อคุยเรื่องเนื้อเพลง",
+    "The lyrics changed while the dialog was open. Nothing was sent.": "เนื้อเพลงเปลี่ยนไปขณะเปิดหน้าต่าง จึงไม่ได้ส่งอะไร",
+    "This result has no saved request, so it cannot be repeated. Use the action again.": "ผลนี้ไม่มีคำขอที่บันทึกไว้ จึงทำซ้ำไม่ได้ ใช้ action อีกครั้ง",
+    "This request is out of date: the lyrics are not the ones it was made for (they were edited, or the proposal was applied). Nothing was sent. Select the target and use the action again.": "คำขอนี้ล้าสมัย: เนื้อเพลงไม่ใช่ฉบับที่ใช้สร้างคำขอ (ถูกแก้ไข หรือใช้ข้อเสนอไปแล้ว) จึงไม่ได้ส่งอะไร เลือกเป้าหมายแล้วใช้ action อีกครั้ง",
+    "The sheet changed. Nothing was applied: open the sheet this proposal was made for.": "ชีตเปลี่ยนไป จึงไม่ได้นำอะไรไปใช้: เปิดชีตที่ข้อเสนอนี้ทำไว้",
+    "This proposal was already applied.": "ข้อเสนอนี้ถูกนำไปใช้แล้ว",
+    "The proposal changed. Nothing was applied: press Apply again.": "ข้อเสนอเปลี่ยนไป จึงไม่ได้นำอะไรไปใช้: กดนำไปใช้อีกครั้ง",
+    "The lyrics changed again. Nothing was applied: press Apply again to see the choices for the current lyrics.": "เนื้อเพลงเปลี่ยนอีกครั้ง จึงไม่ได้นำอะไรไปใช้: กดนำไปใช้อีกครั้งเพื่อดูตัวเลือกสำหรับเนื้อเพลงปัจจุบัน",
+    "The cursor moved. Nothing was applied: press Apply again.": "เคอร์เซอร์ขยับ จึงไม่ได้นำอะไรไปใช้: กดนำไปใช้อีกครั้ง",
+    "The chat file could not be cleared": "ล้างไฟล์แชตไม่สำเร็จ",
+    "The queue is empty. Press Play on a track.": "คิวว่าง กดเล่นที่แทร็ก",
+    "Edit Syllables": "แก้พยางค์",
+    "Press Analyze Lyrics: the AI splits every sung line into spoken syllables (mora for Japanese) and says which language it hears. Section tags like [Verse] are skipped. The count is made here from those units. It is not the number of notes in a melody, because no audio was heard. Use Edit to correct a line.": "กด วิเคราะห์พยางค์: AI จะแยกทุกบรรทัดที่ร้องเป็นพยางค์ที่ออกเสียง (mora สำหรับญี่ปุ่น) และบอกว่าได้ยินเป็นภาษาอะไร แท็กท่อนอย่าง [Verse] จะถูกข้าม จำนวนนับจากหน่วยเหล่านี้ ไม่ใช่จำนวนโน้ตในทำนอง เพราะไม่ได้ฟังเสียง ใช้ แก้ไข เพื่อแก้บรรทัด",
+    "The lyrics changed while the dialog was open. Nothing was changed.": "เนื้อเพลงเปลี่ยนไปขณะเปิดหน้าต่าง จึงไม่ได้เปลี่ยนอะไร",
+    "Showing the saved result: no new AI request.": "แสดงผลที่บันทึกไว้: ไม่มีคำขอ AI ใหม่",
+    "The lyrics changed while the AI was working, so that result was not used. Press Analyze Lyrics again.": "เนื้อเพลงเปลี่ยนไปขณะ AI ทำงาน จึงไม่ได้ใช้ผลนั้น กด วิเคราะห์พยางค์ อีกครั้ง",
+    "Press Analyze Rhymes: the AI looks for end, cross-line, internal and near rhymes. For Thai, Python then checks the vowel and the final consonant. Verified means that check agreed. Unverified means the sound could not be read. Rejected means the sounds do not match. The AI confidence is shown separately.": "กด วิเคราะห์สัมผัส: AI จะหาสัมผัสท้ายบรรทัด ข้ามบรรทัด ภายใน และสัมผัสใกล้เคียง สำหรับภาษาไทย Python จะตรวจสระและพยัญชนะสะกดอีกครั้ง Verified คือการตรวจเห็นด้วย Unverified คืออ่านเสียงไม่ได้ Rejected คือเสียงไม่ตรงกัน ความมั่นใจของ AI แสดงแยกไว้",
+    "The lyrics changed while the AI was working, so that result was not used. Press Analyze Rhymes again.": "เนื้อเพลงเปลี่ยนไปขณะ AI ทำงาน จึงไม่ได้ใช้ผลนั้น กด วิเคราะห์สัมผัส อีกครั้ง",
+    "SIMILAR SECTIONS": "ท่อนที่คล้ายกัน",
+    "Press Analyze Rhythm: the syllables of these lyrics are analyzed first (one click), then the rhythm. The comparison uses the syllable counts and your manual corrections; the AI never counts here, and it does not invent a melody, a groove, or a BPM.": "กด วิเคราะห์จังหวะ: ระบบจะวิเคราะห์พยางค์ของเนื้อเพลงก่อน (คลิกเดียว) แล้วจึงดูจังหวะ การเปรียบเทียบใช้จำนวนพยางค์และการแก้ของคุณ AI ไม่ได้นับเอง และไม่แต่งทำนอง กรูฟ หรือ BPM",
+    "The syllables could not be analyzed, so the rhythm was not started. The reason is shown in the Syllables tab.": "วิเคราะห์พยางค์ไม่สำเร็จ จึงไม่ได้เริ่มวิเคราะห์จังหวะ ดูเหตุผลที่แท็บ พยางค์",
+    "The lyrics or the syllable counts changed while the AI was working, so that result was not used. Press Analyze Rhythm again.": "เนื้อเพลงหรือจำนวนพยางค์เปลี่ยนไปขณะ AI ทำงาน จึงไม่ได้ใช้ผลนั้น กด วิเคราะห์จังหวะ อีกครั้ง",
+    "Replace the selected phrase with this": "แทนวลีที่เลือกด้วยคำนี้",
+    "Press Suggest Alternatives: the AI reads the phrase in its place in your song and offers words or phrases that could replace it, with what changes in the meaning. Nothing changes until you press the replace icon beside a suggestion (Undo restores it).": "กด แนะนำคำทางเลือก: AI จะอ่านวลีตามตำแหน่งในเพลงของคุณ แล้วเสนอคำหรือวลีที่ใช้แทนได้ พร้อมบอกว่าความหมายเปลี่ยนอย่างไร ยังไม่เปลี่ยนอะไรจนกว่าจะกดไอคอนแทนที่ข้างคำแนะนำ (เลิกทำได้)",
+    "The lyrics changed while the AI was working, so that result was not used. Select the phrase and try again.": "เนื้อเพลงเปลี่ยนไปขณะ AI ทำงาน จึงไม่ได้ใช้ผลนั้น เลือกวลีแล้วลองใหม่",
+    "Song Structures": "โครงสร้างเพลง",
+    "Insert or arrange a structure": "แทรกหรือจัดโครงสร้าง",
+    "The active sheet has no section tags yet.": "ชีตนี้ยังไม่มีแท็กท่อน",
+    "Close": "ปิด",
+    "The sheet already has this structure.": "ชีตมีโครงสร้างนี้อยู่แล้ว",
+    "MUSIC SETTINGS — suggested by the AI, editable (applying them sets Style mode to Advanced)": "ค่าดนตรี · AI แนะนำ แก้ไขได้ (เมื่อใช้ จะตั้งโหมด Style เป็น Advanced)",
+    "The AI returned no music settings this time. You can still apply the lyrics.": "ครั้งนี้ AI ไม่ได้ให้ค่าดนตรีมา แต่ยังนำเนื้อเพลงไปใช้ได้",
+    "Apply Lyrics Only": "ใช้เฉพาะเนื้อเพลง",
+    "Edit, duplicate or delete": "แก้ไข ทำสำเนา หรือลบ",
+    "Suggest Music Settings (the AI proposes a style prompt, BPM, key...; you preview before applying)": "แนะนำค่าดนตรี (AI เสนอ style prompt, BPM, คีย์...; ดูตัวอย่างก่อนใช้)",
+    "Copy to clipboard": "คัดลอกไปคลิปบอร์ด",
+    "A tag on its own line is placed like the built-in cue tools. A wrap tool needs selected text unless the empty pair is on.": "แท็กบนบรรทัดของตัวเองจะวางเหมือนเครื่องมือ cue ที่มีมาให้ เครื่องมือแบบห่อข้อความต้องเลือกข้อความ เว้นแต่เปิดคู่ว่างไว้",
+    "Placeholders: {selection} the selected text, {section} the current section name, {lyrics} the whole lyrics. The target text is always sent as context, so you rarely need them. The scope is only a default: the real target is taken when you press Run.": "ตัวแทน: {selection} ข้อความที่เลือก, {section} ชื่อท่อนปัจจุบัน, {lyrics} เนื้อเพลงทั้งหมด ข้อความเป้าหมายถูกส่งเป็นบริบทเสมอ จึงแทบไม่ต้องใช้ ขอบเขตเป็นแค่ค่าเริ่มต้น เป้าหมายจริงจะเอาตอนกด Run",
+    "More": "เพิ่มเติม",
+    "Click: jump to this time (only when this take is the one playing)": "คลิก: ข้ามไปที่เวลานี้ (เฉพาะเมื่อเทคนี้กำลังเล่นอยู่)",
+    "No markers yet. Use “Add at Playback Position” while the take plays, or “Add Manually”.": "ยังไม่มี marker ใช้ “+ เพิ่มที่ตำแหน่งที่กำลังเล่น” ขณะเทคเล่น หรือ “+ เพิ่มเอง”",
+    "The song or take changed. Nothing was deleted.": "เพลงหรือเทคเปลี่ยนไป จึงไม่ได้ลบอะไร",
+    "Show Style": "แสดงแผง Style",
+    "Open Style Settings": "เปิดตั้งค่า Style",
+    "Open Output": "เปิดผลลัพธ์",
+    "This custom tool no longer exists.": "เครื่องมือของคุณนี้ไม่มีอยู่แล้ว",
+    "Custom Tools: none yet": "เครื่องมือของคุณ: ยังไม่มี",
+    "Hover a tool to see how to use it": "วางเมาส์บนเครื่องมือเพื่อดูวิธีใช้",
+    "Search cues...": "ค้นหา cue...",
+    "Rename sheet": "เปลี่ยนชื่อชีต",
+    "Unsaved changes in this sheet": "ชีตนี้มีการแก้ไขที่ยังไม่บันทึก",
+    "New blank sheet": "ชีตเปล่าใหม่",
+    "Duplicate this sheet": "ทำสำเนาชีตนี้",
+    "Unsaved Changes": "มีการแก้ไขที่ยังไม่บันทึก",
+    "Rename": "เปลี่ยนชื่อ",
+    "Save As": "บันทึกเป็น",
+    "Random seed": "Seed สุ่ม",
+    "Seed mode": "โหมด Seed",
+    "View Generation Settings": "ดูค่าตั้งการสร้าง",
+    "Open as Editable Sheet": "เปิดเป็นชีตที่แก้ไขได้",
+    "Export Audio": "ส่งออกเสียง",
+    "The AI Music Caption could not be created": "สร้าง AI Music Caption ไม่สำเร็จ",
+    "AI ACTION RESULT": "ผลจาก AI ACTION",
+    "✓ Applied": "✓ ใช้แล้ว",
+    "Ask for a new verse, a stronger chorus, a different mood, or how to stretch a Thai word. Nothing changes until you press Apply.": "ขอท่อนใหม่ ท่อนฮุกที่แรงขึ้น อารมณ์ที่ต่างไป หรือวิธียืดคำไทย ยังไม่เปลี่ยนอะไรจนกว่าจะกดนำไปใช้",
+    "Translate Lyrics": "แปลเนื้อเพลง",
+    "The text has changed": "ข้อความเปลี่ยนไป",
+    "No tracks generated yet.": "ยังไม่มีแทร็กที่สร้าง",
+    "ComfyUI connection": "การเชื่อมต่อ ComfyUI",
+    "Open the music folder": "เปิดโฟลเดอร์เพลง",
+    "NOT A RHYME": "ไม่ใช่สัมผัส",
+    "This section mixes mora (Japanese) and syllables. They are not one unit, so its lines are not compared with each other.": "ท่อนนี้ปนกันระหว่าง mora (ญี่ปุ่น) กับพยางค์ ซึ่งไม่ใช่หน่วยเดียวกัน จึงไม่เปรียบเทียบบรรทัดในท่อนนี้กัน",
+    "The earlier rhythm result is kept and shown again once the syllables match these lyrics.": "ผลจังหวะก่อนหน้าถูกเก็บไว้ และจะแสดงอีกครั้งเมื่อพยางค์ตรงกับเนื้อเพลงนี้",
+    "SINGABILITY SUGGESTIONS  (AI, from the text only)": "คำแนะนำด้านความร้องได้ (AI จากตัวอักษรเท่านั้น)",
+    "· AI Suggestion": "· ข้อเสนอจาก AI",
+    "No suitable alternatives found": "ไม่พบคำทางเลือกที่เหมาะสม",
+    "Lyrics": "เนื้อเพลง",
+    "Section Options… for the [tag] at the cursor (Ctrl+Shift+E)": "Section Options… สำหรับ [แท็ก] ที่เคอร์เซอร์ (Ctrl+Shift+E)",
+    "Save song": "บันทึกเพลง",
+    "No section tags yet.": "ยังไม่มีแท็กท่อน",
+    "The AI arrangement was not usable": "ใช้การเรียบเรียงของ AI ไม่ได้",
+    "The song changed. Nothing was applied: open that song and use the template again.": "เพลงเปลี่ยนไป จึงไม่ได้นำอะไรไปใช้: เปิดเพลงนั้นแล้วใช้เทมเพลตอีกครั้ง",
+    "The lyrics of this sheet changed while the AI was working. Nothing was applied: use the template again, or choose Open in New Sheet.": "เนื้อเพลงของชีตนี้เปลี่ยนไปขณะ AI ทำงาน จึงไม่ได้นำอะไรไปใช้: ใช้เทมเพลตอีกครั้ง หรือเลือก เปิดในชีตใหม่",
+    "The song changed. No sheet was created: open that song and use the template again.": "เพลงเปลี่ยนไป จึงไม่ได้สร้างชีต: เปิดเพลงนั้นแล้วใช้เทมเพลตอีกครั้ง",
+    "SECTION MARKERS": "MARKER ของท่อน",
+    "The length of this take is not known, so the bar is not drawn. Markers still work.": "ไม่ทราบความยาวของเทคนี้ จึงไม่วาดแถบ marker ยังใช้งานได้",
+    "CAPTION SOURCE": "แหล่ง CAPTION",
+    "Hide Style": "ซ่อนแผง Style",
+    "+ New Tool": "+ เครื่องมือใหม่",
+    "Manage Tools": "จัดการเครื่องมือ",
+    "Copy original lyrics": "คัดลอกเนื้อเพลงต้นฉบับ",
+    "Copy ACE-Step lyrics": "คัดลอกเนื้อเพลง ACE-Step",
+    "Copy for AI (with notes)": "คัดลอกสำหรับ AI (พร้อมโน้ต)",
+    "Export TXT (ACE-Step)": "ส่งออก TXT (ACE-Step)",
+    "No changes": "ไม่มีการเปลี่ยนแปลง",
+    "No recommendations for this tag. Use All Cues or Custom.": "ไม่มีคำแนะนำสำหรับแท็กนี้ ใช้ All Cues หรือ Custom",
+    "No cue matches.": "ไม่พบ cue ที่ตรงกัน",
+    "Recover unsaved changes?": "กู้คืนการแก้ไขที่ยังไม่บันทึก?",
+    "This song has an autosaved version newer than the saved one (the program closed before saving).": "เพลงนี้มีฉบับบันทึกอัตโนมัติที่ใหม่กว่าฉบับที่บันทึกไว้ (โปรแกรมปิดก่อนได้บันทึก)",
+    "Discard": "ทิ้ง",
+    "Save": "บันทึก",
+    "Save copy": "บันทึกสำเนา",
+    "Delete take…": "ลบเทค…",
+    "Use Basic Tags": "ใช้แท็ก Basic",
+    "Apply to Editor": "นำไปใส่ในตัวแก้ไข",
+    "Copy": "คัดลอก",
+    "Regenerate": "สร้างใหม่",
+    "Faithful Translation": "แปลตรงตัว",
+    "Singable Adaptation": "แปลให้ร้องได้",
+    "Current Line": "บรรทัดปัจจุบัน",
+    "Entire Song": "ทั้งเพลง",
+    "Translate": "แปล",
+    "Edit Song": "แก้ไขเพลง",
+    "Reset to AI": "คืนค่าของ AI",
+    "No matches found": "ไม่พบรายการที่ตรงกัน",
+    "The AI had no remarks about these lines.": "AI ไม่มีข้อสังเกตสำหรับบรรทัดเหล่านี้",
+    "SUGGESTIONS": "คำแนะนำ",
+    "AI Suggestion": "ข้อเสนอจาก AI",
+    "Songwriting Assistant": "ผู้ช่วยแต่งเพลง",
+    "Clear this song's chat": "ล้างแชตของเพลงนี้",
+    "Import from Active Sheet": "นำเข้าจากชีตที่ใช้อยู่",
+    "Copies the section tags of the active sheet here; its lyrics are not copied": "คัดลอกแท็กท่อนของชีตที่ใช้อยู่มาที่นี่ ไม่คัดลอกเนื้อเพลง",
+    "Tags are kept as written, e.g. [Chorus - powerful]. Import copies section tags only, never lyrics.": "แท็กคงไว้ตามที่เขียน เช่น [Chorus - powerful] การนำเข้าคัดลอกเฉพาะแท็กท่อน ไม่คัดลอกเนื้อเพลง",
+    "Save Template": "บันทึกเทมเพลต",
+    "Raw AI answer (debug)": "คำตอบดิบจาก AI (debug)",
+    "Open in New Sheet": "เปิดในชีตใหม่",
+    "New Template": "เทมเพลตใหม่",
+    "for example: soft bells": "เช่น soft bells",
+    "Save a copy (Save As)": "บันทึกสำเนา (Save As)",
+    "Delete": "ลบ",
+    "Discard it": "ทิ้งไป",
+    "Recover": "กู้คืน",
+    "My Music": "เพลงของฉัน",
+    "The AI answer could not be used. Nothing was changed.": "ใช้คำตอบของ AI ไม่ได้ จึงไม่ได้เปลี่ยนอะไร",
+    "Rescan workflows": "สแกน workflow ใหม่",
+    "Coming Soon": "เร็วๆ นี้",
+    "Choose a template or create your own": "เลือกเทมเพลตหรือสร้างของคุณเอง",
+    "New Song": "เพลงใหม่",
+    "Music Library": "คลังเพลง",
+    "Delete from history": "ลบจากประวัติ",
+    "No tracks available.": "ไม่มีแทร็ก",
+    "Now Playing": "กำลังเล่น",
+    "Song Structure": "โครงสร้างเพลง",
+    "One section tag per block": "แท็กท่อนหนึ่งอันต่อหนึ่งบล็อก",
+    "Edit": "แก้ไข",
+    "Delete…": "ลบ…",
+    "Duplicate": "ทำสำเนา",
+    "Close tab (keeps the sheet)": "ปิดแท็บ (เก็บชีตไว้)",
+    "Sent to ACE-Step": "ส่งไปยัง ACE-Step",
+    "Translation Mode": "โหมดการแปล",
+    "Scope": "ขอบเขต",
+    "Star a take to add it to Favorites.": "ติดดาวที่เทคเพื่อเพิ่มในรายการโปรด",
+    "AI Segmentation (an estimate)": "แบ่งพยางค์โดย AI (เป็นการประมาณ)",
+    "Suggested wording (AI proposal, not applied)": "คำที่แนะนำ (ข้อเสนอจาก AI ยังไม่ได้ใช้)",
+    "The AI only proposes: nothing changes until you press Apply in the Chat.": "AI เป็นแค่ผู้เสนอ: ไม่มีอะไรเปลี่ยนจนกว่าจะกดนำไปใช้ใน Chat",
+    "Your music library": "คลังเพลงของคุณ",
+    "⚠ Data file damaged (backup saved)": "⚠ ไฟล์ข้อมูลเสียหาย (บันทึกสำรองไว้แล้ว)",
+    "Copy raw answer": "คัดลอกคำตอบดิบ",
+    "Nothing is selected, so the action will work on the line your cursor is in:": "ไม่ได้เลือกอะไร action จะทำงานกับบรรทัดที่เคอร์เซอร์อยู่:",
+    "Only this line can change, and only after you press Apply. Cancel and select text if you want another target.": "เปลี่ยนได้เฉพาะบรรทัดนี้ และหลังกดนำไปใช้เท่านั้น ยกเลิกแล้วเลือกข้อความถ้าต้องการเป้าหมายอื่น",
+    "Song List": "รายการเพลง",
+    "Up Next": "ถัดไปในคิว",
+    "Not saved": "ยังไม่บันทึก",
+    "Clicking a direction only previews it: no SongSettings field changes.": "การคลิกทิศทางเป็นแค่การดูตัวอย่าง: ไม่มีค่าตั้งของเพลงเปลี่ยน",
+    "Regenerate Suggestions (analyze the lyrics again)": "สร้างคำแนะนำใหม่ (วิเคราะห์เนื้อเพลงอีกครั้ง)",
+    "Apply to Settings": "นำไปใช้กับค่าตั้ง",
+    "Restore Previous Settings": "กู้คืนค่าตั้งก่อนหน้า",
+    "Add extra style tags (e.g. dreamy, lo-fi, cinematic)": "เพิ่มแท็กสไตล์เสริม (เช่น dreamy, lo-fi, cinematic)",
+    "Manual segmentation": "แบ่งพยางค์เอง",
+    "Manual count": "นับเอง",
+    "No previews yet": "ยังไม่มีตัวอย่าง",
+    "What the AI is told about the sheet's current choices (read only).": "สิ่งที่ AI ได้รับรู้เกี่ยวกับตัวเลือกปัจจุบันของชีต (อ่านอย่างเดียว)",
+    "All Songs": "เพลงทั้งหมด",
+    "Favorites": "รายการโปรด",
+    "Layout of the song": "โครงของเพลง",
+    "Instrumental": "ดนตรีล้วน",
+    "Parts without singing": "ส่วนที่ไม่มีเสียงร้อง",
+    "Vocal Delivery": "การร้อง",
+    "How it is sung": "ร้องอย่างไร",
+    "Backing Vocals": "เสียงประสาน",
+    "Extra voices": "เสียงเพิ่ม",
+    "Timing & Editing": "จังหวะและการแก้ไข",
+    "Pacing and quick edits": "ปรับจังหวะและแก้ไขเร็ว",
+    "Delete sheet": "ลบชีต",
+    "Untitled Song": "เพลงไม่มีชื่อ",
+    "Delete song": "ลบเพลง",
+    "Duration (sec)": "ความยาว (วินาที)",
+    "Extra style tags": "แท็กสไตล์เสริม",
+    "Creating Caption…": "กำลังสร้าง Caption…",
+    "Delete take": "ลบเทค",
+    "Write a Music Style Prompt (Advanced tab) to see what is sent.": "เขียน Music Style Prompt (แท็บ Advanced) เพื่อดูสิ่งที่จะถูกส่ง",
+    "Generate a song to view the effective caption.": "สร้างเพลงเพื่อดู Effective Caption",
+    "No selection: the AI sees the whole lyrics": "ไม่ได้เลือกข้อความ: AI เห็นเนื้อเพลงทั้งหมด",
+    "Clear chat": "ล้างแชต",
+    "Delete the chat history of this song?": "ลบประวัติแชตของเพลงนี้?",
+    "Clear": "ล้าง",
+    "Asking the AI…": "กำลังถาม AI…",
+    "Syllables": "พยางค์",
+    "Rhymes": "สัมผัส",
+    "Rhythm": "จังหวะ",
+    "Thesaurus": "คำพ้อง",
+    "Sections": "ท่อน",
+    "Backing": "เสียงประสาน",
+    "Sheet summary": "สรุปชีต",
+    "Section audio preview": "ตัวอย่างเสียงของท่อน",
+    "Continue Lyrics": "แต่งต่อ",
+    "Increase Emotion": "เพิ่มอารมณ์",
+    "Improve Singability": "ปรับให้ร้องง่าย",
+    "Audio Timeline": "ไทม์ไลน์เสียง",
+    "Section Markers": "Marker ของท่อน",
+    "Jump to Section": "ข้ามไปท่อน",
+    "Per-Take Timing (tied to the Take ID)": "เวลาต่อเทค (ผูกกับ Take ID)",
+    "No section": "ไม่มีท่อน",
+    "Delete preview": "ลบตัวอย่าง",
+    "The AI is suggesting music settings…": "AI กำลังแนะนำค่าดนตรี…",
+    "Arrange with AI": "จัดโครงสร้างด้วย AI",
+    "Save Tool": "บันทึกเครื่องมือ",
+    "Save Prompt": "บันทึก Prompt",
+    "Pause": "หยุดชั่วคราว",
+    "Duration: Unknown": "ความยาว: ไม่ทราบ",
+    "Delete marker": "ลบ marker",
+    "Expand Workspace": "ขยาย Workspace",
+    "Analysis": "วิเคราะห์",
+    "AI writes the music caption from your settings and lyrics": "AI เขียน music caption จากค่าตั้งและเนื้อเพลงของคุณ",
+    "Write and control the music caption yourself": "เขียนและควบคุม music caption เอง",
+    "Suggest style, BPM and key from the lyrics": "แนะนำสไตล์ BPM และคีย์จากเนื้อเพลง",
+    "Apply to Section": "นำไปใช้กับท่อน",
+    "Apply Changes": "นำการแก้ไขไปใช้",
+    "Open or create a song to use the tools.": "เปิดหรือสร้างเพลงเพื่อใช้เครื่องมือ",
+    "None": "ไม่มี",
+    "AI creates a music caption from your settings and lyrics.": "AI สร้าง music caption จากค่าตั้งและเนื้อเพลงของคุณ",
+    "Write and control the music caption yourself.": "เขียนและควบคุม music caption เอง",
+    "Let AI suggest musical directions for your lyrics.": "ให้ AI แนะนำทิศทางดนตรีสำหรับเนื้อเพลงของคุณ",
+    "Style Settings": "ค่าตั้ง Style",
+    "Song Metadata": "ข้อมูลเพลง",
+    "Generating…": "กำลังสร้าง…",
+    "ComfyUI connected": "เชื่อมต่อ ComfyUI แล้ว",
+    "Your Music Style Prompt": "Music Style Prompt ของคุณ",
+    "No AI backend is available.": "ไม่มี AI backend ให้ใช้",
+    "ComfyUI is not responding…": "ComfyUI ไม่ตอบสนอง…",
+    "No AI backend found": "ไม่พบ AI backend",
+    "Copy proposal": "คัดลอกข้อเสนอ",
+    "The analysis failed": "การวิเคราะห์ล้มเหลว",
+    "The rhyme analysis failed": "การวิเคราะห์สัมผัสล้มเหลว",
+    "The lyrics changed after you selected this phrase. Select it again.": "เนื้อเพลงเปลี่ยนไปหลังเลือกวลีนี้ เลือกใหม่อีกครั้ง",
+    "The request failed": "คำขอล้มเหลว",
+    "No song open.": "ไม่ได้เปิดเพลง",
+    "No audio device": "ไม่มีอุปกรณ์เสียง",
+    "Generate a preview first": "สร้างตัวอย่างก่อน",
+    "Cancelling…": "กำลังยกเลิก…",
+    "The last arrangement could not be made. Nothing was changed.": "ทำการเรียบเรียงครั้งล่าสุดไม่ได้ จึงไม่ได้เปลี่ยนอะไร",
+    "The AI is working…": "AI กำลังทำงาน…",
+    "Edit Custom Lyrics Tool": "แก้ไข Lyrics Tool ของคุณ",
+    "New Custom Lyrics Tool": "Lyrics Tool ใหม่ของคุณ",
+    "Edit AI Prompt": "แก้ไข AI Prompt",
+    "New AI Prompt": "AI Prompt ใหม่",
+    "New Tool": "เครื่องมือใหม่",
+    "New Prompt": "Prompt ใหม่",
+    "Not playing": "ไม่ได้เล่นอยู่",
+    "Open a song first.": "เปิดเพลงก่อน",
+    "Edit Marker": "แก้ไข Marker",
+    "Add Marker": "เพิ่ม Marker",
+    "Save Marker": "บันทึก Marker",
+    "Opening": "การเปิด",
+    "Main Sections": "ท่อนหลัก",
+    "Transition & Ending": "ช่วงเชื่อมและจบ",
+    "Timing": "จังหวะ",
+    "Editing": "การแก้ไข",
+    "Custom Tools": "เครื่องมือของคุณ",
+    "Your own tools": "เครื่องมือของคุณเอง",
+    "Tag removed": "ลบแท็กแล้ว",
+    "Tag preview": "ตัวอย่างแท็ก",
+    "Preview (you can edit it)": "ตัวอย่าง (แก้ไขได้)",
+    "Analyzing…": "กำลังวิเคราะห์…",
+    "Write the Music Style Prompt first": "เขียน Music Style Prompt ก่อน",
+    "Choose a Genre first": "เลือกแนวเพลงก่อน",
+    "Recently Updated": "อัปเดตล่าสุด",
+    "Date Created": "วันที่สร้าง",
+    "Title A-Z": "ชื่อ ก-ฮ",
+    "Most Takes": "เทคมากที่สุด",
+    "The rhythm analysis failed": "การวิเคราะห์จังหวะล้มเหลว",
+    "Custom": "กำหนดเอง",
+    "Timeline": "ไทม์ไลน์",
+    "Every cue of the library": "ทุก cue ในคลัง",
+    "Show only the recommended cues": "แสดงเฉพาะ cue ที่แนะนำ",
+    "Cancelled. Nothing was kept.": "ยกเลิกแล้ว ไม่ได้เก็บอะไรไว้",
+    "Music Ideas": "ไอเดียดนตรี",
+    "Section Marker": "Marker ของท่อน",
+    "Custom Marker": "Marker กำหนดเอง",
+    "A song is being generated": "กำลังสร้างเพลงอยู่",
+    "Original lyrics": "เนื้อเพลงต้นฉบับ",
+    "ACE-Step lyrics": "เนื้อเพลง ACE-Step",
+    "Lyrics for AI": "เนื้อเพลงสำหรับ AI",
+    "Ticked: Apply writes it. Click to untick.": "ติ๊กแล้ว: Apply จะเขียนค่านี้ คลิกเพื่อเอาติ๊กออก",
+    "Not ticked: Apply leaves it alone. Click to tick.": "ยังไม่ติ๊ก: Apply จะไม่แตะค่านี้ คลิกเพื่อติ๊ก",
+    "No workflow found": "ไม่พบ workflow",
+    "Auto (from the lyrics)": "อัตโนมัติ (จากเนื้อเพลง)",
+    "Creating Music Caption…": "กำลังสร้าง Music Caption…",
+    "Queued…": "อยู่ในคิว…",
+    "Generating Audio…": "กำลังสร้างเสียง…",
+    "Written by the AI from your Basic settings and lyrics": "เขียนโดย AI จากค่าตั้ง Basic และเนื้อเพลงของคุณ",
+    "Plain Basic tags (the fallback you chose)": "แท็ก Basic ธรรมดา (ทางเลือกสำรองที่คุณเลือก)",
+    "Proposal": "ข้อเสนอ",
+    "Nothing matches your search.": "ไม่มีรายการที่ตรงกับการค้นหา",
+    "No songs yet. Press New Song to start.": "ยังไม่มีเพลง กด เพลงใหม่ เพื่อเริ่ม",
+    "Preview": "ตัวอย่าง",
+    "Apply Lyrics + Music Settings": "ใช้เนื้อเพลง + ค่าดนตรี",
+    "Apply Music Settings": "ใช้ค่าดนตรี",
+    "Recommended": "แนะนำ",
+    "Rec.": "แนะนำ",
+    "All": "ทั้งหมด",
+    "Only new lines: Apply adds them after that line and replaces nothing.": "เฉพาะบรรทัดใหม่: Apply จะเพิ่มต่อจากบรรทัดนั้นและไม่แทนที่อะไร",
+    "Template Name": "ชื่อเทมเพลต",
+    "Lyrics and music settings applied": "ใช้เนื้อเพลงและค่าดนตรีแล้ว",
+    "Suggested Music Settings": "ค่าดนตรีที่แนะนำ",
+    "No custom tools yet": "ยังไม่มีเครื่องมือของคุณ",
+    "No saved prompts yet": "ยังไม่มี prompt ที่บันทึก",
+    "Add a section or a vocal cue here.": "เพิ่มท่อนหรือ cue การร้องที่นี่",
+    "Vocal delivery for this line.": "การร้องสำหรับบรรทัดนี้",
+    "Both seeds equal": "Seed ทั้งสองเท่ากัน",
+    "KSampler own seed": "KSampler ใช้ seed ของตัวเอง",
+    "Edit Song Template": "แก้ไขเทมเพลตเพลง",
+    "New Song Template": "เทมเพลตเพลงใหม่",
+    "Change this template's structure": "เปลี่ยนโครงสร้างของเทมเพลตนี้",
+    "Create a reusable song structure": "สร้างโครงสร้างเพลงที่ใช้ซ้ำได้",
+    "Lyrics applied": "ใช้เนื้อเพลงแล้ว",
+    "Music settings applied": "ใช้ค่าดนตรีแล้ว",
+    "Template": "เทมเพลต",
+    "Selected Lyrics": "เนื้อเพลงที่เลือก",
+    "Your manual count / segmentation is used": "ใช้การนับ / แบ่งพยางค์ที่คุณทำเอง",
+    "Replace Current Sheet": "แทนที่ชีตปัจจุบัน",
+    "Apply to Current Sheet": "ใช้กับชีตปัจจุบัน",
+    "Raw AI answer": "คำตอบดิบจาก AI",
+    "The opening of the song, usually a short instrumental or melody before the singing starts.": "ช่วงเปิดเพลง มักเป็นดนตรีหรือทำนองสั้นๆ ก่อนเริ่มร้อง",
+    "The storytelling part with the main lyrics.": "ท่อนเล่าเรื่องที่มีเนื้อเพลงหลัก",
+    "A linking part that builds up the feeling before the chorus.": "ท่อนเชื่อมที่เร่งอารมณ์ก่อนเข้าท่อนฮุก",
+    "The hook of the song: the part with the most memorable melody or lyrics, often repeated.": "ท่อนฮุกของเพลง: ส่วนที่ทำนองหรือเนื้อเพลงจำง่ายที่สุด มักร้องซ้ำ",
+    "A part that changes the mood or melody, often placed before the last chorus.": "ท่อนที่เปลี่ยนอารมณ์หรือทำนอง มักอยู่ก่อนฮุกสุดท้าย",
+    "The ending of the song.": "ช่วงจบเพลง",
+    "An instrumental part with no vocals, used between sung parts.": "ท่อนดนตรีล้วนที่ไม่มีเสียงร้อง ใช้คั่นระหว่างท่อนที่ร้อง",
+    "Do not write lyrics under the tag.": "อย่าเขียนเนื้อเพลงใต้แท็กนี้",
+    "A part featuring a guitar solo.": "ท่อนที่เน้นกีตาร์โซโล",
+    "A part where the drums stand out.": "ท่อนที่กลองโดดเด่น",
+    "A part that strips back the instruments or changes the dynamics.": "ท่อนที่ลดเครื่องดนตรีลงหรือเปลี่ยนไดนามิก",
+    "Note: how it sounds depends on the model's interpretation.": "หมายเหตุ: เสียงที่ได้ขึ้นอยู่กับการตีความของโมเดล",
+    "Asks for a whispered voice.": "ขอเสียงกระซิบ",
+    "Note: this is a hint to the model. ACE-Step may not follow it every time.": "หมายเหตุ: นี่เป็นคำใบ้ให้โมเดล ACE-Step อาจไม่ทำตามทุกครั้ง",
+    "Asks for a light, high head-voice.": "ขอเสียงสูงเบาแบบ head voice",
+    "Asks for a full, powerful voice.": "ขอเสียงเต็มและทรงพลัง",
+    "Asks for speaking or half-speaking instead of a sung melody.": "ขอการพูดหรือกึ่งพูดแทนการร้องเป็นทำนอง",
+    "Asks for a soft, gentle voice.": "ขอเสียงนุ่มเบา",
+    "Asks for a rough, raspy voice.": "ขอเสียงแหบกร้าน",
+    "Asks for an airy, breathy voice.": "ขอเสียงโปร่งมีลมหายใจ",
+    "Asks for a choir or group of backing voices.": "ขอคอรัสหรือกลุ่มเสียงประสาน",
+    "Asks for a voice full of feeling.": "ขอเสียงที่เต็มไปด้วยอารมณ์",
+    "Asks for an opera-style voice.": "ขอเสียงแนวโอเปร่า",
+    "Stretches a sung word so it is held longer.": "ยืดคำที่ร้องให้ลากเสียงยาวขึ้น",
+    "Select the word first, or put the cursor right after it.": "เลือกคำก่อน หรือวางเคอร์เซอร์ไว้หลังคำนั้น",
+    "The program lengthens the end of the word and adds [Hold] at the start of the line.": "โปรแกรมจะยืดท้ายคำ และเพิ่ม [Hold] ที่ต้นบรรทัด",
+    "Note: experimental. It can distort words (Thai especially), and the AI is not guaranteed to hold the note.": "หมายเหตุ: ทดลอง อาจทำให้คำเพี้ยน (โดยเฉพาะภาษาไทย) และ AI ไม่รับประกันว่าจะลากเสียงตามนั้น",
+    "Marks words as backing vocals or harmony.": "ระบุคำเป็นเสียงประสานหรือฮาร์โมนี",
+    "Text selected: wraps it in parentheses, e.g. ooh ah → (ooh ah). Click again on wrapped text to remove the parentheses.": "ถ้าเลือกข้อความ: ห่อด้วยวงเล็บ เช่น ooh ah → (ooh ah) คลิกอีกครั้งที่ข้อความที่ห่อไว้เพื่อเอาวงเล็บออก",
+    "Nothing selected: inserts ( ) at the cursor with the cursor between the brackets, ready to type.": "ถ้าไม่ได้เลือก: แทรก ( ) ที่เคอร์เซอร์ โดยวางเคอร์เซอร์ไว้ระหว่างวงเล็บ พร้อมพิมพ์",
+    "Note: Harmonies and Ad-lib both use ( ) in exactly the same way. The program does not tell backing harmonies from ad-libs.": "หมายเหตุ: Harmonies และ Ad-lib ใช้ ( ) แบบเดียวกันทุกอย่าง โปรแกรมแยกเสียงประสานกับ ad-lib ไม่ได้",
+    "Marks words as ad-libs or vocal runs.": "ระบุคำเป็น ad-lib หรือการเอื้อนเสียง",
+    "Adds a pause with three dots ...": "เพิ่มช่วงหยุดด้วยจุดสามจุด ...",
+    "Put the cursor where the pause should be and click (if text is selected, the dots go after the selection).": "วางเคอร์เซอร์ตรงที่ต้องการหยุดแล้วคลิก (ถ้าเลือกข้อความ จุดจะไปอยู่หลังข้อความที่เลือก)",
+    "Note: a writing technique only. It does not set an exact pause length.": "หมายเหตุ: เป็นแค่เทคนิคการเขียน ไม่ได้กำหนดความยาวการหยุดที่แน่นอน",
+    "Asks for the part to build up in energy.": "ขอให้ท่อนค่อยๆ เพิ่มพลัง",
+    "Cursor anywhere else: adds a [building energy] line at that spot (experimental).": "ถ้าเคอร์เซอร์อยู่ที่อื่น: เพิ่มบรรทัด [building energy] ตรงนั้น (ทดลอง)",
+    "Note: a hint to the model. It may not follow it every time.": "หมายเหตุ: เป็นคำใบ้ให้โมเดล อาจไม่ทำตามทุกครั้ง",
+    "Copies the selected lines (or the line the cursor is on) and pastes them again right below.": "คัดลอกบรรทัดที่เลือก (หรือบรรทัดที่เคอร์เซอร์อยู่) แล้ววางซ้ำด้านล่างทันที",
+    "This repeats the real text. It is not a [Repeat] tag.": "นี่คือการทำซ้ำข้อความจริง ไม่ใช่แท็ก [Repeat]",
+    "An empty line cannot be repeated.": "บรรทัดว่างทำซ้ำไม่ได้",
+    "VOCAL DELIVERY": "การร้อง",
+    "BACKING & EXPRESSION": "เสียงประสานและอารมณ์",
+    "QUICK INSERT SECTION": "แทรกท่อนด่วน",
+    "✨ AI Recommend": "✨ AI Recommend",
+    "Write the next lines": "เขียนบรรทัดต่อไป",
+    "Make lyrics expressive": "เพิ่มอารมณ์ให้เนื้อเพลง",
+    "Smooth the wording": "ปรับถ้อยคำให้ลื่น",
+    "Adapt the language": "แปลงภาษา",
+    "Writes the NEXT lines after the line where your cursor (or the end of your selection) is. Nothing is replaced.": "เขียนบรรทัดถัดไปต่อจากบรรทัดที่เคอร์เซอร์อยู่ (หรือท้ายข้อความที่เลือก) ไม่แทนที่อะไร",
+    "Rewrites your SELECTION with more feeling. With no selection: the line your cursor is in (you see it before anything is sent).": "เขียนข้อความที่เลือกใหม่ให้มีอารมณ์มากขึ้น ถ้าไม่ได้เลือก: ใช้บรรทัดที่เคอร์เซอร์อยู่ (คุณจะเห็นก่อนส่งทุกครั้ง)",
+    "Rewrites your SELECTION so it is easier to sing. With no selection: the line your cursor is in (you see it before anything is sent).": "เขียนข้อความที่เลือกใหม่ให้ร้องง่ายขึ้น ถ้าไม่ได้เลือก: ใช้บรรทัดที่เคอร์เซอร์อยู่ (คุณจะเห็นก่อนส่งทุกครั้ง)",
+    "Translates your selection, the current line or the entire song into another language. You choose the language, the mode and the scope.": "แปลข้อความที่เลือก บรรทัดปัจจุบัน หรือทั้งเพลงเป็นภาษาอื่น คุณเลือกภาษา โหมด และขอบเขตได้",
+    "Select a word or a short phrase in the Lyrics Editor first. It stays here when you click this tab.": "เลือกคำหรือวลีสั้นๆ ในตัวแก้ไขเนื้อเพลงก่อน วลีจะคงอยู่ที่นี่เมื่อคลิกแท็บนี้",
+    "CUES": "CUE",
+    "NO SONG": "ไม่มีเพลง",
+    "UI language": "ภาษาของหน้าจอ",
+    "Music Style Prompt": "Music Style Prompt",
+    "Starts a new line at the cursor.": "เริ่มบรรทัดใหม่ที่เคอร์เซอร์",
+    "If text is selected, the break goes at the start of the selection and nothing is deleted.": "ถ้าเลือกข้อความไว้ การขึ้นบรรทัดใหม่จะอยู่ที่ต้นข้อความที่เลือก และไม่ลบอะไร",
+    "Your own lines are placed into this structure by the AI (it never writes or changes lyrics); you preview before anything changes": "AI จะจัดบรรทัดของคุณเข้าโครงสร้างนี้ (ไม่เขียนหรือแก้เนื้อเพลงเอง) คุณดูตัวอย่างก่อนที่จะเปลี่ยนอะไร",
+    "Active Caption Source: Basic. The AI writes the caption from genre, mood, vocal, energy, extra tags and your lyrics; the Advanced prompt is kept but not sent.": "แหล่ง Caption ที่ใช้อยู่: Basic AI เขียน caption จากแนวเพลง อารมณ์ เสียงร้อง พลัง แท็กเสริม และเนื้อเพลง ส่วน prompt ของ Advanced ยังเก็บไว้แต่ไม่ถูกส่ง",
+    "Active Caption Source: Advanced. The Music Style Prompt is sent as written; the Basic tags are kept but not sent.": "แหล่ง Caption ที่ใช้อยู่: Advanced ส่ง Music Style Prompt ตามที่เขียน ส่วนแท็ก Basic ยังเก็บไว้แต่ไม่ถูกส่ง",
+    "EDITING SECTION": "ท่อนที่กำลังแก้",
+    "Lyrics Tools": "เครื่องมือ",
+    "Read-only view: every lyric line with its syllables": "มุมมองอ่านอย่างเดียว: ทุกบรรทัดของเนื้อเพลงพร้อมพยางค์",
+    "The lyrics changed after this analysis. Changed lines have no count. Press Analyze Lyrics to update it.": "เนื้อเพลงเปลี่ยนหลังจากวิเคราะห์ บรรทัดที่เปลี่ยนจะไม่มีตัวเลข กดวิเคราะห์พยางค์เพื่ออัปเดต",
+    "No analysis yet. Press Analyze Lyrics in the Analysis tab.": "ยังไม่มีผลวิเคราะห์ กดวิเคราะห์พยางค์ในแท็บวิเคราะห์",
+    "Smart Phrasing": "จัดวลีอัจฉริยะ",
+    "Spacing, line breaks, pauses": "เว้นวรรค แบ่งบรรทัด จุดพัก",
+    "Suggests spaces, line breaks or pause marks (...) so the lyrics read and sing more smoothly. Your words are never changed. You choose which of the three, and what to work on.": "เสนอการเว้นวรรค ขึ้นบรรทัด หรือเครื่องหมายพัก (...) ให้เนื้อเพลงอ่านและร้องลื่นขึ้น คำของคุณไม่ถูกเปลี่ยน คุณเลือกได้ว่าจะให้ทำอย่างไหนและกับส่วนไหน",
+    "What may the AI change?": "ให้ AI เปลี่ยนอะไรได้บ้าง?",
+    "Spacing (spaces between phrases)": "เว้นวรรค (ช่องว่างระหว่างวลี)",
+    "Line Breaks (split or join lines)": "ขึ้นบรรทัด (แบ่งหรือรวมบรรทัด)",
+    "Pauses (... where a singer rests)": "จุดพัก (... ตรงที่นักร้องพัก)",
+    "Suggest": "เสนอ",
+    "Your words are never changed, only what you choose above. Section tags and [Hold] stay as they are. The result appears in the Chat; nothing changes until you press Apply (Undo restores it).": "คำของคุณไม่ถูกเปลี่ยน เปลี่ยนเฉพาะสิ่งที่เลือกไว้ด้านบน แท็กท่อนและ [Hold] คงเดิม ผลลัพธ์จะขึ้นในแชต ยังไม่มีอะไรเปลี่ยนจนกว่าจะกด Apply (Undo ย้อนกลับได้)",
+    "RHYME COLORS": "สีคำสัมผัส",
+    "Same colour = rhymes together · bold on a tint = verified · dotted underline = unverified · wavy italic = near rhyme. A preview only: your lyrics are not changed.": "สีเดียวกัน = สัมผัสกัน · ตัวหนาบนพื้นสี = ตรวจแล้ว · ขีดเส้นใต้จุด = ยังไม่ยืนยัน · ตัวเอียงเส้นหยัก = สัมผัสใกล้เคียง เป็นแค่ตัวอย่าง เนื้อเพลงไม่ถูกเปลี่ยน",
+    "The AI suggested no change. Nothing was changed.": "AI เห็นว่าไม่ต้องเปลี่ยน จึงไม่มีอะไรถูกเปลี่ยน",
+    "Choose what the AI may change: spacing, line breaks or pauses.": "เลือกว่าให้ AI เปลี่ยนอะไรได้: เว้นวรรค ขึ้นบรรทัด หรือจุดพัก",
+    "The lyrics, the syllable count of this line, or its rhyme analysis changed after these suggestions were made. They belong to the older version.": "เนื้อเพลง จำนวนพยางค์ของบรรทัดนี้ หรือผลวิเคราะห์สัมผัสเปลี่ยนหลังจากคำแนะนำนี้ถูกสร้าง คำแนะนำเป็นของเวอร์ชันเก่า",
+    "The AI answer is empty.": "AI ตอบกลับมาว่างเปล่า",
+    "The AI copied this line slightly differently.": "AI คัดลอกบรรทัดนี้ไม่ตรงเป๊ะ",
+    "There are no sung lines to analyze (only [tags] or empty).": "ไม่มีบรรทัดที่ร้องให้วิเคราะห์ (มีแต่แท็กหรือบรรทัดว่าง)",
+    "A unit is empty: check for a doubled or trailing separator ( | ).": "มีหน่วยที่ว่าง: ตรวจดูว่ามีตัวคั่น ( | ) ซ้อนกันหรือเกินท้าย",
+    "Square brackets are not allowed in a unit (they are section tags).": "ห้ามใช้วงเล็บเหลี่ยมในหน่วย (เป็นแท็กท่อน)",
+    "The count must be a whole number of 0 or more (or empty / Auto).": "จำนวนต้องเป็นจำนวนเต็ม 0 ขึ้นไป (หรือเว้นว่าง / Auto)",
+    "The syllable boundary was not clear, so Python did not confirm the sound.": "ขอบเขตพยางค์ไม่ชัด Python จึงไม่ยืนยันเสียง",
+    "Python did not check this sound (it only reads Thai spelling).": "Python ไม่ได้ตรวจเสียงนี้ (อ่านได้เฉพาะการสะกดภาษาไทย)",
+    "Python could not separate the last syllable, so this pair is unverified.": "Python แยกพยางค์ท้ายไม่ได้ คู่นี้จึงยังไม่ยืนยัน",
+    "Python could not read the vowel and final consonant, so this pair is unverified.": "Python อ่านสระและตัวสะกดไม่ได้ คู่นี้จึงยังไม่ยืนยัน",
+    "Hard to sing smoothly": "ร้องให้ลื่นได้ยาก",
+    "Possible breath point": "อาจเป็นจุดหายใจ",
+    "Differs from a similar section": "ต่างจากท่อนที่คล้ายกัน",
+    "A suggestion row has an empty suggestion.": "แถวคำแนะนำมีคำแนะนำที่ว่าง",
+    "Select a word or a short phrase in the lyrics first.": "เลือกคำหรือวลีสั้นๆ ในเนื้อเพลงก่อน",
+    "These lyrics contain the characters ⟦ ⟧, which this tool uses as markers. Remove them to use the Thesaurus.": "เนื้อเพลงนี้มีอักขระ ⟦ ⟧ ซึ่งเครื่องมือนี้ใช้เป็นตัวหมาย ลบออกก่อนจึงจะใช้คำพ้องได้",
+    "A [section tag] is not a lyric. Select words from the lines you sing.": "[แท็กท่อน] ไม่ใช่เนื้อเพลง เลือกคำจากบรรทัดที่ร้อง",
+    "The selection contains a character that this tool uses as a marker. Select again.": "ข้อความที่เลือกมีอักขระที่เครื่องมือนี้ใช้เป็นตัวหมาย กรุณาเลือกใหม่",
+    "Unknown action.": "ไม่รู้จักคำสั่งนี้",
+    "Click in the lyrics (or select some text) first, then choose the action.": "คลิกในเนื้อเพลง (หรือเลือกข้อความ) ก่อน แล้วค่อยเลือกคำสั่ง",
+    "Choose what to work on: the selection, the current line or the entire song.": "เลือกว่าจะทำกับอะไร: ข้อความที่เลือก บรรทัดปัจจุบัน หรือทั้งเพลง",
+    "There is no lyric to work on here: the cursor is on an empty line or a [section tag]. Select the words, or put the cursor in a lyric line.": "ตรงนี้ไม่มีเนื้อเพลงให้ทำ: เคอร์เซอร์อยู่บนบรรทัดว่างหรือ [แท็กท่อน] เลือกคำ หรือวางเคอร์เซอร์ในบรรทัดเนื้อเพลง",
+    "Write at least one line of lyrics first, then place the cursor after it.": "เขียนเนื้อเพลงอย่างน้อยหนึ่งบรรทัดก่อน แล้ววางเคอร์เซอร์ไว้หลังบรรทัดนั้น",
+    "There are no lyrics to work on.": "ไม่มีเนื้อเพลงให้ทำ",
+    "Select the words or lines to work on first.": "เลือกคำหรือบรรทัดที่จะทำก่อน",
+    "The AI proposed no text.": "AI ไม่ได้เสนอข้อความ",
+    "The AI used an HTML-like tag in the lyrics. Nothing was changed.": "AI ใช้แท็กคล้าย HTML ในเนื้อเพลง จึงไม่มีอะไรถูกเปลี่ยน",
+    "The AI sent back lines that are already in your song instead of only the new lines. Nothing was changed.": "AI ส่งบรรทัดที่มีอยู่แล้วในเพลงของคุณกลับมา แทนที่จะส่งเฉพาะบรรทัดใหม่ จึงไม่มีอะไรถูกเปลี่ยน",
+    "The AI only repeated lines that are already there. Nothing was changed.": "AI แค่ทวนบรรทัดที่มีอยู่แล้ว จึงไม่มีอะไรถูกเปลี่ยน",
+    "The AI changed, added or removed a section tag, so the proposal was not offered. Nothing was changed.": "AI เปลี่ยน เพิ่ม หรือลบแท็กท่อน จึงไม่เสนอข้อเสนอนี้ และไม่มีอะไรถูกเปลี่ยน",
+    "The AI returned the text unchanged (no translation).": "AI ส่งข้อความเดิมกลับมา (ไม่มีการแปล)",
+    "The translation is much longer than the original, so it was not offered. Nothing was changed.": "คำแปลยาวกว่าต้นฉบับมาก จึงไม่เสนอ และไม่มีอะไรถูกเปลี่ยน",
+    "The AI added, removed or changed a [tag] or [Hold]. Smart Phrasing never does that, so the proposal was not offered. Nothing was changed.": "AI เพิ่ม ลบ หรือเปลี่ยน [แท็ก] หรือ [Hold] ซึ่ง Smart Phrasing ไม่ทำ จึงไม่เสนอ และไม่มีอะไรถูกเปลี่ยน",
+    "The AI changed the words, but Smart Phrasing may only move spaces and line breaks. The proposal was not offered. Nothing was changed.": "AI เปลี่ยนคำ แต่ Smart Phrasing ย้ายได้เฉพาะช่องว่างและการขึ้นบรรทัด จึงไม่เสนอ และไม่มีอะไรถูกเปลี่ยน",
+    "The AI changed the words while adding pauses, so the proposal was not offered. Nothing was changed.": "AI เปลี่ยนคำตอนเพิ่มจุดพัก จึงไม่เสนอ และไม่มีอะไรถูกเปลี่ยน",
+    "The AI changed the line breaks, but you asked for pauses only. Nothing was changed.": "AI เปลี่ยนการขึ้นบรรทัด แต่คุณขอแค่จุดพัก จึงไม่มีอะไรถูกเปลี่ยน",
+    "The AI changed the line breaks, but you asked for spacing only. Nothing was changed.": "AI เปลี่ยนการขึ้นบรรทัด แต่คุณขอแค่การเว้นวรรค จึงไม่มีอะไรถูกเปลี่ยน",
+    "The AI put a pause mark at almost every line. That is not a useful breathing guide, so it was not offered. Nothing was changed.": "AI ใส่เครื่องหมายพักเกือบทุกบรรทัด ซึ่งไม่ช่วยบอกจังหวะหายใจ จึงไม่เสนอ และไม่มีอะไรถูกเปลี่ยน",
+    "The lyrics changed since you asked, so the place where the new lines belong can no longer be trusted.": "เนื้อเพลงเปลี่ยนไปหลังจากที่คุณขอ จึงเชื่อถือตำแหน่งที่บรรทัดใหม่ควรอยู่ไม่ได้อีก",
+    "The lyrics changed since you asked, and the selected text is no longer at the same place.": "เนื้อเพลงเปลี่ยนไปหลังจากที่คุณขอ และข้อความที่เลือกไม่ได้อยู่ที่เดิมแล้ว",
+    "The lyrics changed while the AI was answering. Replacing them would lose your newer edits.": "เนื้อเพลงเปลี่ยนระหว่างที่ AI ตอบ การแทนที่จะทำให้การแก้ไขใหม่ของคุณหายไป",
+    "Insert after the cursor line": "แทรกหลังบรรทัดที่เคอร์เซอร์อยู่",
+    "Insert at the cursor": "แทรกที่เคอร์เซอร์",
+    "Replace everything anyway": "แทนที่ทั้งหมดอยู่ดี",
+    "Replace it where it moved": "แทนที่ตรงที่มันย้ายไป",
+    "The lyrics changed after this analysis.": "เนื้อเพลงเปลี่ยนไปหลังการวิเคราะห์นี้",
+    "Press Analyze Lyrics to update it.": "กดวิเคราะห์พยางค์เพื่ออัปเดต",
+    "Press Analyze Rhymes to update it.": "กดวิเคราะห์สัมผัสเพื่ออัปเดต",
+    "The pairs below belong to the old lyrics.": "คู่ด้านล่างเป็นของเนื้อเพลงเก่า",
+    "Your manual corrections are kept and apply again only to lines that still match.": "การแก้ไขด้วยมือของคุณยังอยู่ และจะใช้กับบรรทัดที่ยังตรงกันเท่านั้น",
+    "The earlier result below is kept.": "ผลก่อนหน้าด้านล่างยังอยู่",
+    "The earlier suggestions below are kept.": "คำแนะนำก่อนหน้าด้านล่างยังอยู่",
+    "The syllable counts changed after this analysis (the lyrics did not).": "จำนวนพยางค์เปลี่ยนหลังการวิเคราะห์นี้ (เนื้อเพลงไม่ได้เปลี่ยน)",
+    "The answer is not trusted.": "จึงไม่เชื่อถือคำตอบนี้",
+    "Line endings that end in the same sound share a colour, found here from the sound of the last syllable. Bold on a tint = checked by Python · wavy italic = near rhyme. A preview only: your lyrics are not changed.": "ท้ายบรรทัดที่ลงเสียงเดียวกันใช้สีเดียวกัน หาจากเสียงของพยางค์สุดท้ายในโปรแกรมนี้ ตัวหนาบนพื้นสี = Python ตรวจแล้ว · ตัวเอียงเส้นหยัก = สัมผัสใกล้เคียง เป็นแค่ตัวอย่าง เนื้อเพลงไม่ถูกเปลี่ยน",
+    "Press Analyze Rhymes to add the AI's internal, cross-line and near rhymes.": "กดวิเคราะห์สัมผัสเพื่อเพิ่มสัมผัสในและข้ามบรรทัดจาก AI",
+    "Also colour the AI's Thai pairs that Python could not confirm (dotted underline)": "ระบายสีคู่ภาษาไทยของ AI ที่ Python ยืนยันไม่ได้ด้วย (ขีดเส้นใต้จุด)",
+    "The AI's second answer could not be read, so its first answer is shown.": "อ่านคำตอบรอบสองของ AI ไม่ได้ จึงแสดงคำตอบรอบแรก",
+    "The AI answer has no readable ending rows.": "คำตอบของ AI ไม่มีแถวท้ายบรรทัดที่อ่านได้",
+    "The AI answer does not have the ENDINGS ... END marker lines exactly once, in order.": "คำตอบของ AI ไม่มีบรรทัดตัวคั่น ENDINGS ... END ครบอย่างละหนึ่งครั้งตามลำดับ",
+    "Review": "รีวิว",
+    "Review Lyrics": "รีวิวเนื้อเพลง",
+    "AI reviews and suggests changes": "AI รีวิวและเสนอทางแก้",
+    "The AI reviews the selected lines, or the section you are in, and suggests changes you can apply": "AI รีวิวบรรทัดที่เลือก หรือท่อนที่คุณอยู่ แล้วเสนอทางแก้ที่นำไปใช้ได้",
+    "More review options": "ตัวเลือกรีวิวเพิ่มเติม",
+    "Review the whole song": "รีวิวทั้งเพลง",
+    "Review with a note…": "รีวิวพร้อมหมายเหตุ…",
+    "Review with a note": "รีวิวพร้อมหมายเหตุ",
+    "What do you want the AI to look at?": "อยากให้ AI ดูเรื่องอะไร?",
+    "Review Again": "รีวิวอีกครั้ง",
+    "Close the review": "ปิดรีวิว",
+    "AI Review": "รีวิวจาก AI",
+    "The lyrics work as they are.": "เนื้อเพลงใช้ได้แล้ว",
+    "Nothing important needs to change here.": "ตรงนี้ไม่มีอะไรสำคัญที่ต้องแก้",
+    "Applied. Undo in the editor restores the earlier lyrics.": "นำไปใช้แล้ว กด Undo ในตัวแก้ไขเพื่อกลับไปเนื้อเดิม",
+    "Ignored": "ไม่ใช้",
+    "Ignore": "ไม่ใช้",
+    "Before": "ก่อน",
+    "After": "หลัง",
+    "This review belongs to another sheet. Open that sheet to apply it.": "รีวิวนี้เป็นของอีกชีต เปิดชีตนั้นเพื่อนำไปใช้",
+    "Meaning": "ความหมาย",
+    "Emotion": "อารมณ์",
+    "Rhyme": "สัมผัส",
+    "Flow": "ความลื่นไหล",
+    "Phrasing": "การแบ่งวลี",
+    "Word choice": "การเลือกคำ",
+    "Structure": "โครงสร้าง",
+    "Other": "อื่นๆ",
+    "The lyrics changed since this review. Each suggestion is checked against the current lyrics before it is applied. Press Review Again for a fresh review.": "เนื้อเพลงเปลี่ยนไปหลังรีวิวนี้ ทุกข้อเสนอจะถูกตรวจกับเนื้อเพลงปัจจุบันก่อนนำไปใช้ กดรีวิวอีกครั้งเพื่อรีวิวใหม่",
+    "The lyrics changed while the AI was working, so that review was not used. Press Review again.": "เนื้อเพลงเปลี่ยนระหว่างที่ AI ทำงาน จึงไม่ใช้รีวิวนั้น กดรีวิวอีกครั้ง",
+    "This review was made for another sheet. Open that sheet to apply it. Nothing was changed.": "รีวิวนี้ทำไว้สำหรับอีกชีต เปิดชีตนั้นเพื่อนำไปใช้ ยังไม่มีอะไรถูกเปลี่ยน",
+    "Write some lyrics first.": "เขียนเนื้อเพลงสักหน่อยก่อน",
+    "Select some lyrics first (not only [tags]).": "เลือกเนื้อเพลงก่อน (ไม่ใช่แค่ [แท็ก])",
+    "There are no lyrics in this section yet. Select some lines, or review the whole song.": "ท่อนนี้ยังไม่มีเนื้อเพลง เลือกบางบรรทัด หรือรีวิวทั้งเพลง",
+    "Whole song": "ทั้งเพลง",
+    "Current section": "ท่อนปัจจุบัน",
+    "The lines changed since this review, so the quoted text is no longer exactly there (or it is ambiguous). Review again.": "บรรทัดเปลี่ยนไปหลังรีวิวนี้ ข้อความที่อ้างจึงไม่ได้อยู่ตรงนั้นแล้ว (หรือกำกวม) กรุณารีวิวใหม่",
+    "This change would alter a [section tag], so it was not applied.": "การเปลี่ยนนี้จะแก้ [แท็กท่อน] จึงไม่ได้นำไปใช้",
+    "The AI answer does not have the REVIEW ... END marker lines exactly once, in order.": "คำตอบของ AI ไม่มีบรรทัดตัวคั่น REVIEW ... END ครบอย่างละหนึ่งครั้งตามลำดับ",
+    "The AI said something should change but gave no usable suggestion.": "AI บอกว่าควรแก้บางอย่าง แต่ไม่ได้ให้ข้อเสนอที่ใช้ได้",
+    "Ask AI about this take…": "ถาม AI เรื่องเทคนี้…",
+    "What did you not like about this take?": "ไม่ชอบอะไรในเทคนี้?",
+    "Ask": "ถาม",
+    "The AI has not heard the take. It answers from the lyrics, the music caption and the settings that made it, and from what you write here.": "AI ยังไม่ได้ฟังเทคนี้ มันตอบจากเนื้อเพลง music caption และการตั้งค่าที่ใช้สร้าง รวมถึงสิ่งที่คุณเขียนที่นี่",
+    "Open this song first, then ask about its take.": "เปิดเพลงนี้ก่อน แล้วค่อยถามเรื่องเทคของมัน",
+    "AI sure": "AI มั่นใจ",
+    "AI unsure": "AI ไม่แน่ใจ",
+    "Rejected (older result)": "ถูกปฏิเสธ (ผลเก่า)",
+    "Words that the AI says rhyme together share a colour. Bold on a tint = the AI is sure · dotted underline = the AI is not sure · wavy italic = near rhyme. A preview only: your lyrics are not changed.": "คำที่ AI บอกว่าสัมผัสกันใช้สีเดียวกัน ตัวหนาบนพื้นสี = AI มั่นใจ · ขีดเส้นใต้จุด = AI ไม่แน่ใจ · ตัวเอียงเส้นหยัก = สัมผัสใกล้เคียง เป็นแค่ตัวอย่าง เนื้อเพลงไม่ถูกเปลี่ยน",
+    "Press Analyze Rhymes: the AI listens to the line endings and says which lines rhyme.": "กดวิเคราะห์สัมผัส: AI จะฟังท้ายบรรทัดแล้วบอกว่าบรรทัดไหนสัมผัสกัน",
+    "Press Analyze Rhymes: the AI listens to how every line ends and says which lines rhyme (end, cross-line and near rhymes). It can be wrong: AI unsure means it said it was not sure.": "กดวิเคราะห์สัมผัส: AI จะฟังท้ายทุกบรรทัดแล้วบอกว่าบรรทัดไหนสัมผัสกัน (สัมผัสท้าย ข้ามบรรทัด และใกล้เคียง) AI อาจผิดได้ ป้าย \"AI ไม่แน่ใจ\" คือมันบอกเองว่าไม่แน่ใจ",
+    "Advanced Analysis": "วิเคราะห์ขั้นสูง",
+    "Analyze Song": "วิเคราะห์เพลง",
+    "Analyze Again": "วิเคราะห์อีกครั้ง",
+    "Song Analysis Report": "รายงานวิเคราะห์เพลง",
+    "Syllables, rhymes, rhythm, quality: one report": "พยางค์ สัมผัส จังหวะ คุณภาพ: รายงานเดียว",
+    "Suggestions for the selection or section": "ข้อเสนอสำหรับข้อความที่เลือกหรือท่อนนี้",
+    "Find Alternative Words": "หาคำทดแทน",
+    "For the words you selected": "สำหรับคำที่คุณเลือก",
+    "Find alternative words (selected)": "หาคำทดแทน (ที่เลือก)",
+    "Review the selection / section (suggestions only)": "รีวิวข้อความที่เลือก / ท่อนนี้ (เฉพาะข้อเสนอ)",
+    "More AI options": "ตัวเลือก AI เพิ่มเติม",
+    "One click: syllables, rhymes, rhythm and songwriting quality in one report, with suggestions you can apply": "คลิกเดียว: พยางค์ สัมผัส จังหวะ และคุณภาพการแต่งเพลงในรายงานเดียว พร้อมข้อเสนอที่นำไปใช้ได้",
+    "1. Overview": "1. ภาพรวม",
+    "2. Lyrics & Syllables": "2. เนื้อเพลงและพยางค์",
+    "3. Rhyme Map": "3. แผนที่สัมผัส",
+    "4. Rhythm & Flow": "4. จังหวะและความลื่นไหล",
+    "5. AI Suggestions": "5. ข้อเสนอจาก AI",
+    "Songwriting quality": "คุณภาพการแต่งเพลง",
+    "Done": "เสร็จแล้ว",
+    "Failed": "ล้มเหลว",
+    "Outdated": "ล้าสมัย",
+    "Working…": "กำลังทำ…",
+    "Not done": "ยังไม่ได้ทำ",
+    "Retry": "ลองใหม่",
+    "Not available for the current lyrics. Use Retry in the Overview.": "ยังไม่มีสำหรับเนื้อเพลงปัจจุบัน กด ลองใหม่ ในภาพรวม",
+    "Lines to check": "บรรทัดที่ควรตรวจ",
+    "No line needs checking.": "ไม่มีบรรทัดที่ต้องตรวจ",
+    "Line lengths": "ความยาวแต่ละบรรทัด",
+    "your correction": "คุณแก้ไว้",
+    "The AI had no remarks about the rhythm and flow.": "AI ไม่มีข้อสังเกตเรื่องจังหวะและความลื่นไหล",
+    "Outdated: the lyrics changed after this analysis. Rhyme colours are hidden until you analyze again; each suggestion is checked against the current lyrics before it is applied.": "ล้าสมัย: เนื้อเพลงเปลี่ยนหลังการวิเคราะห์นี้ สีสัมผัสจะถูกซ่อนจนกว่าจะวิเคราะห์ใหม่ ทุกข้อเสนอจะถูกตรวจกับเนื้อเพลงปัจจุบันก่อนนำไปใช้",
+    "Write some lyrics first (there are only [tags] or empty lines).": "เขียนเนื้อเพลงก่อน (ตอนนี้มีแต่ [แท็ก] หรือบรรทัดว่าง)",
+    "Alternative words": "คำทดแทน",
+    "Suggestion": "ข้อเสนอ",
+    "Words that rhyme together share a colour. Bold on a tint = the Thai sound check agreed · dotted underline = the sound could not be checked · wavy italic = near rhyme. A preview only: your lyrics are not changed.": "คำที่สัมผัสกันใช้สีเดียวกัน ตัวหนาบนพื้นสี = ตรวจเสียงไทยแล้วตรงกัน · ขีดเส้นใต้จุด = ตรวจเสียงไม่ได้ · ตัวเอียงเส้นหยัก = สัมผัสใกล้เคียง เป็นแค่ตัวอย่าง เนื้อเพลงไม่ถูกเปลี่ยน",
+    "Report": "รายงาน",
+    "Press Analyze Song (the button above the lyrics, or the ✨ menu). The report appears here: syllables, rhymes, rhythm and suggestions you can apply.": "กดวิเคราะห์เพลง (ปุ่มเหนือเนื้อเพลง หรือเมนู ✨) รายงานจะขึ้นที่นี่: พยางค์ สัมผัส จังหวะ และข้อเสนอที่นำไปใช้ได้",
+    "All together: spaces, line breaks and pauses (recommended)": "ทั้งหมดรวมกัน: เว้นวรรค ขึ้นบรรทัด และจุดพัก (แนะนำ)",
+    "Spacing, Line Breaks and Pauses": "เว้นวรรค ขึ้นบรรทัด และจุดพัก",
+    "Your words are never changed, only what you choose above. Section tags stay as they are; a [Hold] cue may be removed, never added. The result appears in the Chat; nothing changes until you press Apply (Undo restores it).": "คำของคุณไม่ถูกเปลี่ยน เปลี่ยนเฉพาะสิ่งที่เลือกไว้ด้านบน แท็กท่อนคงเดิม cue [Hold] ตัดได้แต่ไม่เพิ่ม ผลลัพธ์จะขึ้นในแชต ยังไม่มีอะไรเปลี่ยนจนกว่าจะกด Apply (Undo ย้อนกลับได้)",
+    "The AI put a pause mark ... at almost every line. That is not a useful breathing guide, so it was not offered. Nothing was changed.": "AI ใส่เครื่องหมายพัก ... เกือบทุกบรรทัด ซึ่งไม่ช่วยบอกจังหวะหายใจ จึงไม่เสนอ และไม่มีอะไรถูกเปลี่ยน",
+    "Specialist prompts": "Prompt ของผู้เชี่ยวชาญ",
+    "Talk to": "คุยกับ",
+    "What works": "ส่วนที่ดีอยู่แล้ว",
+    "Suggestions": "ข้อเสนอแนะ",
+    "Not sure / left out": "ไม่แน่ใจ / ข้ามไว้",
+    "Press Analyze Song (the button above the lyrics, or the ✨ menu). The four specialists write their reports and they appear here as one report.": "กด Analyze Song (ปุ่มเหนือเนื้อเพลง หรือเมนู ✨) ผู้เชี่ยวชาญทั้งสี่คนจะเขียนรายงานของตัวเอง แล้วรวมแสดงที่นี่เป็นรายงานเดียว",
+    "Ask Specialist": "ถามผู้เชี่ยวชาญ",
+    "Compare": "เปรียบเทียบ",
+    "Nothing important needs to change in this area.": "ด้านนี้ไม่มีอะไรสำคัญที่ต้องแก้",
+    "Nothing important to change was found, or the reports are not ready yet.": "ยังไม่พบสิ่งสำคัญที่ต้องแก้ หรือรายงานยังไม่พร้อม",
+    "Open the prompts folder": "เปิดโฟลเดอร์ prompt",
+    "Reload the prompts": "โหลด prompt ใหม่",
+    "View the effective prompt": "ดู prompt ที่ใช้จริง",
+    "Reset this prompt to default…": "คืน prompt นี้เป็นค่าเริ่มต้น…",
+    "The lines changed since this analysis, so this suggestion can no longer be applied (the quoted text is not exactly there). Analyze again.": "บรรทัดเปลี่ยนไปหลังการวิเคราะห์ ข้อเสนอนี้จึง Apply ไม่ได้อีก (ข้อความที่อ้างไม่อยู่ตรงนั้นแล้ว) กรุณาวิเคราะห์ใหม่",
+    "Rhyme map": "แผนที่สัมผัส",
+    "Rhythm & flow": "จังหวะและการไหล",
+    "Original": "ต้นฉบับ",
+    "Lyricist": "นักแต่งเนื้อ",
+    "Song Editor": "บรรณาธิการเพลง",
+    "Thai Prosody Expert": "ผู้เชี่ยวชาญฉันทลักษณ์ไทย",
+    "Hook Specialist": "ผู้เชี่ยวชาญฮุก",
+    "Music Director": "ผู้กำกับดนตรี",
+    "2. Lyrics & Language": "2. เนื้อเพลงและภาษา",
+    "3. Meaning & Emotion": "3. ความหมายและอารมณ์",
+    "4. Syllables, Rhymes & Flow": "4. พยางค์ สัมผัส และการไหล",
+    "5. Hook & Song Structure": "5. ฮุกและโครงสร้างเพลง",
+    "6. Priority Improvements": "6. สิ่งที่ควรปรับก่อน",
+    "Review suggestions (selection / section)": "ข้อเสนอจากการรีวิว (ส่วนที่เลือก / ท่อน)",
+    "The prompts were reloaded. A changed prompt starts a new session generation for that specialist.": "โหลด prompt ใหม่แล้ว prompt ที่เปลี่ยนจะเริ่ม session รุ่นใหม่ของผู้เชี่ยวชาญคนนั้น",
+    "Lyric Craft Advisor": "ที่ปรึกษาศิลปะการใช้ถ้อยคำ",
+    "Song Architect": "สถาปนิกเพลง",
+    "Songwriter AI": "ผู้ช่วยแต่งเนื้อเพลง",
+    "This is a read-only archive of a former specialist's chat. Nothing of it is saved on this sheet; chats made on other sheets show when you open those sheets. Choose Songwriter AI to write or ask something new.": "นี่คือคลังแชตเดิมของผู้เชี่ยวชาญที่ถูกรวมแล้ว (อ่านอย่างเดียว) ชีตนี้ไม่มีแชตของตัวนี้ แชตที่เคยทำในชีตอื่นจะแสดงเมื่อเปิดชีตนั้น เลือกผู้ช่วยแต่งเนื้อเพลงเพื่อแต่งหรือถามเรื่องใหม่",
+    "Archive · Lyric Craft Advisor": "คลังเก่า · ที่ปรึกษาศิลปะการใช้ถ้อยคำ",
+    "Archive · Song Editor": "คลังเก่า · บรรณาธิการเพลง",
+    "Archive · Thai Prosody Expert": "คลังเก่า · ผู้เชี่ยวชาญฉันทลักษณ์ไทย",
+    "Lyrics, Meaning & Flow": "เนื้อเพลง ความหมาย และการไหล",
+    "Archive: reports of the former specialists (read-only)": "คลังรายงานเดิมของผู้เชี่ยวชาญที่ถูกรวมแล้ว (อ่านอย่างเดียว)",
+    "This is the saved chat of the former Lyric Craft Advisor (read-only). Choose Songwriter AI to write or ask something new.": "นี่คือแชตเดิมของที่ปรึกษาศิลปะการใช้ถ้อยคำ (อ่านอย่างเดียว) เลือกผู้ช่วยแต่งเนื้อเพลงเพื่อแต่งหรือถามเรื่องใหม่",
+    "This is the saved chat of the former Song Editor (read-only). Choose Songwriter AI to write or ask something new.": "นี่คือแชตเดิมของบรรณาธิการเพลง (อ่านอย่างเดียว) เลือกผู้ช่วยแต่งเนื้อเพลงเพื่อแต่งหรือถามเรื่องใหม่",
+    "This is the saved chat of the former Thai Prosody Expert (read-only). Choose Songwriter AI to write or ask something new.": "นี่คือแชตเดิมของผู้เชี่ยวชาญฉันทลักษณ์ไทย (อ่านอย่างเดียว) เลือกผู้ช่วยแต่งเนื้อเพลงเพื่อแต่งหรือถามเรื่องใหม่",
+    "The saved chats of the former specialists are kept: they cannot be cleared here.": "แชตเดิมของผู้เชี่ยวชาญที่ถูกรวมแล้วถูกเก็บไว้ ลบจากตรงนี้ไม่ได้",
+    "Press Analyze Song (the button above the lyrics, or the ✨ menu). The Songwriter AI and the Song Architect write their reports and they appear here as one report.": "กด Analyze Song (ปุ่มเหนือเนื้อเพลง หรือเมนู ✨) ผู้ช่วยแต่งเนื้อเพลงและสถาปนิกเพลงคนจะเขียนรายงานของตัวเอง แล้วรวมแสดงที่นี่เป็นรายงานเดียว",
+    "Existing Section Review": "ตรวจท่อนที่มีอยู่",
+    "Cue Recommendations": "คำแนะนำ Cue",
+    "Hook / Chorus": "ฮุก / คอรัส",
+    "Suggested Changes": "ข้อเสนอการปรับ",
+    "What works in the existing structure": "ส่วนที่ดีอยู่แล้วในโครงสร้างเดิม",
+    "5. Sections, Cues, Hook & Structure": "5. ท่อน Cue ฮุก และโครงสร้าง",
+    "Word choice, language and imagery of the lyrics": "การเลือกคำ ภาษา และภาพเปรียบเทียบของเนื้อเพลง",
+    "Sections, cues, hook and song structure": "ท่อนเพลง Cue ฮุก และโครงสร้างเพลง",
+    "Open this specialist's chat on the left; it already knows this report": "เปิดแชตของผู้เชี่ยวชาญคนนี้ทางซ้าย เขารู้จักรายงานนี้อยู่แล้ว",
+    "(The AI gave your lyrics back unchanged, so there is nothing to apply.)": "(AI ส่งเนื้อเพลงเดิมของคุณกลับมาโดยไม่เปลี่ยนอะไร จึงไม่มีอะไรให้ Apply)",
+    "Now": "เดิม",
+    "Change to": "เปลี่ยนเป็น",
+    "Why": "เหตุผล",
+    "Partial": "บางส่วน",
+    "New message ↓": "ข้อความใหม่ ↓",
+    "Overview": "ภาพรวม",
+    "Fix first": "ควรแก้ก่อน",
+    "Lyrics & Language": "เนื้อเพลงและภาษา",
+    "Meaning & Emotion": "ความหมายและอารมณ์",
+    "Syllables, Rhymes & Flow": "พยางค์ สัมผัส และการไหล",
+    "Sections, Cues, Hook & Structure": "ท่อน Cue ฮุก และโครงสร้าง",
+    "See the lines before and after; nothing changes": "ดูบรรทัดก่อนและหลัง ยังไม่เปลี่ยนอะไร",
+    "Put the new wording in the lyrics (Undo brings the old back)": "ใส่ถ้อยคำใหม่ลงในเนื้อเพลง (Undo นำของเดิมกลับมา)",
+    "Copy the new wording": "คัดลอกถ้อยคำใหม่",
+    "Hide this suggestion": "ซ่อนข้อเสนอนี้",
+    "✓ Applied. Undo in the editor makes it available again.": "✓ ใช้แล้ว กด Undo ในตัวแก้ไขเพื่อให้ใช้ได้อีกครั้ง",
+    "This change belongs to another sheet. Open that sheet to apply it.": "ข้อเสนอนี้เป็นของชีตอื่น เปิดชีตนั้นเพื่อนำไปใช้",
+    "The lines changed since this suggestion, so it cannot be applied here. You can still copy the new wording.": "บรรทัดเปลี่ยนไปหลังข้อเสนอนี้ จึงใช้ที่นี่ไม่ได้ แต่ยังคัดลอกถ้อยคำใหม่ได้",
+    "the AI's answer could not be read. Try again.": "อ่านคำตอบของ AI ไม่ได้ ลองใหม่",
+    "Quality": "คุณภาพ",
+    "Draft": "ร่าง",
+    "Standard": "มาตรฐาน",
+    "High": "สูง",
+    "Turbo model (distilled): made for about 8 steps and CFG 1.": "โมเดล Turbo (กลั่นให้เร็ว): ออกแบบมาสำหรับราว 8 steps และ CFG 1",
+    "Full model (SFT / Base / XL): made for about 50 steps and CFG 7. Fewer steps are faster but lower quality.": "โมเดลเต็ม (SFT / Base / XL): ออกแบบมาสำหรับราว 50 steps และ CFG 7 steps น้อยกว่านี้เร็วกว่าแต่คุณภาพต่ำลง",
+    "Full model (SFT / Base / XL): made for about 50 steps and CFG 7. Fewer steps are faster but lower quality. This is too few steps for it.": "โมเดลเต็ม (SFT / Base / XL): ออกแบบมาสำหรับราว 50 steps และ CFG 7 steps น้อยกว่านี้เร็วกว่าแต่คุณภาพต่ำลง ค่านี้น้อยเกินไปสำหรับโมเดลนี้",
+    "AI Recommend": "ให้ AI แนะนำ",
+    "Recommend Again": "ให้ AI แนะนำอีกครั้ง",
+    "Use This Style": "ใช้สไตล์นี้",
+    "Customize": "เลือกเอง",
+    "Will change": "จะเปลี่ยน",
+    "Your settings already match this style.": "ค่าของคุณตรงกับสไตล์นี้อยู่แล้ว",
+    "Why these styles": "เหตุผลของสไตล์เหล่านี้",
+    "Reads your lyrics and suggests three music styles. Your lyrics are never changed.": "อ่านเนื้อเพลงแล้วเสนอสไตล์ดนตรี 3 แบบ เนื้อเพลงของคุณจะไม่ถูกแก้",
+    "Read the lyrics and suggest three music styles. Nothing changes until you press Use This Style.": "อ่านเนื้อเพลงแล้วเสนอสไตล์ดนตรี 3 แบบ จะไม่มีอะไรเปลี่ยนจนกว่าจะกด ใช้สไตล์นี้",
+    "Put this style's caption and settings into the song. Nothing is generated and the lyrics are not changed.": "ใส่ caption และค่าของสไตล์นี้ลงในเพลง ยังไม่สร้างเพลง และไม่แก้เนื้อเพลง",
+    "Choose which of these values to apply": "เลือกว่าจะใช้ค่าไหนบ้าง",
+    "Apply Selected": "ใช้ที่เลือก",
+    "Put back everything that Use This Style changed (your later changes are kept)": "คืนทุกอย่างที่ ใช้สไตล์นี้ เปลี่ยนไป (สิ่งที่คุณแก้ทีหลังจะคงไว้)",
+    "MUSIC STYLE": "สไตล์เพลง",
+    "GENERATION SETTINGS": "ค่าการสร้างเพลง",
+    "Generate Music": "สร้างเพลง",
+    "Advanced Generation Settings": "ตัวเลือกการสร้างขั้นสูง",
+    "Music Caption (the style mode becomes Advanced)": "Music Caption (โหมดสไตล์จะเป็น Advanced)",
+    "Music Caption: replaced by the AI's caption (the style mode becomes Advanced)": "Music Caption: ถูกแทนด้วย caption ของ AI (โหมดสไตล์จะเป็น Advanced)",
+    "Write a Music Style Prompt (Advanced) to see what is sent.": "เขียน Music Style Prompt (Advanced) เพื่อดูสิ่งที่ส่งไป",
+    "Your request to the AI (optional)": "คำขอถึง AI (ไม่บังคับ)",
+    "e.g. sparse and acoustic, slower, more intimate": "เช่น เบาๆ อะคูสติก ช้าลง ใกล้ชิดขึ้น",
+    "Use my current style settings as a reference": "ใช้ค่าสไตล์ปัจจุบันของฉันเป็นข้อมูลอ้างอิง",
+    "Off: the AI decides the style from the lyrics alone. On: it also sees your genre, mood, vocal, energy, extra tags and Music Style Prompt as a starting point.": "ปิด: AI ตัดสินสไตล์จากเนื้อเพลงอย่างเดียว เปิด: AI จะเห็น genre, mood, vocal, energy, extra tags และ Music Style Prompt ของคุณเป็นจุดเริ่มต้น",
+    "Reads your lyrics and suggests three music styles of its own. It does not see your Basic or Advanced style settings unless you tick the box. Your lyrics are never changed.": "อ่านเนื้อเพลงแล้วเสนอสไตล์ดนตรี 3 แบบด้วยตัวเอง AI ไม่เห็นค่า Basic หรือ Advanced ของคุณ เว้นแต่คุณติ๊กช่องด้านล่าง และไม่แก้เนื้อเพลง",
+    "The song length / language (or the reference style) changed — Reanalyze.": "ความยาว/ภาษาของเพลง (หรือสไตล์อ้างอิง) เปลี่ยนไป — วิเคราะห์ใหม่",
+    "Click to use this style": "คลิกเพื่อใช้สไตล์นี้",
+    "Applied. Undo is beside Generate.": "ใช้แล้ว ปุ่มย้อนกลับอยู่ข้างปุ่มสร้างเพลง",
+    "AI DIRECTIONS  (click a style to use it)": "ทิศทางจาก AI  (คลิกสไตล์เพื่อใช้)",
+    "Click to use this style: its caption and settings are put into the song. Nothing is generated and the lyrics are not changed; Undo is beside Generate.": "คลิกเพื่อใช้สไตล์นี้: ใส่ caption และค่าลงในเพลง ยังไม่สร้างเพลงและไม่แก้เนื้อเพลง ปุ่มย้อนกลับอยู่ข้างปุ่มสร้างเพลง",
+    "Show what the AI wrote (not applicable)": "ดูสิ่งที่ AI เขียน (ใช้ไม่ได้)",
+    "What the AI wrote (not applicable)": "สิ่งที่ AI เขียน (ใช้ไม่ได้)",
+    "Music direction: not a studio cue, so it is not applied. It can go into the Music Caption:": "ทิศทางดนตรี: ไม่ใช่ cue ที่ระบบรองรับ จึงไม่ถูกใส่ในแท็ก ใส่ใน Music Caption ได้:",
+    "Copy this direction": "คัดลอกทิศทางนี้",
+    "New session: the AI forgets this conversation and starts clean (your messages stay here)": "เริ่ม session ใหม่: AI ลืมบทสนทนานี้และเริ่มใหม่ (ข้อความของคุณยังอยู่ที่นี่)",
+    "New session: the AI starts again without the earlier conversation (your messages stay here).": "เริ่ม session ใหม่: AI เริ่มใหม่โดยไม่เห็นบทสนทนาก่อนหน้า (ข้อความของคุณยังอยู่ที่นี่)",
+    "A new AI session started, so the AI does not see the earlier messages on screen.": "เริ่มเซสชัน AI ใหม่ AI จึงไม่เห็นข้อความเก่าที่แสดงบนหน้าจอ",
+    "Section Options": "ตัวเลือกท่อน",
+    "AI Actions": "คำสั่ง AI",
+    "Custom Cue": "Cue กำหนดเอง",
+    "Effective Caption": "Caption ที่ใช้จริง",
+    "Workspace": "พื้นที่ทำงาน",
+    "Reset prompt": "คืนค่า prompt",
+    "Open the specialist log folder": "เปิดโฟลเดอร์ log ของผู้เชี่ยวชาญ",
+    "Turn the specialist log on / off": "เปิด / ปิด log ของผู้เชี่ยวชาญ",
+    "The specialist log is OFF. Nothing more is written.": "ปิด log ของผู้เชี่ยวชาญแล้ว จะไม่มีการเขียนเพิ่ม",
+    "The specialist log is ON: it keeps your lyrics and the AI answers on this computer.": "เปิด log ของผู้เชี่ยวชาญแล้ว: เก็บเนื้อเพลงและคำตอบของ AI ไว้ในเครื่องนี้",
+    "The specialist log was deleted.": "ลบ log ของผู้เชี่ยวชาญแล้ว",
+    "Not available yet. Use Retry in the Overview.": "ยังไม่มีผล ใช้ปุ่มลองใหม่ในภาพรวม",
+    "That suggestion no longer exists. Nothing was applied.": "ไม่มีข้อเสนอนั้นแล้ว ไม่ได้ใช้อะไร",
+    "This change cannot be applied now (already applied, ignored, or the lines changed).": "ใช้การเปลี่ยนนี้ไม่ได้แล้ว (ใช้ไปแล้ว ข้ามไว้ หรือบรรทัดเปลี่ยนไป)",
+    "The quoted text is not in the lyrics any more, so this suggestion cannot be applied. Analyze again.": "ข้อความที่อ้างถึงไม่อยู่ในเนื้อเพลงแล้ว จึงใช้ข้อเสนอนี้ไม่ได้ วิเคราะห์ใหม่อีกครั้ง",
+    "Another option for these lines was applied, or the lines changed, so this one cannot be applied here. You can still copy the new wording.": "ตัวเลือกอื่นของบรรทัดเหล่านี้ถูกใช้ไปแล้ว หรือบรรทัดเปลี่ยนไป จึงใช้ตัวเลือกนี้ไม่ได้ ยังคัดลอกถ้อยคำใหม่ได้",
+    "If you close now the result will not be saved into your library. Close anyway?": "ถ้าปิดตอนนี้ ผลที่ได้จะไม่ถูกบันทึกลงคลังเพลง ปิดเลยไหม?",
+    "✨ AI Music Director": "✨ AI ผู้กำกับดนตรี",
+    "Click to load it into the input": "คลิกเพื่อโหลดลงช่องป้อนข้อมูล",
+    "− fewer": "− น้อยลง",
+    "Songwriter AI: Writes, analyses and reworks lyrics: wording, meaning, rhymes and the flow of the lines.": "ผู้ช่วยแต่งเนื้อเพลง: แต่ง วิเคราะห์ และปรับเนื้อเพลง ทั้งถ้อยคำ ความหมาย สัมผัส และการไหลของบรรทัด",
+    "AI Music Director": "AI ผู้กำกับดนตรี",
+    "Song Architect: Sections, cues, hook and song structure.": "สถาปนิกเพลง: ท่อนเพลง Cue ฮุก และโครงสร้างเพลง",
+    "Music Director: Music style and caption for the generator.": "ผู้กำกับดนตรี: สไตล์ดนตรีและ caption สำหรับตัวสร้างเพลง",
+    "Lyric Craft Advisor: Word choice, language and imagery of the lyrics.": "ที่ปรึกษาศิลปะการใช้ถ้อยคำ: การเลือกคำ ภาษา และภาพเปรียบเทียบของเนื้อเพลง",
+    "Song Editor: Meaning, story continuity and emotional arc.": "บรรณาธิการเพลง: Meaning, story continuity and emotional arc",
+    "Thai Prosody Expert: Syllables, rhymes and the flow of the lines.": "ผู้เชี่ยวชาญฉันทลักษณ์ไทย: Syllables, rhymes and the flow of the lines",
+    "Ask a question, ask for a proposal, or press Analyze Song and ask about the report.": "ถามคำถาม ขอข้อเสนอ หรือกด Analyze Song แล้วถามเรื่องรายงานได้",
+    "Nothing changes until you press Apply.": "จะไม่มีอะไรเปลี่ยนจนกว่าจะกด Apply",
+    "Ask a question, ask for a proposal, or press Analyze Song and ask about the report. Nothing changes until you press Apply.": "ถามคำถาม ขอข้อเสนอ หรือกด Analyze Song แล้วถามเรื่องรายงานได้ จะไม่มีอะไรเปลี่ยนจนกว่าจะกด Apply",
+    "All Cues": "ทุก Cue",
+    "Mood / Atmosphere": "อารมณ์ / บรรยากาศ",
+    "section": "ท่อน",
+    "cue tag (not a section)": "แท็ก cue (ไม่ใช่ท่อน)",
+    "custom tag": "แท็กกำหนดเอง",
+    "The main part of the song that comes back again and again: the part people sing along to.": "ท่อนหลักของเพลงที่วนกลับมาซ้ำ ๆ เป็นท่อนที่คนร้องตามได้",
+    "The catchiest line or two of the song, the one people remember. It usually lives INSIDE the Chorus, so you do not need this tag for an ordinary song.": "ประโยคหรือสองประโยคที่ติดหูที่สุดของเพลง ที่คนจำได้ ปกติจะอยู่ในท่อน Chorus อยู่แล้ว เพลงทั่วไปจึงไม่ต้องใช้แท็กนี้",
+    "Use it when the catchy line stands on its own: a short repeated phrase before or after the Chorus. The program treats [Hook] like a Chorus.": "ใช้เมื่อประโยคติดหูแยกออกมาเป็นท่อนสั้น ๆ ที่ร้องซ้ำก่อนหรือหลัง Chorus โปรแกรมจะปฏิบัติกับ [Hook] เหมือน Chorus",
+    "Hook": "ฮุก",
+    "The caption names a high or belted delivery the settings did not ask for. High energy is not a high singing register. A powerful vocal stays available if you ask for it.": "แคปชันระบุการร้องเสียงสูงหรือเบลต์ที่ในการตั้งค่าไม่ได้ขอ พลังงานสูงไม่ได้แปลว่าต้องร้องเสียงสูง ยังขอเสียงร้องทรงพลังได้ถ้าต้องการ",
+    "Lyrics changed — Reanalyze.": "เนื้อเพลงเปลี่ยนแล้ว — วิเคราะห์ใหม่ได้ (ยังใช้สไตล์เดิมได้)",
+    "Saved Styles": "สไตล์ที่บันทึกไว้",
+    "Nothing yet. Press the bookmark on an AI Recommend card to keep a style here.": "ยังไม่มี กดปุ่มบุ๊กมาร์กบนการ์ด AI Recommend เพื่อเก็บสไตล์ไว้ที่นี่",
+    "Save this style (its caption and settings) to Saved Styles: open it later in Advanced mode, in any song": "บันทึกสไตล์นี้ (แคปชันและค่าตั้ง) ไว้ใน Saved Styles เปิดใช้ทีหลังได้ในโหมด Advanced ของเพลงไหนก็ได้",
+    "Load the caption AND its settings (genre, mood, BPM, key ...)": "โหลดแคปชันพร้อมค่าตั้ง (แนวเพลง อารมณ์ BPM คีย์ ...)",
+    "Delete this saved style": "ลบสไตล์ที่บันทึกไว้",
+    "Filter by name, caption, genre, mood ...": "กรองตามชื่อ แคปชัน แนวเพลง อารมณ์ ...",
+    "No saved style matches.": "ไม่มีสไตล์ที่ตรงกับตัวกรอง",
+    "Styles you saved from AI Recommend: pick one to use it here": "สไตล์ที่บันทึกจาก AI Recommend เลือกอันหนึ่งเพื่อใช้ที่นี่",
+    "Output format": "ชนิดไฟล์เสียง",
+    "Audio quality": "คุณภาพเสียง (บิตเรต)",
+    "Who sings": "ใครร้อง",
+    "Who sings: the AI decides": "ใครร้อง: ให้ AI เลือก",
+    "Male singer": "นักร้องชาย",
+    "Female singer": "นักร้องหญิง",
+    "Male + female duet": "ดูเอ็ตชาย + หญิง",
+    "Group / choir": "กลุ่ม / คอรัส",
+    "Male lead, female backing vocals": "ชายร้องนำ หญิงร้องประสาน",
+    "Female lead, male backing vocals": "หญิงร้องนำ ชายร้องประสาน",
+    "Choose the singer(s) you want. The AI then writes all three directions for them and the Vocal setting follows. 'The AI decides' leaves it to the AI.": "เลือกผู้ร้องที่ต้องการ AI จะเขียนทั้ง 3 ทิศทางสำหรับผู้ร้องนั้น และค่า Vocal จะตามไปด้วย ถ้าเลือก 'ให้ AI เลือก' AI จะตัดสินใจเอง"
+  },
+  "prefixes": {
+    "Prompt History (": "ประวัติ Prompt (",
+    "Take ": "เทค ",
+    "Exported: ": "ส่งออกแล้ว: ",
+    "Delete Take ": "ลบเทค ",
+    "Selected: ": "ที่เลือก: ",
+    "Source: ": "แหล่ง: ",
+    "Preview Count: ": "จำนวนตัวอย่าง: ",
+    "Delete ": "ลบ ",
+    "Duration: ": "ความยาว: ",
+    "The unapplied change to ": "การเปลี่ยนแปลงที่ยังไม่ได้ใช้ของ ",
+    "Cannot play: ": "เล่นไม่ได้: ",
+    "The last analysis failed: ": "การวิเคราะห์ล่าสุดล้มเหลว: ",
+    "Total: ": "รวม: ",
+    "Asking the AI… (part ": "กำลังถาม AI… (ส่วนที่ ",
+    "AI error: ": "ข้อผิดพลาดจาก AI: ",
+    "The last rhyme analysis failed: ": "การวิเคราะห์สัมผัสล่าสุดล้มเหลว: ",
+    "Line ": "บรรทัด ",
+    "The last rhythm analysis failed: ": "การวิเคราะห์จังหวะล่าสุดล้มเหลว: ",
+    "The last attempt failed: ": "ความพยายามล่าสุดล้มเหลว: ",
+    "Fix before applying: ": "แก้ก่อนนำไปใช้: ",
+    "Inserts ": "แทรก ",
+    "Wraps the selection: ": "ห่อข้อความที่เลือก: ",
+    "Playback: ": "ตำแหน่งเล่น: ",
+    "Cannot use the playback position: ": "ใช้ตำแหน่งเล่นไม่ได้: ",
+    "Could not copy: ": "คัดลอกไม่ได้: ",
+    "Could not read the library: ": "อ่านคลังเพลงไม่ได้: ",
+    "Updated ": "อัปเดต ",
+    "Tag: ": "แท็ก: ",
+    "Cannot open this song: ": "เปิดเพลงนี้ไม่ได้: ",
+    "Sheet ": "ชีต ",
+    "Could not save: ": "บันทึกไม่ได้: ",
+    "Saved a copy: ": "บันทึกสำเนาแล้ว: ",
+    "Nothing was applied. ": "ไม่ได้นำอะไรไปใช้ ",
+    "Restored what Apply had changed. Kept your later changes: ": "กู้คืนสิ่งที่ Apply เปลี่ยนแล้ว ส่วนที่คุณแก้ภายหลังถูกเก็บไว้: ",
+    "Could not save the favourite: ": "บันทึกรายการโปรดไม่ได้: ",
+    "Export failed: ": "ส่งออกไม่สำเร็จ: ",
+    "Cannot prepare the workflow: ": "เตรียม workflow ไม่ได้: ",
+    "Generation failed: ": "สร้างเพลงไม่สำเร็จ: ",
+    "Cannot open: ": "เปิดไม่ได้: ",
+    "Could not save the analysis: ": "บันทึกผลวิเคราะห์ไม่ได้: ",
+    "AI explanation: ": "คำอธิบายจาก AI: ",
+    "The syllable counts changed after this analysis (the lyrics did not). ": "จำนวนพยางค์เปลี่ยนไปหลังการวิเคราะห์นี้ (เนื้อเพลงไม่เปลี่ยน) ",
+    "The lyrics changed after this analysis. ": "เนื้อเพลงเปลี่ยนไปหลังการวิเคราะห์นี้ ",
+    "Meaning changes: ": "ความหมายที่เปลี่ยน: ",
+    "Meaning difference: ": "ความหมายที่ต่างกัน: ",
+    "Singability: ": "ความร้องได้: ",
+    "Could not play ": "เล่นไม่ได้ ",
+    "The preview could not be made: ": "สร้างตัวอย่างไม่ได้: ",
+    "Take: Take ": "เทค: เทค ",
+    "Inserts: ": "แทรก: ",
+    "Wraps the selected text: ": "ห่อข้อความที่เลือก: ",
+    "Could not save a copy: ": "บันทึกสำเนาไม่ได้: ",
+    "Could not delete: ": "ลบไม่ได้: ",
+    "You chose ": "คุณเลือก ",
+    "Opened as a new sheet. ": "เปิดเป็นชีตใหม่แล้ว ",
+    "Take not deleted: ": "ไม่ได้ลบเทค: ",
+    "The AI answer did not follow the format (": "คำตอบของ AI ไม่ตรงรูปแบบ (",
+    "End: ": "จบ: ",
+    "Local: ": "ในเครื่อง: ",
+    "Decided by the program: ": "ตัดสินโดยโปรแกรม: ",
+    "Example: ": "ตัวอย่าง: ",
+    "Note: ": "หมายเหตุ: ",
+    "Trade-off: ": "ข้อแลกเปลี่ยน: ",
+    "also: ": "จาก: ",
+    "Saved Styles (": "สไตล์ที่บันทึกไว้ ("
+  },
+  "patterns": [
+    [
+      "Exported:\\ (.*?)",
+      "ส่งออกแล้ว: \\1"
+    ],
+    [
+      "Applied\\ “(.*?)”:\\ Style\\ mode\\ is\\ now\\ Advanced\\.\\ Generate\\ uses\\ this\\ caption\\.\\ Restore\\ Previous\\ Settings\\ undoes\\ it\\.",
+      "ใช้ “\\1” แล้ว: โหมด Style เป็น Advanced ตอนนี้ การสร้างเพลงจะใช้ caption นี้ กู้คืนค่าตั้งก่อนหน้าเพื่อย้อนกลับ"
+    ],
+    [
+      "Replaced\\ “(.*?)”\\ \\(Undo\\ restores\\ it\\)",
+      "แทนที่ “\\1” แล้ว (เลิกทำจะกู้คืน)"
+    ],
+    [
+      "(.*?):\\ adds\\ “(.*?)”\\ to\\ the\\ tag",
+      "\\1: เพิ่ม “\\2” ลงในแท็ก"
+    ],
+    [
+      "(.*?)\\ copied",
+      "คัดลอก \\1 แล้ว"
+    ],
+    [
+      "adds\\ “(.*?)”\\ to\\ the\\ tag",
+      "เพิ่ม “\\1” ลงในแท็ก"
+    ],
+    [
+      "The\\ unapplied\\ change\\ to\\ (.*?)\\ was\\ discarded\\.",
+      "ทิ้งการเปลี่ยนแปลงที่ยังไม่ได้ใช้ของ \\1 แล้ว"
+    ],
+    [
+      "Cannot\\ play:\\ (.*?)",
+      "เล่นไม่ได้: \\1"
+    ],
+    [
+      "“(.*?)”:\\ Take\\ (.*?)\\ is\\ ready",
+      "“\\1”: เทค \\2 พร้อมแล้ว"
+    ],
+    [
+      "This\\ result\\ was\\ made\\ for\\ the\\ sheet\\ “(.*?)”\\.\\ Open\\ that\\ sheet\\ to\\ regenerate\\ it\\.\\ Nothing\\ was\\ sent\\.",
+      "ผลนี้ทำไว้สำหรับชีต “\\1” เปิดชีตนั้นเพื่อสร้างใหม่ ยังไม่ได้ส่งอะไร"
+    ],
+    [
+      "This\\ proposal\\ was\\ made\\ for\\ the\\ sheet\\ “(.*?)”\\.\\ Open\\ that\\ sheet\\ to\\ apply\\ it\\.\\ Nothing\\ was\\ changed\\.",
+      "ข้อเสนอนี้ทำไว้สำหรับชีต “\\1” เปิดชีตนั้นเพื่อนำไปใช้ ยังไม่ได้เปลี่ยนอะไร"
+    ],
+    [
+      "Line\\ (.*?)",
+      "บรรทัด \\1"
+    ],
+    [
+      "“(.*?)”\\ structure\\ applied\\ to\\ this\\ sheet\\ \\(Undo\\ restores\\ the\\ previous\\ text\\)",
+      "ใช้โครงสร้าง “\\1” กับชีตนี้แล้ว (เลิกทำจะกู้ข้อความเดิม)"
+    ],
+    [
+      "Could\\ not\\ copy:\\ (.*?)",
+      "คัดลอกไม่ได้: \\1"
+    ],
+    [
+      "Could\\ not\\ read\\ the\\ library:\\ (.*?)",
+      "อ่านคลังเพลงไม่ได้: \\1"
+    ],
+    [
+      "Tag:\\ (.*?)",
+      "แท็ก: \\1"
+    ],
+    [
+      "Line\\ (.*?)\\ ·\\ (.*?)",
+      "บรรทัด \\1 · \\2"
+    ],
+    [
+      "Cannot\\ open\\ this\\ song:\\ (.*?)",
+      "เปิดเพลงนี้ไม่ได้: \\1"
+    ],
+    [
+      "Could\\ not\\ save\\ “(.*?)”:\\ (.*?)",
+      "บันทึก “\\1” ไม่ได้: \\2"
+    ],
+    [
+      "Could\\ not\\ save:\\ (.*?)",
+      "บันทึกไม่ได้: \\1"
+    ],
+    [
+      "Saved\\ a\\ copy:\\ (.*?)\\ \\(takes\\ are\\ not\\ copied\\)",
+      "บันทึกสำเนาแล้ว: \\1 (ไม่ได้คัดลอกเทค)"
+    ],
+    [
+      "Nothing\\ was\\ applied\\.\\ (.*?)",
+      "ไม่ได้นำอะไรไปใช้ \\1"
+    ],
+    [
+      "⚠\\ (.*?):\\ the\\ AI\\ wrote\\ “(.*?)”\\ \\((.*?)\\);\\ it\\ is\\ not\\ applied\\.",
+      "⚠ \\1: AI เขียน “\\2” (\\3) ยังไม่ได้นำไปใช้"
+    ],
+    [
+      "Could\\ not\\ save\\ the\\ favourite:\\ (.*?)",
+      "บันทึกรายการโปรดไม่ได้: \\1"
+    ],
+    [
+      "Export\\ failed:\\ (.*?)",
+      "ส่งออกไม่สำเร็จ: \\1"
+    ],
+    [
+      "Cannot\\ prepare\\ the\\ workflow:\\ (.*?)",
+      "เตรียม workflow ไม่ได้: \\1"
+    ],
+    [
+      "Generation\\ failed:\\ (.*?)",
+      "สร้างเพลงไม่สำเร็จ: \\1"
+    ],
+    [
+      "Cannot\\ open:\\ (.*?)",
+      "เปิดไม่ได้: \\1"
+    ],
+    [
+      "Could\\ not\\ save\\ the\\ analysis:\\ (.*?)",
+      "บันทึกผลวิเคราะห์ไม่ได้: \\1"
+    ],
+    [
+      "for\\ “(.*?)”\\ \\ \\((.*?)\\)\\.\\ Nothing\\ was\\ changed\\ in\\ your\\ lyrics\\ yet\\.",
+      "สำหรับ “\\1”  (\\2) ยังไม่ได้เปลี่ยนอะไรในเนื้อเพลงของคุณ"
+    ],
+    [
+      "(.*?)\\ lines\\ placed\\ in\\ (.*?)\\ sections\\ ·\\ (.*?)\\ moved\\ to\\ another\\ kind\\ of\\ section\\ ·\\ (.*?)\\ sections\\ left\\ empty\\ \\(no\\ lyrics\\ were\\ written\\)",
+      "วาง \\1 บรรทัดใน \\2 ท่อน · \\3 ย้ายไปท่อนชนิดอื่น · \\4 ท่อนยังว่าง (ไม่ได้เขียนเนื้อเพลง)"
+    ],
+    [
+      "Take:\\ Take\\ (.*?)",
+      "เทค: เทค \\1"
+    ],
+    [
+      "Save\\ changes\\ to\\ \"(.*?)\"\\?",
+      "บันทึกการเปลี่ยนแปลงของ \"\\1\" หรือไม่?"
+    ],
+    [
+      "(\\d+)\\ song(s?)\\ with\\ unsaved\\ changes:\\ (.*)",
+      "\\1 เพลงมีการแก้ไขที่ยังไม่บันทึก: \\3"
+    ],
+    [
+      "Could\\ not\\ save\\ a\\ copy:\\ (.*?)",
+      "บันทึกสำเนาไม่ได้: \\1"
+    ],
+    [
+      "Could\\ not\\ delete:\\ (.*?)",
+      "ลบไม่ได้: \\1"
+    ],
+    [
+      "(.*?)\\ ·\\ Take\\ (.*?)",
+      "\\1 · เทค \\2"
+    ],
+    [
+      "Take\\ not\\ deleted:\\ (.*?)",
+      "ไม่ได้ลบเทค: \\1"
+    ],
+    [
+      "Line\\ (.*?):\\ (.*?)",
+      "บรรทัด \\1: \\2"
+    ],
+    [
+      "The\\ open\\ sheet\\ is\\ not\\ “(.*?)”\\ any\\ more\\.\\ Nothing\\ was\\ applied:\\ open\\ that\\ sheet,\\ or\\ choose\\ Open\\ in\\ New\\ Sheet\\.",
+      "ชีตที่เปิดอยู่ไม่ใช่ “\\1” แล้ว จึงไม่ได้นำอะไรไปใช้: เปิดชีตนั้น หรือเลือก เปิดในชีตใหม่"
+    ],
+    [
+      "Opened\\ “(.*?)”\\.\\ The\\ original\\ sheet\\ is\\ unchanged\\.",
+      "เปิด “\\1” แล้ว ชีตต้นฉบับไม่เปลี่ยน"
+    ],
+    [
+      "Open\\ “(.*?)”",
+      "เปิด “\\1”"
+    ],
+    [
+      "(.*?)\\ compared\\ with\\ the\\ middle\\ of\\ this\\ section\\.\\ Not\\ an\\ error:\\ the\\ melody\\ may\\ give\\ this\\ line\\ more\\ or\\ fewer\\ notes\\.",
+      "\\1 เทียบกับกลางท่อนนี้ ไม่ใช่ข้อผิดพลาด: ทำนองอาจให้บรรทัดนี้มีโน้ตมากหรือน้อยกว่า"
+    ],
+    [
+      "Possible\\ pause\\ after:\\ “(.*?)”",
+      "อาจมีช่วงหยุดหลัง: “\\1”"
+    ],
+    [
+      "The\\ existing\\ cue\\ text\\ could\\ not\\ be\\ split\\ into\\ known\\ cues,\\ so\\ it\\ is\\ kept\\ exactly\\ as\\ written:\\ “(.*?)”\\.\\ Edit\\ it\\ here\\ if\\ you\\ want\\ to\\ change\\ it\\.",
+      "แยกข้อความ cue ที่มีอยู่เป็น cue ที่รู้จักไม่ได้ จึงเก็บไว้ตามที่เขียน: “\\1” แก้ที่นี่ได้ถ้าต้องการเปลี่ยน"
+    ],
+    [
+      "(\\d+)\\ track(s?)",
+      "\\1 แทร็ก"
+    ],
+    [
+      "(\\d+)\\ ·\\ (\\d+)\\ Take(s?)",
+      "\\1 · \\2 เทค"
+    ],
+    [
+      "From\\ the\\ sheet\\ “(.*?)”\\.\\ Nothing\\ changes\\ until\\ you\\ choose\\.",
+      "จากชีต “\\1” ยังไม่เปลี่ยนอะไรจนกว่าคุณจะเลือก"
+    ],
+    [
+      "(\\d+) Takes?",
+      "\\1 เทค"
+    ],
+    [
+      "(\\d+) tracks?",
+      "\\1 แทร็ก"
+    ],
+    [
+      "(\\d+) songs?",
+      "\\1 เพลง"
+    ],
+    [
+      "(\\d+) lines?",
+      "\\1 บรรทัด"
+    ],
+    [
+      "Take (\\d+)",
+      "เทค \\1"
+    ],
+    [
+      "Output — (.+)",
+      "ผลลัพธ์ — \\1"
+    ],
+    [
+      "(\\d+) Takes? · (.+)",
+      "\\1 เทค · \\2"
+    ],
+    [
+      "Preview Count: (\\d+)",
+      "จำนวนตัวอย่าง: \\1"
+    ],
+    [
+      "Click to add \\[(.+?)\\] at the start of the line the cursor is on\\. No selection needed; if text is selected, it is added above the first selected line and nothing is deleted\\.",
+      "คลิกเพื่อเพิ่ม [\\1] ที่ต้นบรรทัดที่เคอร์เซอร์อยู่ ไม่ต้องเลือกข้อความ ถ้าเลือกข้อความไว้ จะเพิ่มเหนือบรรทัดแรกที่เลือกและไม่ลบอะไร"
+    ],
+    [
+      "Click to add \\[(.+?)\\] at the start of the line the cursor is on, numbered after the verses you already have\\. No selection needed\\.",
+      "คลิกเพื่อเพิ่ม [\\1] ที่ต้นบรรทัดที่เคอร์เซอร์อยู่ โดยเรียงเลขต่อจาก verse ที่มี ไม่ต้องเลือกข้อความ"
+    ],
+    [
+      "Cursor on a section line: \\[Chorus\\] → \\[Chorus - (.+?)\\] \\(click again to remove it\\)\\.",
+      "เคอร์เซอร์อยู่บนบรรทัดท่อน: [Chorus] → [Chorus - \\1] (คลิกอีกครั้งเพื่อเอาออก)"
+    ],
+    [
+      "Cursor anywhere else, or text selected: adds a \\[(.+?)\\] line at that spot \\(experimental\\)\\.",
+      "ถ้าเคอร์เซอร์อยู่ที่อื่น หรือเลือกข้อความไว้: เพิ่มบรรทัด [\\1] ตรงนั้น (ทดลอง)"
+    ],
+    [
+      "Puts \\[(.+?)\\] exactly where the cursor is, on the same line \\(no new line is added, like Hold Note\\)\\. If text is selected it goes before the selection\\.",
+      "ใส่ [\\1] ตรงที่เคอร์เซอร์อยู่ในบรรทัดเดียวกัน (ไม่เพิ่มบรรทัดใหม่ เหมือน Hold Note) ถ้าเลือกข้อความ จะใส่ไว้หน้าข้อความที่เลือก"
+    ],
+    [
+      "Cursor on a section line: \\[Chorus\\] → \\[Chorus - building energy\\] \\(replaces high / low energy if present; click again to remove it\\)\\.",
+      "เคอร์เซอร์อยู่บนบรรทัดท่อน: [Chorus] → [Chorus - building energy] (แทนที่ high / low energy ถ้ามี คลิกอีกครั้งเพื่อเอาออก)"
+    ],
+    [
+      "Local LLM • (.*)",
+      "LLM ในเครื่อง • \\1"
+    ],
+    [
+      "(\\d+) takes? • (.*)",
+      "\\1 เทค • \\2"
+    ],
+    [
+      "(\\d+) takes?",
+      "\\1 เทค"
+    ],
+    [
+      "Go to line (\\d+) in the editor",
+      "ไปที่บรรทัด \\1 ใน editor"
+    ],
+    [
+      "(\\d+) pair\\(s\\) could not be placed on an exact word and are not coloured\\.",
+      "\\1 คู่ระบุตำแหน่งคำที่แน่นอนไม่ได้ จึงไม่ได้ระบายสี"
+    ],
+    [
+      "Rhyme check: same sound as “(.+)” \\(checked by Python\\)",
+      "ตรวจสัมผัส: เสียงเดียวกับ “\\1” (Python ตรวจให้)"
+    ],
+    [
+      "Rhyme check: close to “(.+)” \\(a near rhyme\\)",
+      "ตรวจสัมผัส: ใกล้เคียงกับ “\\1” (สัมผัสใกล้เคียง)"
+    ],
+    [
+      "Rhyme check: does not rhyme with “(.+)”",
+      "ตรวจสัมผัส: ไม่สัมผัสกับ “\\1”"
+    ],
+    [
+      "Rhyme check: could not be checked against “(.+)”",
+      "ตรวจสัมผัส: ตรวจกับ “\\1” ไม่ได้"
+    ],
+    [
+      "The\\ count\\ override\\ \\((.+?)\\)\\ differs\\ from\\ the\\ segmentation\\ shown\\ \\((.+?)\\);\\ the\\ override\\ is\\ used\\.",
+      "ตัวเลขที่กำหนดเอง (\\1) ไม่ตรงกับการแบ่งที่แสดง (\\2) ระบบใช้ตัวเลขที่กำหนดเอง"
+    ],
+    [
+      "The\\ AI\\ returned\\ (.+?)\\ result\\ line\\(s\\)\\ for\\ (.+?)\\ sung\\ line\\(s\\)\\.\\ Nothing\\ was\\ shown\\.",
+      "AI ตอบ \\1 บรรทัดผลลัพธ์ สำหรับ \\2 บรรทัดที่ร้อง จึงไม่แสดงผลใดๆ"
+    ],
+    [
+      "Line\\ (.+?):\\ the\\ answer\\ row\\ is\\ not\\ in\\ the\\ format\\ `N\\ \\|\\ text\\ \\|\\ lang=units`\\.",
+      "บรรทัด \\1: แถวคำตอบไม่ได้อยู่ในรูปแบบ `N | text | lang=units`"
+    ],
+    [
+      "Line\\ (.+?):\\ the\\ answer\\ row\\ does\\ not\\ start\\ with\\ its\\ number\\.",
+      "บรรทัด \\1: แถวคำตอบไม่ได้ขึ้นต้นด้วยหมายเลขของมัน"
+    ],
+    [
+      "Line\\ (.+?):\\ the\\ answer\\ row\\ is\\ numbered\\ (.+?)\\ \\(lines\\ are\\ out\\ of\\ order\\ or\\ one\\ is\\ missing\\)\\.",
+      "บรรทัด \\1: แถวคำตอบมีเลข \\2 (บรรทัดสลับลำดับหรือขาดไปหนึ่งบรรทัด)"
+    ],
+    [
+      "Line\\ (.+?):\\ the\\ text\\ the\\ AI\\ copied\\ does\\ not\\ match\\ your\\ lyric\\ \\(“(.+?)”\\)\\.\\ The\\ answer\\ is\\ not\\ trusted\\.",
+      "บรรทัด \\1: ข้อความที่ AI คัดลอกไม่ตรงกับเนื้อเพลงของคุณ (“\\2”) จึงไม่เชื่อถือคำตอบนี้"
+    ],
+    [
+      "Line\\ (.+?):\\ cannot\\ read\\ the\\ part\\ “(.+?)”\\ \\(expected\\ lang=unit·unit\\)\\.",
+      "บรรทัด \\1: อ่านส่วน “\\2” ไม่ได้ (ควรอยู่ในรูป lang=หน่วย·หน่วย)"
+    ],
+    [
+      "Line\\ (.+?):\\ the\\ (.+?)\\ part\\ has\\ no\\ syllables\\.",
+      "บรรทัด \\1: ส่วน \\2 ไม่มีพยางค์"
+    ],
+    [
+      "“(.+?)”\\ is\\ only\\ part\\ of\\ a\\ longer\\ syllable\\ in\\ line\\ (.+?),\\ so\\ the\\ pair\\ was\\ ignored\\.",
+      "“\\1” เป็นเพียงส่วนหนึ่งของพยางค์ที่ยาวกว่าในบรรทัด \\2 จึงไม่นับคู่นี้"
+    ],
+    [
+      "The\\ sounds\\ match\\ exactly\\ \\((.+?)\\),\\ but\\ these\\ words\\ do\\ not\\ sit\\ as\\ an\\ end,\\ cross\\-line,\\ or\\ internal\\ rhyme,\\ so\\ this\\ is\\ not\\ confirmed\\ as\\ a\\ near\\ rhyme\\.",
+      "เสียงตรงกันทุกประการ (\\1) แต่คำเหล่านี้ไม่ได้อยู่ในตำแหน่งสัมผัสท้าย สัมผัสข้ามบรรทัด หรือสัมผัสใน จึงไม่ยืนยันว่าเป็นสัมผัสใกล้เคียง"
+    ],
+    [
+      "A\\ rhyme\\ row\\ has\\ an\\ unknown\\ type\\ “(.+?)”\\ \\(allowed:\\ end,\\ cross,\\ internal,\\ near\\)\\.",
+      "แถวสัมผัสมีประเภทที่ไม่รู้จัก “\\1” (ที่อนุญาต: end, cross, internal, near)"
+    ],
+    [
+      "A\\ rhyme\\ row\\ has\\ an\\ unknown\\ confidence\\ “(.+?)”\\ \\(allowed:\\ high,\\ medium,\\ low,\\ uncertain\\)\\.",
+      "แถวสัมผัสมีระดับความมั่นใจที่ไม่รู้จัก “\\1” (ที่อนุญาต: high, medium, low, uncertain)"
+    ],
+    [
+      "A\\ rhyme\\ row\\ has\\ a\\ language\\ code\\ that\\ cannot\\ be\\ read:\\ “(.+?)”\\.",
+      "แถวสัมผัสมีรหัสภาษาที่อ่านไม่ได้: “\\1”"
+    ],
+    [
+      "A\\ rhyme\\ row\\ has\\ a\\ part\\ that\\ is\\ not\\ `line:word`:\\ “(.+?)”\\.",
+      "แถวสัมผัสมีส่วนที่ไม่ใช่ `line:word`: “\\1”"
+    ],
+    [
+      "A\\ rhyme\\ row\\ points\\ to\\ line\\ (.+?),\\ which\\ is\\ not\\ in\\ the\\ lyrics\\ that\\ were\\ sent\\.",
+      "แถวสัมผัสอ้างถึงบรรทัด \\1 ซึ่งไม่อยู่ในเนื้อเพลงที่ส่งไป"
+    ],
+    [
+      "“(.+?)”\\ \\(line\\ (.+?)\\)\\ looks\\ like\\ a\\ section\\ tag\\.",
+      "“\\1” (บรรทัด \\2) ดูเหมือนแท็กท่อน"
+    ],
+    [
+      "“(.+?)”\\ was\\ paired\\ with\\ itself\\ in\\ line\\ (.+?)\\.",
+      "“\\1” ถูกจับคู่กับตัวเองในบรรทัด \\2"
+    ],
+    [
+      "“(.+?)”\\ ↔\\ “(.+?)”\\ is\\ the\\ same\\ word\\ repeated,\\ not\\ a\\ rhyme\\.",
+      "“\\1” ↔ “\\2” เป็นคำเดียวกันที่ซ้ำ ไม่ใช่สัมผัส"
+    ],
+    [
+      "(.+?)\\ ↔\\ (.+?):\\ an\\ internal\\ rhyme\\ must\\ be\\ inside\\ one\\ line,\\ so\\ it\\ was\\ ignored\\.",
+      "\\1 ↔ \\2: สัมผัสในต้องอยู่ในบรรทัดเดียว จึงไม่นับ"
+    ],
+    [
+      "(.+?)\\ ↔\\ (.+?):\\ an\\ end\\ rhyme\\ needs\\ two\\ different\\ lines\\ \\(line\\ (.+?)\\),\\ so\\ it\\ was\\ ignored\\.",
+      "\\1 ↔ \\2: สัมผัสท้ายต้องอยู่คนละบรรทัด (บรรทัด \\3) จึงไม่นับ"
+    ],
+    [
+      "(.+?)\\ ↔\\ (.+?):\\ a\\ cross\\-line\\ rhyme\\ needs\\ consecutive\\ lines\\.",
+      "\\1 ↔ \\2: สัมผัสข้ามบรรทัดต้องเป็นบรรทัดที่ติดกัน"
+    ],
+    [
+      "(.+?)\\ ↔\\ (.+?):\\ the\\ following\\ line\\ must\\ contain\\ its\\ rhyme\\ word\\ before\\ the\\ end\\.",
+      "\\1 ↔ \\2: บรรทัดถัดไปต้องมีคำสัมผัสอยู่ก่อนท้ายบรรทัด"
+    ],
+    [
+      "(.+?)\\ ↔\\ (.+?):\\ a\\ word\\ is\\ not\\ at\\ the\\ end\\ of\\ its\\ line,\\ so\\ it\\ is\\ not\\ an\\ end\\ rhyme\\ and\\ was\\ ignored\\.",
+      "\\1 ↔ \\2: มีคำที่ไม่ได้อยู่ท้ายบรรทัด จึงไม่ใช่สัมผัสท้ายและไม่นับ"
+    ],
+    [
+      "(.+?)\\ ↔\\ (.+?)\\ was\\ listed\\ twice\\.",
+      "\\1 ↔ \\2 ถูกระบุซ้ำสองครั้ง"
+    ],
+    [
+      "“(.+?)”\\ is\\ not\\ in\\ line\\ (.+?),\\ so\\ the\\ pair\\ (.+?)\\ ↔\\ (.+?)\\ was\\ ignored\\.",
+      "“\\1” ไม่อยู่ในบรรทัด \\2 จึงไม่นับคู่ \\3 ↔ \\4"
+    ],
+    [
+      "“(.+?)”\\ is\\ not\\ in\\ line\\ (.+?),\\ so\\ the\\ pair\\ was\\ ignored\\.",
+      "“\\1” ไม่อยู่ในบรรทัด \\2 จึงไม่นับคู่นี้"
+    ],
+    [
+      "The\\ AI\\ returned\\ (.+?)\\ rows,\\ far\\ more\\ than\\ the\\ (.+?)\\ asked\\ for\\.\\ The\\ answer\\ is\\ not\\ trusted\\.",
+      "AI ตอบมา \\1 แถว มากกว่าที่ขอ (\\2) มาก จึงไม่เชื่อถือคำตอบนี้"
+    ],
+    [
+      "(.+?)\\ row\\(s\\)\\ repeated\\ a\\ pair\\ that\\ was\\ already\\ listed,\\ so\\ they\\ were\\ dropped\\.",
+      "\\1 แถวซ้ำกับคู่ที่ระบุไว้แล้ว จึงถูกตัดทิ้ง"
+    ],
+    [
+      "The\\ model\\ called\\ this\\ a\\ near\\ rhyme,\\ but\\ the\\ sounds\\ match\\ exactly,\\ so\\ it\\ is\\ shown\\ as\\ an\\ end\\ rhyme\\.\\ Sound\\ check:\\ (.+?)",
+      "AI เรียกว่าสัมผัสใกล้เคียง แต่เสียงตรงกันทุกประการ จึงแสดงเป็นสัมผัสท้าย ผลตรวจเสียง: \\1"
+    ],
+    [
+      "The\\ model\\ called\\ this\\ a\\ near\\ rhyme,\\ but\\ the\\ sounds\\ match\\ exactly,\\ so\\ it\\ is\\ shown\\ as\\ a\\ cross\\-line\\ rhyme\\.\\ Sound\\ check:\\ (.+?)",
+      "AI เรียกว่าสัมผัสใกล้เคียง แต่เสียงตรงกันทุกประการ จึงแสดงเป็นสัมผัสข้ามบรรทัด ผลตรวจเสียง: \\1"
+    ],
+    [
+      "The\\ model\\ called\\ this\\ a\\ near\\ rhyme,\\ but\\ the\\ sounds\\ match\\ exactly,\\ so\\ it\\ is\\ shown\\ as\\ an\\ internal\\ rhyme\\.\\ Sound\\ check:\\ (.+?)",
+      "AI เรียกว่าสัมผัสใกล้เคียง แต่เสียงตรงกันทุกประการ จึงแสดงเป็นสัมผัสใน ผลตรวจเสียง: \\1"
+    ],
+    [
+      "Not\\ a\\ near\\ rhyme\\ \\((.+?)\\)\\.\\ The\\ vowel\\ and\\ the\\ final\\ consonant\\ both\\ differ\\.",
+      "ไม่ใช่สัมผัสใกล้เคียง (\\1) ทั้งสระและตัวสะกดต่างกัน"
+    ],
+    [
+      "The\\ sounds\\ match\\ exactly\\ \\((.+?)\\),\\ so\\ this\\ is\\ not\\ a\\ near\\ rhyme\\.",
+      "เสียงตรงกันทุกประการ (\\1) จึงไม่ใช่สัมผัสใกล้เคียง"
+    ],
+    [
+      "Not\\ an\\ exact\\ rhyme\\ \\((.+?)\\)\\.\\ Vowel\\ length\\ or\\ the\\ final\\ consonant\\ differs,\\ so\\ it\\ was\\ not\\ called\\ a\\ near\\ rhyme\\.",
+      "ไม่ใช่สัมผัสตรง (\\1) ความยาวสระหรือตัวสะกดต่างกัน จึงไม่เรียกว่าสัมผัสใกล้เคียง"
+    ],
+    [
+      "Not\\ a\\ rhyme\\ \\((.+?)\\)\\.",
+      "ไม่ใช่สัมผัส (\\1)"
+    ],
+    [
+      "Sound\\ check:\\ (.+?)",
+      "ผลตรวจเสียง: \\1"
+    ],
+    [
+      "A\\ rhythm\\ row\\ is\\ not\\ in\\ the\\ format\\ `N\\ \\|\\ line\\ \\|\\ issue\\ \\|\\ severity\\ \\|\\ reason\\ \\|\\ suggestion`:\\ “(.+?)”\\.",
+      "แถวจังหวะไม่ได้อยู่ในรูปแบบ `N | line | issue | severity | reason | suggestion`: “\\1”"
+    ],
+    [
+      "A\\ rhythm\\ row\\ points\\ to\\ line\\ “(.+?)”,\\ which\\ is\\ not\\ in\\ the\\ lyrics\\ that\\ were\\ sent\\.",
+      "แถวจังหวะอ้างถึงบรรทัด “\\1” ซึ่งไม่อยู่ในเนื้อเพลงที่ส่งไป"
+    ],
+    [
+      "A\\ rhythm\\ row\\ has\\ an\\ unknown\\ issue\\ “(.+?)”\\.",
+      "แถวจังหวะมีประเภทปัญหาที่ไม่รู้จัก “\\1”"
+    ],
+    [
+      "A\\ rhythm\\ row\\ has\\ an\\ unknown\\ severity\\ “(.+?)”\\ \\(allowed:\\ info,\\ suggestion,\\ uncertain\\)\\.",
+      "แถวจังหวะมีระดับที่ไม่รู้จัก “\\1” (ที่อนุญาต: info, suggestion, uncertain)"
+    ],
+    [
+      "Line\\ (.+?):\\ a\\ remark\\ without\\ a\\ reason\\ was\\ ignored\\.",
+      "บรรทัด \\1: ข้อสังเกตที่ไม่มีเหตุผลถูกข้ามไป"
+    ],
+    [
+      "Line\\ (.+?):\\ a\\ breath\\ point\\ was\\ ignored\\ because\\ this\\ line\\ is\\ not\\ long\\ next\\ to\\ the\\ others\\ \\((.+?)\\ units\\)\\.",
+      "บรรทัด \\1: จุดหายใจถูกข้ามไป เพราะบรรทัดนี้ไม่ยาวเมื่อเทียบกับบรรทัดอื่น (\\2 หน่วย)"
+    ],
+    [
+      "Line\\ (.+?):\\ “(.+?)”\\ was\\ listed\\ twice\\.",
+      "บรรทัด \\1: “\\2” ถูกระบุซ้ำสองครั้ง"
+    ],
+    [
+      "A\\ suggestion\\ row\\ is\\ not\\ in\\ the\\ format\\ `type\\ \\|\\ suggestion\\ \\|\\ explanation\\ \\|\\ meaning\\ difference\\ \\|\\ singability`:\\ “(.+?)”\\.",
+      "แถวคำแนะนำไม่ได้อยู่ในรูปแบบ `type | suggestion | explanation | meaning difference | singability`: “\\1”"
+    ],
+    [
+      "A\\ suggestion\\ has\\ an\\ unknown\\ type\\ “(.+?)”\\ \\(allowed:\\ (.+?)\\)\\.",
+      "คำแนะนำมีประเภทที่ไม่รู้จัก “\\1” (ที่อนุญาต: \\2)"
+    ],
+    [
+      "“(.+?)”\\ was\\ ignored:\\ a\\ suggestion\\ may\\ only\\ be\\ plain\\ words\\ \\(no\\ tags,\\ brackets\\ or\\ markers\\)\\.",
+      "“\\1” ถูกข้าม: คำแนะนำต้องเป็นคำธรรมดาเท่านั้น (ห้ามมีแท็ก วงเล็บ หรือเครื่องหมาย)"
+    ],
+    [
+      "“(.+?)”\\ was\\ ignored:\\ the\\ AI\\ gave\\ no\\ explanation\\ or\\ meaning\\ difference\\.",
+      "“\\1” ถูกข้าม: AI ไม่ได้ให้คำอธิบายหรือความต่างของความหมาย"
+    ],
+    [
+      "“(.+?)”\\ was\\ ignored:\\ it\\ has\\ no\\ words\\.",
+      "“\\1” ถูกข้าม: ไม่มีคำในนั้น"
+    ],
+    [
+      "“(.+?)”\\ was\\ ignored:\\ it\\ is\\ the\\ same\\ as\\ the\\ original\\.",
+      "“\\1” ถูกข้าม: ซ้ำกับต้นฉบับ"
+    ],
+    [
+      "“(.+?)”\\ was\\ ignored:\\ it\\ was\\ listed\\ twice\\.",
+      "“\\1” ถูกข้าม: ถูกระบุซ้ำสองครั้ง"
+    ],
+    [
+      "Select\\ a\\ shorter\\ phrase\\ \\(up\\ to\\ (.+?)\\ characters\\ on\\ at\\ most\\ (.+?)\\ lines\\)\\.",
+      "เลือกวลีที่สั้นกว่านี้ (ไม่เกิน \\1 ตัวอักษร และไม่เกิน \\2 บรรทัด)"
+    ],
+    [
+      "Total:\\ (.+?)\\ spoken\\ units\\ ·\\ (.+?)\\ lines\\ ·\\ not\\ a\\ sung\\-note\\ count",
+      "รวม: \\1 หน่วยเสียงพูด · \\2 บรรทัด · ไม่ใช่จำนวนโน้ตที่ร้อง"
+    ],
+    [
+      "Selected:\\ (.+?)\\ chars\\ \\(the\\ AI\\ changes\\ only\\ these\\)",
+      "เลือกอยู่: \\1 ตัวอักษร (AI จะเปลี่ยนเฉพาะส่วนนี้)"
+    ],
+    [
+      "Preview\\ Count:\\ (.+?)\\ \\ \\ \\((.+?)\\)",
+      "จำนวนตัวอย่าง: \\1   (\\2)"
+    ],
+    [
+      "Source:\\ (.+?)",
+      "ที่มา: \\1"
+    ],
+    [
+      "Duration:\\ (.+?)",
+      "ความยาว: \\1"
+    ],
+    [
+      "Updated\\ (.+?)",
+      "อัปเดตแล้ว \\1"
+    ],
+    [
+      "Inserts\\ (.+?)",
+      "แทรก \\1"
+    ],
+    [
+      "Playback:\\ (.+?)\\ /\\ (.+?)",
+      "เล่น: \\1 / \\2"
+    ],
+    [
+      "Prompt\\ History\\ \\((.+?)\\)",
+      "ประวัติพรอมต์ (\\1)"
+    ],
+    [
+      "Asking\\ the\\ AI…\\ \\(part\\ (.+?)\\ of\\ (.+?)\\)",
+      "กำลังถาม AI… (ส่วนที่ \\1 จาก \\2)"
+    ],
+    [
+      "AI\\ error:\\ (.+?)",
+      "AI ผิดพลาด: \\1"
+    ],
+    [
+      "The\\ AI\\ answer\\ did\\ not\\ follow\\ the\\ format\\ \\((.+?)\\)\\.\\ Nothing\\ was\\ changed\\.\\ Try\\ again\\.",
+      "คำตอบของ AI ไม่เป็นไปตามรูปแบบ (\\1) ไม่มีอะไรถูกเปลี่ยน ลองอีกครั้ง"
+    ],
+    [
+      "Delete\\ Take\\ (.+?)\\?\\ The\\ audio\\ file\\ is\\ removed\\.",
+      "ลบเทค \\1? ไฟล์เสียงจะถูกลบ"
+    ],
+    [
+      "Delete\\ the\\ sheet\\ “(.+?)”\\ and\\ its\\ lyrics\\ and\\ options\\?\\ This\\ cannot\\ be\\ undone\\.\\ Takes\\ already\\ generated\\ from\\ it\\ are\\ kept\\.",
+      "ลบชีต “\\1” พร้อมเนื้อเพลงและตัวเลือก? ย้อนกลับไม่ได้ เทคที่สร้างจากชีตนี้แล้วยังอยู่"
+    ],
+    [
+      "Delete\\ “(.+?)”\\ with\\ its\\ lyrics,\\ chat\\ and\\ (.+?)\\ take\\(s\\)\\?\\ This\\ cannot\\ be\\ undone\\.",
+      "ลบ “\\1” พร้อมเนื้อเพลง แชต และ \\2 เทค? ย้อนกลับไม่ได้"
+    ],
+    [
+      "Delete\\ “(.+?)”\\?\\ Its\\ audio\\ file\\ is\\ removed\\.\\ Your\\ lyrics\\ and\\ full\\-song\\ takes\\ are\\ not\\ changed\\.",
+      "ลบ “\\1”? ไฟล์เสียงจะถูกลบ เนื้อเพลงและเทคเต็มเพลงของคุณไม่เปลี่ยน"
+    ],
+    [
+      "Delete\\ “(.+?)”\\?\\ This\\ cannot\\ be\\ undone\\.\\ Your\\ songs\\ are\\ not\\ changed\\.",
+      "ลบ “\\1”? ย้อนกลับไม่ได้ เพลงของคุณไม่เปลี่ยน"
+    ],
+    [
+      "Delete\\ the\\ marker\\ “(.+?)”\\ at\\ (.+?)\\?\\ The\\ audio\\ is\\ not\\ changed\\.",
+      "ลบเครื่องหมาย “\\1” ที่ \\2? เสียงไม่เปลี่ยน"
+    ],
+    [
+      "Take\\ (.+?)\\ Copy",
+      "เทค \\1 สำเนา"
+    ],
+    [
+      "Take\\ (.+?)\\ ·\\ duration\\ (.+?):\\ later\\ times\\ are\\ refused\\.",
+      "เทค \\1 · ความยาว \\2: เวลาที่เลยจากนี้ไม่รับ"
+    ],
+    [
+      "Take\\ (.+?)\\ ·\\ the\\ real\\ length\\ is\\ not\\ known,\\ so\\ only\\ negative\\ times\\ are\\ refused\\.",
+      "เทค \\1 · ไม่ทราบความยาวจริง จึงปฏิเสธเฉพาะเวลาติดลบ"
+    ],
+    [
+      "Wraps\\ the\\ selection:\\ (.+?)\\ …\\ (.+?)",
+      "ครอบข้อความที่เลือก: \\1 … \\2"
+    ],
+    [
+      "Wraps\\ the\\ selected\\ text:\\ (.+?)text(.+?)",
+      "ครอบข้อความที่เลือก: \\1ข้อความ\\2"
+    ],
+    [
+      "Inserts:\\ (.+?)",
+      "แทรก: \\1"
+    ],
+    [
+      "The AI answer does not have the (\\w+) \\.\\.\\. END marker lines exactly once, in order\\.",
+      "คำตอบของ AI ไม่มีบรรทัดตัวคั่น \\1 ... END ครบอย่างละหนึ่งครั้งตามลำดับ"
+    ],
+    [
+      "(\\d+) suggestion\\(s\\) from the AI were ignored because they did not match your lyrics:",
+      "\\1 ข้อเสนอจาก AI ถูกข้ามเพราะไม่ตรงกับเนื้อเพลงของคุณ:"
+    ],
+    [
+      "(\\d+) suggestion\\(s\\) were ignored:",
+      "\\1 คำแนะนำถูกข้าม:"
+    ],
+    [
+      "(\\d+) Thai pair\\(s\\) from the AI are not coloured because Python could not confirm their sound\\.",
+      "\\1 คู่ภาษาไทยจาก AI ไม่ได้ระบายสี เพราะ Python ยืนยันเสียงไม่ได้"
+    ],
+    [
+      "“(.+?)” is not at the end of line (\\d+), so that row was ignored\\.",
+      "“\\1” ไม่ได้อยู่ท้ายบรรทัด \\2 จึงข้ามแถวนั้น"
+    ],
+    [
+      "A row of the answer was not usable: “(.+?)”\\.",
+      "แถวหนึ่งของคำตอบใช้ไม่ได้: “\\1”"
+    ],
+    [
+      "The app's reading of the Thai spelling differs: (.+)",
+      "การอ่านการสะกดภาษาไทยของโปรแกรมต่างออกไป: \\1"
+    ],
+    [
+      "AI\\ Review\\ —\\ (.+?)",
+      "รีวิวจาก AI — \\1"
+    ],
+    [
+      "The\\ review\\ failed:\\ (.+?)",
+      "รีวิวไม่สำเร็จ: \\1"
+    ],
+    [
+      "Line\\ (.+?)",
+      "บรรทัด \\1"
+    ],
+    [
+      "Lines\\ (.+?)\\-(.+?)",
+      "บรรทัด \\1-\\2"
+    ],
+    [
+      "AI\\ confidence:\\ (.+?)",
+      "ความมั่นใจของ AI: \\1"
+    ],
+    [
+      "Selected\\ lines\\ (.+?)\\-(.+?)",
+      "บรรทัดที่เลือก \\1-\\2"
+    ],
+    [
+      "Selected\\ line\\ (.+?)",
+      "บรรทัดที่เลือก \\1"
+    ],
+    [
+      "Suggestion\\ (.+?)\\ was\\ dropped:\\ (.+?)",
+      "ข้อเสนอที่ \\1 ถูกตัดทิ้ง: \\2"
+    ],
+    [
+      "(.+?)\\ more\\ suggestion\\(s\\)\\ were\\ left\\ out:\\ only\\ the\\ 3\\ most\\ important\\ are\\ shown\\.",
+      "ข้อเสนออีก \\1 ข้อถูกตัดออก: แสดงเฉพาะ 3 ข้อที่สำคัญที่สุด"
+    ],
+    [
+      "Ask\\ AI\\ about\\ Take\\ (.+?)",
+      "ถาม AI เรื่องเทค \\1"
+    ],
+    [
+      "(.+?)\\ AI\\ sure\\ ·\\ (.+?)\\ AI\\ unsure\\ ·\\ the\\ AI\\ judges\\ the\\ sound;\\ the\\ app\\ only\\ checks\\ that\\ the\\ words\\ are\\ where\\ it\\ says",
+      "\\1 AI มั่นใจ · \\2 AI ไม่แน่ใจ · AI ตัดสินเรื่องเสียง โปรแกรมแค่เช็กว่าคำอยู่ตรงที่มันบอก"
+    ],
+    [
+      "(.+?)\\ AI\\ sure\\ ·\\ (.+?)\\ AI\\ unsure\\ ·\\ (.+?)\\ rejected\\ \\(older\\ result\\)\\ ·\\ the\\ AI\\ judges\\ the\\ sound;\\ the\\ app\\ only\\ checks\\ that\\ the\\ words\\ are\\ where\\ it\\ says",
+      "\\1 AI มั่นใจ · \\2 AI ไม่แน่ใจ · \\3 ถูกปฏิเสธ (ผลเก่า) · AI ตัดสินเรื่องเสียง โปรแกรมแค่เช็กว่าคำอยู่ตรงที่มันบอก"
+    ],
+    [
+      "Song\\ Analysis\\ Report\\ —\\ (.+?)",
+      "รายงานวิเคราะห์เพลง — \\1"
+    ],
+    [
+      "All\\ lines\\ \\((.+?)\\)",
+      "ทุกบรรทัด (\\1)"
+    ],
+    [
+      "Pairs\\ \\((.+?)\\)",
+      "คู่สัมผัส (\\1)"
+    ],
+    [
+      "(.+?)\\ lines\\ ·\\ (.+?)\\ spoken\\ units\\ ·\\ not\\ a\\ sung\\-note\\ count",
+      "\\1 บรรทัด · \\2 หน่วยเสียงพูด · ไม่ใช่จำนวนโน้ตที่ร้อง"
+    ],
+    [
+      "(.+?)\\ lines\\ ·\\ (.+?)\\ spoken\\ units",
+      "\\1 บรรทัด · \\2 หน่วยเสียงพูด"
+    ],
+    [
+      "(.+?)\\ verified\\ rhyme\\ pair\\(s\\)\\ of\\ (.+?)",
+      "คู่สัมผัสที่ตรวจแล้ว \\1 จาก \\2 คู่"
+    ],
+    [
+      "(.+?)\\ rhythm\\ remark\\(s\\)",
+      "ข้อสังเกตเรื่องจังหวะ \\1 ข้อ"
+    ],
+    [
+      "(.+?)\\ suggestion\\(s\\)",
+      "ข้อเสนอ \\1 ข้อ"
+    ],
+    [
+      "(.+?)\\ verified\\ ·\\ (.+?)\\ unverified\\ ·\\ (.+?)\\ rejected\\ ·\\ Verified\\ is\\ a\\ Thai\\ spelling\\ check,\\ not\\ the\\ AI\\ confidence",
+      "\\1 ตรวจแล้ว · \\2 ยังไม่ยืนยัน · \\3 ถูกปฏิเสธ · \"ตรวจแล้ว\" คือผลตรวจการสะกดภาษาไทย ไม่ใช่ความมั่นใจของ AI"
+    ],
+    [
+      "(.+?)\\ remark\\(s\\)\\ from\\ the\\ text\\ only\\ \\(no\\ melody,\\ BPM\\ or\\ audio\\ was\\ heard\\)",
+      "ข้อสังเกต \\1 ข้อ จากข้อความอย่างเดียว (ไม่ได้ฟังทำนอง BPM หรือเสียง)"
+    ],
+    [
+      "Could\\ not\\ get\\ alternatives:\\ (.+?)",
+      "หาคำทดแทนไม่ได้: \\1"
+    ],
+    [
+      "(.+?)\\ suggestion\\(s\\)\\ from\\ the\\ AI\\ were\\ ignored\\ because\\ they\\ did\\ not\\ match\\ your\\ lyrics\\.",
+      "\\1 ข้อเสนอจาก AI ถูกข้ามเพราะไม่ตรงกับเนื้อเพลงของคุณ"
+    ],
+    [
+      "Step (.+?)…",
+      "ขั้นตอน \\1…"
+    ],
+    [
+      "(.*?)\\ LLM\\-assessed\\ exact\\ ·\\ (.*?)\\ LLM\\-assessed\\ near\\ ·\\ (.*?)\\ uncertain\\ ·\\ the\\ AI\\ judged\\ the\\ sound;\\ nothing\\ independent\\ verified\\ it",
+      "\\1 สัมผัสเต็มตามที่ AI ประเมิน · \\2 สัมผัสใกล้เคียงตามที่ AI ประเมิน · \\3 ไม่แน่ใจ · AI เป็นผู้ตัดสินเสียง ไม่มีสิ่งใดตรวจยืนยันอิสระ"
+    ],
+    [
+      "Cannot\\ open\\ the\\ prompts\\ folder:\\ (.*?)",
+      "เปิดโฟลเดอร์ prompt ไม่ได้: \\1"
+    ],
+    [
+      "(.*?)\\ flow\\ remark\\(s\\)\\ from\\ the\\ text\\ only\\ \\(no\\ melody,\\ BPM\\ or\\ audio\\ was\\ heard\\)\\.\\ The\\ ones\\ with\\ a\\ suggestion\\ are\\ in\\ the\\ Priority\\ Improvements\\ below\\.",
+      "ข้อสังเกตเรื่องการไหล \\1 ข้อ จากตัวอักษรเท่านั้น (ไม่ได้ฟังทำนอง BPM หรือเสียง) ข้อที่มีข้อเสนอจะอยู่ในสิ่งที่ควรปรับก่อนด้านล่าง"
+    ],
+    [
+      "Effective\\ system\\ prompt:\\ (.*?)",
+      "System prompt ที่ใช้จริง: \\1"
+    ],
+    [
+      "Could\\ not\\ reset\\ the\\ prompt:\\ (.*?)",
+      "คืนค่า prompt ไม่ได้: \\1"
+    ],
+    [
+      "prompt\\ hash\\ (.*?)\\ ·\\ file\\ (.*?)",
+      "hash ของ prompt \\1 · ไฟล์ \\2"
+    ],
+    [
+      "Line\\ (.*?)",
+      "บรรทัด \\1"
+    ],
+    [
+      "Lines\\ (.*?)\\-(.*?)",
+      "บรรทัด \\1-\\2"
+    ],
+    [
+      "About\\ your\\ finding\\ (.*?)\\ \\((.*?)\\):\\ ",
+      "เรื่องข้อค้นพบ \\1 (\\2): "
+    ],
+    [
+      "This\\ part\\ failed:\\ (.*?)",
+      "ส่วนนี้ล้มเหลว: \\1"
+    ],
+    [
+      "A\\ specialist\\ prompt\\ is\\ not\\ valid,\\ so\\ nothing\\ was\\ sent:\\ (.*?)",
+      "Prompt ของผู้เชี่ยวชาญไม่ถูกต้อง จึงไม่ได้ส่งอะไร: \\1"
+    ],
+    [
+      "Reloaded,\\ but\\ some\\ prompts\\ are\\ not\\ valid\\ and\\ will\\ not\\ be\\ sent:\\ (.*?)",
+      "โหลดใหม่แล้ว แต่ prompt บางไฟล์ไม่ถูกต้องและจะไม่ถูกส่ง: \\1"
+    ],
+    [
+      "The\\ default\\ prompt\\ of\\ (.*?)\\ was\\ put\\ back\\.",
+      "คืน prompt เริ่มต้นของ \\1 แล้ว"
+    ],
+    [
+      "Continue\\ in\\ chat\\ with\\ (.*?)",
+      "คุยต่อกับ \\1"
+    ],
+    [
+      "\\(Nothing\\ can\\ be\\ applied:\\ the\\ Song\\ Architect\\ arranges\\ the\\ lyrics\\ you\\ have\\ and\\ does\\ not\\ write\\ new\\ lines,\\ so\\ the\\ (.*?)\\ line\\(s\\)\\ it\\ made\\ up\\ were\\ left\\ out\\.\\ To\\ get\\ new\\ lyrics,\\ ask\\ the\\ Lyric\\ Craft\\ Advisor\\.\\)",
+      "(ไม่มีอะไรให้ Apply: สถาปนิกเพลงจัดเรียงเนื้อที่คุณมีและไม่เขียนบรรทัดใหม่ จึงตัด \\1 บรรทัดที่เขาแต่งขึ้นเองออก ถ้าต้องการเนื้อเพลงใหม่ให้ถามที่ปรึกษาศิลปะการใช้ถ้อยคำ (Lyric Craft Advisor))"
+    ],
+    [
+      "\\((.*?)\\ line\\(s\\)\\ the\\ Song\\ Architect\\ made\\ up\\ were\\ left\\ out\\ of\\ the\\ proposal;\\ the\\ rest\\ can\\ be\\ applied\\.\\)",
+      "(ตัด \\1 บรรทัดที่สถาปนิกแต่งขึ้นเองออกจากข้อเสนอแล้ว ส่วนที่เหลือ Apply ได้)"
+    ],
+    [
+      "Ask\\ (.*?)",
+      "ถาม \\1"
+    ],
+    [
+      "Suggestion\\ (.*?)/(.*?)\\ —\\ (.*?)",
+      "ข้อเสนอ \\1/\\2 — \\3"
+    ],
+    [
+      "Suggestion\\ (.*?)\\ —\\ (.*?)",
+      "ข้อเสนอ \\1 — \\2"
+    ],
+    [
+      "Suggestion\\ (.*?)/(.*?)",
+      "ข้อเสนอ \\1/\\2"
+    ],
+    [
+      "Suggestion\\ (.*?)",
+      "ข้อเสนอ \\1"
+    ],
+    [
+      "(.*?)\\ suggestion\\(s\\)\\ were\\ incomplete\\ and\\ are\\ not\\ shown\\ \\(the\\ details\\ are\\ in\\ the\\ specialist\\ log\\)\\.",
+      "\\1 ข้อเสนอไม่สมบูรณ์จึงไม่แสดง (รายละเอียดอยู่ใน log ของผู้เชี่ยวชาญ)"
+    ],
+    [
+      "\\((.*?)\\ suggested\\ change\\(s\\)\\ could\\ not\\ be\\ used\\ and\\ are\\ not\\ shown\\.\\)",
+      "(\\1 ข้อเสนอการแก้ใช้ไม่ได้จึงไม่แสดง)"
+    ],
+    [
+      "This\\ part\\ failed:\\ (.*?)",
+      "ส่วนนี้ล้มเหลว: \\1"
+    ],
+    [
+      "Draft\\ ·\\ (\\d+)\\ steps",
+      "ร่าง · \\1 steps"
+    ],
+    [
+      "Standard\\ ·\\ (\\d+)\\ steps",
+      "มาตรฐาน · \\1 steps"
+    ],
+    [
+      "High\\ ·\\ (\\d+)\\ steps",
+      "สูง · \\1 steps"
+    ],
+    [
+      "Customize\\ Apply\\ —\\ (.*?)",
+      "เลือกค่าที่จะใช้ — \\1"
+    ],
+    [
+      "Applied\\ “(.*?)”",
+      "ใช้ “\\1” แล้ว"
+    ],
+    [
+      "Applied\\ “(.*?)”\\.\\ Check\\ the\\ settings,\\ then\\ press\\ Generate\\.\\ Undo\\ puts\\ the\\ previous\\ settings\\ back\\.",
+      "ใช้ “\\1” แล้ว ตรวจค่าแล้วกดสร้างเพลง กดย้อนกลับเพื่อคืนค่าเดิม"
+    ],
+    [
+      "From\\ the\\ AI\\ Music\\ Director:\\ “(.*?)”\\ \\(edit\\ it\\ under\\ Music\\ Style\\ >\\ Advanced\\)",
+      "จาก AI Music Director: “\\1” (แก้ได้ที่ สไตล์เพลง > Advanced)"
+    ],
+    [
+      "Applied\\ “(.*?)”:\\ Style\\ mode\\ is\\ now\\ Advanced\\.\\ Generate\\ uses\\ this\\ caption\\.\\ Restore\\ Previous\\ Settings\\ \\(beside\\ Generate\\)\\ undoes\\ it\\.",
+      "ใช้ “\\1” แล้ว: โหมดสไตล์เป็น Advanced ตอนนี้ การสร้างเพลงจะใช้ caption นี้ ปุ่มย้อนกลับข้างปุ่มสร้างเพลงคืนค่าเดิมได้"
+    ],
+    [
+      "(\\d+)\\ suggested\\ change\\(s\\)\\ could\\ not\\ be\\ used\\ and\\ are\\ not\\ shown\\.",
+      "มี \\1 ข้อเสนอที่ใช้ไม่ได้จึงไม่แสดง"
+    ],
+    [
+      "A\\ proposal\\ was\\ not\\ offered\\ for\\ Apply:\\ (.*?)",
+      "ข้อเสนอนี้ไม่เปิดให้ใช้: \\1"
+    ],
+    [
+      "New\\ session\\ with\\ (.*?)",
+      "เริ่ม session ใหม่กับ \\1"
+    ],
+    [
+      "The\\ answer\\ did\\ not\\ follow\\ the\\ reply\\ format\\ \\((.*?)\\),\\ so\\ it\\ is\\ shown\\ as\\ text\\ only\\.\\ Nothing\\ can\\ be\\ applied\\ from\\ it\\ and\\ nothing\\ was\\ changed\\.",
+      "คำตอบไม่ตรงรูปแบบ (\\1) จึงแสดงเป็นข้อความอย่างเดียว ใช้ไม่ได้ และไม่มีอะไรเปลี่ยน"
+    ],
+    [
+      "Merged\\ into\\ your\\ song:\\ (.*?)\\.\\ Your\\ other\\ sections,\\ tags\\ and\\ cues\\ are\\ left\\ as\\ they\\ are\\.(.*?)",
+      "รวมเข้าเพลงของคุณแล้ว: \\1 ท่อน แท็ก และ cue อื่นของคุณไม่ถูกแตะ\\2"
+    ],
+    [
+      "(.*?)\\ \\(Free-form\\ direction,\\ not\\ a\\ studio\\ cue,\\ for\\ the\\ Music\\ Caption:\\ (.*?)\\.\\)",
+      "\\1 (ทิศทางดนตรีอิสระ ไม่ใช่ cue ของระบบ ใส่ใน Music Caption: \\2)"
+    ],
+    [
+      "Heads-up:\\ this\\ conversation\\ is\\ using\\ about\\ (\\d+)%\\ of\\ the\\ local\\ model's\\ memory\\.\\ Start\\ a\\ new\\ session\\ soon\\ with\\ the\\ New\\ session\\ button\\ \\(your\\ messages\\ stay\\ here\\),\\ or\\ switch\\ to\\ Grok\\.",
+      "เตือน: บทสนทนานี้ใช้หน่วยความจำของโมเดลในเครื่องไปราว \\1% แล้ว ควรเริ่ม session ใหม่เร็วๆ นี้ด้วยปุ่ม New session (ข้อความของคุณยังอยู่ที่นี่) หรือสลับไปใช้ Grok"
+    ],
+    [
+      "This\\ conversation\\ is\\ full\\ for\\ the\\ local\\ model\\ \\(about\\ (\\d+)\\ of\\ (\\d+)\\ tokens\\ it\\ can\\ use\\)\\.\\ Nothing\\ was\\ sent\\.\\ Press\\ the\\ New\\ session\\ button\\ to\\ start\\ again\\ \\(your\\ messages\\ stay\\ here\\),\\ or\\ switch\\ to\\ Grok\\.",
+      "บทสนทนานี้เต็มสำหรับโมเดลในเครื่องแล้ว (ราว \\1 จาก \\2 token ที่ใช้ได้) ยังไม่ได้ส่งอะไร กดปุ่ม New session เพื่อเริ่มใหม่ (ข้อความของคุณยังอยู่ที่นี่) หรือสลับไปใช้ Grok"
+    ],
+    [
+      "Opened\\ “(.*?)”\\ as\\ a\\ new\\ sheet",
+      "เปิด “\\1” เป็นชีตใหม่แล้ว"
+    ],
+    [
+      "This\\ change\\ was\\ made\\ for\\ the\\ sheet\\ “(.*?)”\\.\\ Open\\ that\\ sheet\\ to\\ apply\\ it\\.\\ Nothing\\ was\\ changed\\.",
+      "การเปลี่ยนนี้ทำไว้สำหรับชีต “\\1” เปิดชีตนั้นเพื่อใช้ ยังไม่มีอะไรถูกเปลี่ยน"
+    ],
+    [
+      "for\\ “(.*?)”\\ \\ \\(line\\ (\\d+)(?: · (.*?))?\\)\\.\\ Nothing\\ is\\ changed\\ until\\ you\\ press\\ the\\ replace\\ icon\\ \\(Undo\\ restores\\ it\\)\\.",
+      "สำหรับ “\\1” (บรรทัด \\2 \\3) ยังไม่มีอะไรเปลี่ยนจนกว่าจะกดไอคอนแทนที่ (Undo ย้อนกลับได้)"
+    ],
+    [
+      "AI\\ Template\\ Arrangement\\ ·\\ (.*)",
+      "จัดเรียงตามเทมเพลตด้วย AI · \\1"
+    ],
+    [
+      "Apply\\ option\\ (.*)",
+      "ใช้ตัวเลือก \\1"
+    ],
+    [
+      "Option\\ ([A-Za-z0-9]+)",
+      "ตัวเลือก \\1"
+    ],
+    [
+      "Option\\ ([A-Za-z0-9]+) \\((\\d+)/(\\d+)\\)(.*)",
+      "ตัวเลือก \\1 (\\2/\\3)\\4"
+    ],
+    [
+      "Show\\ all\\ (\\d+)\\ tracks",
+      "แสดงทั้งหมด \\1 แทร็ก"
+    ],
+    [
+      "\\+\\ (\\d+)\\ more",
+      "+ อีก \\1"
+    ],
+    [
+      "Section\\ Options…\\s+(.*)",
+      "ตัวเลือกท่อน…  \\1"
+    ],
+    [
+      "Show\\ earlier\\ messages\\ \\((\\d+)\\)",
+      "แสดงข้อความเก่า (\\1)"
+    ]
+  ]
+}

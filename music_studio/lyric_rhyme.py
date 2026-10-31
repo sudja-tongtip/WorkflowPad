@@ -15,66 +15,44 @@ from typing import Callable
 from . import thai_rhyme as TR
 from .lyric_analysis import AnalysisError, SEP_END, _is_sep, _norm
 
-RHYME_PROMPT_VERSION = "rhyme-v3"
+RHYME_PROMPT_VERSION = "rhyme-v5"
+LLM_EXACT, LLM_NEAR, UNCERTAIN = "llm_exact", "llm_near", "uncertain"        # what the AI (the Thai Prosody Expert) assessed: no Python sound check stands behind these
 KIND = "rhyme"                                  # the analysis type that is part of the cache key
-SEP_RHYMES = "=========== RHYMES ==========="
-WINDOW_LINES = 60                               # lines per request: the answer is only a short list of pairs, so a whole song normally goes in ONE request
-WINDOW_OVERLAP = 15                             # a longer song is sent in overlapping windows (global line numbers), so a pair that crosses a window edge is still seen
-MAX_PAIRS_PER_REQUEST = 30
+WINDOW_LINES = 120                              # lines per request: the answer is one short row per line, so a whole song normally goes in ONE request
+WINDOW_OVERLAP = 0                              # a longer song is cut into windows; a rhyme across a window edge is not seen
 TYPES = ("end", "cross", "internal", "near")
 CONFIDENCE = ("high", "medium", "low", "uncertain")
 TYPE_TITLES = {"end": "End Rhyme", "cross": "Cross-Line Rhyme", "internal": "Internal Rhyme", "near": "Near Rhyme"}
 _RH_LANG = re.compile(r"^[a-z]{2,3}(?:-[A-Za-z]{2,4})?(?:\+[a-z]{2,3}(?:-[A-Za-z]{2,4})?)*$")
 
+SEP_ENDINGS = "=========== ENDINGS ==========="
+
 SYSTEM_PROMPT = (
-    "You find RHYMES in song lyrics for a songwriting tool. You judge only by how the words are PRONOUNCED when sung, never by spelling. "
+    "You are the rhyme ear of a songwriting tool. You judge only by how the words SOUND when sung, never by spelling. "
     "You never rewrite, translate, correct or comment on the lyrics.\n\n"
-    "INPUT: numbered lines written as `N| text`. Section tags are already removed. Decide the language of every word yourself; a line may mix languages.\n"
-    "Not every line rhymes. Report ONLY pairs you are confident about. An answer with no pairs is correct when there are none. Never invent a rhyme to fill the answer.\n\n"
-    "TYPES (first column of a row)\n"
-    "- end: the LAST word of one line rhymes exactly with the LAST word of a DIFFERENT line.\n"
-    "- cross: the LAST word of one line rhymes exactly with a word INSIDE the immediately FOLLOWING line (not its last word).\n"
-    "- internal: two words INSIDE THE SAME line rhyme exactly with each other (both line numbers are the same).\n"
-    "- near: the sounds are close but not an exact rhyme (same vowel with a different final consonant, similar vowels, ...). Use near whenever the rhyme is not exact, "
-    "whatever the position of the words. Never call a near rhyme end or internal.\n\n"
-    "SOUND RULES\n"
-    "- Thai: compare the spoken vowel, including its length, and the final consonant. Ignore tone. "
-    "Quote the whole syllable, never a piece of one (ดาว, not าว; บ้าน, not าน).\n"
-    "  Rhyme: ดาว and หนาว (same long -aaw). ใจ and ไป (same -ai).\n"
-    "  Not an exact rhyme: บ้าน and ฝัน (long อา versus short อะ, same final น). Call that near, not end.\n"
-    "  Not a rhyme at all: กาน and กิน (different vowels). The same final consonant is not enough.\n"
-    "- English: compare the stressed vowel and everything after it as spoken, not the letters (love and above rhyme; love and move do not).\n"
-    "- Japanese: compare the vowel sounds of the final mora(s); a mora count is not a rhyme.\n"
-    "- Other languages: use that language's own pronunciation. Words of different languages rhyme only when they really sound alike.\n"
-    "- Repeating the very same word is not a rhyme.\n"
-    "- A pair is valid ONLY if the two words SHARE a sound. end / cross / internal: the same final vowel AND the same final consonant sound (or both end in the vowel). "
-    "near: the same vowel with a similar final consonant, or the same final consonant with a similar vowel. "
-    "Words whose vowels differ AND whose final consonants differ do not rhyme at all, not even as near: leave them out.\n"
-    "- Check every row before you write it: the reason must name the sound the two words SHARE. If you can only describe how they DIFFER, delete the row.\n\n"
-    "OUTPUT FORMAT: exactly these two marker lines around the rows, one row per pair, at most " + str(MAX_PAIRS_PER_REQUEST) + " rows, strongest pairs first:\n"
-    + SEP_RHYMES + "\n"
-    "type | line:word | line:word | confidence | lang | reason\n"
+    "INPUT: numbered lines written as `N| text`. Section tags are already removed. Decide the language of every line yourself; a line may mix languages.\n\n"
+    "TASK: for EVERY line find its LAST WORD, say how its last syllable sounds, and say which lines END in the same sound.\n\n"
+    "OUTPUT FORMAT: exactly these marker lines and rows, one ENDINGS row for every input line, in the same order:\n"
+    + SEP_ENDINGS + "\n"
+    "N | last word | sound | group | inner | note\n"
     + SEP_END + "\n\n"
-    "- line is the number N of the input line; word is copied EXACTLY as written in that line (one word, or a short phrase).\n"
-    "- confidence is one of: high, medium, low, uncertain. Use uncertain when you are not sure; if you doubt a pair, leave it out.\n"
-    "- lang is the ISO 639-1 code of the words (th, en, ja, ...); write th+en when the two words are in different languages.\n"
-    "- reason is at most 12 words naming the shared sound. Do not use the character | inside it.\n"
-    "- If nothing rhymes write the two marker lines with nothing between them.\n\n"
-    "EXAMPLE\n"
-    "Input:\n1| คืนนี้ดาวเต็มฟ้า\n2| ฉันคิดถึงเธอเสมอมา\n3| The night is bright, hold on tight\n4| Hold me in your time\n5| Tell me you are mine\n6| ฉันเดินออกไปคนเดียว\n"
-    "Output:\n" + SEP_RHYMES + "\n"
-    "end | 1:ฟ้า | 2:มา | high | th | both end in the vowel -aa\n"
-    "internal | 3:night | 3:bright | high | en | same vowel and final sound -ight\n"
-    "near | 4:time | 5:mine | medium | en | same vowel, final m versus n\n" + SEP_END + "\n\n"
-    "EXAMPLE 2 (cross-line exact rhyme: line 1 ends with ดาว, line 2 has หนาว inside)\n"
-    "Input:\n1| ฉันมองดาว\n2| เธอยังหนาวอยู่ไหม\n"
-    "Output:\n" + SEP_RHYMES + "\n"
-    "cross | 1:ดาว | 2:หนาว | high | th | same vowel and final sound -aao\n" + SEP_END + "\n\n"
-    "EXAMPLE 3 (nothing rhymes, so the answer is empty)\n"
-    "Input:\n1| ฉันกินข้าว\n2| เขานั่งอยู่ริมทะเล\n3| The door is closed\n4| Birds fly over the sea\n"
-    "Output:\n" + SEP_RHYMES + "\n" + SEP_END + "\n\n"
-    "EXAMPLE 4 (do not report these)\n"
-    "กาน with กิน is not a rhyme. บ้าน with ฝัน is near, never end or cross or internal."
+    "- last word: copied EXACTLY as written. For Thai give only the LAST SYLLABLE of the last word (ต่อไป -> ไป, ใจดำ -> ดำ, หัวใจ -> ใจ, เหงาใจ -> ใจ); for other languages the last word.\n"
+    "- sound: the vowel and the final consonant of the last syllable in simple Latin letters, tone ignored (for example -aao, -ai, -am, -uea, -ok).\n"
+    "- group: a capital letter. Lines whose last syllables share EXACTLY the same vowel and final sound get the SAME letter; every different sound gets its own new letter. "
+    "Write - when no other line ends in that sound. When the rhyme is only close and not exact (the same vowel with a similar final consonant, or the reverse) add ~ after the letter, for example A~. "
+    "When you are not sure how a word is pronounced, add ? after the letter, for example A?: an honest ? is better than a wrong rhyme. "
+    "Repeating the very same word is not a rhyme: write -.\n"
+    "- inner: a syllable or word INSIDE this line (not its last word) that rhymes with the last syllable of the line right above it, copied exactly; otherwise -.\n"
+    "- note: at most 8 words, or -. Never use the character | inside a field.\n"
+    "- Not every line rhymes. Never invent a rhyme to fill the answer.\n\n"
+    "SOUND RULES: Thai: compare the vowel INCLUDING its length and the final consonant, ignore tone (ดาว and หนาว rhyme; ใจ and ไป rhyme; บ้าน and ฝัน do not rhyme exactly: the vowel length differs, so near at most; "
+    "กาน and กิน do not rhyme). English: the stressed vowel and everything after it as spoken. Japanese: the vowel of the final mora. Other languages: their own pronunciation.\n\n"
+    "EXAMPLE\nInput:\n1| ฉันมองดาวบนฟ้า\n2| เธอยังหนาวอยู่ไหม\n3| ฉันคิดถึงเธอเสมอมา\n4| ฝันถึงเธอทุกคืน\n"
+    "Output:\n" + SEP_ENDINGS + "\n"
+    "1 | ฟ้า | -aa | A | - | -\n"
+    "2 | ไหม | -ai | - | - | -\n"
+    "3 | มา | -aa | A | - | -\n"
+    "4 | คืน | -uen | - | - | -\n" + SEP_END
 )
 
 
@@ -310,49 +288,128 @@ def _check_row(row: str, by_num: dict) -> tuple:
     return pair, ""
 
 
-def parse_window(raw: str, sent: list) -> tuple:
-    """(pairs, ignored messages) for one answer, or AnalysisError. An answer with the two markers and nothing between them means 'no rhymes found' (a valid result);
-    an empty answer, missing / repeated markers or a row that is not in the format is an error. Nothing is made up."""
+@dataclass
+class Ending:
+    num: int                                    # number of the SUNG line
+    word: str                                   # its last word, as the AI quoted it (checked to sit at the end of the line)
+    sound: str = ""                             # the AI's own description of the sound ("-ai"): shown, never judged
+    group: str = ""                             # same letter = the AI says these lines end in the same sound ('' = no rhyme partner)
+    near: bool = False                          # the AI marked the rhyme as close but not exact (A~)
+    unsure: bool = False                        # the AI said it is not sure of the pronunciation (A?)
+    inner: str = ""                             # a word inside the line that rhymes with the last word of the line above
+    note: str = ""
+
+
+def parse_endings(raw: str, sent: list) -> tuple:
+    """(endings, [], ignored messages) for one answer, or AnalysisError when the markers or every row are missing. A row that cannot be used is dropped with a message:
+    the answer is never guessed at, and nothing here judges the sounds (that is the AI's job)."""
     text = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", raw or "").strip()
     if not text:
         raise AnalysisError("The AI answer is empty.", raw)
     rows = text.splitlines()
-    a = [i for i, r in enumerate(rows) if _is_sep(r, SEP_RHYMES)]
+    a = [i for i, r in enumerate(rows) if _is_sep(r, SEP_ENDINGS)]
+    k = [i for i, r in enumerate(rows) if _is_sep(r, "=========== ASK ===========")]          # an old-style ASK part is tolerated and ignored
     z = [i for i, r in enumerate(rows) if _is_sep(r, SEP_END)]
-    if len(a) != 1 or len(z) != 1 or not a[0] < z[0]:
-        raise AnalysisError("The AI answer does not have the RHYMES ... END marker lines exactly once, in order.", raw)
-    body = [r.strip() for r in rows[a[0] + 1:z[0]] if r.strip()]
-    if len(body) == 1 and body[0].strip(" .").lower() in ("none", "no rhymes", "-"):
-        body = []
-    if len(body) > MAX_PAIRS_PER_REQUEST * 2:
-        raise AnalysisError(f"The AI returned {len(body)} rows, far more than the {MAX_PAIRS_PER_REQUEST} asked for. The answer is not trusted.", raw)
+    if len(a) != 1 or len(z) != 1 or len(k) > 1 or not a[0] < z[0] or (k and not a[0] < k[0] < z[0]):
+        raise AnalysisError("The AI answer does not have the ENDINGS ... END marker lines exactly once, in order.", raw)
+    mid = k[0] if k else z[0]
     by_num = {ln.num: ln for ln in sent}
-    pairs, rejected, ignored, seen = [], [], [], set()
-    for row in body:
-        try:
-            pair, why = _check_row(row, by_num)
-        except AnalysisError as ex:
-            ex.raw = raw
-            raise
-        if pair is None:
-            ignored.append(why)
+    ends, ignored, seen = [], [], set()
+    for row in (r.strip() for r in rows[a[0] + 1:mid] if r.strip()):
+        parts = [p.strip() for p in row.split("|")]
+        if len(parts) < 4 or not parts[0].isdigit() or int(parts[0]) not in by_num:
+            ignored.append(f"A row of the answer was not usable: “{row[:50]}”.")
             continue
-        classify_sound(pair, by_num)
-        if pair.key in seen:
-            ignored.append(f"{pair.a_word} ↔ {pair.b_word} was listed twice.")
+        num, word = int(parts[0]), parts[1]
+        if num in seen:
             continue
-        if pair.verify == TR.REJECTED:
-            rejected.append(pair)
+        line = _norm(by_num[num].text)
+        if not _norm(word) or not line.endswith(_norm(word)):
+            ignored.append(f"“{word}” is not at the end of line {num}, so that row was ignored.")
             continue
-        seen.add(pair.key)
-        rejected[:] = [p for p in rejected if p.key != pair.key]
-        pairs.append(pair)
-    return pairs, ignored, rejected
+        seen.add(num)
+        group = parts[3].replace(" ", "")
+        near, unsure = "~" in group, "?" in group
+        letter = group.replace("~", "").replace("?", "")
+        letter = letter if re.fullmatch(r"[A-Za-z]{1,2}", letter) else ""
+        inner = parts[4] if len(parts) > 4 and parts[4] not in ("", "-", "—") and _norm(parts[4]) in line[:max(0, len(line) - len(_norm(word)))] else ""
+        ends.append(Ending(num, word, parts[2] if parts[2] != "-" else "", letter.upper(), near and bool(letter), unsure and bool(letter), inner,
+                           parts[5] if len(parts) > 5 and parts[5] not in ("", "-", "—") else ""))
+    if not ends:
+        raise AnalysisError("The AI answer has no readable ending rows.", raw)
+    return ends, [], ignored
+
+
+REACH = 4                                       # lines that the AI says end in the same sound are one group when they are at most this many sung lines apart
+
+
+def group_endings(ends: list) -> list:
+    """The groups the AI describes: lines with the same group letter, and lines it describes with the same sound label ("-ai") that are close to each other. A model often labels the sound of a
+    line right and forgets its group letter, so both are used. Nothing here listens to a sound: it only compares what the AI wrote. A group of one line is not a group."""
+    parent = {e.num: e.num for e in ends}
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+    by_letter, by_sound = {}, {}
+    for e in sorted(ends, key=lambda e: e.num):
+        if e.group:
+            if e.group in by_letter:
+                parent[find(e.num)] = find(by_letter[e.group])
+            by_letter[e.group] = e.num
+        key = re.sub(r"[^a-z]", "", e.sound.lower())
+        if key and key in by_sound and e.num - by_sound[key] <= REACH:
+            parent[find(e.num)] = find(by_sound[key])
+        if key:
+            by_sound[key] = e.num
+    members = {}
+    for e in ends:
+        members.setdefault(find(e.num), []).append(e)
+    return [sorted(g, key=lambda e: e.num) for g in sorted(members.values(), key=lambda g: min(e.num for e in g)) if len(g) > 1]
+
+
+def _pair_from(t: str, a_num: int, a_word: str, b_num: int, b_word: str, reason: str, sure: bool, by_num: dict, ignored: list, near: bool = False) -> "RhymePair | None":
+    """One pair the AI described. Python checks only that both words are really where the pair says (_check_row). Whether they rhyme is the AI's assessment: `verify` records it as LLM-assessed
+    exact, LLM-assessed near, or uncertain. It is never "verified": nothing independent stands behind it. The position (`type`: end / cross) is a separate fact from the sound match."""
+    lang = "th" if re.search(r"[\u0E00-\u0E7F]", a_word + b_word) else "en"
+    try:
+        pair, why = _check_row(f"{t} | {a_num}:{a_word} | {b_num}:{b_word} | {'medium' if sure else 'low'} | {lang} | {reason}", by_num)
+    except AnalysisError as ex:
+        ignored.append(str(ex))
+        return None
+    if pair is None:
+        ignored.append(why)
+        return None
+    pair.verify, pair.verify_note = (LLM_NEAR if near else (LLM_EXACT if sure else UNCERTAIN)), ""
+    return pair
+
+
+def endings_to_pairs(ends: list, groups: list, by_num: dict, ignored: list) -> list:
+    """The AI's groups as RhymePairs: neighbours inside a group are paired one after another (a chain), the inner words become cross-line pairs."""
+    pairs, seen = [], set()
+
+    def add(p):
+        if p is not None and p.key not in seen:
+            seen.add(p.key)
+            pairs.append(p)
+    for members in groups:
+        for x, y in zip(members, members[1:]):
+            reason = " · ".join(s for s in (f"{x.sound} / {y.sound}" if (x.sound or y.sound) else "", y.note) if s)
+            add(_pair_from("end", x.num, x.word, y.num, y.word, reason.replace("|", "/"), not (x.unsure or y.unsure), by_num, ignored, near=(x.near or y.near)))
+    ends_by = {e.num: e for e in ends}
+    for e in ends:
+        prev = ends_by.get(e.num - 1)
+        if e.inner and prev is not None:
+            add(_pair_from("cross", prev.num, prev.word, e.num, e.inner, e.note.replace("|", "/"), not e.unsure, by_num, ignored))
+    return pairs
 
 
 def analyze_rhymes(lines: list, ask: Callable[[str, str], str], size: int = WINDOW_LINES, overlap: int = WINDOW_OVERLAP,
                    progress: Callable[[int, int], None] | None = None) -> RhymeResult:
-    """Blocking (call from an executor). `ask(system, user) -> raw answer` is the existing AI backend. Any window that fails stops everything: the result is complete or it does not exist."""
+    """Blocking (call from an executor). `ask(system, user) -> raw answer` is the existing AI backend. The AI answers one row per line (last word, sound, group) in ONE request per window and decides
+    every rhyme itself: Python only checks that the quoted words are really at those places. The result is complete or it does not exist."""
     if not lines:
         raise AnalysisError("There are no sung lines to analyze (only [tags] or empty).")
     spans = windows(len(lines), size, overlap)
@@ -361,21 +418,20 @@ def analyze_rhymes(lines: list, ask: Callable[[str, str], str], size: int = WIND
     for k, (s, e) in enumerate(spans, 1):
         if progress:
             progress(k, len(spans))
-        system, user = build_request(lines[s:e])
+        window = lines[s:e]
+        system, user = build_request(window)
         raw = ask(system, user)
         result.raw.append(raw)
         try:
-            pairs, ignored, rejected = parse_window(raw, lines[s:e])
+            ends, _asks, ignored = parse_endings(raw, window)
         except AnalysisError as ex:
             ex.raw = raw
             raise
-        for p in pairs:
-            if p.key not in seen:                # a pair inside the overlap is reported by both windows: keep one
-                seen.add(p.key)
-                result.pairs.append(p)
-        for p in rejected:
-            if p.key not in seen and p.key not in {q.key for q in result.rejected}:
-                result.rejected.append(p)
+        for p in endings_to_pairs(ends, group_endings(ends), {ln.num: ln for ln in window}, ignored):
+            if p.key in seen:
+                continue
+            seen.add(p.key)
+            (result.rejected if p.verify == TR.REJECTED else result.pairs).append(p)       # a pair whose Thai sounds do not match is kept apart, never shown as a rhyme
         result.ignored.extend(i for i in ignored if i not in result.ignored)
     result.pairs.sort(key=lambda p: (min(p.a_line, p.b_line), max(p.a_line, p.b_line), p.type))
     return result
@@ -427,7 +483,10 @@ def rhyme_from_dict(d) -> "tuple | None":
                 if why and why not in ignored:
                     ignored.append(why)
                 continue
-            classify_sound(checked, numbered)
+            if str(d.get("prompt_version", "")) >= "rhyme-v5":        # a result of the LLM-first flow keeps what the AI assessed: nothing is re-judged by Python
+                checked.verify, checked.verify_note = str(x.get("verify", UNCERTAIN)), str(x.get("verify_note", ""))
+            else:
+                classify_sound(checked, numbered)                    # an older result: the Thai sound check is made again on load, as it always was
             seen.add(checked.key)
             if checked.verify == TR.REJECTED:
                 rejected.append(checked)

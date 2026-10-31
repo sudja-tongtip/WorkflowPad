@@ -48,6 +48,7 @@ RECOMMENDED = {
     "Verse": ["Whispered", "Falsetto", "Spoken Word", "Soft Vocals", "Breathy Vocals", "Melancholic", "Low Energy"],
     "Pre-Chorus": ["Building Energy", "Rising Drums", "Harmonies", "Emotional Vocals", "Powerful"],
     "Chorus": ["Anthemic", "Powerful", "Explosive", "Powerful Belting", "Emotional Vocals", "Harmonies", "Chant", "Choir Vocals"],
+    "Hook": ["Chant", "Ad-lib", "Harmonies", "Powerful", "Anthemic"],
     "Post-Chorus": ["Chant", "Ad-lib", "Harmonies", "Choir Vocals", "Instrumental Hook"],
     "Bridge": ["Dreamy", "Whispered", "Soft Vocals", "Emotional Vocals", "Piano", "Melancholic", "Powerful"],
     "Final Chorus": ["Anthemic", "Powerful", "Explosive", "Powerful Belting", "Emotional Vocals", "Harmonies", "Choir Vocals"],

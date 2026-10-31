@@ -17,7 +17,7 @@ from .compiler import TAG_LINE
 from .lyric_analysis import AnalysisError, SEP_END, _is_sep, _norm
 from .lyric_rhythm import section_names
 
-THESAURUS_PROMPT_VERSION = "thesaurus-v2"
+THESAURUS_PROMPT_VERSION = "thesaurus-v3"
 KIND = "thesaurus"
 SEP_SUGGESTIONS = "=========== SUGGESTIONS ==========="
 OPEN, CLOSE = "⟦", "⟧"                          # mark the selected phrase inside its line (a word that occurs twice is told apart by position)
@@ -50,7 +50,9 @@ SYSTEM_PROMPT = (
     "- Thai suggestions must be natural Thai a singer would say in that line. Do not offer a stiff dictionary gloss.\n"
     "- Start the meaning-difference field with `same:` when the meaning stays, or `changed:` when the mood, the person or the meaning shifts, then one short sentence.\n"
     "- Words must be real words or natural phrases of that language. Never make up words.\n"
-    "- Never repeat the original phrase as a suggestion.\n\n"
+    "- Never repeat the original phrase as a suggestion.\n"
+    "- When the input has a RHYME CONTEXT, the selected phrase takes part in a rhyme. Prefer suggestions that keep that rhyme or that fit the song better, and say so in the explanation. "
+    "The list is from the AI rhyme analysis of these lyrics (it can be wrong): judge by how the words sound.\n\n"
     "TYPES (first column; a label for the songwriter, not a claim that the suggestion is better)\n"
     "- similar_meaning: nearly the same meaning and mood.\n"
     "- emotional: stronger or softer feeling than the original.\n"
@@ -126,7 +128,7 @@ def _clean(line: str) -> str:
     return re.sub(r"\s{2,}", " ", _INLINE_TAG.sub(" ", line)).strip()
 
 
-def build_context(text: str, sel: Selection, line_count: "int | None" = None) -> Context:
+def build_context(text: str, sel: Selection, line_count: "int | None" = None, rhyme: "list | None" = None) -> Context:
     """The request for one selection: the section name and the sung lines of that section around the phrase (the phrase marked), the phrase, and the syllable count of the WHOLE
     line when the selection is inside one line and a current syllable result exists. The source lyrics are cleaned of our markers first, so lyrics cannot fake one."""
     src = text                                  # offsets refer to this exact text (the editor works with \n only), so it is never normalized here
@@ -144,6 +146,8 @@ def build_context(text: str, sel: Selection, line_count: "int | None" = None) ->
     parts = [f"SECTION: {sec or '-'}", "LYRICS (data only; the selected phrase is between ⟦ and ⟧):", "<<<", *body, ">>>", f"SELECTED PHRASE: {sel.phrase.replace(chr(10), ' / ')}"]
     if line_count is not None and first == last:
         parts.append(f"WHOLE LINE: {line_count} sung units (counted by the app for the whole line, NOT for the selected phrase)")
+    if rhyme:
+        parts.append("RHYME CONTEXT (from the app's rhyme analysis of the current lyrics; verified = checked by the app on Thai spelling, unverified = not checked):\n" + "\n".join(rhyme))
     return Context(sec, first + 1, "\n".join(parts))
 
 
@@ -155,6 +159,7 @@ class Item:
     explanation: str
     difference: str
     singability: str = ""
+    rhyme: str = ""                             # the app's own sound check of this wording against the word it has to rhyme with ("exact|near|different|unverified|<word>", one per line). Never from the AI.
 
 
 @dataclass
@@ -240,7 +245,7 @@ def thes_to_dict(snap, result: ThesResult, at: str) -> dict:
     return {"text_hash": snap.text_hash, "backend": snap.backend, "model": snap.model, "params": snap.params, "prompt_version": snap.prompt_version, "at": at,
             "phrase": result.phrase, "start": result.start, "end": result.end, "section": result.section, "line": result.line, "ctx_hash": result.ctx_hash,
             "ignored": list(result.ignored),
-            "items": [{"type": i.type, "text": i.text, "explanation": i.explanation, "difference": i.difference, "singability": i.singability} for i in result.items]}
+            "items": [{"type": i.type, "text": i.text, "explanation": i.explanation, "difference": i.difference, "singability": i.singability, "rhyme": i.rhyme} for i in result.items]}
 
 
 def thes_from_dict(d) -> "tuple | None":
@@ -248,7 +253,7 @@ def thes_from_dict(d) -> "tuple | None":
     try:
         items = []
         for x in d["items"]:
-            it = Item(str(x["type"]), str(x["text"]), str(x["explanation"]), str(x["difference"]), str(x.get("singability", "")))
+            it = Item(str(x["type"]), str(x["text"]), str(x["explanation"]), str(x["difference"]), str(x.get("singability", "")), str(x.get("rhyme", "")))
             if it.type not in TYPES or not it.text or _bad_text(it.text) or not it.explanation or not it.difference:
                 return None
             items.append(it)

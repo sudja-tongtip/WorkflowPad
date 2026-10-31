@@ -22,6 +22,14 @@ TEXT_CLS = "TextEncodeAceStepAudio1.5"
 LATENT_CLS = "EmptyAceStep1.5LatentAudio"
 SAMPLER_CLS = "KSampler"
 SAVE_CLS = "SaveAudioAdvanced"
+AUDIO_FORMATS = {"flac": [], "mp3": ["V0", "128k", "320k"], "opus": ["64k", "96k", "128k", "192k", "320k"]}         # format -> its quality choices (ComfyUI's own list; flac has none)
+DEFAULT_QUALITY = {"mp3": "V0", "opus": "128k"}
+
+
+def output_format(fmt: str, quality: str) -> tuple:
+    """(format, quality) that ComfyUI will accept: an unknown format becomes mp3, a quality the format does not offer becomes its default, flac has no quality ('')."""
+    f = fmt if fmt in AUDIO_FORMATS else "mp3"
+    return f, (quality if quality in AUDIO_FORMATS[f] else DEFAULT_QUALITY.get(f, ""))
 _REQUIRED = {"text": TEXT_CLS, "latent": LATENT_CLS, "sampler": SAMPLER_CLS, "save": SAVE_CLS}
 
 CLIENT_ID = uuid.uuid4().hex                      # this program run; jobs are tracked by prompt id
@@ -117,9 +125,14 @@ def build_workflow(base: dict, s: SongSettings, tags: str, lyrics: str, filename
     k.update({"seed": ks_seed, "steps": int(s.steps), "cfg": float(s.cfg)})
     sv = wf[m["save"][0]]["inputs"]
     sv["filename_prefix"] = filename_prefix
-    sv["format"] = s.format
+    fmt, qual = output_format(s.format, s.audio_quality)
+    sv["format"] = fmt
+    if qual:
+        sv["format.quality"] = qual                                       # the API form of the node's dynamic combo: "format" and "format.quality"
+    else:
+        sv.pop("format.quality", None)                                    # flac: a quality left over from the workflow file would be refused
     used = {"seeds": {"text_encode": text_seed, "ksampler": ks_seed}, "duration": int(s.duration), "bpm": int(s.bpm), "steps": int(s.steps),
-            "cfg": float(s.cfg), "format": s.format, "language": s.language}
+            "cfg": float(s.cfg), "format": fmt, "quality": qual, "language": s.language}
     return wf, used
 
 

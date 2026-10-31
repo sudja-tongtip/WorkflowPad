@@ -229,15 +229,17 @@ def _check_row(row: str, by_num: dict) -> tuple:
     num, echo, issue, sev, reason, sugg = parts
     num = num.rstrip(".")
     if not num.isdigit() or int(num) not in by_num:
-        raise AnalysisError(f"A rhythm row points to line “{num[:10]}”, which is not in the lyrics that were sent.")
+        return None, f"A row pointing to line “{num[:10]}” was ignored: that line is not in the lyrics that were sent."
     issue, sev = issue.lower(), sev.lower()
+    if issue in SEVERITIES and sev in ISSUES:
+        issue, sev = sev, issue                                                   # the two columns were written the other way round: the values themselves are unambiguous
     if issue not in ISSUES:
-        raise AnalysisError(f"A rhythm row has an unknown issue “{issue[:24]}”.")
+        return None, f"Line {num}: a remark with the unknown type “{issue[:24]}” was ignored."
     if sev not in SEVERITIES:
-        raise AnalysisError(f"A rhythm row has an unknown severity “{sev[:20]}” (allowed: info, suggestion, uncertain).")
+        return None, f"Line {num}: a remark with the unknown severity “{sev[:20]}” was ignored (allowed: info, suggestion, uncertain)."
     ln = by_num[int(num)]
     if difflib.SequenceMatcher(None, _norm(echo), _norm(ln.text)).ratio() < 0.6:
-        raise AnalysisError(f"Line {num}: the text the AI copied does not match your lyric (“{echo[:40]}”). The answer is not trusted.")
+        return None, f"Line {num}: a remark was ignored because the text the AI copied does not match your lyric (“{echo[:40]}”)."
     if not reason:
         return None, f"Line {num}: a remark without a reason was ignored."
     if sugg in ("-", "—", "none", "None"):
@@ -267,16 +269,17 @@ def parse_window(raw: str, sent: list) -> tuple:
     body = [r.strip() for r in rows[a[0] + 1:z[0]] if r.strip()]
     if len(body) == 1 and body[0].strip(" .").lower() in ("none", "-"):
         body = []
-    if len(body) > MAX_ITEMS_PER_REQUEST * 2:
+    if len(body) > MAX_ITEMS_PER_REQUEST * 10:
         raise AnalysisError(f"The AI returned {len(body)} rows, far more than the {MAX_ITEMS_PER_REQUEST} asked for. The answer is not trusted.", raw)
     by_num = {l.num: l for l in sent}
-    items, ignored, seen = [], [], set()
+    items, ignored, seen, malformed = [], [], set(), 0
     for row in body:
         try:
             it, why = _check_row(row, by_num)
-        except AnalysisError as ex:
-            ex.raw = raw
-            raise
+        except AnalysisError as ex:                    # a row that is not in the table format at all: it is skipped; only when NO row is a table row is the whole answer refused
+            malformed += 1
+            ignored.append(str(ex))
+            continue
         if it is None:
             ignored.append(why)
         elif (it.line, it.issue) in seen:
@@ -284,6 +287,8 @@ def parse_window(raw: str, sent: list) -> tuple:
         else:
             seen.add((it.line, it.issue))
             items.append(it)
+    if body and malformed == len(body):
+        raise AnalysisError(ignored[0], raw)
     return items, ignored
 
 

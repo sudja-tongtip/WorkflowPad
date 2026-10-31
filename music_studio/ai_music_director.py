@@ -42,7 +42,7 @@ You receive the user's lyrics and the settings the user has chosen so far. Your 
 RULES
 - The user owns the lyrics. NEVER rewrite, translate, shorten, or extend them. Never copy lyric lines into a caption.
 - Lyrics may be Thai, English or mixed. Read them in their own language. Do not assume a language; if the vocal language setting is "auto", leave it auto unless the lyrics clearly need otherwise.
-- Respect what the user has already chosen (genre, vocal, style prompt, mood, energy). The three directions may differ in arrangement, vocal delivery, instrumentation and production WITHOUT changing the genre the user chose.
+- You work independently of the user's Basic or Advanced style settings: you are not shown them. Decide the genre, mood, groove and vocal delivery yourself from the lyrics. The three directions may differ in genre as well as in arrangement, vocal delivery, instrumentation and production. If the user wrote a request, follow it; if a REFERENCE block is given, it is the user's own starting point: build on it, but you are not bound by it.
 - The three directions must differ in at least two of these: instrumentation, groove, vocal delivery, arrangement, production. A different name is not enough.
 - BPM, key and duration are proposals. They are not a measurement of a melody you have not heard.
 - High energy means the track feels driving. It is not belting, soaring, falsetto, or a high singing register.
@@ -103,6 +103,50 @@ language|<code or auto>
 =========== END ==========="""
 
 
+# Who sings: the user's own choice (key, label, the `vocal` setting it sets, how the AI is told). 'auto' = the AI decides, as before.
+SINGERS = (("auto", "Who sings: the AI decides", "", ""),
+           ("male", "Male singer", "male vocal", "one male lead vocal"),
+           ("female", "Female singer", "female vocal", "one female lead vocal"),
+           ("duet", "Male + female duet", "duet vocals", "a male and a female singer sharing the song as a duet"),
+           ("group", "Group / choir", "choir", "a group or choir singing together"),
+           ("male_lead", "Male lead, female backing vocals", "male vocal", "a male lead vocal with female backing vocals"),
+           ("female_lead", "Female lead, male backing vocals", "female vocal", "a female lead vocal with male backing vocals"))
+SINGER_BY_KEY = {k: (label, vocal, tell) for k, label, vocal, tell in SINGERS}
+
+
+# The same choice in Advanced mode, where the Music Style Prompt is sent exactly as written: the singer goes INTO the prompt as a visible phrase (the user can read and edit it), never added behind their back.
+SINGER_TAGS = {"male": "male vocal", "female": "female vocal", "duet": "male and female duet vocals", "group": "choir, group vocals",
+               "male_lead": "male lead vocal with female backing vocals", "female_lead": "female lead vocal with male backing vocals"}
+
+
+def _phrase_re(phrase: str):
+    return re.compile(r"(?:,\s*)?(?<![\w-])" + re.escape(phrase) + r"(?![\w-])", re.IGNORECASE)
+
+
+def singer_in_prompt(prompt: str) -> str:
+    """The SINGERS key whose phrase the prompt contains (longest phrase first), else 'auto'."""
+    for k, ph in sorted(SINGER_TAGS.items(), key=lambda kv: -len(kv[1])):
+        if _phrase_re(ph).search(prompt or ""):
+            return k
+    return "auto"
+
+
+def set_singer_in_prompt(prompt: str, key: str) -> str:
+    """The prompt without any singer phrase of ours, and with the phrase of `key` added at the end ('auto' only removes). Everything else the user wrote stays as it is."""
+    t = prompt or ""
+    for ph in sorted(SINGER_TAGS.values(), key=len, reverse=True):
+        t = _phrase_re(ph).sub("", t)
+    t = re.sub(r"^\s*,\s*", "", t).rstrip()
+    ph = SINGER_TAGS.get(key)
+    if not ph:
+        return t
+    if not t:
+        return ph
+    if t[-1] in ".!":
+        return t[:-1] + ", " + ph + t[-1]
+    return t + ", " + ph
+
+
 class DirectorError(ValueError):
     """The answer cannot be offered. `problems` = sentences for the user, `raw` = what the AI answered (kept for the debug view)."""
     def __init__(self, message: str, problems: list | None = None, raw: str = ""):
@@ -127,22 +171,45 @@ class Snapshot:
     settings_hash: str
     settings: tuple                 # (name, value) pairs of the SongSettings at that moment (a frozen copy)
     sections: tuple                 # section tags in order
+    instructions: str = ""          # the user's own request to the AI (optional)
+    reference: bool = False         # True only when the user asked the AI to use their current style settings as a reference
+    singer: str = ""                # a key of SINGERS the user chose ('' / 'auto' = the AI decides)
 
     def setting(self, name: str, default=""):
         return dict(self.settings).get(name, default)
 
 
-_WATCHED = ("genre", "mood", "vocal", "energy", "bpm", "keyscale", "timesignature", "duration", "language", "style_mode", "style_prompt", "extra_tags")
+_WATCHED = ("genre", "mood", "vocal", "energy", "bpm", "keyscale", "timesignature", "duration", "language", "style_mode", "style_prompt", "extra_tags")   # kept in the snapshot for APPLY (what the user has now); never sent to the AI
+_INPUTS = ("duration", "language")                                                                                          # the only settings the AI reads: the song's length and vocal language
+_REFERENCE = ("genre", "mood", "vocal", "energy", "extra_tags", "style_mode", "style_prompt")                              # read only when the user ticked "use my style settings as a reference"
 
 
-def settings_fingerprint(settings: dict) -> str:
-    return AC.text_hash("|".join(f"{k}={settings.get(k)!r}" for k in _WATCHED))
+def settings_fingerprint(settings: dict, reference: bool = False) -> str:
+    """What the recommendation was made from: the song's length / language, and the style settings only when they were given to the AI as a reference. Any other setting (Basic genre, mood,
+    the Advanced prompt, BPM, key, seeds ...) does NOT make a recommendation out of date."""
+    keys = _INPUTS + (_REFERENCE if reference else ())
+    return AC.text_hash("|".join(f"{k}={settings.get(k)!r}" for k in keys))
 
 
-def make_snapshot(song_id: str, sheet_id: str, sheet_name: str, title: str, lyrics: str, settings: dict) -> Snapshot:
+def make_snapshot(song_id: str, sheet_id: str, sheet_name: str, title: str, lyrics: str, settings: dict, instructions: str = "", reference: bool = False, singer: str = "") -> Snapshot:
     secs = tuple(l.strip() for l in (lyrics or "").splitlines() if TAG_LINE.match(l) and TA.is_structural(l.strip()))
-    return Snapshot(song_id, sheet_id, sheet_name, title, lyrics or "", AC.text_hash(lyrics or ""), settings_fingerprint(settings),
-                    tuple((k, settings.get(k)) for k in _WATCHED), secs)
+    return Snapshot(song_id, sheet_id, sheet_name, title, lyrics or "", AC.text_hash(lyrics or ""), settings_fingerprint(settings, reference),
+                    tuple((k, settings.get(k)) for k in _WATCHED), secs, (instructions or "").strip()[:600], bool(reference), singer if singer in SINGER_BY_KEY and singer != "auto" else "")
+
+
+def refresh_settings(snap: Snapshot, settings: dict) -> Snapshot:
+    """The same snapshot with what the user has NOW in the settings (for the Apply step: a value the user chose after the analysis is never overwritten by default)."""
+    from dataclasses import replace
+    return replace(snap, settings=tuple((k, settings.get(k)) for k in _WATCHED))
+
+
+def wrong_target_reason(snap: Snapshot, song_id: str, sheet_id: str) -> str:
+    """"" when the draft still belongs to the open song and sheet. This is the only reason that blocks Apply: the settings would go to a different song or sheet than the one analysed."""
+    if song_id != snap.song_id:
+        return "The song changed — Reanalyze."
+    if sheet_id != snap.sheet_id:
+        return "The open sheet changed — Reanalyze."
+    return ""
 
 
 def stale_reason(snap: Snapshot, song_id: str, sheet_id: str, lyrics: str, settings: dict) -> str:
@@ -153,21 +220,39 @@ def stale_reason(snap: Snapshot, song_id: str, sheet_id: str, lyrics: str, setti
         return "The open sheet changed — Reanalyze."
     if AC.text_hash(lyrics or "") != snap.lyrics_hash:
         return "Lyrics changed — Reanalyze."
-    if settings_fingerprint(settings) != snap.settings_hash:
-        return "Settings changed — Reanalyze."
+    if settings_fingerprint(settings, snap.reference) != snap.settings_hash:
+        return "The song length / language (or the reference style) changed — Reanalyze."
     return ""
 
 
 # ── the request ──────────────────────────────────────────────────────────────────────────────────────────────
-def build_messages(snap: Snapshot) -> tuple:
+def _guidance() -> str:
+    """The editable Music Director prompt (music_director.md) as extra guidance after the fixed instructions. The OUTPUT FORMAT of the request always wins; a prompt that is missing or invalid adds nothing."""
+    try:
+        from . import specialists as SP
+        p = SP.load("music_director")
+        return ("\n\nSPECIALIST GUIDANCE (from the editable Music Director prompt file; the OUTPUT FORMAT above always wins, and the music caption stays in English):\n" + p.text) if p.ok else ""
+    except Exception:
+        return ""
+
+
+def build_messages(snap: Snapshot, reply_language: str = "English") -> tuple:
     g = lambda k: snap.setting(k)
-    style = (g("style_prompt") or "").strip() if g("style_mode") == "advanced" else ""
-    user = (f"SONG: {snap.title}\nUSER'S CURRENT CHOICES: genre {g('genre') or '-'}; mood {g('mood') or '-'}; vocal {g('vocal') or 'auto'}; energy {g('energy') or 'auto'}; "
-            f"extra tags {g('extra_tags') or '-'}; BPM {g('bpm')}; key {g('keyscale')}; time signature {g('timesignature')}; duration {g('duration')} s; vocal language {g('language') or 'auto'}\n"
-            + (f"CURRENT MUSIC STYLE PROMPT (the user's own words, respect them): {style[:800]}\n" if style else "")
+    ref = ""
+    if snap.reference:                                          # only when the user asked for it: their current style as a starting point, not as a limit
+        style = (g("style_prompt") or "").strip() if g("style_mode") == "advanced" else ""
+        ref = (f"REFERENCE (the user asked you to start from their current style; build on it, you are not bound by it): genre {g('genre') or '-'}; mood {g('mood') or '-'}; "
+               f"vocal {g('vocal') or 'auto'}; energy {g('energy') or 'auto'}; extra tags {g('extra_tags') or '-'}\n"
+               + (f"REFERENCE MUSIC STYLE PROMPT: {style[:800]}\n" if style else ""))
+    lang = (f"REPLY LANGUAGE: {reply_language}. Write the Analysis, each Reason and Characteristics and the cue explanations in {reply_language}. "
+            "The direction Name, the Music Caption (always English: ACE-Step reads English) and every Suggested Settings / METADATA value stay in English exactly as the format shows.\n") if reply_language != "English" else ""
+    user = (f"SONG: {snap.title}\nSONG LENGTH: {g('duration')} s; vocal language: {g('language') or 'auto'}\n" + lang
+            + (f"THE SINGER (the user chose this; all three directions use it, each caption names it, and every direction's vocal setting is {SINGER_BY_KEY[snap.singer][1]}): {SINGER_BY_KEY[snap.singer][2]}\n" if snap.singer else "")
+            + (f"THE USER'S REQUEST (follow it): {snap.instructions}\n" if snap.instructions else "")
+            + ref
             + (("SECTIONS IN THE LYRICS: " + ", ".join(s.strip('[]') for s in snap.sections) + "\n") if snap.sections else "")
             + f"\nLYRICS (read only):\n<<<\n{snap.lyrics.strip() or '(no lyrics yet)'}\n>>>\n")
-    return SYSTEM, user
+    return SYSTEM + _guidance(), user
 
 
 # ── the parsed result ────────────────────────────────────────────────────────────────────────────────────────
@@ -353,7 +438,8 @@ def parse(raw: str, lyrics: str = "") -> Proposal:
         if miss:
             bad.append(f"Direction {i} is missing: {', '.join(miss)}.")
             continue
-        cap, why = TA.check_field("style_prompt", f["music caption"])
+        cap_txt, _cut = TA.shorten_caption(f["music caption"])
+        cap, why = TA.check_field("style_prompt", cap_txt)
         if why:
             bad.append(f"Direction {i}: the Music Caption is {why}.")
             continue
@@ -392,11 +478,19 @@ def parse(raw: str, lyrics: str = "") -> Proposal:
     return Proposal(analysis, directions, meta, meta_problems, cues, warns, raw)
 
 
-def analyze(ask, snap: Snapshot) -> Proposal:
+def analyze(ask, snap: Snapshot, reply_language: str = "English") -> Proposal:
     """One question, one answer, no automatic retry. Raises DirectorError (carrying `raw`) when the answer cannot be used."""
-    system, user = build_messages(snap)
+    system, user = build_messages(snap, reply_language)
     raw = ask(system, user)
     prop = parse(raw, snap.lyrics)
+    if snap.singer:                                             # the user decided who sings: the program makes the setting say so, whatever the AI wrote
+        vocal = SINGER_BY_KEY[snap.singer][1]
+        for d in prop.directions:
+            d.values["vocal"] = vocal
+            d.raw["vocal"] = vocal
+            d.problems = [p for p in d.problems if p[0] != "vocal"]
+        prop.meta["vocal"] = vocal
+        prop.meta_problems = [p for p in prop.meta_problems if p[0] != "vocal"]
     asked = (snap.setting("vocal", ""), snap.setting("energy", ""), snap.setting("extra_tags", ""), snap.setting("style_prompt", ""))
     for d in prop.directions:
         note = BC.vocal_range_warning(d.caption, *asked)
@@ -475,7 +569,7 @@ def plan_restore(previous: dict, applied: dict, current: dict) -> tuple:
 
 def plan_apply(snap: Snapshot, prop: Proposal, d: Direction, selected: set, song_id: str, sheet_id: str, lyrics: str, current: dict) -> ApplyPlan:
     """Everything Apply needs, checked. `current` = the open sheet's SongSettings as a dict. Raises ApplyError; never returns a change for the lyrics."""
-    why = stale_reason(snap, song_id, sheet_id, lyrics, current)
+    why = wrong_target_reason(snap, song_id, sheet_id)               # changed lyrics do not block Apply: the style suggestion is still the user's to use
     if why:
         raise ApplyError(why)
     sug = suggested(prop, d)

@@ -14,6 +14,7 @@ No LLM transport here: `arrange` / `suggest_music` take a function `ask(system, 
 """
 from __future__ import annotations
 
+import collections
 import re
 from dataclasses import dataclass, field
 
@@ -278,17 +279,23 @@ def split_blocks(raw: str) -> dict:
     return res
 
 
-def parse_assignments(text: str, n_units: int, n_slots: int) -> tuple:
-    """([(unit number, slot number)], [problems]). A problem list that is not empty means the plan is REJECTED."""
+def parse_assignments(text: str, n_units: int, n_slots: int, warnings: "list | None" = None) -> tuple:
+    """([(unit number, slot number)], [problems]). A problem list that is not empty means the plan is REJECTED.
+    Small slips of a long answer are repaired mechanically and reported in `warnings` (the user previews the result before anything changes): a unit assigned twice keeps its FIRST slot,
+    text after the first `L|S` pair on a row is ignored, and a unit the AI forgot goes to the slot of the unit before it (the lines never change order). A plan that puts almost every line
+    into one section is rejected: it says nothing about the structure."""
+    warns = warnings if warnings is not None else []
     pairs, problems, seen = [], [], {}
     for l in (text or "").splitlines():
         s = l.strip()
         if not s:
             continue
-        m = re.fullmatch(r"([A-Za-z]\s*\d+)\s*[|:=>\-]+\s*([A-Za-z]\s*\d+)", s)
+        m = re.match(r"([A-Za-z]\s*\d+)\s*[|:=>\-]+\s*([A-Za-z]\s*\d+)", s)
         if not m:
             problems.append(f"Malformed assignment line: {s[:60]}")
             continue
+        if not re.fullmatch(r"([A-Za-z]\s*\d+)\s*[|:=>\-]+\s*([A-Za-z]\s*\d+)", s):
+            warns.append(f"A row with extra text was read as {m.group(1).strip()}|{m.group(2).strip()}: {s[:40]}")
         u, sl = _num(m.group(1), "L"), _num(m.group(2), "S")
         if u is None or sl is None:
             problems.append(f"Malformed assignment line: {s[:60]}")
@@ -300,13 +307,26 @@ def parse_assignments(text: str, n_units: int, n_slots: int) -> tuple:
             problems.append(f"Unknown template slot {m.group(2).strip()} (for {m.group(1).strip()}).")
             continue
         if u in seen:
-            problems.append(f"Lyric unit {unit_id(u, n_units)} is assigned more than once.")
+            warns.append(f"Lyric unit {unit_id(u, n_units)} was assigned more than once: its first section was kept.")
             continue
         seen[u] = sl
         pairs.append((u, sl))
-    missing = [unit_id(u, n_units) for u in range(1, n_units + 1) if u not in seen]
+    if problems:
+        return pairs, problems
+    missing = [u for u in range(1, n_units + 1) if u not in seen]
+    if missing and len(missing) <= max(1, n_units // 5):
+        for u in missing:
+            prev = [v for v in range(u - 1, 0, -1) if v in seen]
+            seen[u] = seen[prev[0]] if prev else seen[min(seen)] if seen else 1
+            pairs.append((u, seen[u]))
+        warns.append(f"{len(missing)} lyric unit(s) the AI left out were put in the section of the line before: " + ", ".join(unit_id(u, n_units) for u in missing[:8]))
+        missing = []
     if missing:
-        problems.append(f"{len(missing)} lyric unit(s) were not assigned: " + ", ".join(missing[:8]) + ("…" if len(missing) > 8 else ""))
+        problems.append(f"{len(missing)} lyric unit(s) were not assigned: " + ", ".join(unit_id(u, n_units) for u in missing[:8]) + ("…" if len(missing) > 8 else ""))
+    elif n_units >= 10 and n_slots >= 3 and seen:
+        top = collections.Counter(seen.values()).most_common(1)[0][1]
+        if top > 0.8 * n_units:
+            problems.append("The plan puts almost every line into the same section, so it says nothing about the structure.")
     return pairs, problems
 
 
@@ -360,6 +380,27 @@ def normalize_key(raw: str) -> tuple:
     if key not in MO.KEYS:
         return None, "not one of the keys the Key control offers"
     return key, (f"{note} {mode} was written as {key} (the same key; the Key control offers {mapped})" if mapped != note else None)
+
+
+STYLE_PROMPT_MAX = 1200
+
+
+def shorten_caption(raw, limit: int = STYLE_PROMPT_MAX) -> tuple:
+    """(text, shortened). A caption over the limit is not a failure: whole sentences are dropped from the end until it fits (never cut inside a sentence). Text with no sentence end is cut at a comma / word."""
+    s = re.sub(r"\s+", " ", ("" if raw is None else str(raw))).strip()
+    if len(s) <= limit:
+        return s, False
+    sentences = re.findall(r".+?(?:[.!?](?=\s|$)|$)", s)
+    out = ""
+    for x in sentences:
+        if len(out) + len(x) + (1 if out else 0) > limit:
+            break
+        out = f"{out} {x}".strip()
+    if len(out) < limit // 3:                                  # one giant sentence: cut at the last comma or space that fits
+        cut = s[:limit]
+        i = max(cut.rfind(","), cut.rfind(" "))
+        out = cut[:i if i > limit // 3 else limit].rstrip(" ,;")
+    return out, True
 
 
 def check_field(name: str, raw) -> tuple:
@@ -576,13 +617,14 @@ def arrange(ask, title: str, hint: dict, lyrics: str, template_name: str, struct
     b = split_blocks(raw)
     if M_ASSIGN not in b:
         raise ArrangeError(f"The AI answer has no {M_ASSIGN} block, so there is no plan to build the lyrics from.", raw=raw)
-    pairs, problems = parse_assignments(b[M_ASSIGN], len(groups), len(tags))
+    plan_warns: list = []
+    pairs, problems = parse_assignments(b[M_ASSIGN], len(groups), len(tags), plan_warns)
     if problems:
         raise ArrangeError("The AI plan was rejected: " + problems[0], problems, raw)
     hints, hint_warns = parse_section_style(b.get(M_STYLE_HINTS, ""), len(tags))
     arr = build(lyrics, tags, groups, pairs, hints, raw)
     arr.music = parse_music(b.get(M_CAPTION, ""), b.get(M_META, ""))
-    arr.warnings = _tolerance_notes(b) + hint_warns + arr.warnings
+    arr.warnings = plan_warns + _tolerance_notes(b) + hint_warns + arr.warnings
     if arr.music is not None:
         arr.warnings += consistency_warnings(arr.music.values.get("style_prompt", ""), arr.hints, arr.music.values)
         arr.warnings += arr.music.notes

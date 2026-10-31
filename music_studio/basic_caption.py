@@ -51,7 +51,9 @@ groove, and production characteristics.
 
 Avoid generic keyword lists, contradictory
 directions, unnecessary instruments, and
-excessively long descriptions.
+excessively long descriptions. Keep the caption
+under 900 characters (about 130 words); it is
+never allowed to pass 1200 characters.
 
 Do not invent a vocal gender when Auto is
 selected. Preserve the intended lyric language.
@@ -178,6 +180,9 @@ def parse(raw: str, lyrics: str = "", vocal: str = "", energy: str = "", extra: 
         warns.append("Text before the CAPTION marker was ignored.")
     if "=====" in body:
         raise CaptionError("The caption contains marker text.", ["The caption contains marker lines."], raw)
+    body, cut = TA.shorten_caption(body)                       # too long is not a failure: the last whole sentences are dropped (and the user is told)
+    if cut:
+        warns.append(f"The AI wrote more than {MAX_CHARS} characters, so the last sentence(s) were left out.")
     cap, why = TA.check_field("style_prompt", body)
     if why:
         msg = f"The caption {'' if why.startswith('contains') else 'is '}{why}."

@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 from .compiler import TAG_LINE, tag_class_of, HOLD_PREFIX
 
-SECTIONS = ["Intro", "Verse", "Pre-Chorus", "Chorus", "Bridge", "Outro", "Instrumental", "Guitar Solo", "Drum Break"]
+SECTIONS = ["Intro", "Verse", "Pre-Chorus", "Chorus", "Hook", "Bridge", "Outro", "Instrumental", "Guitar Solo", "Drum Break"]
 # tool key -> (label, phrase, mode); mode: vocal = style phrase, wrap = (parentheses), energy = energy phrase
 VOCAL_TOOLS = {
     "whisper": ("Whisper", "whispered", "vocal"), "falsetto": ("Falsetto", "falsetto", "vocal"), "belting": ("Powerful Belting", "powerful belting", "vocal"),

@@ -30,6 +30,44 @@ def library_dir() -> Path:
     return d
 
 
+# ── saved styles: a caption (and the settings that went with it) the user keeps from the AI Music Director, to use again in any song's Advanced mode ───────────────────────────
+STYLE_FIELDS = ("genre", "mood", "vocal", "energy", "bpm", "keyscale", "timesignature")      # song-specific values (length, language) are not saved with a style
+
+
+def saved_styles_file() -> Path:
+    return library_dir() / "saved_styles.json"
+
+
+def load_saved_styles() -> list:
+    """[{id, name, caption, settings, ts}] newest first. A damaged file raises DataError (after its backup) and is never overwritten."""
+    p = saved_styles_file()
+    if not p.exists():
+        return []
+    with _lock:
+        d = _read_checked(p, list)
+    return [x for x in d if isinstance(x, dict) and (x.get("caption") or "").strip()]
+
+
+def add_saved_style(name: str, caption: str, settings: dict) -> bool:
+    """Keeps a style (newest first). The same caption is saved once: saving it again only renames it and refreshes its settings. Returns True when it was new."""
+    cap = (caption or "").strip()
+    if not cap:
+        return False
+    with _lock:
+        items = load_saved_styles()
+        old = next((x for x in items if (x.get("caption") or "").strip() == cap), None)
+        entry = {"id": old["id"] if old else new_id("style_"), "name": (name or "Saved style").strip()[:80], "caption": cap,
+                 "settings": {k: v for k, v in (settings or {}).items() if k in STYLE_FIELDS}, "ts": now_str()}
+        _atomic(saved_styles_file(), json.dumps([entry] + [x for x in items if x is not old], ensure_ascii=False, indent=1))
+    return old is None
+
+
+def delete_saved_style(style_id: str) -> None:
+    with _lock:
+        items = load_saved_styles()
+        _atomic(saved_styles_file(), json.dumps([x for x in items if x.get("id") != style_id], ensure_ascii=False, indent=1))
+
+
 def exports_dir() -> Path:
     d = library_dir() / "Exports"
     d.mkdir(parents=True, exist_ok=True)

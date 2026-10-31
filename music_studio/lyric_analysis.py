@@ -260,8 +260,42 @@ def parse_batch(raw: str, expected: list) -> list:
     return out
 
 
+def parse_batch_partial(raw: str, expected: list) -> tuple:
+    """({line number: LineResult}, [problems]) for the rows of an answer that can be trusted. A row is read by ITS OWN NUMBER, so a missing or out-of-order row never shifts the others; a row that is
+    not in the format, copies the wrong text or repeats a number is skipped (the first one of a number wins). The markers must be there. Nothing is guessed: the lines that are missing from the
+    result are asked for again by analyze()."""
+    text = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", raw or "").strip()
+    if not text:
+        raise AnalysisError("The AI answer is empty.", raw)
+    rows = text.splitlines()
+    a = [i for i, r in enumerate(rows) if _is_sep(r, SEP_ANALYSIS)]
+    z = [i for i, r in enumerate(rows) if _is_sep(r, SEP_END)]
+    if len(a) != 1 or len(z) != 1 or not a[0] < z[0]:
+        raise AnalysisError("The AI answer does not have the ANALYSIS ... END marker lines exactly once, in order.", raw)
+    by_num = {ln.num: ln for ln in expected}
+    found, problems = {}, []
+    for row in (r.strip() for r in rows[a[0] + 1:z[0]] if r.strip()):
+        head = row.split("|", 1)[0].strip().rstrip(".")
+        if not head.isdigit() or int(head) not in by_num:
+            problems.append(f"A row that does not start with the number of a line was skipped: {row[:40]}")
+            continue
+        n = int(head)
+        if n in found:
+            problems.append(f"Line {n} was answered twice: the first answer was kept.")
+            continue
+        try:
+            found[n] = parse_batch(SEP_ANALYSIS + chr(10) + row + chr(10) + SEP_END, [by_num[n]])[0]
+        except AnalysisError as ex:
+            problems.append(str(ex))
+    return found, problems
+
+
+MAX_REASKS = 2           # how many times the lines that are missing from an answer are asked for again
+
+
 def analyze(lines: list, ask: Callable[[str, str], str], batch: int = BATCH_LINES, progress: Callable[[int, int], None] | None = None) -> Analysis:
-    """Blocking (call from an executor). `ask(system, user) -> raw answer` is the existing AI backend. Lines are sent in batches; any batch that fails stops everything."""
+    """Blocking (call from an executor). `ask(system, user) -> raw answer` is the existing AI backend. Lines are sent in batches. An answer with some rows missing or unusable is not thrown away: only the
+    missing lines are asked for again (up to MAX_REASKS times). The result is complete or it does not exist: if lines are still missing after that, nothing is shown."""
     if not lines:
         raise AnalysisError("There are no sung lines to analyze (only [tags] or empty).")
     result = Analysis([])
@@ -269,14 +303,29 @@ def analyze(lines: list, ask: Callable[[str, str], str], batch: int = BATCH_LINE
     for k, chunk in enumerate(chunks, 1):
         if progress:
             progress(k, len(chunks))
-        system, user = build_request(chunk)
-        raw = ask(system, user)
-        result.raw.append(raw)
-        try:
-            result.lines.extend(parse_batch(raw, chunk))
-        except AnalysisError as ex:
-            ex.raw = raw
-            raise
+        got: dict = {}
+        last_raw, last_problems = "", []
+        for attempt in range(1 + MAX_REASKS):
+            todo = [ln for ln in chunk if ln.num not in got]
+            if not todo:
+                break
+            system, user = build_request(todo)
+            raw = ask(system, user)
+            result.raw.append(raw)
+            last_raw = raw
+            try:
+                part, last_problems = parse_batch_partial(raw, todo)
+            except AnalysisError as ex:
+                ex.raw = raw
+                if attempt == MAX_REASKS:
+                    raise
+                continue
+            got.update(part)
+        missing = [ln for ln in chunk if ln.num not in got]
+        if missing:
+            detail = (" " + last_problems[0]) if last_problems else ""
+            raise AnalysisError(f"The AI returned {len(chunk) - len(missing)} usable result line(s) for {len(chunk)} sung line(s) after {1 + MAX_REASKS} tries (missing: line {', '.join(str(m.num) for m in missing[:8])}). Nothing was shown.{detail}", last_raw)
+        result.lines.extend(got[ln.num] for ln in chunk)
     return result
 
 

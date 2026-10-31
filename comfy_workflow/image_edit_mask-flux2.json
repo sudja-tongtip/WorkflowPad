@@ -1,5 +1,5 @@
 {
-  "id": "bc99f228-6827-43b1-bd5d-3cad51fee608",
+  "id": "1d788ca7-3a43-4475-9702-28c073bd9f2c",
   "revision": 0,
   "last_node_id": 127,
   "last_link_id": 202,
@@ -203,11 +203,11 @@
         }
       },
       "widgets_values": [
-        "example.png",
+        "MJstd.jpg",
         "image"
       ],
       "widgets_values_named": {
-        "image": "example.png",
+        "image": "MJstd.jpg",
         "upload": "image"
       }
     },
@@ -248,12 +248,12 @@
         }
       },
       "widgets_values": [
-        "example_mask.png",
+        "mask_3b04f934.png",
         "alpha",
         "image"
       ],
       "widgets_values_named": {
-        "image": "example_mask.png",
+        "image": "mask_3b04f934.png",
         "channel": "alpha",
         "upload": "image"
       }
@@ -306,10 +306,10 @@
         }
       },
       "widgets_values": [
-        "WorkflowPad_edit_mask"
+        "Flux2-Klein-9b-base"
       ],
       "widgets_values_named": {
-        "filename_prefix": "WorkflowPad_edit_mask"
+        "filename_prefix": "Flux2-Klein-9b-base"
       }
     },
     {
@@ -393,17 +393,17 @@
       },
       "widgets_values": [
         275248511763665,
-        "flux2Klein_9bBase.safetensors",
-        "qwen_3_8b.safetensors",
+        "snofsSexNudesAndOtherFunStuff_v14Distilled.safetensors",
+        "Huihui-Qwen3-8B-abliterated-v2-FP8.safetensors",
         "flux2-vae.safetensors",
-        ""
+        "remove all visible clothing, completely nude, full nudity, realistic skin texture, ultra detailed,(bare breasts:1.3), (detailed nipples:1.25), หัวนมและหีความละเอียดสูงมาก, ผิวหนังเห็นทุกรูขุมขน, ไม่เปลี่ยนหน้า, ไม่เปลี่ยนทรงผม, นมเล็ก"
       ],
       "widgets_values_named": {
         "noise_seed": 275248511763665,
-        "unet_name": "flux2Klein_9bBase.safetensors",
-        "clip_name": "qwen_3_8b.safetensors",
+        "unet_name": "snofsSexNudesAndOtherFunStuff_v14Distilled.safetensors",
+        "clip_name": "Huihui-Qwen3-8B-abliterated-v2-FP8.safetensors",
         "vae_name": "flux2-vae.safetensors",
-        "text": ""
+        "text": "remove all visible clothing, completely nude, full nudity, realistic skin texture, ultra detailed,(bare breasts:1.3), (detailed nipples:1.25), หัวนมและหีความละเอียดสูงมาก, ผิวหนังเห็นทุกรูขุมขน, ไม่เปลี่ยนหน้า, ไม่เปลี่ยนทรงผม, นมเล็ก"
       }
     }
   ],
@@ -688,11 +688,11 @@
               }
             },
             "widgets_values": [
-              "flux2Klein_9bBase.safetensors",
+              "snofsSexNudesAndOtherFunStuff_v14Distilled.safetensors",
               "default"
             ],
             "widgets_values_named": {
-              "unet_name": "flux2Klein_9bBase.safetensors",
+              "unet_name": "snofsSexNudesAndOtherFunStuff_v14Distilled.safetensors",
               "weight_dtype": "default"
             }
           },
@@ -1157,10 +1157,10 @@
               }
             },
             "widgets_values": [
-              "Change the color of the jacket to red. Keep the face, hair and everything else unchanged."
+              "remove all visible clothing, completely nude, full nudity, realistic skin texture, ultra detailed,(bare breasts:1.3), (detailed nipples:1.25), หัวนมและหีความละเอียดสูงมาก, ผิวหนังเห็นทุกรูขุมขน, ไม่เปลี่ยนหน้า, ไม่เปลี่ยนทรงผม, นมเล็ก"
             ],
             "widgets_values_named": {
-              "text": "Change the color of the jacket to red. Keep the face, hair and everything else unchanged."
+              "text": "remove all visible clothing, completely nude, full nudity, realistic skin texture, ultra detailed,(bare breasts:1.3), (detailed nipples:1.25), หัวนมและหีความละเอียดสูงมาก, ผิวหนังเห็นทุกรูขุมขน, ไม่เปลี่ยนหน้า, ไม่เปลี่ยนทรงผม, นมเล็ก"
             },
             "color": "#232",
             "bgcolor": "#353"
@@ -2056,8 +2056,7 @@
         ],
         "extra": {
           "workflowRendererVersion": "LG",
-          "ue_links": [],
-          "links_added_by_ue": []
+          "ue_links": []
         }
       },
       {
@@ -2418,16 +2417,14 @@
           }
         ],
         "extra": {
-          "workflowRendererVersion": "LG",
-          "ue_links": [],
-          "links_added_by_ue": []
+          "workflowRendererVersion": "LG"
         }
       }
     ]
   },
   "config": {},
   "extra": {
-    "frontendVersion": "1.55.17",
+    "frontendVersion": "1.55.18",
     "workflowRendererVersion": "LG",
     "VHS_latentpreview": false,
     "VHS_latentpreviewrate": 0,
@@ -2435,13 +2432,12 @@
     "VHS_KeepIntermediate": true,
     "ue_links": [],
     "ds": {
-      "scale": 0.7061246474651659,
+      "scale": 0.5835740888141866,
       "offset": [
-        865.8736588056687,
-        -510.4244939158501
+        1405.1622976699362,
+        -389.55348295994025
       ]
-    },
-    "links_added_by_ue": []
+    }
   },
   "version": 0.4
 }

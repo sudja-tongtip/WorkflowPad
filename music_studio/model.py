@@ -46,6 +46,8 @@ class SongSettings:
     top_k: int = 0
     min_p: float = 0.0
     format: str = "mp3"
+    audio_quality: str = ""                             # the bitrate / VBR level of mp3 and opus ('' = the format's default); flac has none
+    wf_params: dict = field(default_factory=dict)       # steps / CFG remembered per workflow file: {"<workflow>.json": {"steps": n, "cfg": x}} (see quality_presets.py)
 
 
 def build_basic_style(s: SongSettings) -> str:
@@ -169,6 +171,11 @@ class ChatMessage:
     snap_hash: str = ""                     # scope "insert": the hash of the whole lyrics the insertion point belongs to
     sheet_id: str = ""                      # the lyrics sheet the request was made on ("" = a message from before sheets: no sheet check)
     id: str = field(default_factory=lambda: new_id("msg_"))   # Apply / Regenerate find their message by this, never by its position in the list (older chat files get one when loaded)
+    specialist: str = ""                    # the AI specialist this message belongs to (lyric_craft_advisor | song_editor | prosody | song_architect; the ids lyricist and hook of v1 are read as the new roles). "" = a message from before specialists: it is shown with the Lyric Craft Advisor
+    edits: list = field(default_factory=list)   # assistant: independent edits of EXISTING lines ({id, first, last, original, replacement, reason, status, applied_hash}); each is previewed, applied or ignored on its own
+    notes: list = field(default_factory=list)   # assistant: the program's own remarks about this answer (what it could not use): shown apart from the answer, never part of `text`, never sent back to the AI
+    hints: list = field(default_factory=list)   # assistant: free-form music direction that is not a studio cue (not applicable here; it belongs in the Music Caption)
+    rejected: str = ""                          # assistant: lyrics the AI wrote that cannot be applied: kept to be read and copied, never part of `text`
 
 
 def _pick(cls, d: dict):

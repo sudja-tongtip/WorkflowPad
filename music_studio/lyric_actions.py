@@ -10,16 +10,17 @@ Nothing here touches the editor: the app applies the result through its existing
 """
 from __future__ import annotations
 
+import difflib
 import hashlib
 import re
 from dataclasses import dataclass, field
 
 from . import llm_chat as LC
-from .compiler import TAG_LINE
+from .compiler import HOLD_PREFIX, TAG_LINE
 from .songwriting_craft import SONGWRITING_CRAFT
 from .lyric_rhythm import section_names
 
-ACTION_PROMPT_VERSION = "actions-v2"
+ACTION_PROMPT_VERSION = "actions-v4"
 
 # the actions as data: how the target is found and how the result is applied
 AI_ACTIONS = {
@@ -31,9 +32,20 @@ AI_ACTIONS = {
                     "tip": "Rewrites your SELECTION so it is easier to sing. With no selection: the line your cursor is in (you see it before anything is sent)."},
     "translate": {"label": "Translate Lyrics", "sub": "Adapt the language", "scope": "explicit_target",
                   "tip": "Translates your selection, the current line or the entire song into another language. You choose the language, the mode and the scope."},
+    # Smart Phrasing: spacing, line breaks or pause marks only. The words are never changed (check_proposal proves it); the user picks WHICH of the three the AI may touch.
+    "phrasing": {"label": "Smart Phrasing", "sub": "Spacing, line breaks, pauses", "scope": "explicit_target",
+                 "tip": "Suggests spaces, line breaks or pause marks (...) so the lyrics read and sing more smoothly. Your words are never changed. You choose which of the three, and what to work on."},
     # a saved prompt (Templates -> AI Prompts) run through the same engine: the user's instruction (opts["instruction"], already rendered) is applied to an explicit target
     "custom": {"label": "Saved Prompt", "sub": "", "scope": "explicit_target", "tip": "Runs one of your saved prompts on the target chosen when you press Run."},
 }
+REWRITE_ACTIONS = ("emotion", "singability", "custom")        # these rework the words: the model is given plain lyric lines (no section tags, no cues), the program puts those back
+UNCHANGED_MSG = "The AI gave back the same lyrics (only tags, spaces or punctuation differ), so nothing was offered. Nothing was changed."
+RETRY_NOTE = ("Your last answer repeated the TARGET TEXT without rewriting it. Rewrite it now: change the wording itself (word choice, phrasing, imagery) so that it is clearly a new version "
+              "of the same song line by line. Do not give back the same lines.")
+PAUSE_SPAM_MSG = "The AI put a pause mark ... at almost every line. That is not a useful breathing guide, so it was not offered. Nothing was changed."
+SPAM_NOTE = "You put ... at almost every line. Use ... only where a singer really rests, on at most half of the lines, and rework the wording or the line breaks where that helps instead."
+RETRY_NOTES = {UNCHANGED_MSG: RETRY_NOTE, PAUSE_SPAM_MSG: SPAM_NOTE}
+PHRASING_KINDS = {"all": "Spacing, Line Breaks and Pauses", "spacing": "Spacing", "lines": "Line Breaks", "pauses": "Pauses"}
 MODES = ("insert", "selection", "line", "all")          # target modes = the apply modes: insert_at_cursor / replace_selection / replace_line / replace_all
 CONTEXT_BEFORE_LINES = 80
 CONTEXT_AFTER_LINES = 6
@@ -146,7 +158,9 @@ def make_request(action: str, text: str, sel: tuple, opts: dict | None = None, b
             raise ActionError("Write at least one line of lyrics first, then place the cursor after it.")
         p = insert_point(text, b)
         return ActionRequest(action, "insert", p, p, "", h, opts, backend, model)
-    explicit = action in ("translate", "custom")            # these two always say what they work on: selection | line | all
+    if action == "phrasing" and opts.get("kind") not in PHRASING_KINDS:
+        raise ActionError("Choose what the AI may change: spacing, line breaks or pauses.")
+    explicit = action in ("translate", "custom", "phrasing")            # these always say what they work on: selection | line | all
     scope = opts.pop("scope", "") if explicit else ""
     if explicit and scope not in ("selection", "line", "all"):
         raise ActionError("Choose what to work on: the selection, the current line or the entire song.")
@@ -175,6 +189,8 @@ def describe(req: ActionRequest, text: str) -> str:
     extra = ""
     if req.action == "translate":
         extra = f" → {req.opts.get('lang_name', '?')} · {'Singable Adaptation' if req.opts.get('style') == 'singable' else 'Faithful Translation'}"
+    if req.action == "phrasing":
+        extra = f" → {PHRASING_KINDS.get(req.opts.get('kind'), '?')}"
     if req.mode == "insert":
         s, e = line_bounds(text, req.start)
         quote = text[s:e].strip()
@@ -318,6 +334,25 @@ _RULES = {
         "- Keep the language of the lyrics unless the instruction asks for another one.\n"
         "- Apply the songwriting craft only where it serves the instruction. If the user asks for something simpler, plainer or shorter, do NOT add metaphors, internal rhymes or extra imagery.\n"
     ),
+    "phrasing": (
+        "ACTION RULES - SMART PHRASING:\n"
+        "- Work ONLY on the TARGET TEXT; the PROPOSAL replaces exactly that text. KIND says the only things you may change:\n"
+        "  all: spaces, line breaks AND pause marks together, as a good songwriter would: add or remove spaces between phrases, split a long line or join short lines, add the pause mark ... "
+        "where a singer rests, and remove a [Hold] cue that no longer fits. Do not change any word.\n"
+        "  spacing: add or remove SPACES inside a line, so the phrases read clearly (Thai is written without spaces between words, so a space marks a phrase boundary or a breath). "
+        "Do not change, add, remove or reorder any character that is not a space, and keep the same number of lines.\n"
+        "  lines: move line breaks only: split a long line into shorter phrases, or join short lines, where the phrase naturally breaks. Do not change any word.\n"
+        "  pauses: add or remove the pause mark ... where a singer would naturally rest or breathe. Do not change any word and do not change the line breaks.\n"
+        "- Decide from the meaning and the grammar of the sentence, the length of the phrase and the lines around it. A cut must never separate words that belong together. "
+        "Syllable counts, when given, are estimates by the app: a guide, never a rule. There is no length that every line must have.\n"
+        "- You have not heard any melody and do not know the tempo or the note lengths: never say how long a pause lasts. Never add [Hold] (you may remove one), never stretch a vowel, and never put ... at every breath: "
+        "use it only where a real rest helps. Keep every section tag line exactly as it is.\n"
+        "- If the text already reads and sings well, leave the PROPOSAL empty and say so in the REPLY.\n"
+        "- REPLY (1-2 sentences, in the language of the lyrics): what you changed and why. For pauses say that ... is a written hint for the singer, not an exact length.\n\n"
+        "EXAMPLE (KIND: lines)\n"
+        "Target:\nฉันยังคงเฝ้ารอเธอแม้วันเวลาจะผ่านไป\n"
+        "Answer:\n" + LC.SEP["REPLY"] + "\nแบ่งเป็นสองวลีตรงที่ความหมายขาดตอน ร้องหายใจได้ที่รอยตัด\n\n" + LC.SEP["PROPOSAL"] + "\nฉันยังคงเฝ้ารอเธอ\nแม้วันเวลาจะผ่านไป\n\n" + LC.SEP["END"] + "\n"
+    ),
     "translate": (
         "ACTION RULES - TRANSLATE LYRICS:\n"
         "- Translate ONLY the TARGET TEXT into the TARGET LANGUAGE. This is the one action where the language changes: the PROPOSAL must be written in the TARGET LANGUAGE.\n"
@@ -330,8 +365,101 @@ _RULES = {
 }
 
 
+_REWRITE_RULE = (
+    "\nREWRITE, DO NOT COPY: the TARGET TEXT is given as plain lyric lines: section tags and cues such as [Hold] were taken out; the program puts the tags back, so never write them. "
+    "Use every tool of a songwriter to make it better: change the wording, add or remove spaces between phrases (a space marks a breath in Thai), split a line or join lines, add the pause mark ... only where a singer really rests (never at every line). "
+    "A cue may be dropped when its line is reworked. Whatever you do, the PROPOSAL must be different from the original: giving back the same lines is a failure. "
+    "If you honestly cannot improve a line, still offer your best alternative for it; if the whole text is already right, leave the PROPOSAL empty and say why in the REPLY.\n")
+
+
 def system_prompt(req: ActionRequest) -> str:
-    return _BASE + _RULES[req.action]
+    return _BASE + _RULES[req.action] + (_REWRITE_RULE if req.action in REWRITE_ACTIONS else "")
+
+
+# ── plain lines for the model, tags and cues put back by the program ─────────────────────────────────────────
+def strip_for_model(text: str) -> tuple:
+    """(plain lyric lines, entries). Section tag lines and a leading [Hold] cue are taken out, so the model has no template of tags to copy. `entries` remembers the structure:
+    ("tag", line) | ("blank", line) | ("sung", cue prefix). Blank lines and tags between stanzas stay as blank lines in the plain text."""
+    entries, plain = [], []
+    for l in text.split("\n"):
+        if TAG_LINE.match(l):
+            entries.append(("tag", l, ""))
+            plain.append("")
+        elif not l.strip():
+            entries.append(("blank", l, ""))
+            plain.append("")
+        else:
+            m = HOLD_PREFIX.match(l)
+            entries.append(("sung", l[:m.end()] if m else "", l[m.end():] if m else l))
+            plain.append(l[m.end():] if m else l)
+    while plain and not plain[0].strip():
+        plain.pop(0)
+    while plain and not plain[-1].strip():
+        plain.pop()
+    out = []
+    for l in plain:                                             # a run of blank lines is one stanza break
+        if l.strip() or (out and out[-1].strip()):
+            out.append(l)
+    return "\n".join(out), entries
+
+
+def restore_lines(entries: list, proposal: str) -> str:
+    """The proposal with the original structure back: every section tag and blank line where it was, every [Hold] cue on the same sung line. The model's lines are taken in order; its own
+    tags, cues and blank lines are ignored. A cue is put back only on a line that is still much the same; when the model gave a different number of lines no cue is put back and extra lines follow the last one."""
+    got = []
+    for l in proposal.split("\n"):
+        if TAG_LINE.match(l) or not l.strip():
+            continue
+        m = HOLD_PREFIX.match(l)
+        got.append(l[m.end():] if m else l.strip())
+    n_sung = sum(1 for e in entries if e[0] == "sung")
+    exact = len(got) == n_sung
+    out, i, last = [], 0, -1
+    for kind, raw, body in entries:
+        if kind != "sung":
+            out.append(raw)
+        elif i < len(got):
+            keep = exact and bool(raw) and difflib.SequenceMatcher(None, body.strip(), got[i]).ratio() >= 0.8      # a cue belongs to its old wording: a line that was reworked loses it (a cue may be cut)
+            out.append((raw if keep else "") + got[i])
+            i += 1
+            last = len(out) - 1
+    if i < len(got):
+        out[last + 1:last + 1] = got[i:]
+    return "\n".join(out)
+
+
+def drop_context_echo(prop: str, text: str, req: "ActionRequest") -> str:
+    """A small model sometimes repeats the lines that come right after (or before) the target, which it was shown as context only. Those echoed lines are removed from the proposal: they are
+    already in the song, and applying them would write them twice."""
+    def plain(lines):
+        return [l.strip() for l in lines if l.strip() and not TAG_LINE.match(l)]
+    got = prop.split("\n")
+    after = plain(text[req.end:].split("\n"))[:4]
+    before = plain(text[:req.start].split("\n"))[-4:]
+    mine = plain(got)
+    for k in range(min(len(after), len(mine) - 1), 0, -1):
+        if mine[-k:] == after[:k]:
+            for _ in range(k):
+                while got and (not got[-1].strip() or TAG_LINE.match(got[-1])):
+                    got.pop()
+                got.pop()
+            break
+    mine = plain(got)
+    for k in range(min(len(before), len(mine) - 1), 0, -1):
+        if mine[:k] == before[-k:]:
+            for _ in range(k):
+                while got and (not got[0].strip() or TAG_LINE.match(got[0])):
+                    got.pop(0)
+                got.pop(0)
+            break
+    return "\n".join(got)
+
+
+def same_lyrics(a: str, b: str) -> bool:
+    """True when two texts are the same lyrics: every line is the same once tags and cues are ignored. A different space, line break, `...` or word counts as a change (those are tools of the rewrite)."""
+    def n(x):
+        return [l.strip() for l in re.sub(r"\[[^\[\]\n]*\]", "", x).split("\n") if l.strip()]
+    return n(a) == n(b)
 
 
 def _meta(title: str, settings: dict, text: str) -> str:
@@ -363,10 +491,13 @@ def build_messages(req: ActionRequest, title: str, settings: dict, text: str, co
         post = [l for l in lines[last + 1:] if l.strip()][:4]
         if pre and req.mode != "all":                       # no placeholder text for an empty side: a real model once copied "(nothing)" into its proposal
             parts.append("LYRICS BEFORE THE TARGET (context only, do not change):\n" + _block(pre))
-        parts.append("TARGET TEXT (the PROPOSAL replaces exactly this):\n" + _block(req.target.split("\n")))
+        shown = strip_for_model(req.target)[0] if (req.action in REWRITE_ACTIONS and req.mode != "insert") else req.target
+        parts.append("TARGET TEXT (the PROPOSAL replaces exactly this" + ("; plain lyric lines" if shown != req.target else "") + "):\n" + _block(shown.split("\n")))
         if post and req.mode != "all":
             parts.append("LYRICS AFTER THE TARGET (context only, do not change):\n" + _block(post))
-        if req.action == "singability" and counts:
+        if req.action == "phrasing":
+            parts.append(f"KIND: {req.opts.get('kind', 'spacing')} ({PHRASING_KINDS.get(req.opts.get('kind'), '')}): change only this")
+        if req.action in ("singability", "phrasing") and counts:
             got = [f"line {i + 1}: {counts[first + i + 1]}" for i in range(req.target.count("\n") + 1) if (first + i + 1) in counts and req.target.split("\n")[i].strip()]
             if got:
                 parts.append("SYLLABLE COUNTS of the target lines (estimates by the app; includes the user's own corrections):\n" + "\n".join(got))
@@ -375,6 +506,46 @@ def build_messages(req: ActionRequest, title: str, settings: dict, text: str, co
         if req.action == "custom":
             parts.append("USER INSTRUCTION (written by the songwriter; apply it to the TARGET TEXT only):\n" + str(req.opts.get("instruction", "")).strip())
     return system_prompt(req), "\n\n".join(parts)
+
+
+_BRACKET = re.compile(r"\[[^\[\]\n]*\]")
+_PAUSE = re.compile(r"\.{3,}|…")
+
+
+def _flat(s: str) -> str:
+    return re.sub(r"\s+", "", s)
+
+
+def _check_phrasing(kind: str, target: str, prop: str) -> None:
+    """Smart Phrasing may only move spaces, line breaks or pause marks. Raises ActionError when a word, a tag or [Hold] was touched, or the AI did not stay inside the chosen kind."""
+    if prop.strip() == target.strip():
+        raise ActionError("The AI suggested no change. Nothing was changed.")
+    have = list(_BRACKET.findall(target))
+    for b in _BRACKET.findall(prop):                            # a cue may be removed; a tag or cue may never be added or changed
+        if b in have:
+            have.remove(b)
+        else:
+            raise ActionError("The AI added or changed a [tag] or [Hold]. Smart Phrasing may only remove a cue, so the proposal was not offered. Nothing was changed.")
+
+    def core(s: str, pauses: bool) -> str:
+        t = _flat(_BRACKET.sub("", s))
+        return _PAUSE.sub("", t) if pauses else t
+    if kind in ("pauses", "all"):
+        if core(prop, True) != core(target, True):
+            raise ActionError("The AI changed the words, but Smart Phrasing may only change spaces, line breaks and pause marks. The proposal was not offered. Nothing was changed.")
+        if kind == "pauses" and prop.count("\n") != target.count("\n"):
+            raise ActionError("The AI changed the line breaks, but you asked for pauses only. Nothing was changed.")
+        added = len(_PAUSE.findall(prop)) - len(_PAUSE.findall(target))
+        sung = sum(1 for l in target.split("\n") if l.strip() and not TAG_LINE.match(l))
+        if added > max(1, (sung + 1) // 2):
+            raise ActionError("The AI put a pause mark at almost every line. That is not a useful breathing guide, so it was not offered. Nothing was changed.")
+        return
+    if core(prop, False) != core(target, False):
+        raise ActionError("The AI changed the words, but Smart Phrasing may only move spaces and line breaks. The proposal was not offered. Nothing was changed.")
+    if kind == "spacing":
+        a, b = target.split("\n"), prop.split("\n")
+        if len(a) != len(b) or any(core(x, False) != core(y, False) for x, y in zip(a, b)):
+            raise ActionError("The AI changed the line breaks, but you asked for spacing only. Nothing was changed.")
 
 
 # ── is the answer acceptable? ────────────────────────────────────────────────────────────────────────────────
@@ -393,12 +564,21 @@ def check_proposal(req: ActionRequest, proposal: str, text: str) -> str:
         if not trim_repeat(text[:req.start], prop).strip():
             raise ActionError("The AI only repeated lines that are already there. Nothing was changed.")
         return prop
+    if req.action in REWRITE_ACTIONS:                           # the model wrote plain lines: put the tags and cues back, then refuse a copy of the old lyrics
+        prop = restore_lines(strip_for_model(req.target)[1], drop_context_echo(prop, text, req))
+        if same_lyrics(prop, req.target):
+            raise ActionError(UNCHANGED_MSG)
+        sung = sum(1 for l in req.target.split("\n") if l.strip() and not TAG_LINE.match(l))
+        if len(_PAUSE.findall(prop)) - len(_PAUSE.findall(req.target)) > max(1, (sung + 1) // 2):
+            raise ActionError(PAUSE_SPAM_MSG)
     want, got = tags_of(req.target), tags_of(prop)
     if got != want:
         missing = [t for t in want if t not in got]
         extra = [t for t in got if t not in want]
         why = (f" Missing: {', '.join(missing)}." if missing else "") + (f" Added: {', '.join(extra)}." if extra else "") + (" The tags are in a different order or count." if not missing and not extra else "")
         raise ActionError("The AI changed, added or removed a section tag, so the proposal was not offered. Nothing was changed." + why)
+    if req.action == "phrasing":
+        _check_phrasing(req.opts.get("kind", ""), req.target, prop)
     if req.action == "translate" and prop.strip() == req.target.strip():
         raise ActionError("The AI returned the text unchanged (no translation).")
     if req.action == "translate" and req.mode != "all" and prop.count("\n") + 1 > 3 * (req.target.count("\n") + 1) + 3:
