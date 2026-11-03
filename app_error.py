@@ -5,7 +5,7 @@ whole window and the program cannot be used any more. This module keeps the prog
 details (copyable) and the choice to Continue or Close. A failure while the program starts shows the same information as a full-window page with "Try again".
 
 Nothing about the user is sent anywhere. The details are written to %LOCALAPPDATA%\\WorkflowPad\\logs\\errors.log (a failed write, for example on a full disk, is silent).
-One module, used the same way by every program:  ft.app(target=app_error.guard(ft, main, APP_NAME, APP_VERSION))
+One module, used the same way by every program:  ft.run(app_error.guard(ft, main, APP_NAME, APP_VERSION))
 The `ft` module is passed in: this file imports nothing from the UI.
 """
 

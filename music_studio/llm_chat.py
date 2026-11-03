@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import threading
 import time
 import urllib.request
 import urllib.error
@@ -168,6 +169,19 @@ def grok_creds() -> dict:
         return {"key": "", "model": "grok-4-latest"}
 
 
+def save_grok_creds(key: str, model: str) -> None:
+    """Writes the Grok key and model into the shared credentials file; whatever else is in it (Story Generator, Prompt Lab) stays."""
+    try:
+        d = json.loads(GROK_CREDS_FILE.read_text(encoding="utf-8"))
+        if not isinstance(d, dict):
+            d = {}
+    except Exception:
+        d = {}
+    d["grok_api_key"], d["grok_model"] = (key or "").strip(), (model or "").strip() or "grok-4-latest"
+    GROK_CREDS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    GROK_CREDS_FILE.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def list_local_workflows(llm_dir: Path) -> list[str]:
     out = []
     if llm_dir.is_dir():
@@ -246,6 +260,55 @@ def session_for(wf_path: Path, summary_fn=None, goal: str = SESSION_GOAL) -> LLM
     return LLMSession(n_ctx, goal, summary_fn)
 
 
+# ── a line per AI call in logs/ai_calls.log: when, what asked it, which backend, how long, how much went in and came out, and whether it worked ────────────────────────────────────────────
+_tag = threading.local()
+_log_lock = threading.Lock()
+
+
+def set_call_tag(tag: str) -> None:
+    """Names the kind of request (director, chat ...) for the call log lines the current thread writes next."""
+    _tag.v = tag
+
+
+def _log_call(backend: str, model: str, system: str, user_text: str, t0: float, out: str, err: "BaseException | None") -> None:
+    try:
+        d = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "WorkflowPad" / "logs"
+        d.mkdir(parents=True, exist_ok=True)
+        f = d / "ai_calls.log"
+        with _log_lock:
+            if f.exists() and f.stat().st_size > 1_000_000:
+                f.replace(d / "ai_calls.log.1")
+            line = (f"{time.strftime('%Y-%m-%d %H:%M:%S')} {getattr(_tag, 'v', '') or '-':<10} {backend:<6} {model[:40]:<40} {time.time() - t0:6.1f}s in={len(system) + len(user_text):>6} "
+                    f"out={len(out or ''):>6} {'OK' if err is None else 'ERROR ' + str(err)[:200].replace(chr(10), ' ')} | {system[:50].strip().replace(chr(10), ' ')}")
+            with open(f, "a", encoding="utf-8") as fh:
+                fh.write(line + chr(10))
+    except Exception:
+        pass
+
+
+def _logged(backend: str, model_of):
+    def deco(fn):
+        def wrap(*a, **k):
+            t0, err, out = time.time(), None, ""
+            system, user = (a[2], a[3]) if len(a) >= 4 else (k.get("system", ""), k.get("user_text", ""))
+            try:
+                out = fn(*a, **k)
+                return out
+            except BaseException as ex:
+                err = ex
+                raise
+            finally:
+                try:
+                    _log_call(backend, model_of(a, k), system, user, t0, out, err)
+                except Exception:
+                    pass
+        wrap.__name__ = fn.__name__
+        wrap.__doc__ = fn.__doc__
+        return wrap
+    return deco
+
+
+@_logged("local", lambda a, k: Path(a[1]).stem if len(a) > 1 else "")
 def ask_local(host: str, wf_path: Path, system: str, user_text: str, timeout_s: float = 300.0, temperature: float | None = None, session: "LLMSession | None" = None) -> str:
     """Run the local LLM workflow once. Without `session`: a fresh session (the app sends everything the model needs; no server-side history is mixed in). With `session`: the request is one
     step of that conversation (see LLMSession)."""
@@ -292,6 +355,7 @@ def ask_local(host: str, wf_path: Path, system: str, user_text: str, timeout_s: 
     raise RuntimeError("The LLM did not answer in time")
 
 
+@_logged("grok", lambda a, k: str(a[1] if len(a) > 1 else k.get("model", "")))
 def ask_grok(key: str, model: str, system: str, user_text: str, max_tokens: int = 4096, temperature: float | None = None, history: "list | None" = None) -> str:
     """`history` = the earlier messages of the conversation ([{"role": "user" | "assistant", "content": ...}]), sent between the system prompt and the new user message."""
     if not key:

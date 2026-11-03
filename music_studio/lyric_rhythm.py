@@ -17,7 +17,7 @@ import statistics
 from dataclasses import dataclass, field
 from typing import Callable
 
-from .compiler import TAG_LINE
+from .compiler import TAG_LINE, section_label
 from .lyric_analysis import AnalysisError, SEP_END, _is_sep, _norm, sung_lines
 
 RHYTHM_PROMPT_VERSION = "rhythm-v2"
@@ -68,7 +68,7 @@ def section_names(text: str) -> dict:
         if TAG_LINE.match(raw):
             name = raw.strip()[1:-1].strip()
             if name and not name.lower().startswith("hold"):
-                cur = re.split(r"\s+-\s+|\s*:\s*", name, maxsplit=1)[0].strip()
+                cur = section_label(raw)
         out[i] = cur
     return out
 

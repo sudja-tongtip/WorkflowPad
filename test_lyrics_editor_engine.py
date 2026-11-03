@@ -262,4 +262,4 @@ async def main(page: ft.Page):
 
 
 if __name__ == "__main__":
-    ft.app(main, view=ft.AppView.WEB_BROWSER, port=PORT)
+    ft.run(main, view=ft.AppView.WEB_BROWSER, port=PORT)

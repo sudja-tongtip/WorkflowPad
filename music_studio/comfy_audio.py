@@ -136,6 +136,27 @@ def build_workflow(base: dict, s: SongSettings, tags: str, lyrics: str, filename
     return wf, used
 
 
+def check_built(wf: dict, s: SongSettings) -> None:
+    """The workflow about to be sent must carry this song's steps, CFG and duration, not numbers baked into the file."""
+    m = find_nodes(wf)
+    if any(len(m[k]) != 1 for k in ("text", "latent", "sampler")):
+        raise ComfyError("The built workflow is missing a text, latent or sampler node")
+    k = wf[m["sampler"][0]].get("inputs") or {}
+    lat = wf[m["latent"][0]].get("inputs") or {}
+    tx = wf[m["text"][0]].get("inputs") or {}
+    try:
+        steps_ok = int(k.get("steps")) == int(s.steps)
+        cfg_ok = abs(float(k.get("cfg")) - float(s.cfg)) < 1e-6
+        dur_ok = int(lat.get("seconds")) == int(s.duration) and int(tx.get("duration")) == int(s.duration)
+    except (TypeError, ValueError):
+        steps_ok = cfg_ok = dur_ok = False
+    if steps_ok and cfg_ok and dur_ok:
+        return
+    raise ComfyError(
+        f"The built workflow does not match the song settings: sampler {k.get('steps')}/{k.get('cfg')}, "
+        f"duration {tx.get('duration')}s, latent {lat.get('seconds')}s; song {int(s.steps)}/{float(s.cfg)}, {int(s.duration)}s")
+
+
 def fresh_seed() -> int:
     return random.randint(0, 2**32 - 1)
 

@@ -39,20 +39,42 @@ class Specialist:
 SPECIALISTS = (
     Specialist("songwriter", "Songwriter AI", "Writes, analyses and reworks lyrics: wording, meaning, rhymes and the flow of the lines", "songwriter.md",
                ask_for="WRITING lyrics (new lines, filling the sections with words, continuing the song, translating, rewriting a line), what the song means, word choice, imagery, syllable counts, rhymes and how smoothly Thai lines can be sung"),
-    Specialist("song_architect", "Song Architect", "Sections, cues, hook and song structure", "song_architect.md",
-               ask_for="the order of the sections, adding or moving sections, cues in the section tags, vocal and timing cues, and where the hook and the chorus sit in the structure (the words of any section are the Songwriter AI's)"),
-    Specialist("music_director", "Music Director", "Music style and caption for the generator", "music_director.md", analyzes=False,
-               ask_for="music genre, instruments, arrangement and the English music caption (the AI Music Director in the Style panel / Generate tab, not in this chat)"),
+    Specialist("music_producer", "Music Producer AI", "Song structure, cues, genre, arrangement, dynamics and the music caption", "music_producer.md",
+               ask_for="the shape of the song (the order of the sections, adding or moving sections, cues in the section tags, vocal and timing cues, where the hook and the chorus sit) AND the sound (genre, instruments, arrangement, groove, "
+                       "dynamics, vocal delivery, the English music caption for the generator); the words of any section are the Songwriter AI's"),
+    # AI Recommend (the three music directions) is a structured task of its own, not a chat: it keeps its prompt file (music_director.md) as guidance, its own session and its own output format.
+    Specialist("music_director", "Music Director (AI Recommend)", "The three music directions of AI Recommend", "music_director.md", analyzes=False,
+               ask_for="the three music directions of AI Recommend (Style panel / Generate tab)"),
+)
+PRODUCER = "music_producer"
+ANALYSIS_ID = "music_producer_analysis"             # the Music Producer's ANALYSIS session: its own live conversation and its own session file, never mixed with the chat session
+# The Music Producer AI replaced the Song Architect (and took over the sound side of the Music Director's work in the chat). The Song Architect's saved chats, reports and prompt file stay as they are (an archive,
+# read-only, never loaded as the Producer's session). The Producer's analysis session is internal: not listed, not asked in the chat.
+INTERNAL = (
+    Specialist(ANALYSIS_ID, "Music Producer AI", "The analysis session of the Music Producer AI", "music_producer.md", analyzes=False),
 )
 # The three specialists that the Songwriter AI replaced. They are not asked and not shown in the specialist list any more, but their ids stay known: the chats, reports and session files they
 # left in the songs are kept as they are and can still be read (an archive, never merged into the Songwriter AI's session), and their prompt files are never deleted or reused.
 RETIRED = (
+    Specialist("song_architect", "Song Architect", "Sections, cues, hook and song structure (now part of the Music Producer AI)", "song_architect.md"),
     Specialist("lyric_craft_advisor", "Lyric Craft Advisor", "Word choice, language and imagery of the lyrics", "lyric_craft_advisor.md"),
     Specialist("song_editor", "Song Editor", "Meaning, story continuity and emotional arc", "song_editor.md"),
     Specialist("prosody", "Thai Prosody Expert", "Syllables, rhymes and the flow of the lines", "prosody_expert.md"),
 )
-BY_ID = {s.id: s for s in SPECIALISTS + RETIRED}
+BY_ID = {s.id: s for s in SPECIALISTS + RETIRED + INTERNAL}
 ANALYZE_ORDER = tuple(s.id for s in SPECIALISTS if s.analyzes)
+TEAM = tuple(s for s in SPECIALISTS if s.analyzes)        # the specialists the user talks to (and who hand work over to each other)
+UPGRADED = {"song_architect": PRODUCER, "music_director": PRODUCER}      # a saved choice of the chat (cfg) of a specialist that is part of the Producer now
+
+
+def is_producer(spec_id: str) -> bool:
+    """The structure-and-music role: the Music Producer AI, its analysis session, and (in old data) the Song Architect it replaced."""
+    return spec_id in (PRODUCER, ANALYSIS_ID, "song_architect")
+
+
+def analysis_id(spec_id: str) -> str:
+    """The id of the session an ANALYSIS of this specialist runs in: the Music Producer's own analysis session; everybody else analyses in the session of the chat."""
+    return ANALYSIS_ID if spec_id == PRODUCER else spec_id
 CHAT_IDS = ANALYZE_ORDER                                  # the two the user can talk to in the chat; the Music Director works in Generate
 ARCHIVE_IDS = tuple(s.id for s in RETIRED)                # read-only conversations / reports of the specialists that were merged into the Songwriter AI
 DEFAULT_CHAT = "songwriter"

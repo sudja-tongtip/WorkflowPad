@@ -4593,4 +4593,4 @@ async def main(page:ft.Page):
 
 
 
-ft.app(target=_app_error.guard(ft, main, APP_NAME, APP_VERSION))   # friendly error dialog instead of Flet's red 'application crashed' page
+ft.run(_app_error.guard(ft, main, APP_NAME, APP_VERSION))   # friendly error dialog instead of Flet's red 'application crashed' page

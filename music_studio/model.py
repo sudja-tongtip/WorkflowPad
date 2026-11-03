@@ -21,7 +21,7 @@ def now_str() -> str:
 
 @dataclass
 class SongSettings:
-    workflow: str = ""                      # file name inside comfy_apis/audio ("" = first one found)
+    workflow: str = ""                      # file name inside comfy_apis/audio ("" = ACE-Step 1.5 Turbo, or another usable workflow)
     genre: str = "Alternative Rock"
     mood: str = ""
     vocal: str = ""                         # e.g. "male vocal"
@@ -126,6 +126,7 @@ class Take:
     created: str
     duration: float = 0.0                   # seconds, measured from the real file when possible
     favorite: bool = False
+    rating: int = 0                         # the user's own rating: 0 = not rated, 1-5 stars
     lyrics: str = ""                        # compiled ACE-Step lyrics actually sent
     tags: str = ""
     settings: dict = field(default_factory=dict)    # parameters actually sent (incl. effective seeds)
@@ -175,6 +176,8 @@ class ChatMessage:
     edits: list = field(default_factory=list)   # assistant: independent edits of EXISTING lines ({id, first, last, original, replacement, reason, status, applied_hash}); each is previewed, applied or ignored on its own
     notes: list = field(default_factory=list)   # assistant: the program's own remarks about this answer (what it could not use): shown apart from the answer, never part of `text`, never sent back to the AI
     hints: list = field(default_factory=list)   # assistant: free-form music direction that is not a studio cue (not applicable here; it belongs in the Music Caption)
+    caption: str = ""                           # assistant: a validated Music Caption offered with "Use in Music Style"
+    caption_state: str = ""                     # "" | applied | ignored
     rejected: str = ""                          # assistant: lyrics the AI wrote that cannot be applied: kept to be read and copied, never part of `text`
 
 

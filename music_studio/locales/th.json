@@ -485,6 +485,7 @@
     "Music settings applied": "ใช้ค่าดนตรีแล้ว",
     "Template": "เทมเพลต",
     "Selected Lyrics": "เนื้อเพลงที่เลือก",
+    "Remove this selection from the next question. The lyrics stay.": "ไม่ส่งข้อความที่เลือกนี้ไปกับคำถามถัดไป เนื้อเพลงยังอยู่",
     "Your manual count / segmentation is used": "ใช้การนับ / แบ่งพยางค์ที่คุณทำเอง",
     "Replace Current Sheet": "แทนที่ชีตปัจจุบัน",
     "Apply to Current Sheet": "ใช้กับชีตปัจจุบัน",
@@ -688,6 +689,7 @@
     "Song Analysis Report": "รายงานวิเคราะห์เพลง",
     "Syllables, rhymes, rhythm, quality: one report": "พยางค์ สัมผัส จังหวะ คุณภาพ: รายงานเดียว",
     "Suggestions for the selection or section": "ข้อเสนอสำหรับข้อความที่เลือกหรือท่อนนี้",
+    "For this selection": "สำหรับข้อความที่เลือก",
     "Find Alternative Words": "หาคำทดแทน",
     "For the words you selected": "สำหรับคำที่คุณเลือก",
     "Find alternative words (selected)": "หาคำทดแทน (ที่เลือก)",
@@ -899,7 +901,278 @@
     "Group / choir": "กลุ่ม / คอรัส",
     "Male lead, female backing vocals": "ชายร้องนำ หญิงร้องประสาน",
     "Female lead, male backing vocals": "หญิงร้องนำ ชายร้องประสาน",
-    "Choose the singer(s) you want. The AI then writes all three directions for them and the Vocal setting follows. 'The AI decides' leaves it to the AI.": "เลือกผู้ร้องที่ต้องการ AI จะเขียนทั้ง 3 ทิศทางสำหรับผู้ร้องนั้น และค่า Vocal จะตามไปด้วย ถ้าเลือก 'ให้ AI เลือก' AI จะตัดสินใจเอง"
+    "Choose the singer(s) you want. The AI then writes all three directions for them and the Vocal setting follows. 'The AI decides' leaves it to the AI.": "เลือกผู้ร้องที่ต้องการ AI จะเขียนทั้ง 3 ทิศทางสำหรับผู้ร้องนั้น และค่า Vocal จะตามไปด้วย ถ้าเลือก 'ให้ AI เลือก' AI จะตัดสินใจเอง",
+    "Instruments": "เครื่องดนตรี",
+    "Arrangement / Dynamics": "การเรียบเรียง / ไดนามิก",
+    "Piano": "เปียโน",
+    "Soft Piano": "เปียโนนุ่ม",
+    "Guitar": "กีตาร์",
+    "Acoustic Guitar": "กีตาร์โปร่ง",
+    "Drums": "กลอง",
+    "Heavy Drums": "กลองหนักแน่น",
+    "Rising Drums": "กลองไต่ระดับ",
+    "Bass": "เบส",
+    "Heavy Bass": "เบสหนัก",
+    "Strings": "เครื่องสาย",
+    "Synth": "ซินธ์",
+    "Synth Riser": "ซินธ์ไต่ระดับ",
+    "Clean": "เสียงสะอาด",
+    "Distorted": "เสียงแตก (ดิสทอร์ชัน)",
+    "Acoustic": "อะคูสติก",
+    "Melodic": "ทำนองไพเราะ",
+    "Expressive": "เปี่ยมอารมณ์",
+    "Whispered": "กระซิบ",
+    "Falsetto": "เสียงแหลมบาง (ฟอลเซตโต)",
+    "Powerful Belting": "ร้องเสียงสูงทรงพลัง (เบลต์)",
+    "Spoken Word": "พูดแทนร้อง",
+    "Soft Vocals": "ร้องเบานุ่ม",
+    "Raspy Vocals": "เสียงแหบพร่า",
+    "Breathy Vocals": "เสียงมีลมหายใจ",
+    "Choir Vocals": "คอรัส",
+    "Emotional Vocals": "ร้องอย่างมีอารมณ์",
+    "Operatic Vocals": "ร้องแบบโอเปรา",
+    "Harmonies": "เสียงประสาน",
+    "Call and Response": "ร้องโต้ตอบ",
+    "Ad-lib": "แอดลิบ",
+    "Chant": "ร้องซ้ำเป็นจังหวะ",
+    "Building Energy": "ไต่พลังขึ้นเรื่อย ๆ",
+    "Powerful": "ทรงพลัง",
+    "Explosive": "ระเบิดพลัง",
+    "Soft": "นุ่มนวล",
+    "Low Energy": "พลังต่ำ",
+    "High Energy": "พลังสูง",
+    "Anthemic": "ยิ่งใหญ่ ร้องตามได้",
+    "Punchy": "กระชับหนักแน่น",
+    "Energetic": "กระปรี้กระเปร่า",
+    "Dreamy": "ฝันลอย",
+    "Ambient": "แอมเบียนต์",
+    "Atmospheric": "บรรยากาศล่องลอย",
+    "Melancholic": "เศร้าสร้อย",
+    "Euphoric": "เปี่ยมสุข",
+    "Aggressive": "ดุดัน",
+    "Fade Out": "ค่อย ๆ เบาลงจนจบ",
+    "Minimal": "เรียบง่าย",
+    "Instrumental Hook": "ท่อนดนตรีติดหู",
+    "Show or hide the colour column beside the editor: the same lyrics with the rhyme colours. It follows the cursor line; click a line in it to put the cursor there.": "แสดงหรือซ่อนคอลัมน์สีข้าง editor: เนื้อเพลงเดียวกันที่ใส่สีสัมผัส คอลัมน์จะเลื่อนตามบรรทัดที่ cursor อยู่ และคลิกบรรทัดในคอลัมน์เพื่อย้าย cursor ไปที่บรรทัดนั้น",
+    "Colors": "สี",
+    "Colors · line endings (press Analyze Rhymes for more)": "สี · ท้ายบรรทัด (กด Analyze Rhymes เพื่อดูสัมผัสเพิ่ม)",
+    "Suggested": "ข้อเสนอ",
+    "Pending": "รอตัดสินใจ",
+    "Applied": "ใช้แล้ว",
+    "Go to line": "ไปที่บรรทัด",
+    "Go to this line in the editor": "ไปที่บรรทัดนี้ใน editor",
+    "Detailed preview / compare": "ดูตัวอย่างละเอียด / เปรียบเทียบ",
+    "Ask AI about this finding": "ถาม AI เรื่องข้อนี้",
+    "Copy suggestion": "คัดลอกข้อเสนอ",
+    "Restore to pending": "กลับไปรอตัดสินใจ",
+    "This report does not match the current lyrics (the quoted text was changed). Analyze again.": "รายงานนี้ไม่ตรงกับเนื้อเพลงปัจจุบัน (ข้อความที่อ้างถึงถูกแก้ไปแล้ว) กรุณาวิเคราะห์ใหม่",
+    "This suggestion belongs to another song or sheet. Nothing was changed.": "ข้อเสนอนี้เป็นของเพลงหรือชีตอื่น ไม่มีอะไรถูกแก้ไข",
+    "Applied (Undo restores the previous lyrics). No more pending suggestions.": "ใช้ข้อเสนอแล้ว (Undo จะคืนเนื้อเพลงเดิม) ไม่มีข้อเสนอที่รอตัดสินใจแล้ว",
+    "Song Settings": "ตั้งค่าเพลง",
+    "Results": "ผลลัพธ์",
+    "Workflow and generation settings of this song": "การตั้งค่า workflow และการสร้างเพลงของเพลงนี้",
+    "Press the heart on a take to add it to Favorites.": "กดรูปหัวใจที่เทคเพื่อเพิ่มเข้ารายการโปรด",
+    "1 star": "1 ดาว",
+    "2 stars": "2 ดาว",
+    "3 stars": "3 ดาว",
+    "4 stars": "4 ดาว",
+    "5 stars": "5 ดาว",
+    "Rate a take with stars to add it to Favorites.": "ให้ดาวเทคเพื่อเพิ่มเข้ารายการโปรด",
+    "Show the AI suggestions under their lines (Apply or Ignore them here)": "แสดงข้อเสนอของ AI ใต้บรรทัดของมัน (นำไปใช้หรือข้ามได้ที่นี่)",
+    "Another specialist suggests something different for these lines. Applying one removes the other.": "ผู้เชี่ยวชาญอีกคนเสนอต่างออกไปสำหรับบรรทัดเหล่านี้ ถ้านำข้อหนึ่งไปใช้ อีกข้อจะหายไป",
+    "Settings": "ตั้งค่า",
+    "Settings (ComfyUI, Grok AI)": "ตั้งค่า (ComfyUI, Grok AI)",
+    "Grok API key (xAI)": "Grok API key (xAI)",
+    "Grok model": "โมเดล Grok",
+    "Grok AI": "Grok AI",
+    "The key is stored in the credentials file shared with Story Generator and Prompt Lab. Leave it empty to turn Grok off.": "key ถูกเก็บในไฟล์ credentials ที่ใช้ร่วมกับ Story Generator และ Prompt Lab ปล่อยว่างเพื่อปิด Grok",
+    "Accept": "ยอมรับ",
+    "Review in the full lyrics": "ดูในเนื้อเพลงทั้งหมด",
+    "Review all suggestions": "ตรวจข้อเสนอทั้งหมด",
+    "Review AI suggestions": "ตรวจข้อเสนอของ AI",
+    "Reject": "ปฏิเสธ",
+    "Accept all": "ยอมรับทั้งหมด",
+    "Reject all": "ปฏิเสธทั้งหมด",
+    "No suggestions waiting": "ไม่มีข้อเสนอที่รออยู่",
+    "No suggestions are waiting. Everything has been accepted, rejected or no longer matches the lyrics.": "ไม่มีข้อเสนอที่รออยู่ ทุกข้อถูกยอมรับ ปฏิเสธ หรือไม่ตรงกับเนื้อเพลงแล้ว",
+    "Another specialist suggests something different for these lines. Accepting one removes the other.": "ผู้เชี่ยวชาญอีกคนเสนอต่างออกไปสำหรับบรรทัดเหล่านี้ ถ้ายอมรับข้อหนึ่ง อีกข้อจะหายไป",
+    "Stopped waiting for the AI. The previous analysis is kept.": "หยุดรอ AI แล้ว ผลวิเคราะห์เดิมยังอยู่",
+    "SECTION CUE SUGGESTIONS  (Apply shows before / after in the lyrics; nothing changes until you accept)": "คำแนะนำ CUE ของท่อน  (กด Apply เพื่อดูก่อน/หลังในเนื้อเพลง ไม่มีอะไรเปลี่ยนจนกว่าคุณจะยอมรับ)",
+    "No [section] line in the lyrics matches this cue, so it cannot be applied.": "ไม่มีบรรทัด [ท่อน] ในเนื้อเพลงที่ตรงกับ cue นี้ จึงนำไปใช้ไม่ได้",
+    "This cue belongs to another song, sheet or analysis. Nothing was changed.": "cue นี้เป็นของเพลง ชีต หรือการวิเคราะห์อื่น ไม่มีอะไรถูกแก้ไข",
+    "This cue could not be applied: the section line is not what it was.": "นำ cue นี้ไปใช้ไม่ได้: บรรทัดท่อนไม่เหมือนเดิมแล้ว",
+    "Music Producer AI": "ผู้ผลิตดนตรี AI",
+    "Music Director (AI Recommend)": "ผู้กำกับดนตรี (AI Recommend)",
+    "Song structure, cues, genre, arrangement, dynamics and the music caption": "โครงสร้างเพลง, cue, แนวเพลง, การเรียบเรียง, ไดนามิก และ music caption",
+    "Music Producer AI: Song structure, cues, genre, arrangement, dynamics and the music caption": "ผู้ผลิตดนตรี AI: โครงสร้างเพลง, cue, แนวเพลง, การเรียบเรียง, ไดนามิก และ music caption",
+    "Structure, Cues & Music Production": "โครงสร้าง, Cue และการผลิตดนตรี",
+    "Arrangement & Sound": "การเรียบเรียงและเสียง",
+    "Archive · Song Architect": "คลังเก่า · Song Architect",
+    "Music Caption": "Music Caption (คำอธิบายเสียง)",
+    "Use in Music Style": "ใช้ใน Music Style",
+    "Preview this caption, then put it in Advanced style (lyrics and other settings stay)": "ดูตัวอย่าง caption นี้ก่อน แล้วใส่ใน Style แบบ Advanced (เนื้อเพลงและค่าอื่นไม่เปลี่ยน)",
+    "✓ Used in Music Style (the previous style is kept in the style History).": "✓ ใช้ใน Music Style แล้ว (style เดิมเก็บไว้ในประวัติ style)",
+    "This caption belongs to another sheet. Open that sheet to use it.": "caption นี้เป็นของอีกชีตหนึ่ง เปิดชีตนั้นเพื่อใช้",
+    "Preview: Music Style": "ตัวอย่าง: Music Style",
+    "New caption (you can edit it)": "caption ใหม่ (แก้ไขได้)",
+    "Only the Music Style changes: the lyrics, BPM, duration and the other settings stay as they are.": "เปลี่ยนเฉพาะ Music Style: เนื้อเพลง BPM ความยาว และค่าอื่นคงเดิม",
+    "Current style: none in Advanced (Basic or empty)": "style ปัจจุบัน: ยังไม่มีใน Advanced (Basic หรือว่าง)",
+    "✓ Valid": "✓ ใช้ได้",
+    "That caption no longer exists. Nothing was applied.": "ไม่พบ caption นั้นแล้ว ไม่ได้ใช้อะไร",
+    "This caption was made for another sheet. Open that sheet to use it. Nothing was changed.": "caption นี้สร้างสำหรับอีกชีต เปิดชีตนั้นเพื่อใช้ ไม่มีอะไรเปลี่ยน",
+    "The song or sheet changed while the preview was open. Nothing was applied.": "เพลงหรือชีตเปลี่ยนระหว่างที่เปิดตัวอย่าง ไม่ได้ใช้อะไร",
+    "Music Style updated (Advanced). The previous style is in the style History. Generate was not pressed.": "อัปเดต Music Style แล้ว (Advanced) style เดิมอยู่ในประวัติ style ยังไม่ได้กดสร้างเพลง",
+    "The caption is too short.": "caption สั้นเกินไป",
+    "The caption is too long.": "caption ยาวเกินไป",
+    "The caption is empty.": "caption ว่างเปล่า",
+    "The caption is longer than 1200 characters.": "caption ยาวกว่า 1200 ตัวอักษร",
+    "The caption contains HTML/XML.": "caption มี HTML/XML",
+    "The caption contains lyric lines.": "caption มีบรรทัดเนื้อเพลง",
+    "The caption contains marker text.": "caption มีข้อความ marker",
+    "The caption has only 3 words (at least 15 are needed).": "caption มีเพียง 3 คำ (ต้องมีอย่างน้อย 15 คำ)",
+    "the quoted evidence is not exactly in those lines (or appears more than once there).": "ข้อความที่อ้างอิงไม่ตรงกับบรรทัดเหล่านั้นทุกตัวอักษร (หรือปรากฏมากกว่าหนึ่งครั้ง)",
+    "it has no `finding` or no `reason`.": "ไม่มีส่วน `finding` หรือ `reason`",
+    "its evidence is a [section tag] line.": "หลักฐานเป็นบรรทัดแท็กส่วน [section]",
+    "its suggestion is the same as the original.": "ข้อเสนอเหมือนต้นฉบับ",
+    "its suggestion adds or changes a [tag] or [Hold].": "ข้อเสนอเพิ่มหรือเปลี่ยน [tag] หรือ [Hold]",
+    "its suggestion uses an HTML-like tag.": "ข้อเสนอใช้แท็กคล้าย HTML",
+    "a suggestion needs the exact words it replaces.": "ข้อเสนอต้องมีคำที่ใช้แทนอย่างตรงตัว",
+    "a suggestion needs the lines and the exact words it replaces.": "ข้อเสนอต้องมีเลขบรรทัดและคำที่ใช้แทนอย่างตรงตัว",
+    "Press Analyze Song (the button above the lyrics, or the ✨ menu). The Songwriter AI and the Music Producer AI write their reports and they appear here as one report.": "กด วิเคราะห์เพลง (ปุ่มเหนือเนื้อเพลง หรือเมนู ✨) ผู้ช่วยแต่งเนื้อเพลงและผู้ผลิตดนตรี AI จะเขียนรายงานและแสดงที่นี่เป็นรายงานเดียว",
+    "Rhyme & Syllables": "สัมผัสและพยางค์",
+    "Rhythm & Duration": "จังหวะและความยาว",
+    "Vocal speed": "ความเร็วร้อง",
+    "Slow": "ช้า",
+    "Normal": "ปกติ",
+    "Fast": "เร็ว",
+    "Bars per line": "ห้องต่อบรรทัด",
+    "Only for this graph: the song's BPM is not changed": "ใช้กับกราฟนี้เท่านั้น: BPM ของเพลงไม่เปลี่ยน",
+    "Target duration for this graph only": "ความยาวเป้าหมายสำหรับกราฟนี้เท่านั้น",
+    "Back to the song's own BPM and duration": "กลับไปใช้ BPM และความยาวของเพลง",
+    "Vocal density": "ความหนาแน่นของคำร้อง",
+    "Song duration": "ความยาวเพลง",
+    "Sparse": "โปร่ง",
+    "Medium": "ปานกลาง",
+    "Dense": "แน่น",
+    "Very dense": "แน่นมาก",
+    "Fit": "พอดี",
+    "Tight": "ค่อนข้างแน่น",
+    "Overloaded": "เกินเวลา",
+    "Under target": "สั้นกว่าเป้า",
+    "No data": "ไม่มีข้อมูล",
+    "The whole section: syllables divided by the seconds of its bars": "ทั้งส่วน: พยางค์หารด้วยวินาทีของห้องในส่วนนั้น",
+    "One bar less (only for this graph)": "ลดหนึ่งห้อง (เฉพาะกราฟนี้)",
+    "One bar more (only for this graph)": "เพิ่มหนึ่งห้อง (เฉพาะกราฟนี้)",
+    "Ask AI about this part (the question is written in the chat box; you edit it before sending)": "ถาม AI เกี่ยวกับส่วนนี้ (คำถามจะถูกเขียนในช่องแชต แก้ไขได้ก่อนส่ง)",
+    "Ask the Songwriter AI (words, rhyme, flow)": "ถามผู้ช่วยแต่งเนื้อเพลง (คำ สัมผัส การไหล)",
+    "Ask the Music Producer AI (arrangement, delivery)": "ถามผู้ผลิตดนตรี AI (การเรียบเรียง การร้อง)",
+    "Thai dictionary split": "แบ่งตามพจนานุกรมไทย",
+    "Estimated (an English word, a number or a word not in the dictionary)": "ประมาณการ (คำอังกฤษ ตัวเลข หรือคำที่ไม่อยู่ในพจนานุกรม)",
+    "Your own correction": "ที่คุณแก้เอง",
+    "Could not be counted": "นับไม่ได้",
+    "A word is English, a number or not in the Thai dictionary: its syllable count is an estimate.": "มีคำอังกฤษ ตัวเลข หรือคำที่ไม่อยู่ในพจนานุกรมไทย จำนวนพยางค์จึงเป็นค่าประมาณ",
+    "No line endings of this section rhyme with each other (not an error: only a hint if you wanted rhymes).": "ท้ายบรรทัดของส่วนนี้ไม่สัมผัสกันเลย (ไม่ใช่ข้อผิดพลาด เป็นแค่ข้อสังเกตถ้าต้องการสัมผัส)",
+    "Lyrics density & vocal risk": "ความหนาแน่นของเนื้อร้องและความเสี่ยงการร้อง",
+    "Comfortable": "ร้องสบาย",
+    "Moderate": "ปานกลาง",
+    "Very Dense": "แน่นมาก",
+    "Unknown": "ไม่ทราบ",
+    "Heads-up": "ข้อควรระวัง",
+    "Ask Songwriter": "ถามนักแต่งเพลง",
+    "Write a question about this section in the chat box (you edit it before sending; nothing is sent by itself)": "เขียนคำถามเกี่ยวกับส่วนนี้ในช่องแชต (แก้ไขได้ก่อนส่ง ระบบไม่ส่งเอง)",
+    "The lyrics of this section have many syllables for the time estimated for them. ACE-Step may rush, merge or skip some words.": "เนื้อร้องท่อนนี้มีพยางค์จำนวนมากเมื่อเทียบกับเวลาที่ประมาณไว้ อาจทำให้ ACE-Step ร้องรวบคำหรือออกเสียงบางคำไม่ชัด",
+    "This section may need a faster delivery than a normal singing speed. Try fewer words, or split the phrases so there is room to breathe.": "เนื้อร้องท่อนนี้อาจต้องใช้ความเร็วสูงกว่าการร้องปกติ ลองลดคำหรือแบ่งวลีให้มีพื้นที่พักเสียง",
+    "Overall the lyrics have many syllables for the target duration. Shorter lines or fewer lines may help, or a longer duration.": "โดยรวมเนื้อร้องมีพยางค์มากเมื่อเทียบกับความยาวเป้าหมาย ลองทำบรรทัดให้สั้นลง ลดจำนวนบรรทัด หรือเพิ่มความยาวเพลง",
+    "Estimated risk, not a measurement: the melody is not known.": "เป็นการประเมินความเสี่ยง ไม่ใช่ค่าที่วัดได้: ยังไม่รู้ทำนอง",
+    "Not enough data to judge this section.": "ข้อมูลไม่พอที่จะประเมินส่วนนี้",
+    "Much longer than the other lines of this section.": "ยาวกว่าบรรทัดอื่นในส่วนนี้มาก",
+    "Too few sung lines to judge.": "มีบรรทัดร้องน้อยเกินไปที่จะประเมิน",
+    "The BPM or the target duration is missing.": "ไม่มี BPM หรือความยาวเป้าหมาย",
+    "No time is left for singing after the instrumental parts.": "หลังหักส่วนดนตรีล้วนแล้วไม่เหลือเวลาร้อง",
+    "ACE-Step lyrics health": "ข้อควรระวังของ ACE-Step",
+    "No section, line or structure looks risky for these settings.": "ไม่พบท่อน บรรทัด หรือโครงสร้างที่เสี่ยงสำหรับค่าตั้งนี้",
+    "Ask Music Producer": "ถามโปรดิวเซอร์",
+    "Write a question in the chat box (you edit it before sending; nothing is sent by itself)": "เขียนคำถามในช่องแชต (แก้ไขได้ก่อนส่ง ระบบไม่ส่งเอง)",
+    "The lyrics changed since this warning was made. It is updating: nothing was moved.": "เนื้อเพลงเปลี่ยนไปหลังจากสร้างคำเตือนนี้ กำลังอัปเดต จึงไม่ได้ย้ายไปไหน",
+    "Lines of one section that have a similar job usually sit comfortably when their lengths are close; two lines that simply differ a little are not reported.": "บรรทัดในท่อนเดียวกันที่มีหน้าที่ใกล้กันมักร้องสบายเมื่อความยาวใกล้เคียงกัน บรรทัดที่ต่างกันเล็กน้อยจะไม่ถูกเตือน",
+    "Detected": "ตรวจพบจริง",
+    "Guideline": "ตามคู่มือ",
+    "Estimate": "ประมาณการ",
+    "Happy": "มีความสุข",
+    "Romantic": "โรแมนติก",
+    "Dark": "มืดหม่น",
+    "Calm": "สงบ",
+    "Nostalgic": "คิดถึงอดีต",
+    "Epic": "ยิ่งใหญ่",
+    "Angry": "โกรธ",
+    "Hopeful": "มีความหวัง",
+    "Male": "ชาย",
+    "Female": "หญิง",
+    "Duet": "คู่",
+    "Choir": "คอรัส",
+    "Low": "ต่ำ",
+    "Notes / assumptions": "หมายเหตุ / สมมติฐานการประเมิน",
+    "Target": "เป้าหมาย",
+    "Current style (Advanced)": "style ปัจจุบัน (Advanced)",
+    "No style in Advanced yet (Basic or empty).": "ยังไม่มี style ใน Advanced (ใช้ Basic หรือว่างอยู่)",
+    "Valid": "ใช้ได้",
+    "Only the Music Style changes: the lyrics, BPM, duration and the other settings stay as they are. The previous style is kept in the style History.": "เปลี่ยนเฉพาะ Music Style: เนื้อเพลง BPM ความยาว และค่าอื่นคงเดิม style เดิมเก็บไว้ในประวัติ style",
+    "Cut": "ตัด",
+    "Paste": "วาง",
+    "Select All": "เลือกทั้งหมด",
+    "Copy the selection": "คัดลอกข้อความที่เลือก",
+    "Cut the selection into the clipboard": "ตัดข้อความที่เลือกไปที่คลิปบอร์ด",
+    "Paste the clipboard in place of the selection": "วางคลิปบอร์ดแทนที่ข้อความที่เลือก",
+    "Select all of the lyrics": "เลือกเนื้อเพลงทั้งหมด",
+    "Refine Wording": "ปรับคำ",
+    "Write a note in the chat about these words. You can edit it before sending.": "เขียนโน้ตในแชตเกี่ยวกับคำเหล่านี้ แก้ได้ก่อนส่ง",
+    "Translate the selection. Nothing changes until you press Apply.": "แปลข้อความที่เลือก ไม่มีอะไรเปลี่ยนจนกว่าจะกด Apply",
+    "Ask the Songwriter AI about this wording. The note is placed in the chat for you to edit.": "ถาม Songwriter AI เกี่ยวกับคำนี้ โน้ตถูกใส่ในแชตให้แก้ก่อนส่ง",
+    "Rewrite": "เขียนใหม่",
+    "Ask for a rewrite of these lines. The note is placed in the chat for you to edit. Nothing is sent yet.": "ขอให้เขียนบรรทัดเหล่านี้ใหม่ โน้ตถูกใส่ในแชตให้แก้ ยังไม่ส่ง",
+    "Open Section Options for the [tag] at the cursor.": "เปิดตัวเลือกท่อนของ [แท็ก] ที่เคอร์เซอร์อยู่",
+    "Edit Cues": "แก้ Cue",
+    "Arrange the sections. Inserting tags does not call the AI. Arrange with AI runs only if you choose it.": "จัดท่อนเพลง การใส่แท็กไม่เรียก AI จัดด้วย AI จะทำงานเมื่อคุณเลือกเท่านั้น",
+    "Ask the Music Producer AI about this section. The note is placed in the chat for you to edit.": "ถาม Music Producer AI เกี่ยวกับท่อนนี้ โน้ตถูกใส่ในแชตให้แก้ก่อนส่ง",
+    "Add Section": "เพิ่มท่อน",
+    "Insert a section. With no sung lyrics the tags are inserted by the program.": "แทรกท่อน ถ้ายังไม่มีเนื้อร้อง โปรแกรมจะใส่แท็กให้",
+    "Continue from Cursor": "แต่งต่อจากเคอร์เซอร์",
+    "Alternatives for the words you selected. Nothing changes until you replace one.": "คำทดแทนของคำที่เลือก ไม่มีอะไรเปลี่ยนจนกว่าคุณจะกดแทนที่",
+    "Select text first.": "เลือกข้อความก่อน",
+    "The selection changed. Open the menu again.": "ข้อความที่เลือกเปลี่ยนไป เปิดเมนูอีกครั้ง",
+    "The clipboard is empty.": "คลิปบอร์ดว่าง",
+    "The lyrics changed. Nothing was changed.": "เนื้อเพลงเปลี่ยนไปแล้ว ไม่ได้แก้อะไร",
+    "Could not use the clipboard.": "ใช้คลิปบอร์ดไม่ได้",
+    "Unknown command.": "ไม่รู้จักคำสั่งนี้",
+    "The section overall is Comfortable.": "ท่อนนี้โดยรวมร้องสบาย",
+    "The section overall is Moderate.": "ท่อนนี้โดยรวมปานกลาง",
+    "The section overall is Dense.": "ท่อนนี้โดยรวมแน่น",
+    "The section overall is Very Dense.": "ท่อนนี้โดยรวมแน่นมาก",
+    "Only this line is long.": "เฉพาะบรรทัดนี้ที่ยาว",
+    "Only this line is Dense.": "เฉพาะบรรทัดนี้ที่แน่น",
+    "Only this line is Very Dense.": "เฉพาะบรรทัดนี้ที่แน่นมาก",
+    "This is a phrasing note for this line, not a warning that the section is dense or that it will be sung rushed.": "เป็นข้อสังเกตการวางวลีของบรรทัดนี้ ไม่ได้แปลว่าทั้งท่อนแน่น และไม่ได้แปลว่าบรรทัดนี้จะถูกร้องเร่ง",
+    "This is a tight spot on this line, not a warning that the whole section is dense.": "เป็นจุดแน่นของบรรทัดนี้ ไม่ได้แปลว่าทั้งท่อนแน่น",
+    "This note is only this longer line, not a second warning for the whole section.": "ข้อนี้เฉพาะบรรทัดที่ยาวกว่าบรรทัดอื่น ไม่ใช่คำเตือนซ้ำของทั้งท่อน",
+    "This note is only this line.": "ข้อนี้เฉพาะบรรทัดนี้",
+    "(The count is an estimate.)": "(จำนวนพยางค์เป็นค่าประมาณ)",
+    "Clear Cues": "ล้างคิว",
+    "Remove every cue from this section. The section name and the lyrics stay.": "ลบคิวทั้งหมดของท่อนนี้ ชื่อท่อนและเนื้อเพลงยังอยู่",
+    "Lyrics density": "ความหนาแน่นของเนื้อร้อง",
+    "Section structure": "โครงสร้างท่อน",
+    "This note does not change the lyrics.": "ข้อนี้ไม่แก้เนื้อเพลง",
+    "A second copy of the same section name with nothing sung between the tags is a stacked section.": "ชื่อท่อนเดียวกันถูกวางซ้ำโดยไม่มีบรรทัดร้องคั่นระหว่างแท็ก นี่คือท่อนที่ซ้อนกัน",
+    "The lyrics were not rewritten.": "เนื้อเพลงไม่ได้ถูกเขียนใหม่",
+    "Chorus, hook, refrain, pre-chorus and post-chorus may return later in the song.": "คอรัส ฮุค รีเฟรน พรีคอรัส และโพสต์คอรัสกลับมาอีกครั้งในเพลงได้",
+    "Another name used twice is reported here.": "ชื่ออื่นที่ใช้ซ้ำจะถูกเตือนที่นี่",
+    "Opposite energy in one tag is reported only.": "พลังงานที่สวนทางกันในแท็กเดียวถูกเตือนเท่านั้น",
+    "The tag was not rewritten.": "แท็กไม่ได้ถูกเขียนใหม่",
+    "The studio guide suggests at most one or two short hints in a section tag.": "คู่มือของสตูดิโอแนะนำให้ใส่คำใบ้สั้นในแท็กท่อนได้ไม่เกินหนึ่งหรือสองคำ",
+    "Official guidance says a stacked or very long tag can be sung as lyrics.": "คำแนะนำทางการบอกว่าแท็กที่ซ้อนหรือยาวมากอาจถูกร้องเป็นเนื้อเพลง",
+    "Only a bracket line by itself is sent as a section.": "เฉพาะบรรทัดที่เป็นวงเล็บเหลี่ยมล้วนเท่านั้นที่ถูกส่งเป็นท่อน",
+    "A tag glued to sung words is sent as words to sing.": "แท็กที่ติดกับคำร้องจะถูกส่งไปเป็นคำที่ต้องร้อง",
+    "Nothing was rewritten.": "ไม่มีอะไรถูกเขียนใหม่",
+    "The AI said it changed the tag, but the tag already has exactly these cues, so nothing would change and there is nothing to apply. Tell it which cue to remove, or ask it to look at the tag again.": "AI บอกว่าแก้แท็กแล้ว แต่แท็กนี้มีคิวตรงกับที่เสนออยู่แล้ว จึงไม่มีอะไรเปลี่ยนและไม่มีอะไรให้ Apply ลองบอกว่าอยากลบคิวไหน หรือให้ AI ดูแท็กอีกครั้ง"
   },
   "prefixes": {
     "Prompt History (": "ประวัติ Prompt (",
@@ -966,9 +1239,27 @@
     "Note: ": "หมายเหตุ: ",
     "Trade-off: ": "ข้อแลกเปลี่ยน: ",
     "also: ": "จาก: ",
-    "Saved Styles (": "สไตล์ที่บันทึกไว้ ("
+    "Saved Styles (": "สไตล์ที่บันทึกไว้ (",
+    "Colors · ": "สี · ",
+    "Applied (Undo restores the previous lyrics). Next suggestion: line ": "ใช้ข้อเสนอแล้ว (Undo จะคืนเนื้อเพลงเดิม) ข้อเสนอถัดไป: บรรทัด ",
+    "Current style (Advanced): ": "style ปัจจุบัน (Advanced): ",
+    "The caption cannot be used for the style: ": "caption นี้ใช้เป็น style ไม่ได้: ",
+    "✗ ": "✗ ",
+    "A finding was left out: ": "ข้อเสนอที่ถูกตัดออก: "
   },
   "patterns": [
+    [
+      "Line\\ (\\d+)\\ has\\ about\\ (\\d+)\\ syllables;\\ the\\ other\\ lines\\ are\\ (\\d+)-(\\d+)\\.\\ It\\ is\\ (much\\ longer|much\\ shorter)\\ than\\ its\\ section\\.\\ \\(The\\ count\\ is\\ an\\ estimate\\.\\)",
+      "บรรทัด \\1 มีประมาณ \\2 พยางค์ (นับโดยประมาณ) บรรทัดอื่นมี \\3-\\4 บรรทัดนี้ต่างจากท่อนเดียวกันมาก"
+    ],
+    [
+      "Line\\ (\\d+)\\ has\\ (\\d+)\\ syllables;\\ the\\ other\\ lines\\ are\\ (\\d+)-(\\d+)\\.\\ It\\ is\\ (much\\ longer|much\\ shorter)\\ than\\ its\\ section\\.",
+      "บรรทัด \\1 มี \\2 พยางค์ บรรทัดอื่นมี \\3-\\4 บรรทัดนี้ต่างจากท่อนเดียวกันมาก"
+    ],
+    [
+      "Lyric\\ line\\ (\\d+)\\ has\\ (?:about\\ )?(\\d+)\\ syllables\\ while\\ the\\ other\\ lines\\ (?:of\\ this\\ section\\ )?have\\ about\\ ([\\d.]+)\\.",
+      "บรรทัด \\1 มี \\2 พยางค์ ขณะที่บรรทัดอื่นมีประมาณ \\3"
+    ],
     [
       "Exported:\\ (.*?)",
       "ส่งออกแล้ว: \\1"
@@ -1014,10 +1305,6 @@
       "ข้อเสนอนี้ทำไว้สำหรับชีต “\\1” เปิดชีตนั้นเพื่อนำไปใช้ ยังไม่ได้เปลี่ยนอะไร"
     ],
     [
-      "Line\\ (.*?)",
-      "บรรทัด \\1"
-    ],
-    [
       "“(.*?)”\\ structure\\ applied\\ to\\ this\\ sheet\\ \\(Undo\\ restores\\ the\\ previous\\ text\\)",
       "ใช้โครงสร้าง “\\1” กับชีตนี้แล้ว (เลิกทำจะกู้ข้อความเดิม)"
     ],
@@ -1032,10 +1319,6 @@
     [
       "Tag:\\ (.*?)",
       "แท็ก: \\1"
-    ],
-    [
-      "Line\\ (.*?)\\ ·\\ (.*?)",
-      "บรรทัด \\1 · \\2"
     ],
     [
       "Cannot\\ open\\ this\\ song:\\ (.*?)",
@@ -1590,10 +1873,6 @@
       "รีวิวไม่สำเร็จ: \\1"
     ],
     [
-      "Line\\ (.+?)",
-      "บรรทัด \\1"
-    ],
-    [
       "Lines\\ (.+?)\\-(.+?)",
       "บรรทัด \\1-\\2"
     ],
@@ -1704,10 +1983,6 @@
     [
       "prompt\\ hash\\ (.*?)\\ ·\\ file\\ (.*?)",
       "hash ของ prompt \\1 · ไฟล์ \\2"
-    ],
-    [
-      "Line\\ (.*?)",
-      "บรรทัด \\1"
     ],
     [
       "Lines\\ (.*?)\\-(.*?)",
@@ -1884,6 +2159,218 @@
     [
       "Show\\ earlier\\ messages\\ \\((\\d+)\\)",
       "แสดงข้อความเก่า (\\1)"
+    ],
+    [
+      "Show\\ (\\d+)\\ more\\ \\((\\d+)\\ not\\ shown\\)",
+      "แสดงเพิ่มอีก \\1 รายการ (ยังไม่แสดง \\2)"
+    ],
+    [
+      "Hide\\ (\\d+)\\ more",
+      "ซ่อนอีก \\1 ข้อ"
+    ],
+    [
+      "\\+(\\d+)\\ more\\ suggestions",
+      "+อีก \\1 ข้อเสนอ"
+    ],
+    [
+      "(\\d+)\\ suggestion\\(s\\)\\ waiting",
+      "\\1 ข้อเสนอที่รออยู่"
+    ],
+    [
+      "Analyzing…\\ (\\d+)\\ s",
+      "กำลังวิเคราะห์… \\1 วินาที"
+    ],
+    [
+      "Apply\\ cues\\ (\\d+)\\)…",
+      "นำ cue ไปใช้ (\\1)…"
+    ],
+    [
+      "Review\\ and\\ apply\\ (\\d+)\\)…",
+      "ตรวจและนำไปใช้ (\\1)…"
+    ],
+    [
+      "(\\d+)\\ note\\(s\\)\\ from\\ checking\\ this\\ report\\ \\(a\\ suggestion\\ that\\ could\\ not\\ be\\ verified\\ is\\ not\\ shown\\):",
+      "มี \u0001 หมายเหตุจากการตรวจรายงานนี้ (ข้อเสนอที่ตรวจสอบไม่ได้จะไม่ถูกแสดง):"
+    ],
+    [
+      "The\\ caption\\ has\\ only\\ (\\d+)\\ words\\ \\(at\\ least\\ (\\d+)\\ are\\ needed\\)\\.",
+      "caption มีเพียง \u0001 คำ (ต้องมีอย่างน้อย \u0002 คำ)"
+    ],
+    [
+      "(\\d+)\\ lines",
+      "\\1 บรรทัด"
+    ],
+    [
+      "(\\d+)\\ estimated",
+      "\\1 บรรทัดโดยประมาณ"
+    ],
+    [
+      "(\\d+)\\ words",
+      "\\1 คำ"
+    ],
+    [
+      "(\\d+)\\ syllables",
+      "\\1 พยางค์"
+    ],
+    [
+      "(\\d+)\\ syl",
+      "\\1 พยางค์"
+    ],
+    [
+      "([\\d.]+)\\ syl/s",
+      "\\1 พยางค์/วินาที"
+    ],
+    [
+      "(\\d+)\\ lines\\ ·\\ (\\d+)\\ words\\ ·\\ (\\d+)\\ syllables",
+      "\\1 บรรทัด · \\2 คำ · \\3 พยางค์"
+    ],
+    [
+      "([\\d.]+)\\ bars\\ ≈\\ (\\d+)\\ s\\ ·\\ target\\ (\\d+)\\ s\\ \\((.+?)\\)",
+      "\\1 ห้อง ≈ \\2 วินาที · เป้าหมาย \\3 วินาที (\\4)"
+    ],
+    [
+      "Vocal\\ ([\\d.]+)\\ bars\\ ·\\ instrumental\\ ([\\d.]+)\\ bars",
+      "ร้อง \\1 ห้อง · ดนตรีล้วน \\2 ห้อง"
+    ],
+    [
+      "([\\d.]+)\\ bars\\ ·\\ (\\d+)\\ s(\\*?)",
+      "\\1 ห้อง · \\2 วินาที\\3"
+    ],
+    [
+      "(.+?):\\ ([\\d.]+)\\ bars\\ ·\\ (\\d+)\\ s(.*)",
+      "\\1: \\2 ห้อง · \\3 วินาที\\4"
+    ],
+    [
+      "Syllables\\ per\\ second\\ if\\ one\\ sung\\ line\\ takes\\ ([\\d.]+)\\ bar\\(s\\)\\ \\(([\\d.]+)\\ s\\ per\\ bar\\)\\.\\ Compared\\ with\\ a\\ '(\\w+)'\\ singer\\ \\(([\\d.]+)\\ syl/s\\)\\.\\ An\\ estimate:\\ the\\ melody\\ is\\ not\\ known\\.",
+      "พยางค์ต่อวินาทีถ้าหนึ่งบรรทัดใช้เวลา \\1 ห้อง (ห้องละ \\2 วินาที) เทียบกับนักร้องแบบ '\\3' (\\4 พยางค์/วินาที) เป็นค่าประมาณ: ยังไม่รู้ทำนอง"
+    ],
+    [
+      "Assumptions:\\ (.+?)\\.\\ \\*\\ =\\ a\\ default\\ number\\ of\\ bars\\ for\\ a\\ section\\ with\\ no\\ sung\\ lines\\.\\ Real\\ timing\\ depends\\ on\\ the\\ melody;\\ nothing\\ here\\ changes\\ the\\ song's\\ settings\\.",
+      "สมมติฐาน: \\1 * = จำนวนห้องเริ่มต้นสำหรับส่วนที่ไม่มีเนื้อร้อง เวลาจริงขึ้นกับทำนอง ไม่มีอะไรที่นี่เปลี่ยนค่าตั้งของเพลง"
+    ],
+    [
+      "Line\\ (\\d+):\\ (.+)",
+      "บรรทัด \\1: \\2"
+    ],
+    [
+      "(.+?)\\ —\\ High\\ risk",
+      "\\1 — ความเสี่ยงสูง"
+    ],
+    [
+      "(.+?)\\ —\\ Dense",
+      "\\1 — เนื้อร้องค่อนข้างแน่น"
+    ],
+    [
+      "about\\ ([\\d.]+)\\ syllables\\ per\\ second\\ on\\ average\\ \\((\\d+)\\ %\\ of\\ a\\ comfortable\\ '(\\w+)'\\ speed\\)",
+      "เฉลี่ยประมาณ \\1 พยางค์ต่อวินาที (\\2 % ของความเร็วร้องสบายแบบ '\\3')"
+    ],
+    [
+      "BPM\\ ([\\d.]+)\\ ·\\ (\\S+)\\ ·\\ Target\\ ([\\d.]+)\\ s",
+      "BPM \\1 · \\2 · เป้าหมาย \\3 วินาที"
+    ],
+    [
+      "Estimated\\ risk\\ only:\\ (.+)",
+      "ประเมินความเสี่ยงเท่านั้น: \\1"
+    ],
+    [
+      "(\\d+)\\ syllables\\ in\\ (\\d+)\\ lines:\\ about\\ ([\\d.]+)\\ syllables\\ per\\ second\\ if\\ every\\ sung\\ line\\ gets\\ the\\ same\\ ([\\d.]+)\\ s\\.\\ A\\ '(\\w+)'\\ singing\\ speed\\ manages\\ about\\ ([\\d.]+)\\ comfortably\\ \\((\\d+)\\ %\\)\\.",
+      "\\1 พยางค์ใน \\2 บรรทัด: ประมาณ \\3 พยางค์ต่อวินาที ถ้าทุกบรรทัดได้เวลาเท่ากัน \\4 วินาที ความเร็วร้องแบบ '\\5' ร้องสบายได้ประมาณ \\6 (\\7 %)"
+    ],
+    [
+      "(.+?)\\ —\\ line\\ (\\d+)\\ is\\ long",
+      "\\1 — บรรทัด \\2 ยาว"
+    ],
+    [
+      "(.+?)\\ —\\ uneven\\ phrase\\ lengths",
+      "\\1 — ความยาววลีไม่สม่ำเสมอ"
+    ],
+    [
+      "(.+?)\\ —\\ (\\d+)\\ notes",
+      "\\1 — \\2 ข้อสังเกต"
+    ],
+    [
+      "\\+(\\d+)\\ more\\ \\(click\\ to\\ open\\)",
+      "+อีก \\1 ข้อ (คลิกเพื่อเปิด)"
+    ],
+    [
+      "Many\\ sections\\ for\\ ([\\d.]+)\\ seconds",
+      "หลาย Section สำหรับ \\1 วินาที"
+    ],
+    [
+      "(\\d+)\\ sung\\ sections\\ and\\ (\\d+)\\ sung\\ lines\\ in\\ ([\\d.]+)\\ s:\\ about\\ (\\d+)\\ s\\ of\\ singing\\ per\\ section\\.\\ ACE-Step\\ may\\ shorten\\ or\\ skip\\ some\\ sections,\\ for\\ several\\ reasons;\\ the\\ syllable\\ count\\ alone\\ cannot\\ predict\\ it\\.",
+      "มี \\1 Section ที่ต้องร้อง และ \\2 บรรทัด ใน \\3 วินาที: ประมาณ \\4 วินาทีต่อ Section ACE-Step อาจย่อหรือข้ามบางท่อนได้จากหลายสาเหตุ และจำนวนพยางค์อย่างเดียวทำนายไม่ได้"
+    ],
+    [
+      "Guide\\ reference:\\ about\\ (\\d+)-(\\d+)\\ syllables\\ per\\ line,.*",
+      "แนวทางจากคู่มือ: ประมาณ \\1-\\2 พยางค์ต่อบรรทัด เป็นเพียงค่าอ้างอิงคร่าว ๆ ไม่ใช่กฎ"
+    ],
+    [
+      "After\\ the\\ instrumental\\ parts\\ and\\ rests\\ there\\ are\\ about\\ (\\d+)\\ s\\ for\\ singing\\.(.*)",
+      "หลังหักส่วนดนตรีล้วนและช่วงพักแล้ว เหลือเวลาร้องประมาณ \\1 วินาที \\2"
+    ],
+    [
+      "Detected\\ \\(estimated\\ count\\)",
+      "ตรวจพบ (นับพยางค์โดยประมาณ)"
+    ],
+    [
+      "Guideline\\ \\(estimated\\ count\\)",
+      "ตามคู่มือ (นับพยางค์โดยประมาณ)"
+    ],
+    [
+      "Target\\ ([\\d.]+)\\ s",
+      "เป้าหมาย \\1 วินาที"
+    ],
+    [
+      "(.+?),\\ ([\\d.]+)\\ BPM\\ →\\ ([\\d.]+)\\ s\\ per\\ bar;\\ target\\ ([\\d.]+)\\ s;\\ about\\ (\\d+)\\ s\\ kept\\ for\\ the\\ instrumental\\ parts\\ \\(a\\ set\\ number\\ of\\ bars\\ each\\);\\ (\\d+)\\ %\\ of\\ the\\ rest\\ is\\ breath\\ and\\ pauses;\\ every\\ sung\\ line\\ gets\\ the\\ same\\ time\\ slot;\\ vocal\\ speed\\ '(\\w+)'\\ =\\ ([\\d.]+)\\ syllables\\ per\\ second\\ comfortably\\.\\ The\\ melody\\ is\\ not\\ known,\\ so\\ this\\ is\\ an\\ estimated\\ risk,\\ not\\ a\\ measurement\\.",
+      "ประเมินความเสี่ยงเท่านั้น: \\1, \\2 BPM → \\3 วินาทีต่อห้อง; เป้าหมาย \\4 วินาที; เผื่อประมาณ \\5 วินาทีสำหรับส่วนดนตรีล้วน (กำหนดจำนวนห้องไว้ตายตัว); ประมาณ \\6 % ของเวลาที่เหลือเป็นช่วงหายใจและพักเสียง; แต่ละบรรทัดร้องได้ในช่วงเวลาเดียวกัน; ความเร็วร้อง '\\7' = \\8 พยางค์ต่อวินาทีแบบสบาย ทำนองยังไม่ทราบ จึงเป็นเพียงการประเมินความเสี่ยง ไม่ใช่การวัดจริง"
+    ],
+    [
+      "(.+) is stacked again at lines (\\d+) and (\\d+) with no sung line between the tags\\. This note does not change the lyrics\\.",
+      "\\1 ถูกวางซ้ำที่บรรทัด \\2 และ \\3 โดยไม่มีบรรทัดร้องคั่น ข้อนี้ไม่แก้เนื้อเพลง"
+    ],
+    [
+      "(.+) is used again at line (\\d+) after line (\\d+)\\. This repeated section is not a chorus reprise\\. This note does not change the lyrics\\.",
+      "\\1 ถูกใช้ซ้ำที่บรรทัด \\2 หลังจากบรรทัด \\3 นี่ไม่ใช่คอรัสที่กลับมาซ้ำโดยตั้งใจ ข้อนี้ไม่แก้เนื้อเพลง"
+    ],
+    [
+      "The tag at line (\\d+) puts (.+) against (.+)\\. Those cues pull the section in opposite directions\\. This note does not change the lyrics\\.",
+      "แท็กบรรทัด \\1 ใส่ \\2 ตรงข้ามกับ \\3 คิวเหล่านี้ดึงท่อนไปคนละทาง ข้อนี้ไม่แก้เนื้อเพลง"
+    ],
+    [
+      "The tag at line (\\d+) has (\\d+) cues\\. One or two short cues are easier for the model to follow\\. This note does not change the lyrics\\.",
+      "แท็กบรรทัด \\1 มี \\2 คิว คิวสั้นหนึ่งหรือสองคำติดตามได้ง่ายกว่า ข้อนี้ไม่แก้เนื้อเพลง"
+    ],
+    [
+      "The tag at line (\\d+) holds a (\\d+) character direction\\. A long tag can be sung as words instead of obeyed\\. This note does not change the lyrics\\.",
+      "แท็กบรรทัด \\1 มีคำสั่งยาว \\2 ตัวอักษร แท็กที่ยาวอาจถูกร้องเป็นคำแทนที่จะถูกทำตาม ข้อนี้ไม่แก้เนื้อเพลง"
+    ],
+    [
+      "Sung words at line (\\d+) still contain a bracket tag\\. A section tag has to stand alone on its line\\. This note does not change the lyrics\\.",
+      "คำร้องบรรทัด \\1 ยังมีแท็กวงเล็บปนอยู่ แท็กท่อนต้องอยู่คนละบรรทัด ข้อนี้ไม่แก้เนื้อเพลง"
+    ],
+    [
+      "(.+) — repeated section",
+      "\\1 — ท่อนซ้ำ"
+    ],
+    [
+      "(.+) — conflicting cues",
+      "\\1 — คิวขัดกัน"
+    ],
+    [
+      "(.+) — crowded tag",
+      "\\1 — แท็กแน่น"
+    ],
+    [
+      "(.+) — long tag",
+      "\\1 — แท็กยาว"
+    ],
+    [
+      "(.+) — tag inside the line",
+      "\\1 — แท็กปนในบรรทัด"
+    ],
+    [
+      "ACE-Step 1\\.5 Turbo was not found\\. This song is using (.+?), with ([\\d.]+) steps and CFG ([\\d.]+) for that model\\.",
+      "ไม่พบ ACE-Step 1.5 Turbo เพลงนี้ใช้ \\1 โดยตั้ง \\2 steps และ CFG \\3 ให้ตรงกับโมเดลนั้น"
     ]
   ]
 }

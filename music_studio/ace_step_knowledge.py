@@ -66,6 +66,14 @@ TOPICS = {
         "Watch for lines too long for one breath, forced rhymes, adjective stacking and mixed metaphors.\n"
         "(S) A heuristic only: not every line must be 6-10 syllables. The program has no audio and no melody, so never claim to know how a line will actually be sung. "
         "When arranging, never edit the user's lyrics for singability."),
+    "lyrics_health": (
+        "LYRICS HEALTH (what can make ACE-Step rush, merge or skip words).\n"
+        "(G) About 6-10 syllables per line is a rough reference; lines of similar sections should be close in length; a very long line can be sung rushed or with merged words. "
+        "The duration is a target, not a guarantee for each section, and ACE-Step may shorten or skip a section for several reasons.\n"
+        "(S) The program sends 'ACE-STEP LYRICS HEALTH' facts with an analysis: [Detected] = counted by the program, [Guideline] = the reference above, [Estimate] = a risk from the target duration; a count marked estimated is not exact. "
+        "Songwriter AI: syllable counts are help for writing, not a rule on creativity; when shortening a line keep the meaning and the hook; a short song needs room to sing. "
+        "Music Producer AI: a high BPM does not guarantee a long lyric fits; many sections or repeated choruses can be too much for the duration, so suggest a leaner structure or arrangement without claiming to control the singing. "
+        "Never state a probability or promise that a section will or will not be skipped."),
     "limits": (
         "LIMITS OF ACE-STEP AND THIS PROGRAM.\n"
         "(G) Text is a reduced description of audio, so results vary between generations and some instructions are ignored. "
@@ -75,7 +83,7 @@ TOPICS = {
 }
 
 ARRANGEMENT_TOPICS = ("caption", "structure", "vocal", "dynamics", "tags", "metadata", "singability", "limits")
-CHAT_TOPICS = ("caption", "structure", "vocal", "dynamics", "tags", "metadata", "singability", "limits")
+CHAT_TOPICS = ("caption", "structure", "vocal", "dynamics", "tags", "metadata", "singability", "lyrics_health", "limits")
 
 
 def knowledge(topics=ARRANGEMENT_TOPICS) -> str:

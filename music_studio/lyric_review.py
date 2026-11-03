@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from .compiler import TAG_LINE
+from . import section_apply as SA
 from .lyric_analysis import AnalysisError, SEP_END, _is_sep
 
 REVIEW_PROMPT_VERSION = "review-v1"
@@ -333,10 +334,13 @@ def apply_to(item: Item, lyrics: str) -> "tuple | str":
     if isinstance(got, str):
         return got
     a, b = got
-    new = lyrics[:a] + item.suggestion + lyrics[b:]
-    if [l.strip() for l in lyrics.split("\n") if TAG_LINE.match(l)] != [l.strip() for l in new.split("\n") if TAG_LINE.match(l)]:
+    a, b, repl = SA.prepare_replacement(lyrics, a, b, item.suggestion or "")
+    if not repl.strip() and (item.suggestion or "").strip():
+        return "This change repeated the section header and had no new lyric lines, so it was not applied."
+    new = lyrics[:a] + repl + lyrics[b:]
+    if SA.outside_headers(lyrics, a, b) != SA.outside_headers(new, a, a + len(repl)):
         return "This change would alter a [section tag], so it was not applied."
-    return new, (a, a + len(item.suggestion))
+    return new, (a, a + len(repl))
 
 
 def review(text: str, scope: Scope, title: str, settings: dict, ask: Callable[[str, str], str], reply_language: str = "Thai", note: str = "",

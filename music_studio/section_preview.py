@@ -17,6 +17,7 @@ from pathlib import Path
 
 from . import comfy_audio as CA
 from . import compiler as K
+from . import quality_presets as QP
 from . import cue_library as CL
 from . import model as M
 from . import store as ST
@@ -327,17 +328,19 @@ def run_preview(host: str, audio_dir: Path, req: dict, cancel_fn, on_state=None,
     try:
         s = M._pick(M.SongSettings, req["song_settings"])
         s.bpm, s.duration = int(req["effective_bpm"]), int(req["duration"])
-        if not s.workflow:
-            found = ca.scan_workflows(audio_dir)
-            if not found:
-                raise CA.ComfyError("No ACE-Step 1.5 workflow in comfy_apis/audio")
-            s.workflow = found[0].name
+        try:
+            notice = QP.resolve_workflow(s, ca.scan_workflows(audio_dir))
+        except QP.WorkflowError as ex:
+            raise CA.ComfyError(str(ex)) from None
         base = ca.load_workflow(audio_dir / s.workflow)
         if (s.language or "auto").lower() == "auto":
             s.language = K.detect_language(req["ace_lyrics"])
         if s.seed < 0:
             s.seed = ca.fresh_seed()
         wf, used = ca.build_workflow(base, s, req.get("preview_caption") or req["style_prompt"], req["ace_lyrics"], filename_prefix="audio/WorkflowPadPreview")
+        CA.check_built(wf, s)                                 # refuse the job before submit when the built steps, CFG or duration disagree
+        if notice:
+            used["workflow_notice"] = notice
         pid = ca.submit(host, wf)
         if on_submitted:
             on_submitted(pid)

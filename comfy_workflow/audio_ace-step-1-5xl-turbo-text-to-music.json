@@ -1,0 +1,803 @@
+{
+  "config": {},
+  "extra": {
+    "VHS_KeepIntermediate": true,
+    "VHS_MetadataImage": true,
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "ds": {
+      "offset": [
+        942.7332972160615,
+        1514.6173091683254
+      ],
+      "scale": 0.5644739300537773
+    },
+    "frontendVersion": "1.44.0",
+    "workflowRendererVersion": "LG"
+  },
+  "groups": [
+    {
+      "bounding": [
+        -210,
+        -950,
+        440,
+        640
+      ],
+      "color": "#3f789e",
+      "flags": {},
+      "id": 1,
+      "title": "Model"
+    },
+    {
+      "bounding": [
+        260,
+        -950,
+        640,
+        960
+      ],
+      "color": "#3f789e",
+      "flags": {},
+      "id": 3,
+      "title": "Prompt"
+    }
+  ],
+  "id": "88ac5dad-efd7-40bb-84fe-fbaefdee1fa9",
+  "last_link_id": 265,
+  "last_node_id": 110,
+  "links": [
+    [
+      119,
+      47,
+      0,
+      3,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      175,
+      78,
+      0,
+      3,
+      0,
+      "MODEL"
+    ],
+    [
+      249,
+      98,
+      0,
+      3,
+      3,
+      "LATENT"
+    ],
+    [
+      250,
+      99,
+      0,
+      98,
+      0,
+      "FLOAT"
+    ],
+    [
+      251,
+      99,
+      0,
+      94,
+      2,
+      "FLOAT"
+    ],
+    [
+      254,
+      94,
+      0,
+      3,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      255,
+      94,
+      0,
+      47,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      256,
+      3,
+      0,
+      18,
+      0,
+      "LATENT"
+    ],
+    [
+      260,
+      104,
+      0,
+      78,
+      0,
+      "MODEL"
+    ],
+    [
+      261,
+      105,
+      0,
+      94,
+      0,
+      "CLIP"
+    ],
+    [
+      262,
+      106,
+      0,
+      18,
+      1,
+      "VAE"
+    ],
+    [
+      263,
+      18,
+      0,
+      107,
+      0,
+      "AUDIO"
+    ],
+    [
+      264,
+      109,
+      0,
+      94,
+      1,
+      "INT"
+    ],
+    [
+      265,
+      109,
+      0,
+      3,
+      4,
+      "INT"
+    ]
+  ],
+  "nodes": [
+    {
+      "flags": {},
+      "id": 104,
+      "inputs": [],
+      "mode": 0,
+      "order": 0,
+      "outputs": [
+        {
+          "links": [
+            260
+          ],
+          "name": "MODEL",
+          "type": "MODEL"
+        }
+      ],
+      "pos": [
+        -190,
+        -880
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core",
+        "enableTabs": false,
+        "hasSecondTab": false,
+        "models": [
+          {
+            "directory": "diffusion_models",
+            "name": "acestep_v1.5_xl_turbo_bf16.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/main/split_files/diffusion_models/acestep_v1.5_xl_turbo_bf16.safetensors"
+          }
+        ],
+        "secondTabOffset": 80,
+        "secondTabText": "Send Back",
+        "secondTabWidth": 65,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "ver": "0.11.1"
+      },
+      "size": [
+        380,
+        110
+      ],
+      "type": "UNETLoader",
+      "widgets_values": [
+        "acestep_v1.5_xl_turbo_bf16.safetensors",
+        "default"
+      ]
+    },
+    {
+      "flags": {},
+      "id": 106,
+      "inputs": [],
+      "mode": 0,
+      "order": 1,
+      "outputs": [
+        {
+          "links": [
+            262
+          ],
+          "name": "VAE",
+          "type": "VAE"
+        }
+      ],
+      "pos": [
+        -180,
+        -440
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core",
+        "enableTabs": false,
+        "hasSecondTab": false,
+        "models": [
+          {
+            "directory": "vae",
+            "name": "ace_1.5_vae.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/main/split_files/vae/ace_1.5_vae.safetensors"
+          }
+        ],
+        "secondTabOffset": 80,
+        "secondTabText": "Send Back",
+        "secondTabWidth": 65,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "ver": "0.11.1"
+      },
+      "size": [
+        380,
+        110
+      ],
+      "type": "VAELoader",
+      "widgets_values": [
+        "ace_1.5_vae.safetensors"
+      ]
+    },
+    {
+      "flags": {},
+      "id": 99,
+      "inputs": [],
+      "mode": 0,
+      "order": 2,
+      "outputs": [
+        {
+          "links": [
+            250,
+            251
+          ],
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "widget": {
+            "name": "seconds"
+          }
+        }
+      ],
+      "pos": [
+        -150,
+        -260
+      ],
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "size": [
+        280,
+        110
+      ],
+      "title": "Float (Duration)",
+      "type": "PrimitiveNode",
+      "widgets_values": [
+        120,
+        "fixed"
+      ]
+    },
+    {
+      "flags": {
+        "collapsed": true
+      },
+      "id": 98,
+      "inputs": [
+        {
+          "link": 250,
+          "name": "seconds",
+          "type": "FLOAT",
+          "widget": {
+            "name": "seconds"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 7,
+      "outputs": [
+        {
+          "links": [
+            249
+          ],
+          "name": "LATENT",
+          "type": "LATENT"
+        }
+      ],
+      "pos": [
+        280,
+        -40
+      ],
+      "properties": {
+        "Node name for S&R": "EmptyAceStep1.5LatentAudio",
+        "cnr_id": "comfy-core",
+        "enableTabs": false,
+        "hasSecondTab": false,
+        "secondTabOffset": 80,
+        "secondTabText": "Send Back",
+        "secondTabWidth": 65,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "ver": "0.11.1"
+      },
+      "size": [
+        320,
+        120
+      ],
+      "type": "EmptyAceStep1.5LatentAudio",
+      "widgets_values": [
+        120,
+        1
+      ]
+    },
+    {
+      "flags": {
+        "collapsed": true
+      },
+      "id": 47,
+      "inputs": [
+        {
+          "link": 255,
+          "name": "conditioning",
+          "type": "CONDITIONING"
+        }
+      ],
+      "mode": 0,
+      "order": 9,
+      "outputs": [
+        {
+          "links": [
+            119
+          ],
+          "name": "CONDITIONING",
+          "type": "CONDITIONING"
+        }
+      ],
+      "pos": [
+        640,
+        -40
+      ],
+      "properties": {
+        "Node name for S&R": "ConditioningZeroOut",
+        "cnr_id": "comfy-core",
+        "enableTabs": false,
+        "hasSecondTab": false,
+        "secondTabOffset": 80,
+        "secondTabText": "Send Back",
+        "secondTabWidth": 65,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "ver": "0.11.1"
+      },
+      "size": [
+        230,
+        80
+      ],
+      "type": "ConditioningZeroOut",
+      "widgets_values": []
+    },
+    {
+      "flags": {},
+      "id": 3,
+      "inputs": [
+        {
+          "link": 175,
+          "name": "model",
+          "type": "MODEL"
+        },
+        {
+          "link": 254,
+          "name": "positive",
+          "type": "CONDITIONING"
+        },
+        {
+          "link": 119,
+          "name": "negative",
+          "type": "CONDITIONING"
+        },
+        {
+          "link": 249,
+          "name": "latent_image",
+          "type": "LATENT"
+        },
+        {
+          "link": 265,
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 10,
+      "outputs": [
+        {
+          "links": [
+            256
+          ],
+          "name": "LATENT",
+          "slot_index": 0,
+          "type": "LATENT"
+        }
+      ],
+      "pos": [
+        930,
+        -680
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler",
+        "cnr_id": "comfy-core",
+        "enableTabs": false,
+        "hasSecondTab": false,
+        "secondTabOffset": 80,
+        "secondTabText": "Send Back",
+        "secondTabWidth": 65,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "ver": "0.11.1"
+      },
+      "size": [
+        330,
+        350
+      ],
+      "type": "KSampler",
+      "widgets_values": [
+        0,
+        "fixed",
+        8,
+        1,
+        "euler",
+        "simple",
+        1
+      ]
+    },
+    {
+      "flags": {},
+      "id": 78,
+      "inputs": [
+        {
+          "link": 260,
+          "name": "model",
+          "type": "MODEL"
+        }
+      ],
+      "mode": 0,
+      "order": 6,
+      "outputs": [
+        {
+          "links": [
+            175
+          ],
+          "name": "MODEL",
+          "type": "MODEL"
+        }
+      ],
+      "pos": [
+        940,
+        -860
+      ],
+      "properties": {
+        "Node name for S&R": "ModelSamplingAuraFlow",
+        "cnr_id": "comfy-core",
+        "enableTabs": false,
+        "hasSecondTab": false,
+        "secondTabOffset": 80,
+        "secondTabText": "Send Back",
+        "secondTabWidth": 65,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "ver": "0.11.1"
+      },
+      "size": [
+        330,
+        110
+      ],
+      "type": "ModelSamplingAuraFlow",
+      "widgets_values": [
+        3
+      ]
+    },
+    {
+      "flags": {},
+      "id": 18,
+      "inputs": [
+        {
+          "link": 256,
+          "name": "samples",
+          "type": "LATENT"
+        },
+        {
+          "link": 262,
+          "name": "vae",
+          "type": "VAE"
+        }
+      ],
+      "mode": 0,
+      "order": 11,
+      "outputs": [
+        {
+          "links": [
+            263
+          ],
+          "name": "AUDIO",
+          "type": "AUDIO"
+        }
+      ],
+      "pos": [
+        1290,
+        -850
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecodeAudio",
+        "cnr_id": "comfy-core",
+        "enableTabs": false,
+        "hasSecondTab": false,
+        "secondTabOffset": 80,
+        "secondTabText": "Send Back",
+        "secondTabWidth": 65,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "ver": "0.11.1"
+      },
+      "size": [
+        230,
+        100
+      ],
+      "type": "VAEDecodeAudio",
+      "widgets_values": []
+    },
+    {
+      "flags": {},
+      "id": 105,
+      "inputs": [],
+      "mode": 0,
+      "order": 3,
+      "outputs": [
+        {
+          "links": [
+            261
+          ],
+          "name": "CLIP",
+          "type": "CLIP"
+        }
+      ],
+      "pos": [
+        -190,
+        -690
+      ],
+      "properties": {
+        "Node name for S&R": "DualCLIPLoader",
+        "cnr_id": "comfy-core",
+        "enableTabs": false,
+        "hasSecondTab": false,
+        "models": [
+          {
+            "directory": "text_encoders",
+            "name": "qwen_0.6b_ace15.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/main/split_files/text_encoders/qwen_0.6b_ace15.safetensors"
+          },
+          {
+            "directory": "text_encoders",
+            "name": "qwen_4b_ace15.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/main/split_files/text_encoders/qwen_4b_ace15.safetensors"
+          }
+        ],
+        "secondTabOffset": 80,
+        "secondTabText": "Send Back",
+        "secondTabWidth": 65,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "ver": "0.11.1"
+      },
+      "size": [
+        380,
+        180
+      ],
+      "type": "DualCLIPLoader",
+      "widgets_values": [
+        "qwen_0.6b_ace15.safetensors",
+        "qwen_4b_ace15.safetensors",
+        "ace",
+        "default"
+      ]
+    },
+    {
+      "flags": {},
+      "id": 94,
+      "inputs": [
+        {
+          "link": 261,
+          "name": "clip",
+          "type": "CLIP"
+        },
+        {
+          "link": 264,
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          }
+        },
+        {
+          "link": 251,
+          "name": "duration",
+          "type": "FLOAT",
+          "widget": {
+            "name": "duration"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 8,
+      "outputs": [
+        {
+          "links": [
+            254,
+            255
+          ],
+          "name": "CONDITIONING",
+          "type": "CONDITIONING"
+        }
+      ],
+      "pos": [
+        290,
+        -860
+      ],
+      "properties": {
+        "Node name for S&R": "TextEncodeAceStepAudio1.5",
+        "cnr_id": "comfy-core",
+        "enableTabs": false,
+        "hasSecondTab": false,
+        "secondTabOffset": 80,
+        "secondTabText": "Send Back",
+        "secondTabWidth": 65,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "ver": "0.11.1"
+      },
+      "size": [
+        570,
+        700
+      ],
+      "type": "TextEncodeAceStepAudio1.5",
+      "widgets_values": [
+        "Late Night Trap, 95 BPM, Heavy 808 Bass, Wet Synths, Female Background Vocals, Male Rap Vocals + Seductive Female Vocals, Dark Bedroom Production, Atmospheric Club Vibes, Breathy Whispers, Slap Bass, Deep Sub Bass, Cinematic R&B Soundtrack Feel",
+        "[Verse 1]\nOpen up the canvas, blank slate on my screen\nDrag a checkpoint loader, you know what I mean\nKSampler in the middle, VAE on the right\nClip text encode, yeah I'm building tonight\n[Chorus]\nConnect the nodes, run the queue\nWatch the latent flow right through\nGreen dot to green dot, link it up\nPositive prompt in my cup\n[Verse 2]\nEmpty latent image, set the width and height\nPlug it to the sampler, get the settings right\nCFG at seven, steps at twenty-two\nHit that Queue Prompt button, render coming through\n[Bridge]\nUpscale node, ControlNet in the chain\nLora stacked on Lora driving me insane\nSave image at the end of every single flow\nRed wire means broken — fix it, let it go\n[Outro]\nNodes connected, workflow clean\nBest AI pipeline you ever seen\nComfyUI, yeah we building art\nOne node at a time right from the start",
+        0,
+        "fixed",
+        95,
+        120,
+        "4",
+        "en",
+        "E minor",
+        true,
+        2,
+        0.85,
+        0.9,
+        0,
+        0
+      ]
+    },
+    {
+      "flags": {},
+      "id": 109,
+      "inputs": [],
+      "mode": 0,
+      "order": 4,
+      "outputs": [
+        {
+          "links": [
+            264,
+            265
+          ],
+          "name": "INT",
+          "type": "INT"
+        }
+      ],
+      "pos": [
+        -140,
+        -80
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveInt",
+        "cnr_id": "comfy-core",
+        "enableTabs": false,
+        "hasSecondTab": false,
+        "secondTabOffset": 80,
+        "secondTabText": "Send Back",
+        "secondTabWidth": 65,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "ver": "0.18.1"
+      },
+      "size": [
+        270,
+        110
+      ],
+      "title": "Int (Seed)",
+      "type": "PrimitiveInt",
+      "widgets_values": [
+        0,
+        "fixed"
+      ]
+    },
+    {
+      "bgcolor": "#000",
+      "color": "#222",
+      "flags": {},
+      "id": 110,
+      "inputs": [],
+      "mode": 0,
+      "order": 5,
+      "outputs": [],
+      "pos": [
+        -790,
+        -920
+      ],
+      "properties": {},
+      "size": [
+        540,
+        910
+      ],
+      "type": "MarkdownNote",
+      "widgets_values": [
+        "Guide: [Subgraph](https://docs.comfy.org/interface/features/subgraph)\n\n## Model Links (for Local Users)\n\n**diffusion_models**\n\n- [acestep_v1.5_xl_turbo_bf16.safetensors](https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/main/split_files/diffusion_models/acestep_v1.5_xl_turbo_bf16.safetensors)\n\n**vae**\n\n- [ace_1.5_vae.safetensors](https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/main/split_files/vae/ace_1.5_vae.safetensors)\n\n**text_encoders**\n\n- [qwen_0.6b_ace15.safetensors](https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/main/split_files/text_encoders/qwen_0.6b_ace15.safetensors)\n- [qwen_4b_ace15.safetensors](https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/main/split_files/text_encoders/qwen_4b_ace15.safetensors)\n\n\n## Model Storage Location\n\n```\n📂 ComfyUI/\n├── 📂 models/\n│   ├── 📂 diffusion_models/\n│   │   └── acestep_v1.5_xl_turbo_bf16.safetensors\n│   ├── 📂 vae/\n│   │   └── ace_1.5_vae.safetensors\n│   └── 📂 text_encoders/\n│       ├── qwen_0.6b_ace15.safetensors\n│       └── qwen_4b_ace15.safetensors\n```\n\n## Report Issue\n\nNote: Please update ComfyUI first ([guide](https://docs.comfy.org/installation/update_comfyui)) and prepare required models. Desktop/Cloud updates follow stable releases, so some nightly-supported models may not be available yet.\n\n- Cannot run / runtime errors: [ComfyUI/issues](https://github.com/comfyanonymous/ComfyUI/issues)\n- UI / frontend issues: [ComfyUI_frontend/issues](https://github.com/Comfy-Org/ComfyUI_frontend/issues)\n- Workflow issues: [workflow_templates/issues](https://github.com/Comfy-Org/workflow_templates/issues)\n"
+      ]
+    },
+    {
+      "flags": {},
+      "id": 107,
+      "inputs": [
+        {
+          "link": 263,
+          "name": "audio",
+          "type": "AUDIO"
+        }
+      ],
+      "mode": 0,
+      "order": 12,
+      "outputs": [],
+      "pos": [
+        1280,
+        -670
+      ],
+      "properties": {
+        "Node name for S&R": "SaveAudioMP3",
+        "cnr_id": "comfy-core",
+        "enableTabs": false,
+        "hasSecondTab": false,
+        "secondTabOffset": 80,
+        "secondTabText": "Send Back",
+        "secondTabWidth": 65,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "ver": "0.11.1"
+      },
+      "size": [
+        700,
+        190
+      ],
+      "type": "SaveAudioMP3",
+      "widgets_values": [
+        "audio/ACE_Step1.5_xl_turbo",
+        "V0"
+      ]
+    }
+  ],
+  "revision": 0,
+  "version": 0.4
+}

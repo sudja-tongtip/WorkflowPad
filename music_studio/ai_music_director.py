@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 
 from . import basic_caption as BC
 from . import llm_chat as LC
+from . import music_director_context as MX
 from . import music_options as MO
 from . import template_arrange as TA
 from . import lyric_actions as AC
@@ -52,10 +53,13 @@ RULES
 - Describe how the song should SOUND, not how the AI should behave. Never write instructions to the model such as "you must" or "make sure".
 - Do not put BPM, key or time signature in a caption; they go in the metadata.
 - Treat lyrical section cues as suggestions, not guaranteed model commands. Do not claim ACE-Step can enforce exact section-level vocal dynamics, melody, or timing through text alone.
+
+""" + MX.CAPTION_CRAFT + """
+
 - Metadata must use only valid values: BPM a number between 30 and 300; Key like "A minor" or "C major" (never "auto"); Time Signature one of 2/4, 3/4, 4/4, 6/8; Duration in seconds (10-600); Vocal one of: auto, male vocal, female vocal, duet vocals, choir; Energy one of: auto, low energy, medium energy, high energy; Mood one of: none, Melancholic, Happy, Energetic, Dreamy, Romantic, Dark, Calm, Nostalgic, Epic, Angry, Hopeful; Language a code such as th, en, ja, ko, zh, or auto.
 - The final output must be structured, validated, and suitable for use by Python.
 
-OUTPUT FORMAT. Answer with exactly these marker lines, in this order, and nothing before the first marker or after END. No code fences, no extra commentary.
+OUTPUT FORMAT. Answer with exactly these marker lines, in this order, and nothing before the first marker or after END. No code fences, no extra commentary. Write every field name (Emotion:, Theme:, Name:, Music Caption: ...) exactly as shown, in English; only the text after the colon follows the user's language.
 
 =========== ANALYSIS ===========
 Emotion: <one or two sentences>
@@ -241,8 +245,12 @@ def build_messages(snap: Snapshot, reply_language: str = "English") -> tuple:
     ref = ""
     if snap.reference:                                          # only when the user asked for it: their current style as a starting point, not as a limit
         style = (g("style_prompt") or "").strip() if g("style_mode") == "advanced" else ""
-        ref = (f"REFERENCE (the user asked you to start from their current style; build on it, you are not bound by it): genre {g('genre') or '-'}; mood {g('mood') or '-'}; "
-               f"vocal {g('vocal') or 'auto'}; energy {g('energy') or 'auto'}; extra tags {g('extra_tags') or '-'}\n"
+        genre = (g("genre") or "").strip()
+        keep = (f"THE GENRE IS THE USER'S CHOICE: {genre}. This OVERRIDES the rule that the directions may differ in genre. In ALL THREE directions the Genre setting must be {genre} and the caption must describe a {genre} track; "
+                "the directions differ only inside that genre (sub-style, groove, instrumentation, vocal delivery, production). Do not name a direction after another genre. Only THE USER'S REQUEST can change this. "
+                "Mood, vocal, energy and extra tags below are the starting feel: keep them unless the lyrics clearly need otherwise (then say why in the Reason).\n") if genre else ""
+        ref = (f"REFERENCE (the user ticked 'use my current style settings'; these are their choices): genre {g('genre') or '-'}; mood {g('mood') or '-'}; "
+               f"vocal {g('vocal') or 'auto'}; energy {g('energy') or 'auto'}; extra tags {g('extra_tags') or '-'}\n" + keep
                + (f"REFERENCE MUSIC STYLE PROMPT: {style[:800]}\n" if style else ""))
     lang = (f"REPLY LANGUAGE: {reply_language}. Write the Analysis, each Reason and Characteristics and the cue explanations in {reply_language}. "
             "The direction Name, the Music Caption (always English: ACE-Step reads English) and every Suggested Settings / METADATA value stay in English exactly as the format shows.\n") if reply_language != "English" else ""
@@ -250,8 +258,8 @@ def build_messages(snap: Snapshot, reply_language: str = "English") -> tuple:
             + (f"THE SINGER (the user chose this; all three directions use it, each caption names it, and every direction's vocal setting is {SINGER_BY_KEY[snap.singer][1]}): {SINGER_BY_KEY[snap.singer][2]}\n" if snap.singer else "")
             + (f"THE USER'S REQUEST (follow it): {snap.instructions}\n" if snap.instructions else "")
             + ref
-            + (("SECTIONS IN THE LYRICS: " + ", ".join(s.strip('[]') for s in snap.sections) + "\n") if snap.sections else "")
-            + f"\nLYRICS (read only):\n<<<\n{snap.lyrics.strip() or '(no lyrics yet)'}\n>>>\n")
+            + f"\nLYRICS (read only):\n<<<\n{snap.lyrics.strip() or '(no lyrics yet)'}\n>>>\n\n"
+            + MX.build_music_director_context(snap, "recommend") + "\n")
     return SYSTEM + _guidance(), user
 
 
@@ -275,6 +283,9 @@ class CueSuggestion:
     section: str
     cue: str
     why: str
+    line: int = 0                   # the line of the [section] tag in the lyrics the cue is about (0 = no matching tag was found)
+    header: str = ""                # that tag line as it is now, e.g. [Chorus - powerful belting]
+    new_header: str = ""            # the same tag with this cue as its description, e.g. [Chorus - powerful belting female vocal]; what Apply would write
 
 
 @dataclass
@@ -340,6 +351,22 @@ def _fields_of(block: str, names: tuple) -> dict:
         elif cur is not None and l.strip():
             out[cur] = (out[cur] + " " + l.strip()).strip()
     return out
+
+
+def _fields_by_position(block: str, names: tuple) -> dict:
+    """`Label: text` lines whose labels are not the English ones: the n-th label is the n-th name of the format (the format fixes the order). A line that continues the text of a field is appended to it.
+    Used only when none of the English labels was found; nothing is guessed from the words of the label."""
+    pat = re.compile(r"^\s*[-*•]?\s*([^:：\n]{1,40})[:：]\s*(.*)$")
+    out, cur, n = {}, None, 0
+    for l in (block or "").splitlines():
+        m = pat.match(l)
+        if m and n < len(names):
+            cur = names[n]
+            n += 1
+            out[cur] = m.group(2).strip()
+        elif cur is not None and l.strip():
+            out[cur] = (out[cur] + " " + l.strip()).strip()
+    return {k: v for k, v in out.items() if v}
 
 
 def _settings_lines(text: str) -> dict:
@@ -415,12 +442,37 @@ def _caption_warnings(caption: str, lyrics: str) -> list:
     return out
 
 
+def _norm_tag(t: str) -> str:
+    return re.sub(r"\s+", " ", (t or "").strip().strip("[]").strip().lower())
+
+
+def resolve_cues(cues: list, lyrics: str) -> list:
+    """Finds the [section] line of the lyrics every cue is about: the same tag text first, else the same section name (before ' - '). Two cues for equal tags take the tag lines one after the other.
+    Nothing is guessed: a cue with no matching tag line keeps line 0 and cannot be applied."""
+    heads = [(i + 1, l.strip()) for i, l in enumerate((lyrics or "").split(chr(10))) if re.match(r"^\s*\[[^\]]+\]\s*$", l)]
+    used: set = set()
+    for c in cues:
+        want = _norm_tag(c.section)
+        name = want.split(" - ")[0].strip()
+        pick = (next((h for h in heads if h[0] not in used and _norm_tag(h[1]) == want), None)
+                or next((h for h in heads if h[0] not in used and _norm_tag(h[1]).split(" - ")[0].strip() == name), None))
+        if pick is None or not c.cue.strip("[] "):
+            continue
+        used.add(pick[0])
+        c.line, c.header = pick
+        sec = pick[1].strip()[1:-1].split(" - ")[0].strip()
+        c.new_header = f"[{sec} - {c.cue.strip(chr(91) + chr(93) + chr(32))}]"
+    return cues
+
+
 def parse(raw: str, lyrics: str = "") -> Proposal:
     """The AI answer -> Proposal. Raises DirectorError (with `raw`) for anything that cannot be offered."""
     blocks, problems = split_blocks(raw)
     if problems:
         raise DirectorError("The AI answer does not follow the required format.", problems, raw)
     analysis = {k: v for k, v in _fields_of(blocks.get(M_ANALYSIS, ""), ANALYSIS_KEYS).items() if v}
+    if not analysis:
+        analysis = _fields_by_position(blocks.get(M_ANALYSIS, ""), ANALYSIS_KEYS)      # the labels were written in the user's language (อารมณ์: ธีม: ...): the format fixes their ORDER, so the order is read
     if not analysis:
         raise DirectorError("The AI answer has no analysis.", ["The ANALYSIS block has none of Emotion / Theme / Narrative / Energy Arc / Vocal Character."], raw)
     dir_names = ("name", "reason", "characteristics", "music caption", "suggested settings")
@@ -464,7 +516,7 @@ def parse(raw: str, lyrics: str = "") -> Proposal:
             cue_warn.append(f"A section cue line was skipped: {l.strip()[:50]}")
             continue
         cues.append(CueSuggestion(p[0], p[1], p[2] if len(p) > 2 else ""))
-    cues = cues[:8]
+    cues = resolve_cues(cues[:8], lyrics)
     warns = cue_warn + meta_notes
     if blocks.get("pre"):
         warns.append("Text before the first marker was ignored.")
@@ -481,7 +533,11 @@ def parse(raw: str, lyrics: str = "") -> Proposal:
 def analyze(ask, snap: Snapshot, reply_language: str = "English") -> Proposal:
     """One question, one answer, no automatic retry. Raises DirectorError (carrying `raw`) when the answer cannot be used."""
     system, user = build_messages(snap, reply_language)
-    raw = ask(system, user)
+    return finish(ask(system, user), snap)
+
+
+def finish(raw: str, snap: Snapshot) -> Proposal:
+    """The AI's raw answer -> the Proposal the user sees (also used to show a saved answer again, so it looks exactly as it did)."""
     prop = parse(raw, snap.lyrics)
     if snap.singer:                                             # the user decided who sings: the program makes the setting say so, whatever the AI wrote
         vocal = SINGER_BY_KEY[snap.singer][1]
@@ -496,6 +552,9 @@ def analyze(ask, snap: Snapshot, reply_language: str = "English") -> Proposal:
         note = BC.vocal_range_warning(d.caption, *asked)
         if note and note not in d.warnings:
             d.warnings.append(note)
+        for extra in MX.review_caption(d.caption, snap):
+            if extra not in d.warnings:
+                d.warnings.append(extra)
     return prop
 
 

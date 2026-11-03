@@ -10,6 +10,7 @@ from pathlib import Path
 
 from . import comfy_audio as CA
 from . import compiler as K
+from . import quality_presets as QP
 from . import store as ST
 from .player import PlayerService
 from .model import Song, Take, Run, new_id, now_str
@@ -24,19 +25,25 @@ class Result:
 
 
 def prepare(audio_dir: Path, snap: Song, tags: str, ace_text: str) -> tuple[dict, dict]:
-    """(workflow, parameters actually sent). Resolves seed -1 on the snapshot. Raises on a missing / unusable workflow."""
+    """(workflow, parameters actually sent). An empty or missing workflow becomes ACE-Step 1.5 Turbo, or another usable file with a notice.
+
+    A workflow file that is already on disk keeps its steps and CFG. Resolves seed -1 on the snapshot. Raises on a missing / unusable workflow.
+    """
     s = snap.settings
-    if not s.workflow:                                  # a song that never opened the settings: use the first ACE-Step workflow found
-        found = CA.scan_workflows(audio_dir)
-        if not found:
-            raise CA.ComfyError("No ACE-Step 1.5 workflow in comfy_apis/audio")
-        s.workflow = found[0].name
+    try:
+        notice = QP.resolve_workflow(s, CA.scan_workflows(audio_dir))
+    except QP.WorkflowError as ex:
+        raise CA.ComfyError(str(ex)) from None
     base = CA.load_workflow(audio_dir / s.workflow)
     if (s.language or "auto").lower() == "auto":              # the snapshot gets the detected code; the song keeps "auto"
         s.language = K.detect_language(ace_text)
     if s.seed < 0:
         s.seed = CA.fresh_seed()
-    return CA.build_workflow(base, s, tags, ace_text)
+    wf, used = CA.build_workflow(base, s, tags, ace_text)
+    CA.check_built(wf, s)                                     # the JSON that would be sent, not the numbers baked in the file
+    if notice:
+        used["workflow_notice"] = notice
+    return wf, used
 
 
 def execute(host: str, snap: Song, wf: dict, used: dict, tags: str, ace_text: str, cancel_fn, on_state=None, on_submitted=None, snapshot: dict | None = None) -> Result:

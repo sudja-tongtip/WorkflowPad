@@ -12,6 +12,7 @@ import re
 from dataclasses import dataclass, field
 
 from . import llm_chat as LC
+from . import music_director_context as MX
 from . import template_arrange as TA
 from .compiler import TAG_LINE
 
@@ -81,6 +82,8 @@ settings ask for it.
 Do not force every song into a mid-range
 vocal.
 
+""" + MX.CAPTION_CRAFT + """
+
 Return exactly:
 
 =========== CAPTION ===========
@@ -137,8 +140,8 @@ def build_messages(snap: Snapshot) -> tuple:
             f"Extra style tags: {snap.extra_tags or '-'}\nLyric language setting: {snap.language or 'auto'}\n\n"
             f"FIXED GENERATION PARAMETERS (sent separately; for your understanding only. Do NOT write BPM, key, time signature or duration in the caption): "
             f"BPM {snap.bpm}, key {snap.keyscale}, time signature {snap.timesignature}, duration {snap.duration} s\n\n"
-            + (("SECTIONS IN THE LYRICS: " + ", ".join(s.strip("[]") for s in snap.sections) + "\n\n") if snap.sections else "")
-            + f"LYRICS (read only):\n<<<\n{snap.lyrics.strip() or '(no lyrics)'}\n>>>\n")
+            + f"LYRICS (read only):\n<<<\n{snap.lyrics.strip() or '(no lyrics)'}\n>>>\n\n"
+            + MX.build_music_director_context(snap, "basic") + "\n")
     return SYSTEM, user
 
 
@@ -180,6 +183,13 @@ def parse(raw: str, lyrics: str = "", vocal: str = "", energy: str = "", extra: 
         warns.append("Text before the CAPTION marker was ignored.")
     if "=====" in body:
         raise CaptionError("The caption contains marker text.", ["The caption contains marker lines."], raw)
+    cap, more = check_caption(body, lyrics, vocal, energy, extra, raw)
+    return Result(cap, warns + more, raw)
+
+
+def check_caption(body: str, lyrics: str = "", vocal: str = "", energy: str = "", extra: str = "", raw: str = "") -> tuple:
+    """The one validation of a Music Caption (the Basic caption and the Music Producer's chat share it): (caption, warnings), or CaptionError with the reason."""
+    warns = []
     body, cut = TA.shorten_caption(body)                       # too long is not a failure: the last whole sentences are dropped (and the user is told)
     if cut:
         warns.append(f"The AI wrote more than {MAX_CHARS} characters, so the last sentence(s) were left out.")
@@ -201,11 +211,15 @@ def parse(raw: str, lyrics: str = "", vocal: str = "", energy: str = "", extra: 
     note = vocal_range_warning(cap, vocal, energy, extra)
     if note:
         warns.append(note)
-    return Result(cap, warns, raw)
+    return cap, warns
 
 
 def compose_basic_caption(snap: Snapshot, ask) -> Result:
     """One question, one answer, no automatic retry. Raises CaptionError (carrying `raw`) when the answer cannot be used."""
     system, user = build_messages(snap)
     raw = ask(system, user)
-    return parse(raw, snap.lyrics, snap.vocal, snap.energy, snap.extra_tags)
+    result = parse(raw, snap.lyrics, snap.vocal, snap.energy, snap.extra_tags)
+    for note in MX.review_caption(result.caption, snap):
+        if note not in result.warnings:
+            result.warnings.append(note)
+    return result

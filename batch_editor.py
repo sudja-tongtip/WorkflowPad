@@ -1579,4 +1579,4 @@ async def main(page: ft.Page):
     _update_check.start_notice(ft, page, APP_NAME, APP_VERSION)      # a notice only (GitHub releases, once a day, silent when offline); see update_check.py
 
 
-ft.app(target=_app_error.guard(ft, main, APP_NAME, APP_VERSION))   # friendly error dialog instead of Flet's red 'application crashed' page
+ft.run(_app_error.guard(ft, main, APP_NAME, APP_VERSION))   # friendly error dialog instead of Flet's red 'application crashed' page

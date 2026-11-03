@@ -12,12 +12,12 @@ import flet as ft
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-_real_app = ft.app
-ft.app = lambda *a, **k: None
+_real_app = ft.run
+ft.run = lambda *a, **k: None
 spec = importlib.util.spec_from_file_location("prompt_lab_cleanup_under_test", ROOT / "prompt_lab.py")
 PL = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(PL)
-ft.app = _real_app
+ft.run = _real_app
 
 _fails: list = []
 R, P, E = PL._SEP_REPLY, PL._SEP_PROMPT, PL._SEP_END

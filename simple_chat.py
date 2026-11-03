@@ -848,4 +848,4 @@ def main(page: ft.Page):
 
 
 if __name__ == "__main__":
-    ft.app(target=_app_error.guard(ft, main, APP_NAME, APP_VERSION))
+    ft.run(_app_error.guard(ft, main, APP_NAME, APP_VERSION))

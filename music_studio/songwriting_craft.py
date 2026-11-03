@@ -47,3 +47,10 @@ Respect the existing song structure. Do not introduce sections unless requested 
 Apply songwriting techniques selectively according to genre, language, section, and the user's actual request.
 Do not rewrite parts that are already effective.
 Preserve strict output formats and editing boundaries defined elsewhere in the prompt."""
+
+THAI_LYRIC_PROSODY = """THAI LYRIC PROSODY
+Thai has five lexical tones: mid, low, falling, high, and rising. A tone is part of the word. It is not a musical pitch. Do not treat the mid tone as a low note or the high tone as a high note.
+A leap, a hold, or a line break can make a short word hard to recognize. Keep a short function word such as ใน ที่ ของ และ inside its spoken phrase, unless that word is the point of the line. A one-word line is still right when the word is the hook.
+Keep the meaning, the rhyme, and the emotion. Rhyme still ignores tone. You have not heard the melody: never say a word will be sung on the wrong tone. When the user only asks for an analysis, explain this in words and do not rewrite the lyrics."""
+
+SONGWRITING_CRAFT = SONGWRITING_CRAFT + "\n\n" + THAI_LYRIC_PROSODY

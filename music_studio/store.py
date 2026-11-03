@@ -480,7 +480,7 @@ def list_songs() -> list[dict]:
             continue
         takes, runs = load_takes(s.id)
         ts = [t for t in takes if take_path(t)]
-        out.append({"song": s, "takes": ts, "runs": runs, "latest": ts[-1] if ts else None, "favorite": any(t.favorite for t in ts), "warnings": song_problems(s.id)})
+        out.append({"song": s, "takes": ts, "runs": runs, "latest": ts[-1] if ts else None, "favorite": any(t.rating > 0 for t in ts), "warnings": song_problems(s.id)})
     out.sort(key=lambda x: x["song"].updated, reverse=True)
     return out
 

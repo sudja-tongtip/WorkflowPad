@@ -31,16 +31,16 @@ def check(name, cond, detail=""):
 
 
 def load_program(stem: str):
-    """Import a program file without starting its window (the programs call ft.app at the end of the file)."""
-    real = ft.app
-    ft.app = lambda *a, **k: None
+    """Import a program file without starting its window (the programs call ft.run at the end of the file)."""
+    real = ft.run
+    ft.run = lambda *a, **k: None
     try:
         spec = importlib.util.spec_from_file_location(f"{stem}_under_test", ROOT / f"{stem}.py")
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         return mod
     finally:
-        ft.app = real
+        ft.run = real
 
 
 def png_bytes(w=2, h=2, color=(200, 30, 30)) -> bytes:

@@ -2322,7 +2322,7 @@ async def main(page: ft.Page):
     header.content.controls.append(_kb_listener[0])
 
     async def _no_browser_menu():              # web only: keep the browser's own right-click menu out of the way
-        try: await page.browser_context_menu.disable()
+        try: await ft.BrowserContextMenu().disable()
         except Exception: pass
     page.run_task(_no_browser_menu)
 
@@ -2333,4 +2333,4 @@ async def main(page: ft.Page):
     _update_check.start_notice(ft, page, APP_NAME, APP_VERSION)      # a notice only (GitHub releases, once a day, silent when offline); see update_check.py
 
 
-ft.app(target=_app_error.guard(ft, main, APP_NAME, APP_VERSION))   # friendly error dialog instead of Flet's red 'application crashed' page
+ft.run(_app_error.guard(ft, main, APP_NAME, APP_VERSION))   # friendly error dialog instead of Flet's red 'application crashed' page

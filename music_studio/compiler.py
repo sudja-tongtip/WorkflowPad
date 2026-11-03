@@ -20,6 +20,8 @@ STRUCT_WORDS = {"intro": "intro", "verse": "verse", "pre-chorus": "prechorus", "
 VOCAL_WORDS = ("whisper", "falsetto", "powerful belting", "belting", "spoken word", "harmon", "ad-lib", "raspy", "soft vocals", "breathy", "gritty", "choir", "emotional vocals", "operatic", "male", "female", "duet", "call and response")
 
 TAG_LINE = re.compile(r"^\s*\[[^\[\]]*\]\s*$")
+_LABEL_CUE = re.compile(r"\s+(?:\u2014|\u2013|-|:)\s+")          # " - ", " — ", " – " or " : " starts a cue. A hyphen inside Pre-Chorus has no spaces.
+_LABEL_DASH = re.compile(r"\s*[\u2014\u2013]\s*")                # an en dash or em dash with the spaces optional: [Intro—Rhodes]
 HOLD_PREFIX = re.compile(r"^(\s*)\[Hold\]\s*", re.IGNORECASE)
 MARKUP = re.compile(r"</?[A-Za-z][A-Za-z0-9:_-]*(?:\s[^<>\n]*)?/?>")        # <whisper>, </strong>, <hold:long>, <br/>
 
@@ -32,6 +34,17 @@ class Compiled:
     lines: list = field(default_factory=list)       # [(kind, text)]: kind = tag|hold|text|blank, tag also carries its class in .tagclass via lines_tag
     tag_class: dict = field(default_factory=dict)   # line index -> section class (verse, chorus, ...)
     warnings: list = field(default_factory=list)    # (level, line_no, text)
+
+
+def section_label(tag_line: str) -> str:
+    """Display name of a section tag. Pre-Chorus stays whole. A cue after ' - ', ':' or a dash is dropped. This does not rewrite lyrics."""
+    inner = (tag_line or "").strip()
+    if inner.startswith("[") and inner.endswith("]") and len(inner) >= 2:
+        inner = inner[1:-1].strip()
+    if not inner:
+        return ""
+    m = _LABEL_CUE.search(inner) or _LABEL_DASH.search(inner)
+    return inner[:m.start()].strip() if m else inner.strip()
 
 
 def tag_class_of(line: str) -> str:

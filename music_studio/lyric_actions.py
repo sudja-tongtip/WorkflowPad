@@ -19,6 +19,7 @@ from . import llm_chat as LC
 from .compiler import HOLD_PREFIX, TAG_LINE
 from .songwriting_craft import SONGWRITING_CRAFT
 from .lyric_rhythm import section_names
+from . import section_apply as SA
 
 ACTION_PROMPT_VERSION = "actions-v4"
 
@@ -208,26 +209,44 @@ def plan_apply(scope: str, text: str, prop: str, snap_text: str, snap_start: int
     {"msg": why, "options": [(label, new_text, sel, uses_cursor)]} with the choices the user may pick. Every new_text is built FROM `text`: the caller must apply it only while the
     lyrics still hash to the same value (so a choice always means the lyrics that were on screen when the dialog opened)."""
     options = []
+
+    def _header_only(repl: str) -> dict:
+        return {"msg": "The proposal only repeated the section header. Nothing was changed.", "options": []}
+
     if scope == "insert":
+        placed = SA.strip_enclosing_header(text, snap_start, prop)
         if text_hash(text) == snap_hash:
-            return {"direct": insert_edit(text, snap_start, prop)}
+            if not placed.strip() and (prop or "").strip():
+                return _header_only(placed)
+            return {"direct": insert_edit(text, snap_start, placed)}
         msg = "The lyrics changed since you asked, so the place where the new lines belong can no longer be trusted."
-        options.append(("Insert after the cursor line", *insert_edit(text, insert_point(text, cursor), prop), True))
+        if placed.strip():
+            options.append(("Insert after the cursor line", *insert_edit(text, insert_point(text, cursor), placed), True))
+        else:
+            return _header_only(placed)
     elif scope == "selection":
-        if text[snap_start:snap_end] == snap_text:
-            return {"direct": (text[:snap_start] + prop + text[snap_end:], (snap_start, snap_start + len(prop)))}
+        if 0 <= snap_start <= snap_end <= len(text) and text[snap_start:snap_end] == snap_text:
+            a, b, repl = SA.prepare_replacement(text, snap_start, snap_end, prop)
+            if not repl.strip() and (prop or "").strip():
+                return _header_only(repl)
+            return {"direct": (text[:a] + repl + text[b:], (a, a + len(repl)))}
         where = [m.start() for m in re.finditer(re.escape(snap_text), text)] if snap_text else []
         if len(where) == 1:
             w = where[0]
-            options.append(("Replace it where it moved", text[:w] + prop + text[w + len(snap_text):], (w, w + len(prop)), False))
+            a, b, repl = SA.prepare_replacement(text, w, w + len(snap_text), prop)
+            if repl.strip():
+                options.append(("Replace it where it moved", text[:a] + repl + text[b:], (a, a + len(repl)), False))
         msg = "The lyrics changed since you asked, and the selected text is no longer at the same place." + ("" if where else " It can no longer be found.")
-        options.append(("Insert at the cursor", text[:cursor] + prop + text[cursor:], (cursor, cursor + len(prop)), True))
+        tail = SA.strip_enclosing_header(text, cursor, prop)
+        if tail.strip():
+            options.append(("Insert at the cursor", text[:cursor] + tail + text[cursor:], (cursor, cursor + len(tail)), True))
     else:
+        folded = SA.fold_echoed_sections(text, prop)
         if text == snap_text:
-            return {"direct": (prop, (0, 0))}
+            return {"direct": (folded, (0, 0))}
         msg = "The lyrics changed while the AI was answering. Replacing them would lose your newer edits."
-        options.append(("Replace everything anyway", prop, (0, 0), False))
-        options.append(("Insert at the cursor", text[:cursor] + prop + text[cursor:], (cursor, cursor + len(prop)), True))
+        options.append(("Replace everything anyway", folded, (0, 0), False))
+        options.append(("Insert at the cursor", text[:cursor] + folded + text[cursor:], (cursor, cursor + len(folded)), True))
     return {"msg": msg, "options": options}
 
 

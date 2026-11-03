@@ -3,12 +3,15 @@
 #
 #   pip install -r requirements.txt
 
-flet>=0.85,<0.86
+# flet, flet-desktop and flet-code-editor must be the same 1.0 release. The desktop
+# client protocol is not compatible with 0.85.
+flet==1.0.5
+flet-desktop==1.0.5
 Pillow>=10.0
 
 # Required by Music Studio (the lyrics editor, with line numbers). Optional for the Image Editor, which
 # falls back to a plain text field without it.
-flet-code-editor>=0.85,<0.86
+flet-code-editor==1.0.5
 
 # Not installed by pip — ComfyUI must be running separately.
 # Default server: 127.0.0.1:8188

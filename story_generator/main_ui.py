@@ -7239,7 +7239,7 @@ def main(page: ft.Page):
         height=40,
         style=ft.ButtonStyle(bgcolor=C["green"], shape=ft.RoundedRectangleBorder(radius=8)),
     )
-    _insert_answer_btn = ft.ElevatedButton(
+    _insert_answer_btn = ft.Button(
         "Submit Answer", height=40,
         style=ft.ButtonStyle(bgcolor=C["accent"], color="white"),
         visible=False,

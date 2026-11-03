@@ -39,6 +39,78 @@ def family_of_file(path: Path) -> str:
     return _cache[key]
 
 
+_NEEDED = ("TextEncodeAceStepAudio1.5", "EmptyAceStep1.5LatentAudio", "KSampler", "SaveAudioAdvanced")
+
+
+class WorkflowError(RuntimeError):
+    """No usable ACE-Step workflow can be assigned."""
+
+
+def _graph(path: Path) -> "dict | None":
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _explicit_turbo(wf: dict) -> bool:
+    """True only when a UNETLoader names a Turbo model. A graph with no UNET is not Turbo."""
+    names = [str((n.get("inputs") or {}).get("unet_name", "")).lower() for n in wf.values() if isinstance(n, dict) and n.get("class_type") == "UNETLoader"]
+    return any("turbo" in x for x in names)
+
+
+def _tiled(wf: dict) -> bool:
+    return any(isinstance(n, dict) and "tiled" in str(n.get("class_type") or "").lower() for n in wf.values())
+
+
+def _usable(wf: dict) -> bool:
+    counts = {c: 0 for c in _NEEDED}
+    for n in wf.values():
+        if isinstance(n, dict) and n.get("class_type") in counts:
+            counts[n["class_type"]] += 1
+    return all(v == 1 for v in counts.values())
+
+
+def pick_default_file(files) -> "Path | None":
+    """ACE-Step 1.5 Turbo, then a non-tiled graph. The file name is only a tie-break, never the reason a workflow is chosen."""
+    ranked = []
+    for raw in files:
+        path = Path(raw)
+        wf = _graph(path)
+        if wf is None or not _usable(wf):
+            continue
+        ranked.append((0 if _explicit_turbo(wf) else 1, 1 if _tiled(wf) else 0, path.name.lower(), path))
+    if not ranked:
+        return None
+    ranked.sort()
+    return ranked[0][3]
+
+
+def _program_default(steps, cfg) -> bool:
+    """The numbers a new song starts with, before any quality choice."""
+    try:
+        standard = PRESETS[DISTILLED]["standard"]
+        return int(steps) == standard[0] and abs(float(cfg) - standard[1]) < 1e-6
+    except (TypeError, ValueError):
+        return False
+
+
+def _num(value) -> str:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    if abs(number - round(number)) < 1e-6:
+        return str(int(round(number)))
+    return f"{number:g}"
+
+
+def fallback_notice(name: str, steps, cfg) -> str:
+    """ACE-Step 1.5 Turbo is not in the folder, so another workflow was assigned with the steps and CFG of its model."""
+    return f"ACE-Step 1.5 Turbo was not found. This song is using {name}, with {_num(steps)} steps and CFG {_num(cfg)} for that model."
+
+
 def params(family: str, level: str) -> tuple:
     """(steps, cfg) of a level. Raises KeyError for 'custom'."""
     return PRESETS[family][level]
@@ -70,6 +142,46 @@ def switch_workflow(s, old: str, new: str, new_family: str) -> None:
     else:
         s.steps, s.cfg = PRESETS[new_family]["standard"]
     s.wf_params = mem
+
+
+def adopt_workflow(s, old: str, new: str, new_family: str) -> None:
+    """Point a song at `new` only because it had no workflow, or the file it named is gone.
+
+    A file that is still on disk is not passed here. A missing name keeps its steps and CFG in wf_params and loads the new file's own memory, or its Standard level.
+    An empty name keeps a saved memory of `new`, and keeps numbers the user already changed. Only the untouched 8 / 1 of a new song is replaced when the file is a full model.
+    """
+    if not new or old == new:
+        return
+    if old:
+        switch_workflow(s, old, new, new_family)
+        return
+    mem = s.wf_params if isinstance(getattr(s, "wf_params", None), dict) else {}
+    got = mem.get(new)
+    if isinstance(got, dict) and "steps" in got and "cfg" in got:
+        s.steps, s.cfg = int(got["steps"]), float(got["cfg"])
+    elif _program_default(s.steps, s.cfg) and new_family == FULL:
+        s.steps, s.cfg = PRESETS[FULL]["standard"]
+    s.wf_params = mem
+
+
+def resolve_workflow(s, files) -> str:
+    """Make s.workflow name a file from `files`. Returns a notice when Turbo is absent and another file was assigned, else "".
+
+    A name that is already in `files` is left alone, including its steps and CFG. Raises WorkflowError when nothing usable can be assigned.
+    """
+    names = {Path(p).name for p in files}
+    current = str(getattr(s, "workflow", "") or "")
+    if current and current in names:
+        return ""
+    chosen = pick_default_file(files)
+    if chosen is None:
+        raise WorkflowError("No ACE-Step 1.5 workflow in comfy_apis/audio")
+    graph = _graph(chosen) or {}
+    adopt_workflow(s, current, chosen.name, family_of_workflow(graph))
+    s.workflow = chosen.name
+    if _explicit_turbo(graph):
+        return ""
+    return fallback_notice(chosen.name, s.steps, s.cfg)
 
 
 def hint(family: str, steps) -> tuple:
