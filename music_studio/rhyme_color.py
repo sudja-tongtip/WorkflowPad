@@ -11,11 +11,10 @@ A result is only coloured while the sung lines are exactly the ones that were an
 from __future__ import annotations
 
 import re
-import unicodedata
 from dataclasses import dataclass, field
 
 from .compiler import HOLD_PREFIX, TAG_LINE
-from .lyric_analysis import _INLINE_TAG, sung_lines
+from .lyric_analysis import _INLINE_TAG, original_lines, sung_lines
 
 PALETTE = ("#60A5FA", "#F472B6", "#34D399", "#FBBF24", "#A78BFA", "#FB923C", "#22D3EE", "#F87171")
 _TRAIL = re.compile(r"[\s.,!?:;…\"'”’]+$")
@@ -114,22 +113,18 @@ def colorize(lyrics: str, result=None) -> RhymeColors:
     """The rhyme groups of `lyrics`: (1) Thai line endings that end in the same sound, found here from the sound of each line's last syllable, always for the current lyrics;
     (2) the AI's pairs of `result` (internal, cross-line, near ...) when `result` is for exactly these lyrics, and only the Thai ones whose sound Python confirmed."""
     rc = RhymeColors()
-    if "\r" in lyrics or unicodedata.normalize("NFC", lyrics) != lyrics:
-        rc.stale = result is not None
-        rc.skipped.append("The lyrics contain characters that cannot be located exactly, so nothing was coloured.")
-        return rc
     sung = sung_lines(lyrics)
     use_result = result is not None
     if use_result and [ln.text for ln in sung] != list(result.lines):
         rc.stale, use_result = True, False
-    raw_lines = lyrics.split("\n")
-    starts, pos = [], 0
-    for r in raw_lines:
-        starts.append(pos)
-        pos += len(r) + 1
+    by_file = {n: (start, content) for n, start, _end, content in original_lines(lyrics or "")}
     lines = {}
     for ln in sung:
-        L = _Line(ln.file_line, starts[ln.file_line - 1], raw_lines[ln.file_line - 1])
+        found = by_file.get(ln.file_line)
+        if found is None:
+            rc.skipped.append(f"Line {ln.file_line} could not be matched to the analysed text, so it was not coloured.")
+            continue
+        L = _Line(ln.file_line, found[0], found[1])
         if _clean(L.masked) != ln.text:
             rc.skipped.append(f"Line {ln.file_line} could not be matched to the analysed text, so it was not coloured.")
             continue
@@ -210,6 +205,8 @@ def line_segments(lyrics: str, rc: RhymeColors, hide_tags: bool = True) -> list:
     for n, raw in enumerate(lyrics.split("\n"), 1):
         segs, at = [], pos
         for sp in by_line.get(n, []):
+            if lyrics[sp.start:sp.end] != sp.text or sp.start < at or sp.end > pos + len(raw):
+                continue
             if sp.start > at:
                 segs.append((lyrics[at:sp.start], None))
             segs.append((lyrics[sp.start:sp.end], sp))

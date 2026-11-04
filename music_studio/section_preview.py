@@ -24,7 +24,7 @@ from . import store as ST
 from . import tag_parser as TP
 from .player import PlayerService
 
-SECTION_TYPES = ["Intro", "Verse", "Pre-Chorus", "Chorus", "Bridge", "Outro", "Instrumental"]
+SECTION_TYPES = [s.name for s in CL.SECTION_TYPES]
 PREVIEW_DURATIONS = (10, 15, 30)        # ComfyUI's TextEncodeAceStepAudio1.5 accepts a duration from 0 s and EmptyAceStep1.5LatentAudio from 1 s (object_info), so these are all valid inputs
 DEFAULT_DURATION = 15
 

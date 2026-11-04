@@ -168,19 +168,19 @@ def _num(token: str, letter: str) -> "int | None":
 
 # ── hints vocabulary ─────────────────────────────────────────────────────────────────────────────────────────
 _SYN = {"whisper": "whispered", "whispered vocals": "whispered", "whispered vocal": "whispered", "breathy": "breathy vocals", "breathy vocal": "breathy vocals",
-        "raspy": "raspy vocals", "raspy vocal": "raspy vocals", "belting": "powerful belting", "soft vocal": "soft vocals", "spoken": "spoken word",
+        "raspy": "raspy vocal", "raspy vocals": "raspy vocal", "raspy vocal": "raspy vocal", "belting": "powerful belting", "soft vocal": "soft vocals", "spoken": "spoken word",
         "falsetto vocals": "falsetto", "choir": "choir vocals", "harmony": "harmonies", "adlib": "ad-lib", "ad lib": "ad-lib", "fade-out": "fade out", "fadeout": "fade out"}
 
 
 def known_hints() -> list:
-    return sorted(CL.BY_PHRASE)
+    return sorted(c.phrase for c in CL.CUES)
 
 
 def check_hint(raw: str) -> "str | None":
-    """The hint as written into a tag, or None when it is not a well-known cue word (the AI may only use the list it was given)."""
+    """The catalog phrase for a hint, or None when it is not a cue the studio has named. A short custom cue is still allowed in the lyrics."""
     s = re.sub(r"\s+", " ", (raw or "").strip().strip("[]").lower())
-    s = _SYN.get(s, s)
-    return s if s in CL.BY_PHRASE else None
+    cue = CL.find_phrase(s) or CL.find_phrase(_SYN.get(s, s))
+    return cue.phrase if cue else None
 
 
 # ── prompts ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -209,8 +209,9 @@ SYSTEM = (
     "1. ASSIGNMENTS - one line `L01|S02` per unit: the slot that unit belongs to. Write EXACTLY as many lines as there are units, one per unit, in unit order; a unit appears on ONE line only "
     "(it can never be placed in two slots); never invent an id; units may move to any slot; keep a stanza together; "
     "leave a slot empty when nothing fits (do NOT repeat or invent lines to fill it; if the template has several choruses and the lyrics have one, give it to the first chorus only).\n"
-    "2. SECTION STYLE - lines `S02|spoken word` (a slot id, then one or two SHORT performance hints separated by COMMAS, e.g. `S04|powerful belting, harmonies`) only for slots where a hint helps. "
-    "Use only these hint words: " + ", ".join(known_hints()) + ".\n"
+    "2. SECTION STYLE - lines `S02|spoken word` (a slot id, then at most 2 SHORT performance hints that do different jobs, e.g. `S04|powerful belting, harmonies`) only for slots where a hint helps. "
+    "Use one hint, or none, when that is enough; do not pad a slot to 2. Do not pair hints that mean the same thing, such as fast-paced with slightly faster phrasing. The section name (Verse, Chorus, Bridge, Outro, and the others) is not a hint. A standalone vocal cue such as whispered is not one of these hints. Do not replace a short custom cue the user already wrote. "
+    "Prefer these short hint words. A sentence belongs in the caption, not here. This list is not every phrase ACE-Step can read: " + ", ".join(known_hints()) + ".\n"
     "3. " + _CAPTION_RULE +
     "4. " + _META_SPEC +
     "Metadata is guidance: decide from the genre, emotion, rhythm and the user's current choices together. The current BPM, key, time signature and duration are usually just the program's "
@@ -353,8 +354,7 @@ def parse_section_style(text: str, n_slots: int) -> tuple:
                 out[sl].append(good)
     for sl in out:
         if len(out[sl]) > 2:
-            warns.append(f"Only the first two hints of slot {sl} are used.")
-            out[sl] = out[sl][:2]
+            warns.append(f"Slot {sl} has {len(out[sl])} hints. Usually one short hint is enough. They were kept.")
     return out, warns
 
 

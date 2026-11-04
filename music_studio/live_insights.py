@@ -8,7 +8,7 @@ Everything is read-only: nothing here changes the lyrics, the settings or an ana
 
 Honesty rules (the brief's data integrity): every line says HOW SURE its numbers are.
   manual_corrected  the user's own correction of the syllables (still valid for exactly this line and its neighbours)
-  verified          Thai only, every word of the line is in the PyThaiNLP dictionary, so the split is dictionary-backed (it is still not a recording of how it is sung)
+  verified          Thai only, every word is in the dictionary, and every dictionary piece is one syllable the spelling rules accept (still not a recording)
   estimated         a word is English, a number or not in the dictionary: the count is a rule-based estimate
   unverified        nothing could be counted
 A rhyme is only coloured when the Thai sound check (thai_rhyme: vowel + final consonant of the last syllable) says exact or near. A word whose sound cannot be read is never coloured and never called a rhyme.
@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from . import lyric_analysis as LA
 from . import rhyme_color as RC
 from . import thai_rhyme as TR
-from .compiler import TAG_LINE, section_label
+from .compiler import HOLD_SUFFIX, TAG_LINE, section_label
 
 PALETTE = RC.PALETTE
 TH = re.compile(r"[฀-๿]+")
@@ -77,6 +77,8 @@ class LineInsight:
     warnings: list = field(default_factory=list)
     line_id: str = ""
     sec_index: int = -1       # index into Insights.sections of the section the line belongs to
+    repeats: list = field(default_factory=list)   # ["หยุด×2"] same written word twice: repetition, not a rhyme
+    end_sound: str = ""       # "ใจ ไอ+กา" when the last syllable could be read, even if it rhymes with nothing
 
 
 @dataclass
@@ -144,7 +146,7 @@ def line_core(masked: str) -> dict:
     hit = _core_cache.get(masked)
     if hit is not None:
         return hit
-    toks, sure = [], True
+    toks, sure, split_unsure = [], True, False
     dic = _dictionary()
     for m in _WORD.finditer(masked):
         run = m.group(0)
@@ -153,16 +155,20 @@ def line_core(masked: str) -> dict:
             for t in _thai_tokens(run):
                 at = masked.index(t, pos)
                 pos = at + len(t)
+                syls = _thai_syllables(t)
                 if dic and t not in dic:
                     sure = False
-                toks.append((at, at + len(t), t, "th", _thai_syllables(t)))
+                if any(not TR.is_single_syllable(s) for s in syls):
+                    sure = False
+                    split_unsure = True
+                toks.append((at, at + len(t), t, "th", syls))
         elif run.isdigit():
             sure = False
             toks.append((m.start(), m.end(), run, "num", [run]))
         else:
             sure = False
             toks.append((m.start(), m.end(), run, "en", [run] * english_syllables(run)))
-    core = {"tokens": toks, "sure": sure and bool(toks) and bool(dic)}
+    core = {"tokens": toks, "sure": sure and bool(toks) and bool(dic), "split_unsure": split_unsure}
     if len(_core_cache) > 4000:
         _core_cache.clear()
     _core_cache[masked] = core
@@ -199,27 +205,24 @@ def is_instrumental(name: str) -> bool:
 
 
 def _hidden_bracket(raw: str) -> bool:
-    """A [tag] glued to sung words. A tag on its own line, and a leading [Hold], are not this."""
+    """A [tag] glued to sung words. A tag on its own line, a leading [Hold], and a trailing [Hold] are not this."""
     st = (raw or "").strip()
     if not st or (TAG_LINE.match(st) and not RC.HOLD_PREFIX.match(st)):
         return False
     rest = RC.HOLD_PREFIX.sub("", st, count=1)
+    rest = HOLD_SUFFIX.sub("", rest)
     return bool(_BRACKET.search(rest))
 
 
 def analyze(text: str, corrections: "dict | None" = None, revision: int = 0) -> Insights:
     """Every sung line with its counts and rhymes. `corrections` is the program's {line id: LA.Correction} (a correction applies only to the exact line it was made for)."""
     corrections = corrections or {}
-    raw_lines = (text or "").replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    rows = LA.original_lines(text or "")
     sung = LA.sung_lines(text or "")
     ids = LA.line_ids(sung)
     by_file = {s.file_line: (s, i) for s, i in zip(sung, ids)}
-    starts, pos = [], 0
-    for r in raw_lines:
-        starts.append(pos)
-        pos += len(r) + 1
     lines, sections, cur, tag_lines = [], [], None, []
-    for n, raw in enumerate(raw_lines, 1):
+    for n, start, _end, raw in rows:
         st = raw.strip()
         if _hidden_bracket(raw):
             tag_lines.append(n)
@@ -251,10 +254,18 @@ def analyze(text: str, corrections: "dict | None" = None, revision: int = 0) -> 
         elif core["sure"]:
             status = "verified"
         if toks and not core["sure"] and status != "manual_corrected":
-            warns.append("A word is English, a number or not in the Thai dictionary: its syllable count is an estimate.")
+            if core.get("split_unsure") and all(t[3] == "th" for t in toks):
+                warns.append("A dictionary piece is not one syllable the spelling rules accept, so the count is an estimate.")
+            else:
+                warns.append("A word is English, a number or not in the Thai dictionary: its syllable count is an estimate.")
         li = LineInsight(n, s.num, cur.name, s.text, hashlib.sha1(s.text.encode("utf-8")).hexdigest()[:10], len(toks), syl, segs, status, [], "", "", warns, lid, len(sections) - 1)
+        seen: dict = {}
+        for t in toks:
+            if t[3] == "th":
+                seen[t[2]] = seen.get(t[2], 0) + 1
+        li.repeats = [f"{w}×{c}" for w, c in seen.items() if c >= 2]
         li._tokens = toks                                                           # (offsets in the line) kept for the rhyme step; not part of the data
-        li._base = starts[n - 1]
+        li._base = start
         lines.append(li)
         cur.sung_lines += 1
         cur.words += li.word_count
@@ -291,6 +302,9 @@ def _rhymes(lines: list) -> None:
         r = _rime_of(t[2])
         if r is None:
             li.rhyme_status = "unverified"
+            li.end_sound = ""
+        else:
+            li.end_sound = f"{t[2]} {_key(r)}"
         ends.append((li, t, r))
     by_key: dict = {}
     for li, t, r in ends:
@@ -332,6 +346,11 @@ def _rhymes(lines: list) -> None:
         for t, k in got:
             keyed.setdefault(k, []).append(t)
         for k, ts in keyed.items():
+            names = {t[2] for t in ts}
+            if end_key == k:
+                names.update(sp.text for sp in li.rhyme_spans if sp.role == "end")
+            if len(names) < 2:
+                continue
             if len(ts) + (1 if end_key == k and not any((li._base + t[0], li._base + t[1]) in used for t in ts) else 0) < 2:
                 continue
             for t in ts:
@@ -859,15 +878,80 @@ HEALTH_NOTE = ("Basis: Detected = counted by the program; Guideline = the ACE-St
                "duration and stated assumptions. The melody is NOT known; skipping a section has several possible causes and is not predicted or given a probability.")
 
 
+def paint_segments(text: str, ins: Insights) -> list:
+    """[(file line, [(text, span or None)])]. A span is painted only when it is that exact slice of the original line."""
+    by_line: dict = {}
+    for sp in ins.spans:
+        by_line.setdefault(sp.line, []).append(sp)
+    out, pos = [], 0
+    for n, raw in enumerate((text or "").split("\n"), 1):
+        base, cur, segs = pos, 0, []
+        pos += len(raw) + 1
+        for sp in sorted(by_line.get(n, []), key=lambda x: x.start):
+            a, b = sp.start - base, sp.end - base
+            if a < cur or b > len(raw) or raw[a:b] != sp.text:
+                continue
+            if a > cur:
+                segs.append((raw[cur:a], None))
+            segs.append((raw[a:b], sp))
+            cur = b
+        if cur < len(raw):
+            segs.append((raw[cur:], None))
+        out.append((n, segs))
+    return out
+
+
+def lyric_report(text: str, corrections: "dict | None" = None) -> str:
+    """Compact evidence for the Songwriter AI. The same Insights the highlight uses. Not a verdict and not an instruction to edit."""
+    ins = analyze(text or "", corrections)
+    if not ins.lines:
+        return ""
+    rows = [
+        "LYRIC ANALYSIS (Python, from the Thai dictionary and spelling rules. Not a recording. Not a judgement of the song or of what the user wants.)",
+        "verified = the syllable pieces are real syllables. est = the count is not fully confirmed. unverified = the ending sound could not be read.",
+        "You may disagree with a row. If you do, say why. Do not state an unverified sound as a fact. A repeated word is a repeat, not a rhyme.",
+        "line | syllables | count | end | other confirmed rhyme | repeated words",
+    ]
+    endings: dict = {}
+    for li in ins.lines:
+        if li.rhyme_status == "unverified" or not li.end_sound:
+            end = "unverified" if li.rhyme_status == "unverified" else "-"
+        else:
+            end = li.end_sound
+            word = li.end_sound.split(" ", 1)[0]
+            endings.setdefault(word, []).append(li.line_number)
+        if any(sp.role == "end" for sp in li.rhyme_spans):
+            sp = next(sp for sp in li.rhyme_spans if sp.role == "end")
+            end = f"{li.end_sound or (sp.text + ' ' + sp.group)} {sp.kind}"
+            if sp.kind == "near":
+                mates = [f"L{o.line_number:03d}" for o in ins.lines if o.line_number != li.line_number and any(p.role == "end" and p.group == sp.group for p in o.rhyme_spans)]
+                if mates:
+                    end += " with " + ",".join(mates)
+        internal = [sp for sp in li.rhyme_spans if sp.role != "end"]
+        other = ", ".join(f"{sp.text} {sp.group} {sp.kind}" for sp in internal) if internal else "-"
+        reps = ", ".join(li.repeats) if li.repeats else "-"
+        rows.append(f"L{li.line_number:03d} | {li.syllable_count} syl | {_STATUS_NOTE[li.status]} | {end} | {other} | {reps}")
+    repeated_ends = [f"{w} on " + ", ".join(f"L{n:03d}" for n in nums) for w, nums in endings.items() if len(nums) >= 2]
+    if repeated_ends:
+        rows.append("Same word ends more than one line (a repeat, not a rhyme): " + "; ".join(repeated_ends))
+    return "\n".join(rows)
+
+
 def songwriter_block(ins: Insights, dn: "Density | None" = None) -> str:
     """Per sung line: words / syllables, how sure the count is, the rhyme the PROGRAM verified, the density level; then the ACE-Step lyrics health and the assumptions. Program facts: the model must not recount them."""
-    rows = ["PROGRAM FACTS (counted by Python from the lyrics; do not recount; est = estimate, manual = the user's correction, dict = dictionary-backed split):",
+    rows = ["PROGRAM FACTS (Python. dict = dictionary split confirmed as syllables, est = not fully confirmed, manual = the user's correction. Not audio. You may disagree; say why. Do not state an unverified sound as a fact, and do not call a repeated word a rhyme.):",
             "line | words/syllables | count | rhyme (program sound check) | vocal density (estimate)"]
     by_line = {x.line_number: x for x in dn.lines} if dn else {}
     for li in ins.lines:
         r = ""
         if li.rhyme_spans:
-            r = ", ".join(f"{sp.text}={sp.group} {sp.kind}{'' if sp.role == 'end' else ' internal'}" for sp in li.rhyme_spans)
+            bits = []
+            for sp in li.rhyme_spans:
+                sound = sp.group
+                if sp.role == "end" and " " in (li.end_sound or ""):
+                    sound = li.end_sound.split(" ", 1)[1]
+                bits.append(f"{sp.text}={sound} {sp.kind}{'' if sp.role == 'end' else ' internal'}")
+            r = ", ".join(bits)
         elif li.rhyme_status == "unverified":
             r = "not checked (sound not readable)"
         elif li.rhyme_status == "none":

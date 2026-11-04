@@ -60,6 +60,24 @@ def effective(t: Take) -> dict:
     return sent_values(t) or _fallback(t)
 
 
+def _job_rows(t: Take) -> list:
+    """Cover / Repaint lines. An ordinary take has none, so its dialog stays exactly as it was."""
+    st = t.settings or {}
+    mode = st.get("mode")
+    if mode not in ("cover", "repaint"):
+        return []
+    rows = [("Mode", mode), ("Caption sent", st.get("caption") or None)]
+    if mode == "cover":
+        src = st.get("source_external") or " ".join(x for x in (st.get("source_song_id"), st.get("source_take_id")) if x)
+        rows.append(("Cover source", src or None))
+    else:
+        src = " ".join(x for x in (st.get("source_song_id"), st.get("source_take_id")) if x)
+        rows.append(("Repaint source", src or None))
+        if st.get("repaint_start") is not None and st.get("repaint_end") is not None:
+            rows.append(("Repaint range (s)", f"{st.get('repaint_start')} – {st.get('repaint_end')}"))
+    return rows
+
+
 def describe(t: Take) -> dict:
     """{"rows": [(label, value | None)], "legacy": bool, "notes": [str]} for the read-only 'View Generation Settings'. None = not saved."""
     eff = effective(t)
@@ -70,6 +88,7 @@ def describe(t: Take) -> dict:
             ("Lyrics sent to ACE-Step (compiled)", t.lyrics or None),
             ("Style / tags sent", t.tags or None),
             ("Workflow", t.workflow_name or None),
+            *_job_rows(t),
             ("BPM", eff.get("bpm")), ("Key", eff.get("keyscale")), ("Time signature", eff.get("timesignature")), ("Duration requested (s)", eff.get("duration")),
             ("Language sent", t.resolved_language or eff.get("language")),
             ("Text-encode seed", eff.get("seed")), ("KSampler seed", eff.get("ksampler_seed")), ("Steps", eff.get("steps")), ("CFG", eff.get("cfg")), ("Text CFG", eff.get("text_cfg")),

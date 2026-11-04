@@ -150,7 +150,7 @@ def _context(snapshot, mode: str) -> str:
     clock = _SIG.get(timesig, timesig)
     if bpm and duration:
         if mode == "recommend":
-            rows.append(f"Density clock: {bpm:g} BPM, {clock}. This number only explains how full the lyric is. Propose the tempo that fits your direction. Do not write a tempo number in the caption.")
+            rows.append(f"Density clock (a calculation reference only, not a recommendation): {bpm:g} BPM, {clock}. It only explains how full the lyric is. Propose the tempo and meter that fit your own direction, and do not write a tempo number in the caption.")
         else:
             rows.append(f"Density clock: {bpm:g} BPM, {clock}. The clock only explains the estimate. Do not write it into the caption.")
     else:

@@ -48,6 +48,12 @@ class SongSettings:
     format: str = "mp3"
     audio_quality: str = ""                             # the bitrate / VBR level of mp3 and opus ('' = the format's default); flac has none
     wf_params: dict = field(default_factory=dict)       # steps / CFG remembered per workflow file: {"<workflow>.json": {"steps": n, "cfg": x}} (see quality_presets.py)
+    # Cover (ACE-Step). Defaults keep every song saved before Cover existed. Ignored by the normal Generate workflow.
+    cover_enabled: bool = False
+    cover_source: str = "external"                      # "external" (a file on disk) | "project" (a take in this library)
+    cover_external: str = ""                            # absolute path when cover_source is external
+    cover_song_id: str = ""                             # this library only
+    cover_take_id: str = ""
 
 
 def build_basic_style(s: SongSettings) -> str:

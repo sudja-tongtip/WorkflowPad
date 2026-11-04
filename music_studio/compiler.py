@@ -13,16 +13,19 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from . import cue_library as CL
+
 STRUCT_WORDS = {"intro": "intro", "verse": "verse", "pre-chorus": "prechorus", "pre chorus": "prechorus", "prechorus": "prechorus", "chorus": "chorus",
                 "bridge": "bridge", "outro": "outro", "instrumental": "instr", "guitar solo": "solo", "electric guitar solo": "solo", "drum break": "drums",
-                "breakdown": "break", "build": "build", "drop": "drop", "interlude": "instr", "solo": "solo", "hook": "chorus", "refrain": "chorus",
-                "final chorus": "chorus", "fade out": "outro"}
+                "breakdown": "break", "build": "build", "drop": "drop", "interlude": "instr", "piano interlude": "instr", "solo": "solo", "hook": "chorus", "refrain": "chorus",
+                "final chorus": "chorus", "fade out": "outro", "silence": "silence"}
 VOCAL_WORDS = ("whisper", "falsetto", "powerful belting", "belting", "spoken word", "harmon", "ad-lib", "raspy", "soft vocals", "breathy", "gritty", "choir", "emotional vocals", "operatic", "male", "female", "duet", "call and response")
 
 TAG_LINE = re.compile(r"^\s*\[[^\[\]]*\]\s*$")
 _LABEL_CUE = re.compile(r"\s+(?:\u2014|\u2013|-|:)\s+")          # " - ", " — ", " – " or " : " starts a cue. A hyphen inside Pre-Chorus has no spaces.
 _LABEL_DASH = re.compile(r"\s*[\u2014\u2013]\s*")                # an en dash or em dash with the spaces optional: [Intro—Rhodes]
 HOLD_PREFIX = re.compile(r"^(\s*)\[Hold\]\s*", re.IGNORECASE)
+HOLD_SUFFIX = re.compile(r"\[Hold\]\s*$", re.IGNORECASE)
 MARKUP = re.compile(r"</?[A-Za-z][A-Za-z0-9:_-]*(?:\s[^<>\n]*)?/?>")        # <whisper>, </strong>, <hold:long>, <br/>
 
 
@@ -47,6 +50,17 @@ def section_label(tag_line: str) -> str:
     return inner[:m.start()].strip() if m else inner.strip()
 
 
+def lyric_body(line: str) -> str:
+    """Sung words of one line. A leading or trailing [Hold], and a line-vocal bracket, are not words. Other characters stay."""
+    s = HOLD_PREFIX.sub("", line or "")
+    s = HOLD_SUFFIX.sub("", s)
+
+    def cut(m):
+        return "" if CL.line_vocal(m.group(0)[1:-1]) else m.group(0)
+
+    return re.sub(r"\[[^\[\]\n]*\]", cut, s).strip()
+
+
 def tag_class_of(line: str) -> str:
     """Section class of a [Tag - descriptor] line ('verse', 'chorus', ..., 'cue' for a bare vocal cue, 'other')."""
     inner = line.strip()[1:-1].split(" - ", 1)[0].strip().lower()
@@ -64,7 +78,7 @@ def compile_lyrics(text: str) -> Compiled:
     r = Compiled()
     src = (text or "").replace("\r\n", "\n").replace("\r", "\n").split("\n")
     ace_lines, orig_lines = [], []
-    used_hold = used_cue = used_harm = False
+    used_hold_prefix = used_hold_suffix = used_cue = used_line_vocal = used_harm = False
     for n, raw in enumerate(src, 1):
         line = raw.rstrip()
         # unsupported HTML/XML tags: remove the tag, keep the words, say so
@@ -85,14 +99,28 @@ def compile_lyrics(text: str) -> Compiled:
             if cls == "other":
                 r.warnings.append(("info", n, f"{line.strip()} is not a documented ACE-Step tag; it is sent as written"))
             if cls == "cue":
-                used_cue = True
+                inner = line.strip()[1:-1]
+                if " - " not in inner and CL.line_vocal(inner):
+                    used_line_vocal = True
+                else:
+                    used_cue = True
+            fix = CL.assess_tag(line.strip())
+            if fix.changed:
+                r.warnings.append(("info", n, f"A shorter tag is available ({fix.after}). This line is sent as written."))
             continue
         m = HOLD_PREFIX.match(line)
         if m:
-            used_hold = True
+            used_hold_prefix = True
             r.lines.append(("hold", line.strip()))
             ace_lines.append(line.strip())
             orig_lines.append(line[m.end():])
+            continue
+        sm = HOLD_SUFFIX.search(line)
+        if sm and line[:sm.start()].strip():
+            used_hold_suffix = True
+            r.lines.append(("hold", line.strip()))
+            ace_lines.append(line.strip())
+            orig_lines.append(line[:sm.start()].rstrip())
             continue
         if "(" in line and ")" in line:
             used_harm = True
@@ -115,13 +143,17 @@ def compile_lyrics(text: str) -> Compiled:
     r.original = "\n".join(squeeze(orig_lines))
     if not any(k in ("text", "hold") for k, _ in r.lines):
         r.warnings.append(("warning", 0, "There are no sung lines yet (only tags)"))
-    if used_hold:
+    if used_hold_prefix or used_hold_suffix:
         r.warnings.append(("info", 0, "[Hold] and stretched vowels are prompt techniques: the model may or may not hold the note"))
-    if used_cue:
+    if used_cue or used_line_vocal:
         r.warnings.append(("info", 0, "Vocal cues in [brackets] are hints; results vary by language and voice"))
     legend = []
-    if used_hold:
+    if used_hold_prefix:
         legend.append("- A line starting with [Hold] asks for a held note on the stretched vowels (romanized / elongated spelling).")
+    if used_hold_suffix:
+        legend.append("- [Hold] at the end of a lyric line asks for a held note. It stays on that line.")
+    if used_line_vocal:
+        legend.append("- A vocal cue on its own line, such as [whispered], is a hint for the next lyric line. ACE-Step may not follow it exactly.")
     if used_cue:
         legend.append("- [Section - descriptor] sets the style of that part, for example [Chorus - powerful belting].")
     if used_harm:

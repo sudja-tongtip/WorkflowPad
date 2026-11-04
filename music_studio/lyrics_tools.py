@@ -15,12 +15,12 @@ SECTIONS = ["Intro", "Verse", "Pre-Chorus", "Chorus", "Hook", "Bridge", "Outro",
 VOCAL_TOOLS = {
     "whisper": ("Whisper", "whispered", "vocal"), "falsetto": ("Falsetto", "falsetto", "vocal"), "belting": ("Powerful Belting", "powerful belting", "vocal"),
     "spoken": ("Spoken Word", "spoken word", "vocal"), "harmonies": ("Harmonies", "harmonies", "wrap"), "adlib": ("Ad-lib", "ad-lib", "wrap"),
-    # inline styles: the [tag] goes exactly where the caret is, on the SAME line (no line break is added, like [Hold]); on a section line they set that section's style instead
-    "soft": ("Soft Vocals", "soft vocals", "inline"), "raspy": ("Raspy / Gritty Vocals", "raspy vocals", "inline"), "breathy": ("Breathy Vocals", "breathy vocals", "inline"),
-    "choir": ("Choir / Backing Vocals", "choir vocals", "inline"), "emotional": ("Emotional Vocals", "emotional vocals", "inline"), "operatic": ("Operatic Vocals", "operatic vocals", "inline"),
+    # vocal: on a section line, the phrase is that section's cue; on a lyric, a [cue] line is inserted immediately before that line. The lyric characters stay.
+    "soft": ("Soft Vocals", "soft vocals", "vocal"), "raspy": ("Raspy Vocal", "raspy vocal", "vocal"), "breathy": ("Breathy Vocals", "breathy vocals", "vocal"),
+    "choir": ("Choir / Backing Vocals", "choir vocals", "vocal"), "emotional": ("Emotional Vocals", "emotional vocals", "vocal"), "operatic": ("Operatic Vocals", "operatic vocals", "vocal"),
 }
 OTHER_TOOLS = {"pause": "Pause", "repeat": "Repeat", "linebreak": "Line Break", "build": "Build Energy", "breakdown": "Breakdown"}
-_VOCAL_PHRASES = {v[1] for v in VOCAL_TOOLS.values() if v[2] in ("vocal", "inline")}
+_VOCAL_PHRASES = {v[1] for v in VOCAL_TOOLS.values() if v[2] in ("vocal", "inline")} | {"raspy vocals", "raspy / gritty vocals"}
 
 
 class ToolError(Exception):
@@ -121,19 +121,19 @@ def apply_vocal(text: str, start: int, end: int, key: str) -> Edit:
             return Edit(new, start, end - 2, f"{label} removed")
         new = text[:start] + "(" + sel + ")" + text[end:]
         return Edit(new, start, end + 2, f"{label}: (backing vocal)")
-    if mode == "inline":                                       # [tag] right at the caret (before a selection's start), same line, nothing else touched; on a section line: that section's style
-        ls, le = line_bounds(text, start)
-        if start >= end and _is_struct_header(text[ls:le]):
-            return _set_descriptor(text, ls, le, phrase, _VOCAL_PHRASES)
-        pos, tag = max(0, min(start, len(text))), f"[{phrase}]"
-        if text[:pos].endswith(tag):
-            raise ToolError(f"{tag} is already here")
-        return Edit(text[:pos] + tag + text[pos:], pos + len(tag), pos + len(tag), f"{label}: {tag} inserted here (a hint for the model; it may not follow it)")
-    if start >= end:                                           # caret: on a section line it sets that section's style, anywhere else it inserts a cue line
+    if start >= end:                                           # caret: on a section line it sets that section's style; on a lyric the cue line goes immediately before that line
         ls, le = line_bounds(text, start)
         if _is_struct_header(text[ls:le]):
             return _set_descriptor(text, ls, le, phrase, _VOCAL_PHRASES)
-        return _insert_cue(text, start, phrase, label)
+        if not text[ls:le].strip():
+            return _insert_cue(text, start, phrase, label)
+        cue = f"[{phrase}]"
+        if ls > 0:
+            pls, ple = line_bounds(text, ls - 1)
+            if text[pls:ple].strip().lower() == cue:
+                raise ToolError(f"{label} is already set on this line")
+        new = text[:ls] + cue + "\n" + text[ls:]
+        return Edit(new, ls + len(cue) + 1, ls + len(cue) + 1, f"{label}: cue line before this lyric (a hint; ACE-Step may not follow it)")
     ls, _ = line_bounds(text, start)                           # selection: a cue line before the first selected line
     cue = f"[{phrase}]"
     if ls > 0:

@@ -201,6 +201,11 @@ def is_single_syllable(word: str) -> bool:
         return s in {"ฤ", "ฤๅ", "ฦ", "ฦๅ"}
     if s[0] in _DEPENDENT:
         return False
+    # No written vowel, a known onset cluster and one final consonant: ตรง, กลม, ปลด.
+    # The vowel is the inherent ออ. ทรัพย์ stays out because ทร is not one of these clusters.
+    if (len(s) >= 3 and s[0:2] in _CLUST and _coda_rest(s, 2, True)
+            and not any(ch in _LEAD or ch in _ABOVE or ch in _BELOW or ch in "ะาำๅ็อ" for ch in s)):
+        return True
     i = 0
     lead = ""
     if s[0] in _LEAD:
@@ -269,13 +274,22 @@ def _rime(syllable: str) -> "tuple | None":
         sara, mart = kv.check_sara(syllable), kv.check_marttra(syllable)
     except Exception:
         return None
-    if not sara or not mart:
+    if not sara or not mart or str(sara).startswith("Can't") or str(mart).startswith("Can't"):
         return None
     # The same sound-normalization KhaveeVerifier.is_sumpus uses for สระเกิน.
+    # ไ-ย / ใ-ย (ไกล, ไทย) is the vowel ไอ. Khavee names the written ย as a final เกย.
     if sara == "อะ" and mart == "เกย":
         sara, mart = "ไอ", "กา"
+    elif sara in ("ไอ", "ใอ") and mart == "เกย":
+        # ไ-ย / ใ-ย and ไกล: Khavee calls the written ย or the cluster's ล a final เกย. The vowel is ไอ.
+        mart = "กา"
     if sara in ("อะ", "อำ") and mart == "กม":
         sara, mart = "อำ", "กา"
+    # แม่, แน่, แท้, เล: one consonant under a leading vowel is the onset. Khavee reports that
+    # onset's class (กม, กน, กด, เกย) as if it were the final. There is no final consonant.
+    cons = [ch for ch in syllable if ch in _CONS]
+    if len(cons) == 1 and any(ch in _LEAD for ch in syllable) and not str(mart).startswith("Can't"):
+        mart = "กา"
     return sara, mart
 
 

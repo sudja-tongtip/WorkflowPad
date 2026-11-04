@@ -10,7 +10,7 @@ No UI, no I/O.
 """
 from __future__ import annotations
 
-KNOWLEDGE_VERSION = "ace-knowledge-v2"
+KNOWLEDGE_VERSION = "ace-knowledge-v4"
 SOURCE = "https://github.com/ace-step/ACE-Step-1.5/blob/main/docs/en/Tutorial.md"
 
 TOPICS = {
@@ -30,13 +30,22 @@ TOPICS = {
         "(G) Structure tags: Intro, Verse, Pre-Chorus, Chorus, Bridge, Outro, Build, Drop, Breakdown, Instrumental, Guitar Solo, Piano Interlude, Fade Out, Silence. "
         "Join a section with a hyphen to say how it is performed: [Chorus - anthemic]. Blank line between sections. [Instrumental] alone = no vocals.\n"
         "(S) Section functions: Intro opens the atmosphere; Verse tells or develops the story; Pre-Chorus connects and builds momentum; Chorus is the memorable main idea; "
-        "Bridge changes mood, viewpoint or sound; Instrumental is a part without singing; Outro closes. Build / Drop / Breakdown only when the genre calls for them.\n"
+        "Bridge changes mood, viewpoint or sound; Instrumental is a part without singing; Outro closes. Build / Drop / Breakdown only when the genre calls for them. "
+        "Hook, Post-Chorus, Final Chorus and Drum Break are studio section names, not official structure-table tags. A numbered name such as Verse 2 is the same section type.\n"
         "(S) Not every song has every section. The template the user picks is a target frame: leaving a section empty is better than filling it with repeated or invented lines."),
     "vocal": (
         "VOCAL DELIVERY AND ENERGY TAGS.\n"
         "(G) Vocal hints: raspy vocal, whispered, falsetto, powerful belting, spoken word, harmonies, call and response, ad-lib. "
         "Energy / emotion hints: high energy, low energy, building energy, explosive, melancholic, euphoric, dreamy, aggressive. "
         "Text in (parentheses) is treated as backing vocals. UPPERCASE lyrics suggest stronger intensity. Stretching vowels is unstable.\n"
+        "(S) Where a vocal cue goes: a section cue is on the section line, as in [Chorus - anthemic]. "
+        "A vocal cue for one line stands on its own line immediately before that lyric. "
+        "Official line vocals: raspy vocal, whispered, falsetto, powerful belting, spoken word, harmonies, call and response, ad-lib. "
+        "Studio line vocals, not in the official vocal table: breathy vocals, soft vocals, emotional vocals. "
+        "Use a line cue only when that line needs a different delivery. Do not cue every line. Do not stack cues without a different job. "
+        "Do not change the lyric to fit a cue. A line cue is a hint; ACE-Step may not follow it exactly. "
+        "[Hold] stays after the words on that same line (love[Hold]). Never put [Hold] on its own line. "
+        "A line that already starts with [Hold] is still a held note: leave it unless the user asks to move it.\n"
         "(S) Match the delivery to the section when it fits this song: e.g. a trap verse -> spoken word / rhythmic delivery; a soft pre-chorus -> breathy vocals; "
         "an emotional chorus can be full without belting; a bridge -> whispered / intimate. These are examples, not rules for every genre. "
         "Name powerful belting, soaring, falsetto, or operatic only when the user asked. "
@@ -51,8 +60,10 @@ TOPICS = {
         "(G) Keep tags concise and put complex style descriptions in the caption; stacked tags can be sung as lyrics and confuse the model. "
         "Caption and lyrics must agree (instruments, emotion, vocal): the model handles conflicts badly "
         "(example conflict: caption 'violin solo, classical, intimate chamber music' with [Guitar Solo - electric - distorted]).\n"
-        "(S) At most one or two short hints per tag, from well known cue words. Never invent a tag and claim ACE-Step surely supports it. "
-        "Keep the user's own tags, [Hold] lines, inline cues and (backing vocals) exactly as written."),
+        "(S) Usually one short hint in a tag. A second is fine when it does a different job. A long description belongs in the caption. "
+        "The studio cue list is not every phrase ACE-Step can read, and a studio cue is not an official guarantee. Never invent a tag and claim ACE-Step surely supports it. "
+        "A sentence inside brackets can be sung: keep a vocal cue short. "
+        "Keep the user's own tags and (backing vocals) exactly as written until the user accepts a proposal. Do not move a cue when its place could mean two things."),
     "metadata": (
         "METADATA - these values are GUIDANCE the model samples around, not exact commands (120 BPM may come out as 118 or 122).\n"
         "(G) bpm 30-300: slow 60-80, mid-tempo 90-120, fast 130-180; extremes are less stable. keyscale like 'C major' / 'A minor'; common keys are stable, rare keys may be ignored. "

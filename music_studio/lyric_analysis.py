@@ -180,10 +180,31 @@ class ResultCache:
 
 
 # ── the lines that are sung ──────────────────────────────────────────────────────────────────────────────────
+def original_lines(text: str) -> list:
+    """[(file line, start, end, content)] of `text` as stored.
+
+    A break is ``\\r\\n``, ``\\n`` or a lone ``\\r``. `content` excludes the break, and `start`/`end` are
+    character offsets into the original string. The lyrics themselves are not rewritten.
+    """
+    s = text or ""
+    out, pos, i, n = [], 0, 0, 0
+    while i < len(s):
+        if s.startswith("\r\n", i) or s[i] in "\r\n":
+            n += 1
+            out.append((n, pos, i, s[pos:i]))
+            i += 2 if s.startswith("\r\n", i) else 1
+            pos = i
+        else:
+            i += 1
+    n += 1
+    out.append((n, pos, len(s), s[pos:]))
+    return out
+
+
 def sung_lines(text: str) -> list:
     """Sung lines in order. Skipped: blank lines, whole-line [tags] ([Verse 1], [Chorus - powerful]). Removed from a line: a leading [Hold] and any inline [tag]."""
     out, n = [], 0
-    for i, raw in enumerate((text or "").replace("\r\n", "\n").replace("\r", "\n").split("\n"), 1):
+    for i, _start, _end, raw in original_lines(text):
         line = raw.strip()
         if not line or TAG_LINE.match(line):
             continue

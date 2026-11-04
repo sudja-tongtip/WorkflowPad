@@ -8,6 +8,7 @@ because the program folder may be read-only. A default is copied there once. Whe
 edited is never overwritten. Reset puts the default back and keeps the old file as a backup.
 
 A prompt is valid when it is UTF-8, not empty and has every required section. An invalid file is reported (never sent as an empty prompt); the last good prompt keeps serving until the file is fixed.
+The Lyric Formatter is not one of those roles. It formats the open lyrics in one request (its own prompt file, no chat and no session).
 The prompt hash identifies the version of a prompt: a new hash opens a new session generation (see specialist_engine), never a silent change inside a running one.
 """
 from __future__ import annotations
@@ -45,6 +46,11 @@ SPECIALISTS = (
     # AI Recommend (the three music directions) is a structured task of its own, not a chat: it keeps its prompt file (music_director.md) as guidance, its own session and its own output format.
     Specialist("music_director", "Music Director (AI Recommend)", "The three music directions of AI Recommend", "music_director.md", analyzes=False,
                ask_for="the three music directions of AI Recommend (Style panel / Generate tab)"),
+    # AI Recommend V2: the Creative Music Producer of the three directions. Its own editable prompt (the creative principles); the OUTPUT FORMAT and the validation rules stay in ai_music_director.py. No chat, no session.
+    Specialist("ai_recommend", "AI Recommend (Creative Music Producer)", "The creative principles of the three AI Recommend directions", "ai_recommend.md", analyzes=False,
+               ask_for="the three music directions of AI Recommend (Style panel / Generate tab)"),
+    # Not a chat specialist: Analyze Song does not ask it, the chat list does not show it, and it has no session.
+    Specialist("lyric_formatter", "Lyric Formatter", "Formats the open lyrics and cues without rewriting the words", "lyric_formatter.md", analyzes=False),
 )
 PRODUCER = "music_producer"
 ANALYSIS_ID = "music_producer_analysis"             # the Music Producer's ANALYSIS session: its own live conversation and its own session file, never mixed with the chat session

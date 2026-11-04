@@ -129,6 +129,20 @@ def missing() -> dict:
     return dict(_missing)
 
 
+def pin_value(ctl, text: str) -> None:
+    """Show `text` as it is. A language refresh must not translate it: log text and file paths are data, not window labels."""
+    ctl.value = text or ""
+    store = ctl.__dict__.get("_i18n")
+    if store is not None:
+        store.pop("value", None)
+    vals = getattr(ctl, "_values", None)
+    if isinstance(vals, dict):
+        vals["value"] = text or ""
+    dirty = getattr(ctl, "_dirty", None)
+    if isinstance(dirty, dict):
+        dirty["value"] = None
+
+
 def _remember(obj, name: str, value: str) -> None:
     store = obj.__dict__.get("_i18n")
     if store is None:
