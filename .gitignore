@@ -53,3 +53,11 @@ stories/
 # Local tooling and retired code (not part of the public source)
 .claude/
 archive_unused/
+
+# Tests, audits and experiments are not distributed
+test_*.py
+*_audit_*.md
+music_studio/prompts/specialists_candidate_v6/
+music_studio/web/
+_sel_preview_shots/
+image.png
