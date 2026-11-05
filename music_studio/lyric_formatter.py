@@ -201,3 +201,111 @@ def _squash(text: str) -> str:
 
 def _reject(reason: str) -> Plan:
     return Plan("reject", "", reason)
+
+
+# ── the program does the formatting itself ───────────────────────────────────────────────────────────────────
+# All five modes are rule jobs (remove cues, keep two cues, shorten a tag, move blank lines). A model gets words wrong, takes a long time, and every wrong word is rejected by plan() above;
+# the program does these exactly. The words, the section names and every [Hold] are never touched, so plan() accepts the result by construction.
+
+from . import cue_library as CL  # noqa: E402
+from . import section_cues as SC  # noqa: E402
+
+MAX_SECTION_CUES = 2
+_INLINE_CUE = re.compile(r"\[(?!hold\])[^\[\]\n]*\]", re.IGNORECASE)
+
+
+def _split_section_tag(line: str):
+    """(name, cue text) of a section tag line, or None for any other line."""
+    st = line.strip()
+    if not K.TAG_LINE.match(st):
+        return None
+    parsed = TP.parse_tag(st[1:-1])
+    if parsed.kind != "section":
+        return None
+    name, cue = CL._split_tag(st[1:-1])
+    return name, cue
+
+
+def _pick_cues(cue_text: str, limit: int = MAX_SECTION_CUES) -> list:
+    """The cues worth keeping from a cue text: catalog cues in the order written, one per category (two words for the same job say it twice), then a short custom phrase if there is room."""
+    chosen, cats = [], set()
+    for cue in CL.mentioned_cues(cue_text):
+        if cue.category in cats:
+            continue
+        cats.add(cue.category)
+        chosen.append(cue.phrase)
+        if len(chosen) >= limit:
+            return chosen
+    if len(chosen) < limit:
+        for part in CL.cue_parts(cue_text):
+            if CL.find_phrase(part) or CL.mentioned_cues(part) or not CL.is_short_custom(part):
+                continue
+            if part.casefold() not in (c.casefold() for c in chosen):
+                chosen.append(part.strip())
+                break
+    return chosen
+
+
+def _tidy_tag(line: str, shorten: bool) -> str:
+    """One section tag line with its cues reduced. Clean Cues fixes a tag that repeats itself or has more than two cues; Simplify for ACE-Step also shortens a tag whose cue is a long phrase."""
+    got = _split_section_tag(line)
+    if got is None or not got[1].strip():
+        return line
+    name, cue_text = got
+    parts = CL.cue_parts(cue_text)
+    cues = [CL.find_phrase(p) for p in parts]
+    known = [c for c in cues if c]
+    dup = len({c.category for c in known}) < len(known) or len({c.phrase for c in known}) < len(known)
+    too_many = len(parts) > MAX_SECTION_CUES
+    long_cue = any(not c and not CL.is_short_custom(p) for c, p in zip(cues, parts)) or CL.cue_is_long(cue_text)
+    if not (dup or too_many or (shorten and long_cue)):
+        return line
+    keep = _pick_cues(cue_text)
+    if shorten and len(keep) > 1 and CL.cue_is_long(", ".join(keep)):
+        keep = [c for c in keep if CL.find_phrase(c)] or keep[:1]          # the custom phrase made the tag long: only the catalog cues stay
+    lead = line[:len(line) - len(line.lstrip())]
+    return f"{lead}[{name} - {', '.join(keep)}]" if keep else f"{lead}[{name}]"
+
+
+def _spacing(text: str) -> str:
+    """Format Lyrics: trailing spaces gone, one blank line before each section tag, no run of blank lines, no blank lines at the ends."""
+    out = []
+    for ln in _newlines(text).split("\n"):
+        ln = ln.rstrip()
+        if K.TAG_LINE.match(ln) and _split_section_tag(ln) is not None and out and out[-1].strip():
+            out.append("")
+        if not ln.strip() and (not out or not out[-1].strip()):
+            continue
+        out.append(ln)
+    return "\n".join(out).strip("\n") + "\n"
+
+
+def python_format(mode: str, text: str) -> str:
+    """The result of one mode, made by rules. Raises ValueError for an unknown mode."""
+    if mode not in MODE_LABEL:
+        raise ValueError(mode)
+    lines = _newlines(text).split("\n")
+    if mode == "clear_all":
+        out = []
+        for ln in lines:
+            if K.TAG_LINE.match(ln):
+                if _split_section_tag(ln) is not None:
+                    out.append(SC.bare_section_tag(ln.strip()) or ln)
+                elif ln.strip().casefold() == "[hold]":
+                    out.append(ln)
+                continue                                        # a line cue or another cue-only line goes
+            out.append(re.sub(r"[ \t]{2,}", " ", _INLINE_CUE.sub("", ln)).rstrip())
+        return "\n".join(out)
+    if mode == "format_lyrics":
+        return _spacing(text)
+    tidy = "\n".join(_tidy_tag(ln, shorten=mode == "ace") if K.TAG_LINE.match(ln) else ln for ln in lines)
+    return _spacing(tidy) if mode == "beauty" else tidy
+
+
+def python_plan(req: FormatRequest) -> Plan:
+    """The same checks as plan(): the words, the sections and every [Hold] must have survived, or nothing is applied."""
+    try:
+        out = python_format(req.mode, req.lyrics)
+    except ValueError:
+        return _reject(REASON_MODE)
+    return plan(req, out, now_song_id=req.song_id, now_sheet_id=req.sheet_id, now_lyrics=req.lyrics, now_token=req.token)

@@ -878,6 +878,184 @@
     "e.g. sparse and acoustic, slower, more intimate": "เช่น เบาๆ อะคูสติก ช้าลง ใกล้ชิดขึ้น",
     "Use my current style settings as a reference": "ใช้ค่าสไตล์ปัจจุบันของฉันเป็นข้อมูลอ้างอิง",
     "Off: the AI decides the style from the lyrics alone. On: it also sees your genre, mood, vocal, energy, extra tags and Music Style Prompt as a starting point.": "ปิด: AI ตัดสินสไตล์จากเนื้อเพลงอย่างเดียว เปิด: AI จะเห็น genre, mood, vocal, energy, extra tags และ Music Style Prompt ของคุณเป็นจุดเริ่มต้น",
+    "Export to Video…": "ส่งออกเป็นวิดีโอ…",
+    "Export to Video": "ส่งออกเป็นวิดีโอ",
+    "Picture": "รูปภาพ",
+    "Video": "วิดีโอ",
+    "Part of the take": "ช่วงของเทค",
+    "No picture yet": "ยังไม่มีรูป",
+    "Kept for this song. The centre of it, as a square, is also the icon of the song.": "เก็บไว้กับเพลงนี้ และส่วนกลางของรูป (ครอปเป็นสี่เหลี่ยมจัตุรัส) ใช้เป็นไอคอนของเพลงด้วย",
+    "Choose the picture that fills the video. It is kept for this song.": "เลือกรูปที่จะใช้เป็นภาพของวิดีโอ ระบบเก็บรูปนี้ไว้กับเพลง",
+    "Choose picture…": "เลือกรูป…",
+    "Remove": "เอาออก",
+    "Video size": "ขนาดวิดีโอ",
+    "Wave style": "แบบคลื่นเสียง",
+    "Wave colour": "สีคลื่นเสียง",
+    "Wave height (px)": "ความสูงคลื่น (px)",
+    "Bottom margin (px)": "ระยะจากขอบล่าง (px)",
+    "Empty = the default of this size": "เว้นว่าง = ค่าเริ่มต้นของขนาดนี้",
+    "pixels, both even numbers": "พิกเซล ต้องเป็นเลขคู่ทั้งสองค่า",
+    "Drag on the waveform to choose a part, or drag its edges. Nothing chosen = the whole take.": "ลากบนกราฟคลื่นเพื่อเลือกช่วง หรือลากขอบของช่วงเพื่อปรับ ไม่เลือก = ใช้ทั้งเทค",
+    "Whole take": "ทั้งเทค",
+    "Listen to the part": "ฟังช่วงที่เลือก",
+    "Start": "เริ่ม",
+    "End": "จบ",
+    "Drawing the waveform…": "กำลังวาดกราฟคลื่นเสียง…",
+    "Preview image": "ดูภาพตัวอย่าง",
+    "Preview clip": "ดูคลิปตัวอย่าง",
+    "Export video": "ส่งออกวิดีโอ",
+    "Show in folder": "เปิดโฟลเดอร์",
+    "Choose…": "เลือก…",
+    "Test": "ทดสอบ",
+    "Makes about 8 seconds, small and fast, and opens it in your video player": "สร้างคลิปราว 8 วินาที ขนาดเล็กและเร็ว แล้วเปิดด้วยโปรแกรมเล่นวิดีโอของเครื่อง",
+    "Making the video…": "กำลังสร้างวิดีโอ…",
+    "Making a short preview…": "กำลังสร้างตัวอย่างสั้น…",
+    "Drawing one frame…": "กำลังวาดภาพตัวอย่าง…",
+    "The video was saved.": "บันทึกวิดีโอแล้ว",
+    "Choose a picture first.": "เลือกรูปก่อน",
+    "ffmpeg was not found. Choose ffmpeg.exe above.": "ไม่พบ ffmpeg เลือก ffmpeg.exe ด้านบน",
+    "The part is too short.": "ช่วงที่เลือกสั้นเกินไป",
+    "Choose a part of the take first.": "เลือกช่วงของเทคก่อน",
+    "Stopped. No file was made.": "หยุดแล้ว ไม่มีไฟล์ถูกสร้าง",
+    "Checking ffmpeg…": "กำลังตรวจ ffmpeg…",
+    "Choose the file, or leave empty to use the one on the PATH": "เลือกไฟล์ หรือเว้นว่างเพื่อใช้ตัวที่อยู่ใน PATH",
+    "ffmpeg was not found. Choose ffmpeg.exe (download it from ffmpeg.org if you do not have it).": "ไม่พบ ffmpeg เลือก ffmpeg.exe (ถ้ายังไม่มี ดาวน์โหลดได้จาก ffmpeg.org)",
+    "The picture of the video at the size you chose (reduced here). The real waveform moves with the music.": "ภาพของวิดีโอตามขนาดที่เลือก (ย่อให้เล็ก) คลื่นเสียงจริงจะขยับตามเพลง",
+    "The length of this take could not be read. The whole take will be used.": "อ่านความยาวของเทคนี้ไม่ได้ จะใช้ทั้งเทค",
+    "The waveform could not be drawn. You can still type the start and the end.": "วาดกราฟคลื่นไม่ได้ แต่ยังพิมพ์เวลาเริ่มและจบได้",
+    "m:ss or seconds": "นาที:วินาที หรือวินาที",
+    "Inside the take, start before end": "ต้องอยู่ในเทค และเริ่มก่อนจบ",
+    "Landscape 16:9 · 1920 × 1080": "แนวนอน 16:9 · 1920 × 1080",
+    "Landscape 16:9 · 1280 × 720": "แนวนอน 16:9 · 1280 × 720",
+    "Portrait 9:16 · 1080 × 1920": "แนวตั้ง 9:16 · 1080 × 1920",
+    "Portrait 9:16 · 720 × 1280": "แนวตั้ง 9:16 · 720 × 1280",
+    "Square 1:1 · 1080 × 1080": "จัตุรัส 1:1 · 1080 × 1080",
+    "Custom size": "กำหนดขนาดเอง",
+    "Centered line": "เส้นกลาง",
+    "Line": "เส้น",
+    "Peak to peak": "ยอดถึงยอด",
+    "Points": "จุด",
+    "Cyan": "ฟ้าน้ำทะเล",
+    "White": "ขาว",
+    "Yellow": "เหลือง",
+    "Green": "เขียว",
+    "Magenta": "ม่วงแดง",
+    "Orange": "ส้ม",
+    "Red": "แดง",
+    "Sky blue": "ฟ้าสด",
+    "Fill the frame (the edges may be cropped)": "เต็มกรอบ (อาจตัดขอบภาพ)",
+    "Show the whole picture (black bars)": "แสดงทั้งภาพ (มีแถบดำ)",
+    "Pictures": "รูปภาพ",
+    "Movement": "การเคลื่อนไหว",
+    "Add pictures…": "เพิ่มรูป…",
+    "Move earlier": "เลื่อนไปก่อนหน้า",
+    "Move later": "เลื่อนไปถัดไป",
+    "Remove this picture": "เอารูปนี้ออก",
+    "The icon of the song": "ไอคอนของเพลง",
+    "No picture yet. Add one or more: each is shown in turn and moves slowly.": "ยังไม่มีรูป เพิ่มได้หนึ่งรูปหรือมากกว่า แต่ละรูปจะแสดงสลับกันและเคลื่อนไหวช้าๆ",
+    "Kept for this song. The first picture is also the icon of the song (its centre, as a square). Several pictures change one after the other, in this order.": "เก็บไว้กับเพลงนี้ รูปแรกใช้เป็นไอคอนของเพลงด้วย (ส่วนกลางของรูป ครอปเป็นสี่เหลี่ยมจัตุรัส) ถ้ามีหลายรูปจะเปลี่ยนต่อกันตามลำดับนี้",
+    "Movement of each picture": "การเคลื่อนไหวของแต่ละรูป",
+    "Change to the next picture": "การเปลี่ยนไปรูปถัดไป",
+    "Each picture (s)": "แต่ละรูป (วินาที)",
+    "Change takes (s)": "ช่วงเปลี่ยนรูป (วินาที)",
+    "Mix the order": "สลับลำดับรูป",
+    "Every picture moves slowly while it is shown, then changes to the next. With one picture, the zoom goes in and out. The pictures repeat until the music ends.": "ทุกรูปเคลื่อนไหวช้าๆ ระหว่างที่แสดง แล้วเปลี่ยนไปรูปถัดไป ถ้ามีรูปเดียวจะซูมเข้าสลับซูมออก รูปจะวนซ้ำจนกว่าเพลงจะจบ",
+    "Slow zoom in": "ซูมเข้าช้าๆ",
+    "Slow zoom out": "ซูมออกช้าๆ",
+    "Zoom in, then out": "ซูมเข้า แล้วซูมออก",
+    "Slow pan to the left": "แพนไปทางซ้ายช้าๆ",
+    "Slow pan to the right": "แพนไปทางขวาช้าๆ",
+    "No movement": "ไม่เคลื่อนไหว",
+    "Fade": "เฟด",
+    "Dissolve": "ละลาย",
+    "Slide left": "เลื่อนไปซ้าย",
+    "Slide right": "เลื่อนไปขวา",
+    "Wipe": "ปัดผ่าน",
+    "Circle open": "วงกลมขยาย",
+    "Mixed (a different one each time)": "ผสม (เปลี่ยนแบบไม่ซ้ำกันทุกครั้ง)",
+    "The pictures were not added": "เพิ่มรูปไม่สำเร็จ",
+    "Analyze Song: syllables, rhymes, rhythm and songwriting quality in one report, with suggestions you can apply": "วิเคราะห์เพลง: พยางค์ สัมผัส จังหวะ และคุณภาพการแต่งในรายงานเดียว พร้อมคำแนะนำที่นำไปใช้ได้",
+    "Lyric Formatter: pick a mode. The AI formats these lyrics and replaces them immediately. Undo brings the previous lyrics back.": "จัดรูปแบบเนื้อเพลง: เลือกโหมด แล้ว AI จะจัดรูปแบบและแทนที่เนื้อเพลงทันที กดย้อนกลับเพื่อเอาเนื้อเพลงเดิมคืน",
+    "Song Structures: pick a built-in or your own structure. With no sung lyrics it inserts the section tags; with lyrics the AI arranges YOUR lines into it (you preview first).": "โครงสร้างเพลง: เลือกโครงสร้างสำเร็จรูปหรือของคุณเอง ถ้ายังไม่มีเนื้อร้องจะใส่แท็กท่อนให้ ถ้ามีเนื้อร้องแล้ว AI จะจัดบรรทัดของคุณเข้าโครงสร้าง (ดูตัวอย่างก่อนใช้)",
+    "Keep the specialist log": "เก็บบันทึกของผู้ช่วย AI",
+    "Your lyrics and the AI answers are kept on this computer only.": "เนื้อเพลงและคำตอบของ AI เก็บในเครื่องนี้เท่านั้น",
+    "Delete the specialist log": "ลบบันทึกของผู้ช่วย AI",
+    "Specialist log": "บันทึกของผู้ช่วย AI",
+    "{n} note(s): ": "{n} หมายเหตุ: ",
+    "line {n}: ": "บรรทัด {n}: ",
+    "Line {n}: ": "บรรทัด {n}: ",
+    "There are no sung lines yet (only tags)": "ยังไม่มีบรรทัดที่ร้อง (มีแต่แท็ก)",
+    "[Hold] and stretched vowels are prompt techniques: the model may or may not hold the note": "[Hold] และสระที่ลากเสียงเป็นเทคนิคในพรอมต์ โมเดลอาจลากโน้ตตามหรือไม่ก็ได้",
+    "Vocal cues in [brackets] are hints; results vary by language and voice": "คิวเสียงร้องใน [วงเล็บ] เป็นเพียงคำใบ้ ผลที่ได้ต่างกันตามภาษาและเสียง",
+    "The rhyme analysis was cancelled. An answer that arrives later is not used.": "ยกเลิกการวิเคราะห์สัมผัสแล้ว คำตอบที่มาถึงทีหลังจะไม่ถูกใช้",
+    "Cancel this analysis (an answer that arrives later is not used)": "ยกเลิกการวิเคราะห์นี้ (คำตอบที่มาถึงทีหลังจะไม่ถูกใช้)",
+    "Position checked by Python": "Python ตรวจตำแหน่งแล้ว",
+    "Position checked by Python · the AI's index was corrected": "Python ตรวจตำแหน่งแล้ว · แก้ตำแหน่งที่ AI ให้มา",
+    "position checked": "ตรวจตำแหน่งแล้ว",
+    "the AI's index was corrected": "Python แก้ตำแหน่งที่ AI ให้มา",
+    "Verified by Python (Thai sound check)": "Python ตรวจยืนยันแล้ว (ตรวจเสียงไทย)",
+    "AI-assessed: nothing independent verified it": "AI ประเมิน: ยังไม่มีอะไรตรวจยืนยันอิสระ",
+    "Unverified": "ยังไม่ยืนยัน",
+    "Uncertain": "ไม่แน่ใจ",
+    "Click a coloured word to see which words it rhymes with and why.": "คลิกคำที่มีสีเพื่อดูว่าสัมผัสกับคำไหน และเพราะอะไร",
+    "RHYME SCHEME BY SECTION": "รูปแบบสัมผัสของแต่ละท่อน",
+    "SONG OVERVIEW": "ภาพรวมของเพลง",
+    "A reading of the text only: no melody was heard.": "เป็นการอ่านจากข้อความเท่านั้น ไม่ได้ฟังทำนอง",
+    "(before the first tag)": "(ก่อนแท็กแรก)",
+    "Unrhymed": "ไม่มีสัมผัส",
+    "Free / irregular": "อิสระ / ไม่สม่ำเสมอ",
+    "END RHYMES": "สัมผัสท้าย",
+    "CROSS-LINE RHYMES": "สัมผัสข้ามบรรทัด",
+    "INTERNAL RHYMES": "สัมผัสใน",
+    "NEAR RHYMES": "สัมผัสใกล้เคียง",
+    "vowel rhyme": "สัมผัสสระ",
+    "consonant rhyme": "สัมผัสอักษร",
+    "assonance": "เสียงสระซ้ำ (assonance)",
+    "consonance": "เสียงพยัญชนะซ้ำ (consonance)",
+    "alliteration": "สัมผัสอักษรต้นคำ (alliteration)",
+    "multisyllabic": "สัมผัสหลายพยางค์",
+    "wordplay": "เล่นเสียง",
+    "exact": "ตรง",
+    "near": "ใกล้เคียง",
+    "uncertain": "ไม่แน่ใจ",
+    "different": "ไม่สัมผัส",
+    "internal": "ภายในบรรทัด",
+    "end to end": "ท้ายถึงท้าย",
+    "end to internal": "ท้ายถึงภายใน",
+    "cross line": "ข้ามบรรทัด",
+    "cross section": "ข้ามท่อน",
+    "This analysis is from the older line-endings analyzer. Press Analyze Rhymes to run the Rhyme Analyzer AI (schemes, positions and a reading of the song).": "ผลนี้มาจากตัววิเคราะห์ท้ายบรรทัดรุ่นเก่า กด Analyze Rhymes เพื่อใช้ Rhyme Analyzer AI (รูปแบบสัมผัส ตำแหน่ง และการอ่านภาพรวมของเพลง)",
+    "Lyrics Analysis": "วิเคราะห์เนื้อเพลง",
+    "Lyrics Analysis (syllables, rhymes, rhythm, thesaurus)": "วิเคราะห์เนื้อเพลง (พยางค์ สัมผัส จังหวะ คำพ้อง)",
+    "Lyric Report": "รายงานเนื้อเพลง",
+    "Rhyme & Syllables: the lyrics with the rhyme colours and the syllable counts (Python, no AI)": "สัมผัสและพยางค์: เนื้อเพลงพร้อมสีสัมผัสและจำนวนพยางค์ (Python ไม่ใช้ AI)",
+    "Rhythm & Duration: how dense the lines and sections are for the BPM and the length (Python, no AI)": "จังหวะและความยาว: ความหนาแน่นของบรรทัดและท่อนเทียบกับ BPM และความยาวเพลง (Python ไม่ใช้ AI)",
+    "The Songwriter AI and the Music Producer AI read the whole song and write one report with suggestions you can apply": "Songwriter AI และ Music Producer AI อ่านทั้งเพลงแล้วเขียนรายงานเดียว พร้อมคำแนะนำที่นำไปใช้ได้",
+    "Press Analyze Song above (or in the ✨ menu beside the chat box). The Songwriter AI and the Music Producer AI write their reports and they appear here as one report.": "กด Analyze Song ด้านบน (หรือในเมนู ✨ ข้างช่องแชต) Songwriter AI และ Music Producer AI จะเขียนรายงานและแสดงที่นี่เป็นรายงานเดียว",
+    "This section may need a faster delivery than its tempo allows. Try fewer words, or split the phrases so there is room to breathe.": "เนื้อร้องท่อนนี้อาจต้องร้องเร็วกว่าที่จังหวะเพลงรองรับ ลองลดคำหรือแบ่งวลีให้มีพื้นที่พักเสียง",
+    "Whole song — Long for the target duration": "ทั้งเพลง — ยาวเกินความยาวที่ตั้งไว้",
+    "Whole song — Short for the target duration": "ทั้งเพลง — สั้นกว่าความยาวที่ตั้งไว้",
+    "The lyrics ask for more time than the target duration. ACE-Step may cut the end, rush, or skip words. Fewer lines, or a longer duration, may help.": "เนื้อเพลงต้องใช้เวลามากกว่าความยาวที่ตั้งไว้ ACE-Step อาจตัดตอนท้าย ร้องรีบ หรือข้ามคำ ลดจำนวนบรรทัดหรือเพิ่มความยาวอาจช่วยได้",
+    "The lyrics ask for less time than the target duration. ACE-Step may fill the rest with music or repeat parts. A shorter duration, or more sections, may fit better.": "เนื้อเพลงต้องใช้เวลาน้อยกว่าความยาวที่ตั้งไว้ ACE-Step อาจเติมส่วนที่เหลือด้วยดนตรีหรือร้องซ้ำ ลดความยาวหรือเพิ่มท่อนอาจเหมาะกว่า",
+    "Show or hide the bar of every line of this section": "แสดงหรือซ่อนแถบของทุกบรรทัดในท่อนนี้",
+    "Rhyme report": "รายงานสัมผัส",
+    "The Songwriter AI reads the whole song (lyrics, meaning, flow) and hands in the rhyme report with its own report. Suggestions you can apply": "Songwriter AI อ่านทั้งเพลง (เนื้อร้อง ความหมาย การไหล) และส่งรายงานสัมผัสมาพร้อมกัน พร้อมคำแนะนำที่นำไปใช้ได้",
+    "The Music Producer AI reads the whole song (structure, cues, hook, arrangement) and writes its own report. Suggestions you can apply": "Music Producer AI อ่านทั้งเพลง (โครงสร้าง cue Hook การเรียบเรียง) และเขียนรายงานของตัวเอง พร้อมคำแนะนำที่นำไปใช้ได้",
+    "Press the button above: the report of this assistant appears here. The Songwriter AI hands in the rhyme report too; the Music Producer AI writes its own.": "กดปุ่มด้านบน รายงานของผู้ช่วยคนนี้จะแสดงที่นี่ Songwriter AI จะส่งรายงานสัมผัสมาด้วย ส่วน Music Producer AI เขียนรายงานของตัวเอง",
+    "Write the report": "เขียนรายงาน",
+    "Lyric Analysis": "วิเคราะห์เนื้อเพลง",
+    "Vocal Analysis": "วิเคราะห์การร้อง",
+    "Lyric Analysis: the Songwriter AI reads the lyrics and writes its report, with the rhyme report": "วิเคราะห์เนื้อเพลง: Songwriter AI อ่านเนื้อเพลงแล้วเขียนรายงาน พร้อมรายงานสัมผัส",
+    "Vocal Analysis: the Music Director reads the song and writes its report on the structure, cues, hook, arrangement and delivery": "วิเคราะห์การร้อง: Music Director อ่านเพลงแล้วเขียนรายงานเรื่องโครงสร้าง cue Hook การเรียบเรียง และการถ่ายทอดเสียงร้อง",
+    "The Music Director reads the whole song (structure, cues, hook, arrangement, delivery) and writes its own report. Suggestions you can apply": "Music Director อ่านทั้งเพลง (โครงสร้าง cue Hook การเรียบเรียง การร้อง) และเขียนรายงานของตัวเอง พร้อมคำแนะนำที่นำไปใช้ได้",
+    "Press “Write the report” above: the report of this assistant appears here, one suggestion at a time. The Songwriter AI hands in the rhyme report too.": "กด “เขียนรายงาน” ด้านบน รายงานของผู้ช่วยคนนี้จะแสดงที่นี่ทีละข้อเสนอ Songwriter AI จะส่งรายงานสัมผัสมาด้วย",
+    "Written": "เขียนเมื่อ",
+    "Not written yet": "ยังไม่ได้เขียน",
+    "Write again": "เขียนใหม่",
+    "Other suggestions": "ข้อเสนออื่น",
+    "Notes from checking this report": "หมายเหตุจากการตรวจรายงานนี้",
+    "A suggestion that could not be verified is not shown": "ข้อเสนอที่ตรวจสอบไม่ได้จะไม่ถูกแสดง",
+    "The lyrics changed after this report. Each suggestion is checked against the current lyrics before it can be applied.": "เนื้อเพลงเปลี่ยนหลังเขียนรายงานนี้ ทุกข้อเสนอจะถูกตรวจกับเนื้อเพลงปัจจุบันก่อนนำไปใช้",
     "Reads your lyrics like a producer and suggests three music directions of its own. It does not see your Basic or Advanced style settings unless you tick the box. Your lyrics and cues are never changed.": "อ่านเนื้อเพลงอย่างโปรดิวเซอร์แล้วเสนอแนวทางดนตรี 3 แบบด้วยตัวเอง AI ไม่เห็นค่า Basic หรือ Advanced ของคุณ เว้นแต่คุณติ๊กช่องด้านล่าง และไม่แก้เนื้อเพลงหรือ cue",
     "Start key": "คีย์เริ่มต้น",
     "Time sig.": "ลายเซ็นจังหวะ",
@@ -1253,7 +1431,6 @@
     "Play selection": "เล่นช่วงที่เลือก",
     "Zoom out": "ซูมออก",
     "Zoom in": "ซูมเข้า",
-    "Play / pause": "เล่น / หยุดชั่วคราว",
     "Could not draw the waveform. The times below use the file length.": "วาดรูปคลื่นไม่ได้ เวลาด้านล่างใช้ความยาวของไฟล์",
     "The source audio file is missing.": "ไม่พบไฟล์เสียงต้นฉบับ",
     "Uploading source audio…": "กำลังอัปโหลดเสียงต้นฉบับ…",
@@ -1265,7 +1442,23 @@
     "Choose an audio file that exists.": "เลือกไฟล์เสียงที่มีอยู่จริง",
     "Choose a song and a take from this library.": "เลือกเพลงและเทคจากคลังนี้",
     "The chosen take has no audio file.": "เทคที่เลือกไม่มีไฟล์เสียง",
-    "Write a music caption before Cover.": "เขียนคำบรรยายเพลงก่อนคัฟเวอร์"
+    "Write a music caption before Cover.": "เขียนคำบรรยายเพลงก่อนคัฟเวอร์",
+    "OK": "ปกติ",
+    "Warning": "เฝ้าระวัง",
+    "High Risk": "เสี่ยงสูง",
+    "Song Duration Fit": "ความยาวเพลงพอดีไหม",
+    "Vocal Density": "ความแน่นของการร้อง",
+    "Fits": "พอดี",
+    "Too long": "ยาวเกิน",
+    "Too short": "สั้นไป",
+    "Show or hide every line of this section": "แสดงหรือซ่อนทุกบรรทัดของท่อนนี้",
+    "no line to check": "ไม่มีบรรทัดที่ต้องตรวจ",
+    "not enough data to judge": "ข้อมูลไม่พอที่จะประเมิน",
+    "needs the BPM and the target duration, and some sung lines": "ต้องมี BPM ความยาวเป้าหมาย และบรรทัดที่ร้องอยู่บ้าง",
+    "long phrase without a break": "วลียาวไม่มีจุดพัก",
+    "many syllables for the time": "พยางค์มากเมื่อเทียบกับเวลา",
+    "too many syllables even with the most time": "พยางค์มากเกินไป แม้จะได้เวลามากที่สุด",
+    "Only phrasing and the longest-phrase case can be judged.": "ตอนนี้ประเมินได้เฉพาะการแบ่งวลีและกรณีวลียาวที่สุด"
   },
   "prefixes": {
     "Prompt History (": "ประวัติ Prompt (",
@@ -2167,6 +2360,18 @@
       "สูง · \\1 steps"
     ],
     [
+      "Empty\\ =\\ the\\ default\\ of\\ this\\ size\\ \\((\\d+)\\ /\\ (\\d+)\\)",
+      "เว้นว่าง = ค่าเริ่มต้นของขนาดนี้ (\\1 / \\2)"
+    ],
+    [
+      "Part\\ ·\\ (.*)",
+      "ช่วง · \\1"
+    ],
+    [
+      "Whole\\ take\\ ·\\ (.*)",
+      "ทั้งเทค · \\1"
+    ],
+    [
       "Customize\\ Apply\\ —\\ (.*?)",
       "เลือกค่าที่จะใช้ — \\1"
     ],
@@ -2292,11 +2497,11 @@
     ],
     [
       "(\\d+)\\ note\\(s\\)\\ from\\ checking\\ this\\ report\\ \\(a\\ suggestion\\ that\\ could\\ not\\ be\\ verified\\ is\\ not\\ shown\\):",
-      "มี \u0001 หมายเหตุจากการตรวจรายงานนี้ (ข้อเสนอที่ตรวจสอบไม่ได้จะไม่ถูกแสดง):"
+      "มี \\1 หมายเหตุจากการตรวจรายงานนี้ (ข้อเสนอที่ตรวจสอบไม่ได้จะไม่ถูกแสดง):"
     ],
     [
       "The\\ caption\\ has\\ only\\ (\\d+)\\ words\\ \\(at\\ least\\ (\\d+)\\ are\\ needed\\)\\.",
-      "caption มีเพียง \u0001 คำ (ต้องมีอย่างน้อย \u0002 คำ)"
+      "caption มีเพียง \\1 คำ (ต้องมีอย่างน้อย \u0002 คำ)"
     ],
     [
       "(\\d+)\\ lines",
@@ -2473,6 +2678,150 @@
     [
       "ACE-Step 1\\.5 Turbo was not found\\. This song is using (.+?), with ([\\d.]+) steps and CFG ([\\d.]+) for that model\\.",
       "ไม่พบ ACE-Step 1.5 Turbo เพลงนี้ใช้ \\1 โดยตั้ง \\2 steps และ CFG \\3 ให้ตรงกับโมเดลนั้น"
+    ],
+    [
+      "A shorter tag is available \\((.*)\\)\\. This line is sent as written\\.",
+      "มีแท็กที่สั้นกว่านี้ใช้ได้ (\\1) บรรทัดนี้ส่งตามที่เขียนไว้"
+    ],
+    [
+      "(.+) is not a documented ACE-Step tag; it is sent as written",
+      "\\1 ไม่ใช่แท็กที่ ACE-Step ระบุไว้ ส่งตามที่เขียนไว้"
+    ],
+    [
+      "Removed tags the model would sing instead of obey: (.*)",
+      "เอาแท็กที่โมเดลจะร้องออกมาแทนที่จะทำตามออกแล้ว: \\1"
+    ],
+    [
+      "AI confidence: (.*)",
+      "ความมั่นใจของ AI: \\1"
+    ],
+    [
+      "“(.+?)”: (\\d+) relation\\(s\\)",
+      "“\\1”: มี \\2 ความสัมพันธ์"
+    ],
+    [
+      "The AI's own scheme was (.+?): the scheme above follows the pairs that were placed and checked\\.",
+      "AI บอกรูปแบบเป็น \\1 ส่วนรูปแบบด้านบนอ้างอิงคู่ที่วางตำแหน่งและตรวจแล้ว"
+    ],
+    [
+      "Linked only by a near rhyme \\(not part of the exact scheme\\): lines (.+)",
+      "เชื่อมกันด้วยสัมผัสใกล้เคียงเท่านั้น (ไม่นับในรูปแบบสัมผัสตรง): บรรทัด \\1"
+    ],
+    [
+      "(\\d+) exact",
+      "\\1 ตรง"
+    ],
+    [
+      "(\\d+) near",
+      "\\1 ใกล้เคียง"
+    ],
+    [
+      "(\\d+) different",
+      "\\1 ไม่สัมผัส"
+    ],
+    [
+      "(\\d+) uncertain",
+      "\\1 ไม่แน่ใจ"
+    ],
+    [
+      "(\\d+) internal",
+      "\\1 ภายในบรรทัด"
+    ],
+    [
+      "(\\d+) end to end",
+      "\\1 ท้ายถึงท้าย"
+    ],
+    [
+      "(\\d+) end to internal",
+      "\\1 ท้ายถึงภายใน"
+    ],
+    [
+      "(\\d+) cross line",
+      "\\1 ข้ามบรรทัด"
+    ],
+    [
+      "(\\d+) cross section",
+      "\\1 ข้ามท่อน"
+    ],
+    [
+      "about (.+) syllables per second · (.+) per beat on average",
+      "ประมาณ \\1 พยางค์ต่อวินาที · \\2 ต่อบีตโดยเฉลี่ย"
+    ],
+    [
+      "the lyrics fit the target length \\(about (.+) s of (.+) s\\)",
+      "เนื้อเพลงพอดีกับความยาวที่ตั้งไว้ (ประมาณ \\1 จาก \\2 วินาที)"
+    ],
+    [
+      "the lyrics need more time than the target \\(about (.+) s of (.+) s\\)",
+      "เนื้อเพลงต้องใช้เวลามากกว่าที่ตั้งไว้ (ประมาณ \\1 จาก \\2 วินาที)"
+    ],
+    [
+      "the lyrics need less time than the target \\(about (.+) s of (.+) s\\)",
+      "เนื้อเพลงต้องใช้เวลาน้อยกว่าที่ตั้งไว้ (ประมาณ \\1 จาก \\2 วินาที)"
+    ],
+    [
+      "(\\d+) syllables in (\\d+) lines: about ([\\d.]+) syllables per second \\(([\\d.]+) per beat at ([\\d.]+) BPM\\) if every sung line gets the same ([\\d.]+) s\\. The Guide's 6-10 syllables per two-bar line is 0\\.75-1\\.25 per beat\\.",
+      "\\1 พยางค์ใน \\2 บรรทัด: ประมาณ \\3 พยางค์ต่อวินาที (\\4 ต่อบีตที่ \\5 BPM) ถ้าทุกบรรทัดได้เวลาเท่ากัน \\6 วินาที คู่มือ ACE-Step แนะนำ 6-10 พยางค์ต่อบรรทัดสองห้อง ซึ่งคือ 0.75-1.25 ต่อบีต"
+    ],
+    [
+      "(\\d+) syllables in about (\\d+) s of singing time: about ([\\d.]+) syllables per second on average \\(([\\d.]+) per beat at ([\\d.]+) BPM\\)\\.",
+      "\\1 พยางค์ในเวลาร้องประมาณ \\2 วินาที: เฉลี่ยประมาณ \\3 พยางค์ต่อวินาที (\\4 ต่อบีตที่ \\5 BPM)"
+    ],
+    [
+      "Guide reference: about (\\d+)-(\\d+) syllables per line, a rough reference and not a rule; this program looks at lines above (\\d+) that are also clearly longer than their neighbours\\.",
+      "แนวทางจากคู่มือ: ประมาณ \\1-\\2 พยางค์ต่อบรรทัด เป็นเพียงค่าอ้างอิงคร่าวๆ ไม่ใช่กฎ โปรแกรมดูเฉพาะบรรทัดที่เกิน \\3 และยาวกว่าบรรทัดข้างเคียงชัดเจน"
+    ],
+    [
+      "(\\d+) sung lines x about (\\d+) bars at ([\\d.]+) BPM \\(([\\d.]+) s per bar\\) plus about (\\d+) s of instrumental parts is about (\\d+) s; the target is ([\\d.]+) s\\. The ACE-Step guide: slower tempos need more duration for the same lyrics, and when in doubt estimate longer\\.",
+      "\\1 บรรทัดร้อง × ประมาณ \\2 ห้อง ที่ \\3 BPM (\\4 วินาทีต่อห้อง) บวกส่วนดนตรีล้วนประมาณ \\5 วินาที ได้ประมาณ \\6 วินาที เป้าหมายคือ \\7 วินาที คู่มือ ACE-Step: จังหวะช้าต้องใช้ความยาวมากขึ้นสำหรับเนื้อเท่าเดิม และถ้าไม่แน่ใจให้ประมาณให้ยาวไว้ก่อน"
+    ],
+    [
+      "(.+?), ([\\d.]+) BPM → ([\\d.]+) s per bar; target ([\\d.]+) s; about (\\d+) s kept for the instrumental parts \\(a set number of bars each\\); (\\d+) % of the rest is breath and pauses; every sung line gets the same time slot and takes about (\\d+) bars\\. Levels use syllables per beat \\(comfortable under ([\\d.]+), moderate under ([\\d.]+), dense under ([\\d.]+)\\), from the ACE-Step 1\\.5 Guide's 6-10 syllables per line\\. The melody is not known, so this is an estimated risk, not a measurement\\.",
+      "ประเมินความเสี่ยงเท่านั้น: \\1, \\2 BPM → \\3 วินาทีต่อห้อง; เป้าหมาย \\4 วินาที; เผื่อประมาณ \\5 วินาทีสำหรับส่วนดนตรีล้วน (กำหนดจำนวนห้องไว้ตายตัว); ประมาณ \\6 % ของเวลาที่เหลือเป็นช่วงหายใจและพักเสียง; แต่ละบรรทัดได้ช่วงเวลาเท่ากันและใช้ประมาณ \\7 ห้อง ระดับความหนาแน่นใช้พยางค์ต่อบีต (สบายต่ำกว่า \\8, ปานกลางต่ำกว่า \\9, หนาแน่นต่ำกว่า \\10) จากคู่มือ ACE-Step 1.5 ที่แนะนำ 6-10 พยางค์ต่อบรรทัด ยังไม่รู้ทำนอง จึงเป็นเพียงการประเมินความเสี่ยง ไม่ใช่การวัดจริง"
+    ],
+    [
+      "Written (.+)",
+      "เขียนเมื่อ \\1"
+    ],
+    [
+      "(\\d+)\\ lines?\\ to\\ check,\\ especially\\ line\\ (\\d+)",
+      "ต้องตรวจ \\1 บรรทัด โดยเฉพาะบรรทัด \\2"
+    ],
+    [
+      "(\\d+)\\ lines?\\ to\\ check",
+      "ต้องตรวจ \\1 บรรทัด"
+    ],
+    [
+      "(\\d+)\\ of\\ (\\d+)\\ lines\\ to\\ check:\\ lines\\ ([\\d,\\ …]+)",
+      "ต้องตรวจ \\1 จาก \\2 บรรทัด: บรรทัด \\3"
+    ],
+    [
+      "(\\d+)\\ of\\ (\\d+)\\ lines\\ to\\ check",
+      "ต้องตรวจ \\1 จาก \\2 บรรทัด"
+    ],
+    [
+      "Line\\ (\\d+)",
+      "บรรทัด \\1"
+    ],
+    [
+      "(~?)(\\d+)\\ syl",
+      "\\1\\2 พยางค์"
+    ],
+    [
+      "(\\d+)\\ lines\\ ·\\ (\\d+)\\ syl",
+      "\\1 บรรทัด · \\2 พยางค์"
+    ],
+    [
+      "a\\ phrase\\ of\\ (about\\ )?(\\d+)\\ syllables",
+      "วลียาว \\2 พยางค์"
+    ],
+    [
+      "the\\ lyrics\\ and\\ instrumental\\ parts\\ take\\ about\\ (\\d+)-(\\d+)\\ s\\ \\(a\\ range,\\ lines\\ are\\ not\\ equal\\)\\ against\\ the\\ target\\ ([\\d.]+)\\ s",
+      "เนื้อเพลงกับท่อนดนตรีใช้เวลาประมาณ \\1-\\2 วินาที (เป็นช่วง ไม่ได้ถือว่าทุกบรรทัดใช้เวลาเท่ากัน) เทียบกับเป้าหมาย \\3 วินาที"
+    ],
+    [
+      "Vocal\\ density\\ is\\ not\\ judged\\ for\\ the\\ language\\ '(.+)'\\.",
+      "ยังไม่ประเมินความแน่นของการร้องสำหรับภาษา '\\1'"
     ]
   ]
 }

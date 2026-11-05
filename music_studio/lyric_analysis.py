@@ -14,7 +14,7 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import Callable
 
-from .compiler import HOLD_PREFIX, TAG_LINE
+from .compiler import HOLD_PREFIX, TAG_LINE, section_label
 
 PROMPT_VERSION = "syl-v2"
 # Starting points, not a tuned optimum. Syllables and rhymes must follow a strict format. Rhythm is a judgement.
@@ -71,6 +71,8 @@ class SungLine:
     num: int                                    # 1.. among the sung lines (what the LLM sees)
     file_line: int                              # 1.. in the lyrics text (for showing / later features)
     text: str
+    section: int = -1                           # index of the [section] the line is in (-1 before the first tag); the rhyme step does not link lines of unrelated sections
+    section_name: str = ""
 
 
 @dataclass
@@ -203,10 +205,14 @@ def original_lines(text: str) -> list:
 
 def sung_lines(text: str) -> list:
     """Sung lines in order. Skipped: blank lines, whole-line [tags] ([Verse 1], [Chorus - powerful]). Removed from a line: a leading [Hold] and any inline [tag]."""
-    out, n = [], 0
+    out, n, sec, sec_name = [], 0, -1, ""
     for i, _start, _end, raw in original_lines(text):
         line = raw.strip()
-        if not line or TAG_LINE.match(line):
+        if not line:
+            continue
+        if TAG_LINE.match(line):
+            if not HOLD_PREFIX.match(line):
+                sec, sec_name = sec + 1, section_label(line)
             continue
         m = HOLD_PREFIX.match(line)
         if m:
@@ -214,7 +220,7 @@ def sung_lines(text: str) -> list:
         line = re.sub(r"\s{2,}", " ", _INLINE_TAG.sub(" ", line)).strip()
         if line:
             n += 1
-            out.append(SungLine(n, i, line))
+            out.append(SungLine(n, i, line, sec, sec_name))
     return out
 
 

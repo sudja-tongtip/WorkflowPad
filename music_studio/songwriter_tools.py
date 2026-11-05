@@ -63,8 +63,6 @@ class SongContext:
     bpm: "float | None" = None
     timesig: str = ""
     duration: "float | None" = None
-    vocal_speed: str = ""
-    vocal_speed_note: str = ""
     corrections: "dict | None" = None
     _ins: object = field(default=None, repr=False)
 
@@ -261,7 +259,6 @@ def _get_song_settings(ctx: SongContext, pos, kw, label) -> str:
             sig = f"{ctx.timesig} (not 2/4, 3/4, 4/4 or 6/8)"
     else:
         sig = "missing"
-    speed = ctx.vocal_speed or "missing"
     rows = [
         f"BPM: {bpm}",
         f"Time signature: {sig}",
@@ -269,11 +266,9 @@ def _get_song_settings(ctx: SongContext, pos, kw, label) -> str:
         f"Genre: {ctx.genre or 'missing'}",
         f"Language: {ctx.language or 'missing'}",
         f"Mood: {ctx.mood or 'missing'}",
-        f"Vocal speed: {speed}",
-        f"Vocal speed note: {ctx.vocal_speed_note or 'not provided'}",
         "Bars stored: no",
         "Audio timeline stored: no",
-        "Limit: these are the song settings and the Live Insights vocal-speed choice when one was passed. They are not a measurement of the sung performance. Sung time cannot be exact without a bar count or a timeline.",
+        "Limit: these are the song settings. They are not a measurement of the sung performance. Sung time cannot be exact without a bar count or a timeline.",
     ]
     return _block(label, "OK", rows)
 
@@ -571,14 +566,6 @@ def _calculate_bar_duration(ctx: SongContext, pos, kw, label) -> str:
     ])
 
 
-def _speed(ctx: SongContext) -> str:
-    if not ctx.vocal_speed:
-        return ""
-    if ctx.vocal_speed not in LI.VOCAL_SPEEDS:
-        raise ToolFail(f"Vocal speed {ctx.vocal_speed!r} is not slow, normal or fast. The density level was not calculated.")
-    return ctx.vocal_speed
-
-
 def _calculate_vocal_density(ctx: SongContext, pos, kw, label) -> str:
     token = _need_str(pos, kw, "scope", "scope")
     if not ctx.bpm or ctx.bpm <= 0 or not ctx.duration or ctx.duration <= 0 or not ctx.timesig:
@@ -589,7 +576,6 @@ def _calculate_vocal_density(ctx: SongContext, pos, kw, label) -> str:
             "Sung time: not calculated",
             "Limit: no number was invented. No bar count and no audio timeline are stored, so sung time would not be exact even when the settings exist.",
         ])
-    speed = _speed(ctx)
     try:
         sig = _norm_sig(ctx.timesig)
     except ToolFail as ex:
@@ -602,7 +588,7 @@ def _calculate_vocal_density(ctx: SongContext, pos, kw, label) -> str:
         ])
     ins = ctx.insights()
     lines, where, note = _scope(ctx, token)
-    dn = LI.density(ins, LI.DensitySettings(bpm=float(ctx.bpm), timesig=sig, duration=float(ctx.duration), speed=speed or "normal"))
+    dn = LI.density(ins, LI.DensitySettings(bpm=float(ctx.bpm), timesig=sig, duration=float(ctx.duration)))
     rows = [f"Scope: {where}"]
     if note:
         rows.append(note)
@@ -612,7 +598,7 @@ def _calculate_vocal_density(ctx: SongContext, pos, kw, label) -> str:
             f"Why: {dn.why_unknown}",
             "Syllables per second: not calculated",
             "Sung time: not calculated",
-            "Limit: " + _assumption(ctx, dn, speed, judged=bool(speed)),
+            "Limit: " + _assumption(ctx, dn),
         ]
         return _block(label, "INCOMPLETE", rows)
     indexes = []
@@ -621,44 +607,44 @@ def _calculate_vocal_density(ctx: SongContext, pos, kw, label) -> str:
     rows.append(f"Song syllables (written sung lines): {dn.total_syllables}")
     rows.append(f"Song sung lines: {dn.total_lines}")
     rows.append(f"Estimated singing time under the assumptions: {dn.vocal_seconds:.1f} s")
-    rows.append(f"Estimated song rate: {dn.song_rate:.2f} syllables per second")
-    if speed:
-        rows.append(f"Song comfort level: {LI.LEVEL_NAME.get(dn.song_level, dn.song_level)} (a ratio against vocal speed '{speed}', not a verdict)")
-    else:
-        rows.append("Song comfort level: not judged (vocal speed was not provided, and normal was not assumed)")
+    rows.append(f"Average song rate (information only, not a verdict): {dn.song_rate:.2f} syllables per second, {dn.song_per_beat:.2f} per beat at {dn.settings.bpm:g} BPM")
+    rows.append(f"Vocal Density of the song: {len(dn.risky_lines)} of {dn.total_lines} lines to check"
+                + (f" (lines {', '.join(str(n) for n in dn.risky_lines[:12])})" if dn.risky_lines else "")
+                + f"; worst status {LI.STATUS_NAME.get(dn.status, dn.status)}. This comes from the lines, not from an average.")
+    if dn.fit != "unknown":
+        rows.append(f"Song Duration Fit: the lyrics and instrumental parts take about {dn.need_low:.0f}-{dn.need_high:.0f} s (a range, lines are not assumed to take equal time) against the target {dn.settings.duration:g} s: {dn.fit}. "
+                    "This is separate from the density of the lines.")
     if indexes:
         for i in indexes:
             sd = dn.sections[i]
             rows.append(
                 f"{_section_label(ins, i)} | sung lines {sd.sung_lines} | syllables {sd.syllables} | "
-                + (f"about {sd.rate:.2f} syllables per second" if dn.known and sd.sung_lines else "no sung lines")
+                + (f"about {sd.rate:.2f} syllables per second, {sd.per_beat:.2f} per beat" if dn.known and sd.sung_lines else "no sung lines")
             )
-            if speed and sd.sung_lines:
-                rows.append(f"Comfort level for {_section_label(ins, i)}: {LI.LEVEL_NAME.get(sd.level, sd.level)} (estimate, not a verdict)")
+            if sd.sung_lines:
+                rows.append(f"Status for {_section_label(ins, i)}: {LI.STATUS_NAME.get(sd.status, sd.status)}; lines to check: " + (", ".join(str(n) for n in sd.risky_lines) or "none") + " (estimate, not a verdict)")
     elif _LINE_ID.fullmatch(token.strip()) and lines:
         li = lines[0]
-        slot = dn.slot
-        if slot > 0 and li.status != "unverified":
-            rate = li.syllable_count / slot
-            rows.append(f"L{li.line_number:03d} estimated rate: {rate:.2f} syllables per second if it receives the same slot as every other sung line")
+        ld = next((x for x in dn.lines if x.line_number == li.line_number), None)
+        if ld is not None and li.status != "unverified":
+            rows.append(f"L{li.line_number:03d} {li.syllable_count} syllables, phrases {ld.phrases}: density {LI.STATUS_NAME[ld.density_status]}, phrasing {LI.STATUS_NAME[ld.phrasing_status]}, confidence {ld.confidence}"
+                        + (f". {ld.reason}. {ld.detail}" if ld.reason else ""))
         else:
-            rows.append(f"L{li.line_number:03d} rate: not calculated")
-    rows.append("Limit: " + _assumption(ctx, dn, speed, judged=bool(speed)))
+            rows.append(f"L{li.line_number:03d} status: not calculated")
+    rows.append("Limit: " + _assumption(ctx, dn))
     rows.append("This density is not a reason by itself to cut words, and it is not a score for the song.")
     return _block(label, "OK", rows)
 
 
-def _assumption(ctx: SongContext, dn, speed: str, judged: bool) -> str:
+def _assumption(ctx: SongContext, dn) -> str:
     _ = ctx
     text = (
         f"{LI.pulses_per_bar(dn.settings.timesig)[1]}, {dn.settings.bpm:g} BPM, about {dn.sec_per_bar:.1f} s per bar; "
         f"target {dn.settings.duration:g} s; about {dn.reserve_seconds:.0f} s kept for empty instrumental sections; "
-        f"{LI.REST_SHARE * 100:.0f}% of the remainder is breath and pauses; every sung line is given the same slot."
+        f"{LI.REST_SHARE * 100:.0f}% of the remainder is breath and pauses; each line is judged on its own syllables against the average slot and against the most time it could get (up to {LI.MAX_LINE_BARS} bars)."
     )
-    if judged and speed:
-        text += f" Vocal speed '{speed}' is compared at about {LI.VOCAL_SPEEDS[speed]:g} syllables per second."
-    else:
-        text += " No vocal speed was provided, so no comfort level was chosen."
+    text += (f" The comfort level uses syllables per beat (comfortable under {LI.SYL_PER_BEAT[0]:g}, moderate under {LI.SYL_PER_BEAT[1]:g}, dense under {LI.SYL_PER_BEAT[2]:g}), from the ACE-Step 1.5 Guide's "
+             f"6-10 syllables per line; these cut-offs and the bar limit are stated assumptions.")
     text += " No bar count and no audio timeline are stored. The seconds are an estimate under these assumptions, not a measured sung time. The melody is not known."
     return text
 
@@ -679,7 +665,7 @@ _SECTION = 'section_id: a quoted section id "S002", a name "Chorus", or "Chorus#
 _WORD = "word: one quoted word"
 
 TOOLS = (
-    Tool("get_song_settings", "Read BPM, time signature, target duration, genre, language and vocal speed.", "none", "Those settings, or missing when the song does not have them.", "Does not measure a performance. Sung time is not exact.", _get_song_settings),
+    Tool("get_song_settings", "Read BPM, time signature, target duration, genre and language.", "none", "Those settings, or missing when the song does not have them.", "Does not measure a performance. Sung time is not exact.", _get_song_settings),
     Tool("get_song_structure", "Read the section order and which names are written more than once.", "none", "One row per written section.", "Does not invent a repeat that is not written.", _get_song_structure),
     Tool("get_section", "Read one written section.", _SECTION, "Tag, sung line ids, word and syllable totals, confidence.", "Refuses an ambiguous name instead of merging sections.", _get_section),
     Tool("get_line", "Read one lyric line.", _LINE, "Sung text, words, syllables, end sound, Hold.", "A tag or a cue is not a sung line. The line is not rewritten.", _get_line),
@@ -690,7 +676,7 @@ TOOLS = (
     Tool("get_rhyme_candidates", "Other sung words in this text that share a Thai end sound.", _WORD, "Exact and near matches already in the lyrics, or none.", "Not a thesaurus. Not a beauty score. No invented rhyme.", _get_rhyme_candidates),
     Tool("analyze_rhyme_sounds", "End sounds and confirmed sound links in a scope.", _SCOPE, "Per-line end sound and status. Not a score.", "Thai spelling rules only. A repeated word is a repeat. You have not heard the vocal.", _analyze_rhyme_sounds),
     Tool("calculate_bar_duration", "Seconds in one bar.", "bpm (number, optional), time_signature (quoted, optional). Omitted values come from the song settings.", "Pulses and seconds for one bar.", "Not the sung length of the song. A missing BPM or time signature is INCOMPLETE and no number is invented. A time signature outside 2/4, 3/4, 4/4 and 6/8, when passed as an argument, is an error.", _calculate_bar_duration),
-    Tool("calculate_vocal_density", "Numeric vocal density for a scope.", _SCOPE, "An estimated rate, the assumptions, and a comfort level only when vocal speed was provided.", "Uses Live Insights density. No measured timeline. Not a reason by itself to cut words.", _calculate_vocal_density),
+    Tool("calculate_vocal_density", "Numeric vocal density for a scope.", _SCOPE, "An estimated rate and syllables per beat, the assumptions, a comfort level and the length the lyrics ask for.", "Uses Live Insights density. No measured timeline. Not a reason by itself to cut words.", _calculate_vocal_density),
 )
 
 BY_NAME = {t.name: t for t in TOOLS}

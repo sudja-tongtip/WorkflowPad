@@ -385,6 +385,14 @@ def _span_status(line: str, start: int, end: int) -> str:
         return "fragment"
     if end < len(line) and line[end] in _DEPENDENT:
         return "fragment"
+    tokens = _syllable_tokens(line)
+    if tokens and "".join(tokens) == line:
+        pos = 0
+        for tok in tokens:
+            nxt = pos + len(tok)
+            if start == pos and end == nxt and is_single_syllable(tok):
+                return "ok"                      # the span is exactly one syllable of the line (ทุก|วัน: วัน), so a longer legal spelling that merely contains it (กวัน) proves nothing
+            pos = nxt
     for j in range(max(0, start - 6), start):
         if line[j] in _DEPENDENT and line[j] not in _TONE:
             continue

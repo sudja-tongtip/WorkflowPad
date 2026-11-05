@@ -121,7 +121,7 @@ def _analysis(snapshot):
     duration = _number(snapshot, "duration")
     timesig = str(_field(snapshot, "timesignature", "4") or "4")
     ins = LI.analyze(lyrics)
-    dn = LI.density(ins, LI.DensitySettings(bpm=bpm or 0, timesig=timesig, duration=duration or 0, speed="normal"))
+    dn = LI.density(ins, LI.DensitySettings(bpm=bpm or 0, timesig=timesig, duration=duration or 0))
     return ins, dn
 
 
@@ -179,9 +179,10 @@ def _context(snapshot, mode: str) -> str:
             if s.instrumental:
                 rows.append(f"- {label}: instrumental")
             else:
-                rows.append(f"- {label}: {s.syllables} syllables, {LI.LEVEL_NAME.get(s.level, s.level)}")
-        tight = [f"{_shown(s.name, s.index)} ({LI.LEVEL_NAME.get(s.level, s.level)})" for s in dn.sections if s.level in ("dense", "very_dense")]
-        rows.append("Tight spots: " + (", ".join(tight) if tight else "none") + f". Whole song: {LI.LEVEL_NAME.get(dn.song_level, dn.song_level)}.")
+                rows.append(f"- {label}: {s.syllables} syllables, {LI.STATUS_NAME.get(s.status, s.status)}" + (f", lines to check: {', '.join(str(n) for n in s.risky_lines)}" if s.risky_lines else ""))
+        tight = [f"{_shown(s.name, s.index)} (lines {', '.join(str(n) for n in s.density_lines)})" for s in dn.sections if s.density_lines]
+        rows.append("Tight spots: " + (", ".join(tight) if tight else "none") + f". Whole song: {len(dn.risky_lines)} of {dn.total_lines} lines to check"
+                    + (f"; duration fit: {dn.fit} (about {dn.need_low:.0f}-{dn.need_high:.0f} s of {dn.settings.duration:g} s)" if dn.fit != "unknown" else "") + ".")
     items = LI.health(ins, dn) if dn.known or ins.sections else []
     notable = [h for h in items if h.kind in ("song_density", "section_density", "long_line", "uneven", "short_word", "structure", "duplicate_section", "cue_conflict", "tag_complexity")]
     rows.append("Lyrics health:")
@@ -212,8 +213,8 @@ def review_caption(caption: str, snapshot) -> list:
         ins, dn = _analysis(snapshot)
     except Exception:
         return out
-    if dn.known and dn.song_level in ("dense", "very_dense") and _SPARSE.search(text):
-        out.append("The vocal density is high for the target duration, so a very spacious or drawn-out vocal may not fit these lyrics.")
+    if dn.known and any(x.density_status in ("warning", "high") for x in dn.lines) and _SPARSE.search(text):
+        out.append("Some lines are tight for their time, so a very spacious or drawn-out vocal may not fit those lines.")
     for sec in ins.sections:
         _rest, parts = LI._cue_parts(sec.tag)
         low = [p for p in parts if p.lower() in _VOCAL_LOW]

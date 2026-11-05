@@ -80,12 +80,49 @@ def _basic(text: str, d: dict) -> "str | None":
     return None
 
 
+_HEAD = re.compile(r"(?:(\d+) note\(s\): )?(?:([Ll]ine) (\d+): )?")
+
+
+def _peel(text: str, d: dict) -> "str | None":
+    """"5 note(s): line 3: <message>" (the line under the editor and its tooltip): the head is translated from the templates "{n} note(s): " / "line {n}: " and the message is
+    translated alone, so the message may be any of the known ones. None when there is nothing to peel or the message has no translation."""
+    if not (text[:1].isdigit() or text[:4].lower() == "line"):
+        return None
+    m = _HEAD.match(text)
+    if not m or not m.end():
+        return None
+    head = ""
+    if m.group(1):
+        t = d["strings"].get("{n} note(s): ")
+        if t is None:
+            return None
+        head += t.replace("{n}", m.group(1))
+    if m.group(2):
+        t = d["strings"].get(m.group(2) + " {n}: ")
+        if t is None:
+            return None
+        head += t.replace("{n}", m.group(3))
+    rest = text[m.end():]
+    if not rest.strip():
+        return None
+    got = tr(rest)
+    return head + got if got != rest else None
+
+
 def tr(text: str) -> str:
     """The text in the current language (the same text when there is no translation)."""
     code = _lang["code"]
     if code == "en" or not text:
         return text
     d = _load(code)
+    if text[:1].isdigit() and " note(s): " in text[:16] and " | " in text:           # "5 note(s): line 1: ... | line 3: ...": each note alone (a pattern must not swallow the " | ")
+        parts = text.split(" | ")
+        done = [tr(x) for x in parts]
+        if done != parts:
+            return " | ".join(done)
+    peeled = _peel(text, d)
+    if peeled is not None:
+        return peeled
     hit = _basic(text, d)
     if hit is not None:
         return hit

@@ -1,7 +1,7 @@
 """Live Lyrics Insights: the numbers that can be worked out from the lyrics and the settings alone, with Python and PyThaiNLP (no LLM, no network).
 
   analyze(text, corrections)   per sung line: words, syllables, syllable segments, a rhyme group for the words that rhyme, a verification status and warnings
-  timing(ins, ...)             the vocal density of every line and section and the song duration, from BPM, time signature, target duration, vocal speed and a bar allocation
+  timing(ins, ...)             the vocal density of every line and section and the song length, from BPM, time signature, target duration and a bar allocation
   songwriter_block / producer_block   the same facts as plain text for the Analyze Song request (nothing here is read back from an AI)
 
 Everything is read-only: nothing here changes the lyrics, the settings or an analysis result of the AI.
@@ -23,15 +23,15 @@ import zlib
 from dataclasses import dataclass, field
 
 from . import lyric_analysis as LA
-from . import rhyme_color as RC
+from . import rhyme_map as RM
 from . import thai_rhyme as TR
 from .compiler import HOLD_SUFFIX, TAG_LINE, section_label
 
-PALETTE = RC.PALETTE
+PALETTE = RM.PALETTE
 TH = re.compile(r"[฀-๿]+")
 _WORD = re.compile(r"[฀-๿]+|[A-Za-z]+(?:['’][A-Za-z]+)*|\d+")
 INSTRUMENTAL = ("intro", "outro", "instrumental", "interlude", "solo", "break", "bridge instrumental")
-FUNCTION_WORDS = frozenset("ที่ มี ใน และ ก็ จะ แล้ว ไม่ ยัง เป็น ได้ ให้ ของ นะ ค่ะ ครับ อยู่ ไป มา แต่ ว่า ซึ่ง หรือ จน ถึง กับ จาก แค่ เธอ ฉัน ผม เรา มัน".split())    # common one-syllable words are not coloured as INTERNAL rhymes (they would colour every line); at the end of a line they still count
+FUNCTION_WORDS = RM.FUNCTION_WORDS                                          # common one-syllable words are not coloured as INTERNAL rhymes (they would colour every line); at the end of a line they still count
 _thai_dict = None
 
 
@@ -79,6 +79,7 @@ class LineInsight:
     sec_index: int = -1       # index into Insights.sections of the section the line belongs to
     repeats: list = field(default_factory=list)   # ["หยุด×2"] same written word twice: repetition, not a rhyme
     end_sound: str = ""       # "ใจ ไอ+กา" when the last syllable could be read, even if it rhymes with nothing
+    phrases: list = field(default_factory=list)   # syllables of each phrase of the line, split at spaces and punctuation ([7, 6]); one number when the line has no break
 
 
 @dataclass
@@ -103,6 +104,8 @@ class Insights:
     groups: dict              # group -> number of words in it
     revision: int = 0
     tag_lines: list = field(default_factory=list)   # file lines where a [tag] sits inside sung words (not a section line)
+    rhyme_links: list = field(default_factory=list)  # the Python rhyme links of the Shared Rhyme Map (rhyme_map.Link), for exactly this text
+    language: str = ""                              # the lyrics language of the song these links were made for
 
     def line(self, file_line: int):
         return next((x for x in self.lines if x.line_number == file_line), None)
@@ -139,6 +142,25 @@ def _thai_syllables(token: str) -> list:
     from pythainlp.tokenize import syllable_tokenize
     out = [s for s in syllable_tokenize(token, engine="dict") if s.strip()]
     return out or [token]
+
+
+_BREAK = re.compile(r"[\s,;:!?…()\[\]\"“”‘’—–/|]|\.{2,}|-{2,}")
+
+
+def _phrases(masked: str, toks: list, total: int, manual: bool) -> list:
+    """Syllables per phrase: a phrase ends at a space or a punctuation mark between two words (the places a singer can breathe or a melody can pause).
+    A manual syllable correction knows only the total, so the line is then one phrase of that size."""
+    if manual or not toks:
+        return [total] if total else []
+    out, cur = [], 0
+    for i, t in enumerate(toks):
+        cur += len(t[4])
+        if i + 1 < len(toks) and _BREAK.search(masked[t[1]:toks[i + 1][0]]):
+            out.append(cur)
+            cur = 0
+    if cur:
+        out.append(cur)
+    return out
 
 
 def line_core(masked: str) -> dict:
@@ -207,14 +229,14 @@ def is_instrumental(name: str) -> bool:
 def _hidden_bracket(raw: str) -> bool:
     """A [tag] glued to sung words. A tag on its own line, a leading [Hold], and a trailing [Hold] are not this."""
     st = (raw or "").strip()
-    if not st or (TAG_LINE.match(st) and not RC.HOLD_PREFIX.match(st)):
+    if not st or (TAG_LINE.match(st) and not RM.HOLD_PREFIX.match(st)):
         return False
-    rest = RC.HOLD_PREFIX.sub("", st, count=1)
+    rest = RM.HOLD_PREFIX.sub("", st, count=1)
     rest = HOLD_SUFFIX.sub("", rest)
     return bool(_BRACKET.search(rest))
 
 
-def analyze(text: str, corrections: "dict | None" = None, revision: int = 0) -> Insights:
+def analyze(text: str, corrections: "dict | None" = None, revision: int = 0, language: str = "") -> Insights:
     """Every sung line with its counts and rhymes. `corrections` is the program's {line id: LA.Correction} (a correction applies only to the exact line it was made for)."""
     corrections = corrections or {}
     rows = LA.original_lines(text or "")
@@ -226,7 +248,7 @@ def analyze(text: str, corrections: "dict | None" = None, revision: int = 0) -> 
         st = raw.strip()
         if _hidden_bracket(raw):
             tag_lines.append(n)
-        if st and TAG_LINE.match(st) and not RC.HOLD_PREFIX.match(st):
+        if st and TAG_LINE.match(st) and not RM.HOLD_PREFIX.match(st):
             name = section_name(st)
             cur = SectionInsight(name, n, 0, 0, 0, is_instrumental(name), tag=st)
             sections.append(cur)
@@ -237,7 +259,7 @@ def analyze(text: str, corrections: "dict | None" = None, revision: int = 0) -> 
         if cur is None:
             cur = SectionInsight("", 0, 0, 0, 0, False)
             sections.append(cur)
-        masked = RC._mask(raw)
+        masked = RM.mask(raw)
         core = line_core(masked)
         toks = core["tokens"]
         segs = [y for t in toks for y in t[4]]
@@ -264,13 +286,14 @@ def analyze(text: str, corrections: "dict | None" = None, revision: int = 0) -> 
             if t[3] == "th":
                 seen[t[2]] = seen.get(t[2], 0) + 1
         li.repeats = [f"{w}×{c}" for w, c in seen.items() if c >= 2]
+        li.phrases = _phrases(masked, toks, syl, status == "manual_corrected")
         li._tokens = toks                                                           # (offsets in the line) kept for the rhyme step; not part of the data
         li._base = start
         lines.append(li)
         cur.sung_lines += 1
         cur.words += li.word_count
         cur.syllables += syl
-    _rhymes(lines)
+    links = _rhymes(lines, sections, language)
     spans = [sp for li in lines for sp in li.rhyme_spans]
     groups: dict = {}
     for sp in spans:
@@ -279,85 +302,60 @@ def analyze(text: str, corrections: "dict | None" = None, revision: int = 0) -> 
         _section_pattern(sec, [li for li in lines if li.sec_index == k])
     for li in lines:
         del li._tokens, li._base
-    return Insights(hashlib.sha1((text or "").encode("utf-8")).hexdigest()[:12], lines, sections, spans, groups, revision, tag_lines)
+    return Insights(hashlib.sha1((text or "").encode("utf-8")).hexdigest()[:12], lines, sections, spans, groups, revision, tag_lines, links, language)
 
 
-def _last_thai(toks: list):
-    for t in reversed(toks):
-        if t[3] == "th":
-            return t
-    return None
-
-
-def _rhymes(lines: list) -> None:
-    """End rhymes (also across lines and sections) and internal rhymes of single syllable words, by the Thai sound check only."""
-    ends = []
+def _rhymes(lines: list, sections: list, declared: str = "") -> list:
+    """The rhymes of the Python rules (rhyme_map.python_links: the one place that decides them), turned into this module's spans. Returns the links. A word is coloured only for a Thai pair whose
+    sound was read; English endings stay unverified (never coloured). Lines of unrelated sections are not linked only because the sounds match."""
+    pls = [RM.PyLine(li.line_number, li.sung_number, li.sec_index, sections[li.sec_index].name if 0 <= li.sec_index < len(sections) else "", li._base, li._tokens) for li in lines]
+    links, info = RM.python_links(pls, declared)
+    by_line = {li.line_number: li for li in lines}
     for li in lines:
-        t = _last_thai(li._tokens)
-        last_tok = li._tokens[-1] if li._tokens else None
-        if t is None or t is not last_tok:
-            li.rhyme_status = "unverified" if li._tokens else ""            # the line ends in a word whose sound Python does not read (English / number)
-            ends.append((li, None, None))
+        word, key, status = info.get(li.line_number, ("", "", ""))
+        li.rhyme_status = status
+        if not status and any(c.isalpha() for c in li.text):
+            li.rhyme_status = "unverified"                  # a script the program cannot read (Japanese, Korean ...): "not checked", never "no rhyme"
+        li.end_sound = f"{word} {key}" if word and key else ""
+        li.rhyme_group = key if status == "rhymed" else ""
+    spans: dict = {}
+    for k in links:
+        if not k.colourable or k.source != "python":
             continue
-        r = _rime_of(t[2])
-        if r is None:
-            li.rhyme_status = "unverified"
-            li.end_sound = ""
-        else:
-            li.end_sound = f"{t[2]} {_key(r)}"
-        ends.append((li, t, r))
-    by_key: dict = {}
-    for li, t, r in ends:
-        if r is not None:
-            by_key.setdefault(_key(r), []).append((li, t, r))
-    rimes = {k: v[0][2] for k, v in by_key.items()}
-    near_of: dict = {}
-    keys = sorted(rimes)
-    for i, a in enumerate(keys):
-        for b in keys[i + 1:]:
-            if TR._similar(rimes[a], rimes[b]):
-                near_of.setdefault(a, set()).add(b)
-                near_of.setdefault(b, set()).add(a)
-    for k, members in by_key.items():
-        kind, shown = None, k
-        if len({t[2] for _li, t, _r in members}) >= 2:                  # the same word again (a repeated chorus line) is repetition, not a rhyme
-            kind = "exact"
-        elif k in near_of:
-            kind = "near"
-            shown = min([k] + sorted(near_of[k]))
-        if kind is None:
-            for li, t, r in members:
-                li.rhyme_status = "none"
-            continue
-        for li, t, r in members:
-            col = color_of(shown)
-            li.rhyme_spans.append(RhymeSpan(li.line_number, li._base + t[0], li._base + t[1], t[2], k if kind == "exact" else shown, col, kind, "end"))
-            li.rhyme_group, li.rhyme_status = k, "rhymed"
-    for li in lines:                                                         # internal: a one-syllable word that has the sound of another word of the same line (including its end word)
-        words = [t for t in li._tokens if t[3] == "th" and len(t[4]) == 1 and t[2] not in FUNCTION_WORDS]
-        got = []
-        for t in words:
-            r = _rime_of(t[2])
-            if r is not None:
-                got.append((t, _key(r)))
-        end_key = li.rhyme_group if any(sp.role == "end" for sp in li.rhyme_spans) else ""
-        used = {(sp.start, sp.end) for sp in li.rhyme_spans}
-        keyed: dict = {}
-        for t, k in got:
-            keyed.setdefault(k, []).append(t)
-        for k, ts in keyed.items():
-            names = {t[2] for t in ts}
-            if end_key == k:
-                names.update(sp.text for sp in li.rhyme_spans if sp.role == "end")
-            if len(names) < 2:
+        role = "end" if k.placement == "end" else "internal"
+        for w in (k.a, k.b):
+            li = by_line.get(w.file_line)
+            if li is None:
                 continue
-            if len(ts) + (1 if end_key == k and not any((li._base + t[0], li._base + t[1]) in used for t in ts) else 0) < 2:
-                continue
-            for t in ts:
-                if (li._base + t[0], li._base + t[1]) in used:
+            cur = spans.get((w.start, w.end))
+            kind = "exact" if k.sound == "exact" else "near"
+            if cur is not None:
+                if cur.role == "end" or role == "internal":
+                    if kind == "exact" and cur.kind != "exact":
+                        cur.kind = "exact"
                     continue
-                li.rhyme_spans.append(RhymeSpan(li.line_number, li._base + t[0], li._base + t[1], t[2], k, color_of(k), "exact", "internal"))
-        li.rhyme_spans.sort(key=lambda s: s.start)
+            spans[(w.start, w.end)] = RhymeSpan(w.file_line, w.start, w.end, w.text, k.group, color_of(k.group), kind, role)
+    for sp in sorted(spans.values(), key=lambda x: x.start):
+        by_line[sp.line].rhyme_spans.append(sp)
+    return links
+
+
+_map_cache: dict = {}
+
+
+def rhyme_map(text: str, result=None, language: str = "", ins: "Insights | None" = None):
+    """The Shared Rhyme Map of these lyrics: the Python links (always) and, only when `result` (the AI's Analyze Rhymes) is for exactly these sung lines, its pairs with their own statuses. An
+    outdated result is not used (the map says stale). The AI is never asked here. The last few maps are cached, so a redraw does not analyse again."""
+    key = (text, id(result), len(getattr(result, "pairs", ()) or ()), language)
+    hit = _map_cache.get(key)
+    if hit is not None:
+        return hit
+    ins = ins if ins is not None and ins.language == language else analyze(text, None, 0, language)
+    m = RM.build_map(text, ins.rhyme_links, result, language)
+    if len(_map_cache) > 8:
+        _map_cache.clear()
+    _map_cache[key] = m
+    return m
 
 
 def _section_pattern(sec: SectionInsight, lines: list) -> None:
@@ -375,23 +373,26 @@ def _section_pattern(sec: SectionInsight, lines: list) -> None:
 
 
 # ── vocal density ─────────────────────────────────────────────────────────────────────────────────────
-# Question answered: are the lyrics too dense for this BPM, vocal speed and target duration, so that ACE-Step may rush, merge or skip words? Nothing here knows the melody, so it is an ESTIMATE:
-#   1. time reserved for music without singing: the instrumental sections (Intro, Outro, Instrumental, Interlude, Solo, Break) take a stated number of bars (RESERVE_BARS) at this BPM and time signature
-#   2. rests: REST_SHARE of the rest of the time is breath and pauses between phrases
-#   3. what is left is shared equally between the sung lines: every sung line gets the same time slot (a phrase is the unit; the melody could stretch one and squeeze another)
-#   4. syllables per second of a line / a section / the whole song = its syllables divided by its slot(s)
-#   5. that rate is compared with what the chosen vocal speed manages comfortably (slow / normal / fast = 2.5 / 4 / 6 syllables per second); the levels are RATIOS of that, so the scale moves with the
-#      style the user chose and one fixed threshold is never used for every genre. Cut-offs: under 60 % of the comfortable rate = comfortable, under 95 % = moderate, under 125 % = dense, above = very dense.
-# BPM alone does not make a song fast: it sets how long the reserved instrumental bars last. The target duration sets how much time the singing has.
-# Not enough data (no duration, fewer than 2 sung lines or MIN_SYLLABLES syllables, no time left for singing) is "unknown", never a guess.
+# Question answered: which LINES of these lyrics may make ACE-Step rush, merge or skip words at this BPM, time signature and target duration, and does the song fit the duration? Nothing here knows the melody,
+# so every result is an ESTIMATE worked out only from what is sent to ACE-Step (the lyrics, the BPM, the time signature, the target duration). Three analyses are kept apart, line by line:
+#   A. Vocal Density (per line)  the line's sung syllables against its own time. Two times are tried: the AVERAGE slot (the singing time shared by all lines) and the MOST time the line could get
+#      (MAX_LINE_BARS bars, or what is left if every other line is sung at a comfortable pace). Pace is syllables per beat (a beat = a quarter note; in 6/8 the BPM counts the dotted quarter), with
+#      cut-offs from the ACE-Step 1.5 Guide (6-10 syllables per two 4/4 bars = 0.75-1.25 per beat = comfortable; up to 1.75 moderate; up to 2.25 dense; above very dense) and an absolute pace floor.
+#      OK = not dense even at the average slot; Warning = dense at the average slot but fine with more time; High Risk = dense even with the most time (a hedged count never makes High Risk).
+#   B. Vocal Phrasing (per line)  the longest phrase with no space or punctuation to breathe at, from the text only (PHRASE_WARN / PHRASE_HIGH). Separate from density.
+#   C. Song Duration Fit (song)  the time the lyrics take if sung between a fast and a comfortable pace (plus rests and the instrumental parts), as a RANGE, against the target duration. Lines are not
+#      assumed to take equal time and no fixed bars per line is used. This is about the whole song and says nothing about any single line.
+# A section or the song is a summary of its lines (the worst line, how many lines to check); an average never hides a risky line. Not enough data is "unknown", never a guess.
 
-VOCAL_SPEEDS = {"slow": 2.5, "normal": 4.0, "fast": 6.0}                        # syllables per second a singer is assumed to manage comfortably
 LEVELS = ("comfortable", "moderate", "dense", "very_dense")
 LEVEL_NAME = {"comfortable": "Comfortable", "moderate": "Moderate", "dense": "Dense", "very_dense": "Very Dense", "unknown": "Unknown"}
 RESERVE_BARS = {"intro": 4, "outro": 4, "instrumental": 8, "interlude": 4, "solo": 8, "break": 2}       # bars of music without singing (stated assumptions)
 REST_SHARE = 0.12
 MIN_SYLLABLES = 8
-CUTOFFS = (0.6, 0.95, 1.25)
+SYL_PER_BEAT = (1.25, 1.75, 2.25)                # cut-offs in syllables per beat: comfortable / moderate / dense / very dense (see 4)
+SYL_PER_SECOND = (5.5, 7.0)                      # at or above: at least dense / very dense (see 4)
+LENGTH_LONG, LENGTH_SHORT = 1.10, 0.70           # the lyrics need more than 110 % of the target: long; less than 70 %: short
+MIN_SHORT_LINES = 12                             # "short" is only said of lyrics that look finished (a half-written song is always short of its target)
 
 
 def pulses_per_bar(timesig: str) -> tuple:
@@ -403,9 +404,41 @@ def seconds_per_bar(bpm: float, timesig: str) -> float:
     return pulses_per_bar(timesig)[0] * 60.0 / max(1.0, float(bpm))
 
 
-def level_of(rate: float, speed: str) -> str:
-    r = rate / VOCAL_SPEEDS.get(speed, 4.0)
-    return LEVELS[0] if r < CUTOFFS[0] else LEVELS[1] if r < CUTOFFS[1] else LEVELS[2] if r < CUTOFFS[2] else LEVELS[3]
+def quarters_per_second(bpm: float, timesig: str) -> float:
+    """Quarter-note beats per second. BPM counts quarter notes in 2/4, 3/4 and 4/4; in 6/8 it counts the dotted quarter (1.5 quarter notes)."""
+    return max(1.0, float(bpm)) / 60.0 * (1.5 if str(timesig) == "6" else 1.0)
+
+
+def level_of(rate: float, bpm: float, timesig: str) -> str:
+    """The level of a rate in syllables per second at this BPM: by syllables per beat, never lower than the absolute pace allows (see the notes above)."""
+    per_beat = rate / quarters_per_second(bpm, timesig)
+    i = 0 if per_beat < SYL_PER_BEAT[0] else 1 if per_beat < SYL_PER_BEAT[1] else 2 if per_beat < SYL_PER_BEAT[2] else 3
+    if rate >= SYL_PER_SECOND[1]:
+        i = 3
+    elif rate >= SYL_PER_SECOND[0]:
+        i = max(i, 2)
+    return LEVELS[i]
+
+
+STATUS_RANK = {"unknown": -1, "ok": 0, "warning": 1, "high": 2}
+STATUS_NAME = {"ok": "OK", "warning": "Warning", "high": "High Risk", "unknown": "Unknown"}
+MAX_LINE_BARS = 4                                # the most time one sung line is assumed to take (a phrase longer than about four bars is unusual); a stated assumption, not a measurement
+PHRASE_WARN, PHRASE_HIGH = 10, 15                # syllables in ONE unbroken phrase: above the top of the Guide's 6-10 = Warning; 1.5 times that = High Risk (a stated rule of thumb, not a measurement)
+SUPPORTED_LANGUAGES = ("th", "en")               # the languages whose syllables are counted by this program ("" / auto = each word by its own script)
+
+
+def worst_status(statuses) -> str:
+    """The worst of several statuses: High Risk > Warning > OK. Unknown only when nothing could be judged."""
+    best = "unknown"
+    for s in statuses:
+        if STATUS_RANK.get(s, -1) > STATUS_RANK[best]:
+            best = s
+    return best
+
+
+def language_supported(language: str) -> bool:
+    lang = (language or "").strip().lower()
+    return lang in ("", "auto") or lang[:2] in SUPPORTED_LANGUAGES
 
 
 @dataclass
@@ -413,16 +446,31 @@ class DensitySettings:
     bpm: float = 120.0
     timesig: str = "4"                      # the values of music_options.TIMESIGS: "2" 2/4, "3" 3/4, "4" 4/4, "6" 6/8
     duration: float = 180.0                 # target seconds
-    speed: str = "normal"                   # slow | normal | fast
 
 
 @dataclass
 class LineDensity:
+    """One sung line, judged on its own. Section and song results are summaries of these, never averages that hide a line."""
     line_number: int
     syllables: int
-    rate: float
-    level: str
-    outlier: bool = False                   # much longer than the other lines of its section
+    rate: float                             # syllables per second if the line gets the average time slot
+    level: str                              # density level at the average slot (comfortable | moderate | dense | very_dense | unknown)
+    outlier: bool = False                   # the line needs a look (Warning or High Risk)
+    line_id: str = ""
+    section: str = ""
+    section_index: int = 0                  # which occurrence of the section name (0 = the first)
+    phrases: list = field(default_factory=list)   # syllables per phrase, split at spaces and punctuation
+    longest_phrase: int = 0
+    roomy_level: str = "unknown"            # density level if the line may take up to MAX_LINE_BARS (or every other line is sung at a comfortable pace)
+    density_status: str = "unknown"         # ok | warning | high | unknown
+    phrasing_status: str = "unknown"        # ok | warning | high | unknown (text-based: no melody is known)
+    status: str = "unknown"                 # the worse of the two
+    reason: str = ""                        # a short reason shown beside the line
+    detail: str = ""                        # the numbers behind it
+    confidence: str = "medium"              # high (counted from the dictionary or corrected by hand) | medium (estimated count) | low (could not be counted / language not supported)
+    slot_seconds: float = 0.0               # the average time slot
+    roomy_seconds: float = 0.0              # the most time this line could get (see roomy_level)
+    need_seconds: float = 0.0               # the time this line needs to sit at a moderate pace
 
 
 @dataclass
@@ -434,11 +482,17 @@ class SectionDensity:
     sung_lines: int
     words: int
     syllables: int
-    rate: float
-    ratio: float                            # rate / the comfortable rate of the chosen vocal speed
-    level: str
+    rate: float                             # information only: syllables per second over the section (an average; never used for a status)
+    ratio: float                            # information only: syllables per beat / the moderate cut-off
+    level: str                              # derived from the lines: Very Dense if a line is High Risk, Dense if a line is a Warning, else the worst line level
     instrumental: bool
     reason: str = ""
+    per_beat: float = 0.0                   # information only: the average syllables per beat of the section
+    status: str = "unknown"                 # ok | warning | high | unknown: the worst of its lines
+    risky_lines: list = field(default_factory=list)   # file lines that are a Warning or High Risk, in order
+    worst_line: int = 0                     # the file line to jump to
+    density_lines: list = field(default_factory=list)  # the risky lines whose reason is density
+    phrasing_lines: list = field(default_factory=list)  # the risky lines whose reason is phrasing
 
 
 @dataclass
@@ -462,88 +516,183 @@ class Density:
     sec_per_bar: float
     reserve_seconds: float
     vocal_seconds: float                    # time left for singing after the instrumental reserve and the rests
-    slot: float                             # seconds one sung line gets
+    slot: float                             # the average seconds one sung line gets (a reference, not a verdict on any line)
     total_syllables: int
     total_lines: int
-    song_rate: float
-    song_level: str
+    song_rate: float                        # information only: the average over the song
+    song_level: str                         # derived from the lines (see SectionDensity.level), never from the average
     lines: list
     sections: list
     warnings: list
     assumptions: str
+    song_per_beat: float = 0.0              # information only: the average syllables per beat of the song
+    need_low: float = 0.0                   # seconds the lyrics and the instrumental parts take if sung at the fast end of the comfortable range
+    need_high: float = 0.0                  # ... and at the slow end
+    fit: str = "unknown"                    # fits | long | short | unknown: the target duration against that range (this is NOT how dense the lines are)
+    risky_lines: list = field(default_factory=list)   # file lines that are a Warning or High Risk
+    high_lines: list = field(default_factory=list)
+    status: str = "unknown"                 # the worst line status of the song
+    language_ok: bool = True
+    time_known: bool = False                # the BPM and the target duration allow a time per line
+    bpm_known: bool = False
+
+
+def _line_confidence(x, supported: bool) -> str:
+    if not supported or x.status == "unverified" or x.syllable_count == 0:
+        return "low"
+    return "high" if x.status in ("verified", "manual_corrected") else "medium"
 
 
 def density(ins: Insights, ts: DensitySettings) -> Density:
     spb = seconds_per_bar(ts.bpm, ts.timesig)
-    sung = [li for li in ins.lines]
+    sung = list(ins.lines)
     total_syl, total_lines = sum(li.syllable_count for li in sung), len(sung)
+    supported = language_supported(ins.language)
     reserve = sum(next((v for k, v in RESERVE_BARS.items() if sec.name.lower().startswith(k)), 4) * spb for sec in ins.sections if sec.instrumental and not sec.sung_lines)
     vocal = max(0.0, (ts.duration - reserve) * (1.0 - REST_SHARE))
     why = ""
-    if ts.duration <= 0 or ts.bpm <= 0:
+    if not supported:
+        why = f"Vocal density is not judged for the language '{ins.language}'."
+    elif ts.duration <= 0 or ts.bpm <= 0:
         why = "The BPM or the target duration is missing."
     elif total_lines < 2 or total_syl < MIN_SYLLABLES:
         why = "Too few sung lines to judge."
     elif vocal < 3.0:
         why = "No time is left for singing after the instrumental parts."
     known = not why
+    bpm_known = supported and ts.bpm > 0 and total_lines >= 1
     slot = vocal / total_lines if known else 0.0
-    cap = VOCAL_SPEEDS.get(ts.speed, 4.0)
-    sec_syl = {}
+    qps = quarters_per_second(ts.bpm, ts.timesig)
+    # the time each line needs at a comfortable pace, and what is left for one line if every OTHER line is sung at that pace (never more than MAX_LINE_BARS)
+    easy = {id(x): x.syllable_count / (SYL_PER_BEAT[0] * qps) for x in sung} if ts.bpm > 0 else {}
+    easy_total = sum(easy.values())
+    cap = MAX_LINE_BARS * spb
+    sec_lines: dict = {}
     for li in sung:
-        sec_syl.setdefault(li.sec_index, []).append(li)
+        sec_lines.setdefault(li.sec_index, []).append(li)
     lines_d, sections_d, warnings = [], [], []
     counter: dict = {}
     for k, sec in enumerate(ins.sections):
         n = counter.get(sec.name, 0)
         counter[sec.name] = n + 1
-        ls = sec_syl.get(k, [])
-        syl = sum(x.syllable_count for x in ls)
-        rate = (syl / (len(ls) * slot)) if known and ls else 0.0
-        lvl = level_of(rate, ts.speed) if known and ls else "unknown"
-        med = sorted(x.syllable_count for x in ls)[len(ls) // 2] if ls else 0
-        outs = []
+        ls = sec_lines.get(k, [])
+        name = sec.name or "(start)"
+        rows = []
         for x in ls:
-            r = x.syllable_count / slot if known else 0.0
-            lv = level_of(r, ts.speed) if known else "unknown"
-            o = known and len(ls) >= 3 and lv in ("dense", "very_dense") and x.syllable_count >= max(med * 1.4, med + 3)
-            lines_d.append(LineDensity(x.line_number, x.syllable_count, r, lv, o))
-            if o:
-                outs.append(x.line_number)
+            syl = x.syllable_count
+            phrases = list(x.phrases) or ([syl] if syl else [])
+            longest = max(phrases) if phrases else 0
+            conf = _line_confidence(x, supported)
+            sure = conf == "high"
+            est = "" if sure else "about "
+            # B. phrasing: the longest unbroken phrase (text only; the melody is not known)
+            if not supported:
+                p_status = "unknown"
+            elif longest >= PHRASE_HIGH:
+                p_status = "high" if sure else "warning"
+            elif longest > PHRASE_WARN:
+                p_status = "warning"
+            else:
+                p_status = "ok"
+            # A. density: the line's own syllables against its own time, at the average slot and at the most time it could get
+            tight_s = min(slot, cap) if known else 0.0                   # a line is not assumed to take longer than the cap, so a short lyric is not judged at a minute per line
+            roomy_s = 0.0
+            if known:
+                roomy_s = min(cap, max(slot, vocal - (easy_total - easy[id(x)])))
+            elif bpm_known and supported:
+                roomy_s = cap
+            tight_lv = level_of(syl / tight_s, ts.bpm, ts.timesig) if tight_s > 0 else "unknown"
+            roomy_lv = level_of(syl / roomy_s, ts.bpm, ts.timesig) if roomy_s > 0 else "unknown"
+            if syl <= 0 or not supported:
+                d_status = "unknown"
+            elif tight_lv in ("comfortable", "moderate"):
+                d_status = "ok"
+            elif roomy_lv in ("dense", "very_dense"):
+                d_status = "high" if sure else "warning"       # even with the most time it could get: a hedged count never makes it High Risk
+            elif tight_lv == "unknown":
+                d_status = "unknown"                           # no target duration: only the case "even at the longest phrase" can be said
+            else:
+                d_status = "warning"                           # depends on how much time this phrase really gets
+            status = "unknown" if (d_status == "unknown" and p_status == "ok") else worst_status([d_status, p_status])
+            need_s = syl / (SYL_PER_BEAT[1] * qps) if ts.bpm > 0 else 0.0
+            bits, nums = [], []
+            if p_status in ("warning", "high") and longest:
+                bits.append("long phrase without a break" if len(phrases) == 1 else f"a phrase of {est}{longest} syllables")
+                nums.append(f"the longest unbroken phrase has {est}{longest} syllables (the Guide's reference is about {LINE_REFERENCE[0]}-{LINE_REFERENCE[1]} per line; Warning above {PHRASE_WARN}, High Risk from {PHRASE_HIGH})")
+            if d_status in ("warning", "high"):
+                bits.append("many syllables for the time" if d_status == "warning" else "too many syllables even with the most time")
+                if tight_s:
+                    nums.append(f"{est}{syl} syllables in the average slot of {tight_s:.1f} s is {syl / tight_s / qps:.2f} per beat ({LEVEL_NAME[tight_lv]}); with up to {roomy_s:.1f} s it is {syl / roomy_s / qps:.2f} ({LEVEL_NAME[roomy_lv]})")
+                else:
+                    nums.append(f"{est}{syl} syllables in the longest assumed phrase of {roomy_s:.1f} s is {syl / roomy_s / qps:.2f} per beat ({LEVEL_NAME[roomy_lv]}); no target duration is set")
+                if d_status == "warning" and need_s:
+                    nums.append(f"it needs about {need_s:.1f} s ({need_s / spb:.1f} bars) to sit at a moderate pace")
+            if not sure and (d_status != "ok" or p_status != "ok") and syl:
+                nums.append("the syllable count is an estimate")
+            if d_status == "unknown" and syl and supported:
+                nums.append("the density depends on the time this line gets, which is not set (no BPM or target duration)")
+            ld = LineDensity(x.line_number, syl, (syl / tight_s) if tight_s else 0.0, tight_lv, status in ("warning", "high"), x.line_id, name, n, phrases, longest, roomy_lv,
+                             d_status, p_status, status, "; ".join(bits), "; ".join(nums), conf, tight_s, roomy_s, need_s)
+            rows.append(ld)
+            lines_d.append(ld)
+        syl_total = sum(x.syllable_count for x in ls)
+        rate = (syl_total / (len(ls) * slot)) if known and ls else 0.0
+        risky = [r.line_number for r in rows if r.status in ("warning", "high")]
+        sec_status = worst_status(r.status for r in rows) if rows else "unknown"
+        dens_lines = [r.line_number for r in rows if r.density_status in ("warning", "high")]
+        phr_lines = [r.line_number for r in rows if r.phrasing_status in ("warning", "high")]
+        worst = max(rows, key=lambda r: (STATUS_RANK[r.status], r.longest_phrase, r.syllables)) if risky else None
+        d_worst = worst_status(r.density_status for r in rows) if rows else "unknown"
+        lvl = ("unknown" if d_worst == "unknown" else "very_dense" if d_worst == "high" else "dense" if d_worst == "warning"
+               else max((r.level for r in rows if r.level in LEVELS), key=LEVELS.index, default="unknown"))
         reason = ""
-        if known and ls:
-            reason = (f"{syl} syllables in {len(ls)} lines: about {rate:.1f} syllables per second if every sung line gets the same {slot:.1f} s. "
-                      f"A '{ts.speed}' singing speed manages about {cap:g} comfortably ({rate / cap * 100:.0f} %).")
-        sd = SectionDensity(sec.name or "(start)", n, sec.first_line, max([x.line_number for x in ls] or [sec.first_line]), len(ls), sum(x.word_count for x in ls), syl, rate, rate / cap if known and ls else 0.0, lvl,
-                            sec.instrumental and not ls, reason)
+        if rows:
+            reason = (f"{len(risky)} of {len(rows)} lines to check" if risky else f"no line to check in {len(rows)} lines") + (f": line {worst.line_number} ({worst.reason})" if worst and worst.reason else "")
+        sd = SectionDensity(name, n, sec.first_line, max([x.line_number for x in ls] or [sec.first_line]), len(ls), sum(x.word_count for x in ls), syl_total, rate,
+                            rate / qps / SYL_PER_BEAT[1] if known and ls else 0.0, lvl, sec.instrumental and not ls, reason, rate / qps if known and ls else 0.0,
+                            sec_status, risky, worst.line_number if worst else 0, dens_lines, phr_lines)
         sections_d.append(sd)
-        if lvl in ("dense", "very_dense") and len(warnings) < 6:
-            warnings.append(Warning_(sd.name, n, lvl, ls[0].line_number, sd.last_line, syl, len(ls), reason, outs))
+        if dens_lines and len(warnings) < 6:
+            bad = [r for r in rows if r.line_number in dens_lines]
+            warnings.append(Warning_(name, n, "very_dense" if d_worst == "high" else "dense", bad[0].line_number, bad[-1].line_number, sum(r.syllables for r in bad), len(bad),
+                                     f"{len(bad)} of {len(rows)} lines are tight for their time: " + ", ".join(f"line {r.line_number}" for r in bad[:6]) + ".", [r.line_number for r in bad]))
     song_rate = total_syl / vocal if known else 0.0
-    song_level = level_of(song_rate, ts.speed) if known else "unknown"
-    if known and song_level in ("dense", "very_dense") and not warnings:
-        warnings.append(Warning_("Whole song", 0, song_level, sung[0].line_number, sung[-1].line_number, total_syl, total_lines,
-                                 f"{total_syl} syllables in about {vocal:.0f} s of singing time: about {song_rate:.1f} syllables per second on average ({song_rate / cap * 100:.0f} % of a comfortable '{ts.speed}' speed)."))
+    d_song = worst_status(r.density_status for r in lines_d)
+    song_level = ("unknown" if d_song == "unknown" else "very_dense" if d_song == "high" else "dense" if d_song == "warning"
+                  else max((r.level for r in lines_d if r.level in LEVELS), key=LEVELS.index, default="unknown"))
+    # C. duration fit, separate from the density: the time the lyrics take if every line is sung between a comfortable and a fast pace, plus the instrumental parts
+    need_low = need_high = 0.0
+    fit = "unknown"
+    if bpm_known and total_lines >= 2 and total_syl >= MIN_SYLLABLES:
+        pace_lo, pace_hi = SYL_PER_BEAT[2], SYL_PER_BEAT[0]            # fastest and slowest pace in syllables per beat that still counts as comfortable-to-dense
+        need_low = total_syl / (pace_lo * qps) / (1.0 - REST_SHARE) + reserve
+        need_high = total_syl / (pace_hi * qps) / (1.0 - REST_SHARE) + reserve
+        if ts.duration > 0:
+            fit = ("long" if ts.duration < need_low else "short" if (ts.duration > need_high / LENGTH_SHORT and total_lines >= MIN_SHORT_LINES) else "fits")
+    risky_all = [r.line_number for r in lines_d if r.status in ("warning", "high")]
+    high_all = [r.line_number for r in lines_d if r.status == "high"]
     assume = (f"{pulses_per_bar(ts.timesig)[1]}, {ts.bpm:g} BPM → {spb:.1f} s per bar; target {ts.duration:g} s; about {reserve:.0f} s kept for the instrumental parts "
-              f"(a set number of bars each); {REST_SHARE * 100:.0f} % of the rest is breath and pauses; every sung line gets the same time slot; vocal speed '{ts.speed}' = {cap:g} syllables per second comfortably. "
-              "The melody is not known, so this is an estimated risk, not a measurement.")
-    return Density(ts, known, why, spb, reserve, vocal, slot, total_syl, total_lines, song_rate, song_level, lines_d, sections_d, warnings, assume)
+              f"(a set number of bars each); {REST_SHARE * 100:.0f} % of the rest is breath and pauses. Each line is judged on its own syllables against the average time slot and against the most time it could get "
+              f"(up to {MAX_LINE_BARS} bars, or what is left if every other line is sung at a comfortable pace). Pace is syllables per beat (comfortable under {SYL_PER_BEAT[0]:g}, moderate under {SYL_PER_BEAT[1]:g}, "
+              f"dense under {SYL_PER_BEAT[2]:g}), from the ACE-Step 1.5 Guide's 6-10 syllables per line. These cut-offs and the bar limits are stated assumptions, not measurements. "
+              "The melody is not known, so this is an estimated risk, not a measurement, and OK is never a guarantee.")
+    return Density(ts, known, why, spb, reserve, vocal, slot, total_syl, total_lines, song_rate, song_level, lines_d, sections_d, warnings, assume,
+                   song_rate / qps if known else 0.0, need_low, need_high, fit, risky_all, high_all, worst_status(r.status for r in lines_d), supported, known, bpm_known)
 
 
 # ── ACE-Step lyrics health ────────────────────────────────────────────────────────────────────────────
 # Warnings for what may make ACE-Step 1.5 rush, merge or skip words, built from numbers the program really has. Three kinds of basis are kept apart:
 #   detected   a fact from the counting engine (a line has N syllables, the others about M)
-#   guideline  the ACE-Step 1.5 Musician's Guide reference of roughly 6-10 syllables per line (a rough reference, never a rule; scaled with the chosen vocal speed)
+#   guideline  the ACE-Step 1.5 Musician's Guide reference of roughly 6-10 syllables per line (a rough reference, never a rule)
 #   estimate   a risk worked out from the duration and the density assumptions (no melody is known)
 # A line whose syllable count is itself an estimate (English word, number, word not in the dictionary) is reported with hedged wording ("about N").
 # Skipping a section is something ACE-Step may do for several reasons: the program never predicts it and never states a probability.
 LINE_REFERENCE = (6, 10)
-SPEED_FACTOR = {"slow": 0.9, "normal": 1.0, "fast": 1.4}               # the reference scales with the style the user chose (a rap line is not judged like a ballad line)
 MAX_HEALTH = 10
 STRUCTURE_MIN_SECTIONS = 4
 STRUCTURE_SECONDS_PER_SECTION = 12.0
-PRIORITY = {"song_density": 1, "section_density": 2, "long_line": 3, "uneven": 4, "structure": 5, "duplicate_section": 6, "cue_conflict": 6, "tag_complexity": 6, "short_word": 7}
-DENSITY_KINDS = frozenset({"song_density", "section_density", "long_line", "uneven", "short_word"})
+PRIORITY = {"song_density": 1, "length_fit": 1, "section_density": 2, "long_line": 3, "uneven": 4, "structure": 5, "duplicate_section": 6, "cue_conflict": 6, "tag_complexity": 6, "short_word": 7}
+DENSITY_KINDS = frozenset({"length_fit", "song_density", "section_density", "long_line", "uneven", "short_word"})
 STRUCTURE_KINDS = frozenset({"structure", "duplicate_section", "cue_conflict", "tag_complexity"})
 # Same opposite-energy sets the Song Architect already refuses to write into a tag. A warning only: nothing here rewrites a tag.
 CUE_LOW = frozenset({"soft", "low energy", "whispered", "minimal", "soft vocals", "breathy vocals", "ambient", "soft piano"})
@@ -600,7 +749,7 @@ def _shown_name(name: str, index: int) -> str:
 
 @dataclass
 class HealthItem:
-    kind: str                 # song_density | section_density | long_line | uneven | short_word | structure | duplicate_section | cue_conflict | tag_complexity
+    kind: str                 # length_fit | song_density | section_density | long_line | uneven | short_word | structure | duplicate_section | cue_conflict | tag_complexity
     priority: int
     section: str              # section name, "Whole song" or "Structure"
     index: int                # which occurrence of that section name (0 = the first)
@@ -754,9 +903,9 @@ def health(ins: Insights, dn: Density) -> list:
     """The warnings of this song for these settings, most important first (see the module notes above for what each kind means)."""
     out: list = []
     st = dn.settings
-    f = SPEED_FACTOR.get(st.speed, 1.0)
+    f = 1.0
     lo, hi = LINE_REFERENCE
-    limit = round(hi * f)
+    limit = hi
     by_sec: dict = {}
     for li in ins.lines:
         by_sec.setdefault(li.sec_index, []).append(li)
@@ -771,33 +920,30 @@ def health(ins: Insights, dn: Density) -> list:
     for w in dn.warnings:
         whole = w.section == "Whole song"
         msg = ("The lyrics of this section have many syllables for the time estimated for them. ACE-Step may rush, merge or skip some words." if w.level == "dense" else
-               "This section may need a faster delivery than a normal singing speed. Try fewer words, or split the phrases so there is room to breathe.")
+               "This section may need a faster delivery than its tempo allows. Try fewer words, or split the phrases so there is room to breathe.")
         if whole:
             msg = "Overall the lyrics have many syllables for the target duration. Shorter lines or fewer lines may help, or a longer duration."
         out.append(HealthItem("song_density" if whole else "section_density", PRIORITY["song_density" if whole else "section_density"], w.section, w.index, 0 if whole else w.first_line, w.last_line,
                               list(range(w.first_line, w.last_line + 1)) if not whole else [], f"{shown(w.section, w.index)} — {'Dense' if w.level == 'dense' else 'High risk'}", msg, w.reason, "estimate", False, "songwriter"))
-    if dn.known and dn.song_level in ("dense", "very_dense") and not any(h.kind == "song_density" for h in out):
-        out.append(HealthItem("song_density", 1, "Whole song", 0, 0, 0, [], "Whole song — Dense", "Overall the lyrics have many syllables for the target duration. Shorter lines or fewer lines may help, or a longer duration.",
-                              f"{dn.total_syllables} syllables in about {dn.vocal_seconds:.0f} s of singing time: about {dn.song_rate:.1f} syllables per second on average.", "estimate", False, "songwriter"))
+    dense_lines = [x for x in dn.lines if x.density_status in ("warning", "high")]
+    if dense_lines:
+        out.append(HealthItem("song_density", PRIORITY["song_density"], "Whole song", 0, 0, 0, [], f"Whole song — {len(dense_lines)} of {len(dn.lines)} lines to check for density",
+                              "Some lines have many syllables for the time they can get. ACE-Step may rush, merge or skip words on those lines. The rest of the song is not affected by this note.",
+                              "Lines: " + ", ".join(str(x.line_number) for x in dense_lines[:12]) + (" …" if len(dense_lines) > 12 else "") + ". The song-level status comes from these lines, never from an average.",
+                              "estimate", False, "songwriter"))
+    # length: a range of the time the lyrics may take, against the target duration (separate from the density of the lines; no fixed bars per line)
+    if dn.fit in ("long", "short"):
+        is_long = dn.fit == "long"
+        out.append(HealthItem("length_fit", PRIORITY["length_fit"], "Whole song", 0, 0, 0, [], f"Whole song — {'Long' if is_long else 'Short'} for the target duration",
+                              (f"Even at a fast pace the lyrics and instrumental parts take about {dn.need_low:.0f} s, more than the target. ACE-Step may cut the end, rush, or skip words. Fewer lines, or a longer duration, may help." if is_long else
+                               f"The lyrics and instrumental parts take about {dn.need_low:.0f}-{dn.need_high:.0f} s, much less than the target. ACE-Step may fill the rest with music or repeat parts. A shorter duration, or more sections, may fit better."),
+                              f"{dn.total_syllables} sung syllables at {dn.settings.bpm:g} BPM, sung between {SYL_PER_BEAT[2]:g} and {SYL_PER_BEAT[0]:g} syllables per beat (plus {REST_SHARE * 100:.0f} % rests) and about {dn.reserve_seconds:.0f} s of instrumental parts, is about "
+                              f"{dn.need_low:.0f}-{dn.need_high:.0f} s; the target is {dn.settings.duration:g} s. Lines are not assumed to take equal time. The ACE-Step guide: slower tempos need more duration for the same lyrics, and when in doubt estimate longer.",
+                              "estimate", False, "songwriter"))
     # 3 + 4: long lines and uneven phrasing, inside each section. The section's own level stays on the section chip; a line note names only that line.
-    song_med = _median([x.syllable_count for x in ins.lines])
-    line_level = {x.line_number: x.level for x in dn.lines}
-    flagged: set = set()
+    flagged = {x.line_number for x in dn.lines if x.phrasing_status in ("warning", "high")}      # a phrasing note already names the line: it is not reported a second time as "uneven"
     for k, ls in by_sec.items():
         name, idx = name_of.get(k, ("(start)", 0))
-        sec_level = dn.sections[k].level if k < len(dn.sections) else "unknown"
-        for x in ls:
-            others = [y.syllable_count for y in ls if y is not x] if len(ls) >= 4 else [y.syllable_count for y in ins.lines if y is not x]
-            m = _median(others)
-            sure = x.status in ("verified", "manual_corrected")
-            if x.syllable_count > limit * (1.0 if sure else 1.2) and m and x.syllable_count >= 1.25 * m:
-                est = "" if sure else "about "
-                out.append(HealthItem("long_line", PRIORITY["long_line"], name, idx, x.line_number, x.line_number, [x.line_number], f"{shown(name, idx)} — line {x.line_number} is long",
-                                      _line_length_summary(x.line_number, est, x.syllable_count, m, len(ls) >= 4, sec_level, line_level.get(x.line_number, "unknown"))
-                                      + ("" if sure else " (The count is an estimate.)"),
-                                      f"Guide reference: about {lo}-{hi} syllables per line, a rough reference and not a rule; for the vocal speed '{st.speed}' this program looks at lines above {limit} that are also clearly longer than their neighbours.",
-                                      "detected" if sure else "guideline", not sure, "songwriter"))
-                flagged.add(x.line_number)
         if len(ls) >= 4:
             m = _median([x.syllable_count for x in ls])
             for x in ls:
@@ -811,6 +957,13 @@ def health(ins: Insights, dn: Density) -> list:
                                           f"Line {x.line_number} has {'' if sure else 'about '}{x.syllable_count} syllables; the other lines are {others[0]}-{others[-1]}. It is {'much longer' if longer else 'much shorter'} than its section." + ("" if sure else " (The count is an estimate.)"),
                                           "Lines of one section that have a similar job usually sit comfortably when their lengths are close; two lines that simply differ a little are not reported.",
                                           "detected" if sure else "guideline", not sure, "songwriter"))
+    for x in dn.lines:
+        if x.phrasing_status in ("warning", "high"):
+            nm, ix = x.section, x.section_index
+            out.append(HealthItem("long_line", PRIORITY["long_line"], nm, ix, x.line_number, x.line_number, [x.line_number], f"{shown(nm, ix)} — line {x.line_number}: long phrase",
+                                  f"Line {x.line_number} has a phrase of {'' if x.confidence == 'high' else 'about '}{x.longest_phrase} syllables with no space or punctuation to breathe at. This is a text-based phrasing risk; the melody is not known. A break may help.",
+                                  x.detail, "detected" if x.confidence == "high" else "guideline", x.confidence != "high", "songwriter"))
+            flagged.add(x.line_number)
     # A one-word line can be held or stressed. This does not predict a pitch, and at most two notes are kept.
     short_n = 0
     for x in ins.lines:
@@ -971,7 +1124,7 @@ def songwriter_block(ins: Insights, dn: "Density | None" = None) -> str:
 def producer_block(ins: Insights, dn: Density) -> str:
     """Per section: syllables and the density estimate, then the structure/duration warnings and what the estimate assumes."""
     rows = ["PROGRAM FACTS (estimates by Python from the lyrics and the settings; the melody is NOT known and the real timing of the music generator is not controlled by these numbers):",
-            f"Settings: {dn.settings.bpm:g} BPM, {pulses_per_bar(dn.settings.timesig)[1]}, target {dn.settings.duration:g} s, vocal speed {dn.settings.speed}.",
+            f"Settings: {dn.settings.bpm:g} BPM, {pulses_per_bar(dn.settings.timesig)[1]}, target {dn.settings.duration:g} s.",
             "section | sung lines | syllables | vocal density (estimate)"]
     for s in dn.sections:
         if s.instrumental:

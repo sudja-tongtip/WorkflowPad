@@ -51,6 +51,9 @@ SPECIALISTS = (
                ask_for="the three music directions of AI Recommend (Style panel / Generate tab)"),
     # Not a chat specialist: Analyze Song does not ask it, the chat list does not show it, and it has no session.
     Specialist("lyric_formatter", "Lyric Formatter", "Formats the open lyrics and cues without rewriting the words", "lyric_formatter.md", analyzes=False),
+    # Analyze Rhymes (rhyme-map-v6): a structured analysis of its own. Its editable prompt holds the craft; the OUTPUT FORMAT and the validation stay in rhyme_v6.py. One stateless request per window:
+    # no chat, no session, no history, and never shown in the chat list.
+    Specialist("rhyme_analyzer", "Rhyme Analyzer", "The whole-song rhyme map of Analyze Rhymes: pairs, positions, schemes and a short reading", "rhyme_analyzer.md", analyzes=False),
 )
 PRODUCER = "music_producer"
 ANALYSIS_ID = "music_producer_analysis"             # the Music Producer's ANALYSIS session: its own live conversation and its own session file, never mixed with the chat session

@@ -12,10 +12,13 @@ import re
 from dataclasses import dataclass, field
 from typing import Callable
 
+from . import rhyme_map as RM
+from . import rhyme_v6 as RV
 from . import thai_rhyme as TR
 from .lyric_analysis import AnalysisError, SEP_END, _is_sep, _norm
 
-RHYME_PROMPT_VERSION = "rhyme-v5"
+RHYME_PROMPT_VERSION = "rhyme-v6"                  # the Rhyme Analyzer AI (rhyme-map-v6). rhyme-v5 (line endings) results can still be read and are shown as an older analysis
+LEGACY_VERSION = "rhyme-v5"
 LLM_EXACT, LLM_NEAR, UNCERTAIN = "llm_exact", "llm_near", "uncertain"        # what the AI (the Thai Prosody Expert) assessed: no Python sound check stands behind these
 KIND = "rhyme"                                  # the analysis type that is part of the cache key
 WINDOW_LINES = 120                              # lines per request: the answer is one short row per line, so a whole song normally goes in ONE request
@@ -66,8 +69,32 @@ class RhymePair:
     confidence: str
     lang: str
     reason: str = ""
-    verify: str = TR.UNVERIFIED                    # Python's sound check. Separate from `confidence`, which is only what the model said.
+    verify: str = TR.UNVERIFIED                    # the single status the window shows: verified / unverified / rejected / llm_exact / llm_near / uncertain (kept for the old saves and the cards)
     verify_note: str = ""
+    # The Shared Rhyme Map's three separate facts (rhyme_map.py). `type` and `verify` above are views of them.
+    sound: str = ""                                # exact | near | different | uncertain
+    placement: str = ""                            # internal | end | cross
+    verification: str = ""                         # verified | ai_assessed | unverified | rejected
+    source: str = "llm"                            # llm | python
+    kind: str = "vowel"                            # vowel | consonant
+    claimed: str = ""                              # what the AI said about the sound: exact | near | uncertain
+    # rhyme-map-v6: the AI's id / group / sound type, the finer placement, and the position that Python validated (0-based, end exclusive, in the sung line)
+    pair_id: str = ""
+    group_id: str = ""
+    sound_type: str = ""                           # vowel_rhyme | consonant_rhyme | assonance | consonance | alliteration | multisyllabic | wordplay
+    placement_detail: str = ""                     # internal | end_to_end | end_to_internal | cross_line | cross_section (derived from the validated positions)
+    traditional_role: str = ""                     # สัมผัสใน | สัมผัสนอก | ""
+    a_start: int = -1
+    a_end: int = -1
+    b_start: int = -1
+    b_end: int = -1
+    position_validated: bool = False               # Python placed both words exactly. This says NOTHING about the sound: that is `verification`
+    position_fixed: bool = False                   # the AI's index was wrong and Python corrected it (the text was at exactly one place)
+    position_note: str = ""
+
+    @property
+    def pos_key(self) -> frozenset:                # the two exact positions: two pairs on the same two spans are one pair
+        return frozenset({(self.a_line, self.a_start, self.a_end, self.a_word), (self.b_line, self.b_start, self.b_end, self.b_word)})
 
     @property
     def key(self) -> frozenset:                 # an unordered pair of (line, word): the same two words are one pair, whatever their order or label
@@ -81,9 +108,40 @@ class RhymeResult:
     ignored: list = field(default_factory=list)  # one message per row that was dropped because Python could check it and it was wrong
     rejected: list = field(default_factory=list)  # pairs whose Thai sounds were read and do not match the claimed type
     raw: list = field(default_factory=list)     # raw model answers, kept for the log
+    sections: list = field(default_factory=list)  # rhyme-map-v6: one dict per section (see rhyme_v6.SectionInfo): the scheme Python derived, the AI's own, its summary, observations and counts
+    overview: dict = field(default_factory=dict)  # rhyme-map-v6: {"text": ..., "points": [{"line": n, "text": ...}]}
+    languages: list = field(default_factory=list)
+    schema: str = ""                              # "rhyme-map-v6" for a result of the Rhyme Analyzer AI, "" for the older line-endings result
 
     def of_type(self, t: str) -> list:
         return [p for p in self.pairs if p.type == t]
+
+
+_VERIFY_VIEW = {"verified": TR.VERIFIED, "rejected": TR.REJECTED, "unverified": TR.UNVERIFIED}
+
+
+def _placement_of(p: "RhymePair") -> str:
+    if p.type in RM.PLACEMENTS:
+        return p.type
+    return "internal" if p.a_line == p.b_line else "end"
+
+
+def finish_pair(p: "RhymePair", claim: str, declared: str = "") -> None:
+    """Set the sound, the placement and the verification of a pair the AI proposed, by the rules of the words' language (rhyme_map.judge): a Thai pair whose sounds Python can read is verified,
+    reclassified (exact <-> near) or rejected with the reason; any other pair keeps what the AI said as ai_assessed (or unverified when the language has no check). `verify` is the old single
+    view of these facts."""
+    rel = RM.relation(p.a_word, p.b_word, declared)
+    sound, verification, note = RM.judge(claim, rel)
+    p.claimed = claim if claim in ("exact", "near") else "uncertain"
+    p.sound, p.verification, p.kind, p.source = sound, verification, rel.kind, "llm"
+    p.placement = _placement_of(p)
+    p.verify_note = note
+    if verification == "ai_assessed":
+        p.verify = LLM_NEAR if sound == "near" else LLM_EXACT
+    elif verification == "unverified":
+        p.verify = UNCERTAIN if sound == "uncertain" else TR.UNVERIFIED
+    else:
+        p.verify = _VERIFY_VIEW[verification]
 
 
 def build_request(lines: list) -> tuple:
@@ -370,9 +428,9 @@ def group_endings(ends: list) -> list:
     return [sorted(g, key=lambda e: e.num) for g in sorted(members.values(), key=lambda g: min(e.num for e in g)) if len(g) > 1]
 
 
-def _pair_from(t: str, a_num: int, a_word: str, b_num: int, b_word: str, reason: str, sure: bool, by_num: dict, ignored: list, near: bool = False) -> "RhymePair | None":
-    """One pair the AI described. Python checks only that both words are really where the pair says (_check_row). Whether they rhyme is the AI's assessment: `verify` records it as LLM-assessed
-    exact, LLM-assessed near, or uncertain. It is never "verified": nothing independent stands behind it. The position (`type`: end / cross) is a separate fact from the sound match."""
+def _pair_from(t: str, a_num: int, a_word: str, b_num: int, b_word: str, reason: str, sure: bool, by_num: dict, ignored: list, near: bool = False, declared: str = "") -> "RhymePair | None":
+    """One pair the AI described. Python first checks that both words are really where the pair says (_check_row). Then the sound: a Thai pair Python can read is verified, reclassified or
+    rejected; any other pair stays the AI's assessment (ai_assessed: nothing independent stands behind it) or unverified. The position (`type`: end / cross) is a separate fact."""
     lang = "th" if re.search(r"[\u0E00-\u0E7F]", a_word + b_word) else "en"
     try:
         pair, why = _check_row(f"{t} | {a_num}:{a_word} | {b_num}:{b_word} | {'medium' if sure else 'low'} | {lang} | {reason}", by_num)
@@ -382,12 +440,23 @@ def _pair_from(t: str, a_num: int, a_word: str, b_num: int, b_word: str, reason:
     if pair is None:
         ignored.append(why)
         return None
-    pair.verify, pair.verify_note = (LLM_NEAR if near else (LLM_EXACT if sure else UNCERTAIN)), ""
+    finish_pair(pair, "near" if near else ("exact" if sure else "uncertain"), declared)
+    if reason and pair.verification in ("ai_assessed", "unverified"):
+        pair.reason = reason
     return pair
 
 
-def endings_to_pairs(ends: list, groups: list, by_num: dict, ignored: list) -> list:
-    """The AI's groups as RhymePairs: neighbours inside a group are paired one after another (a chain), the inner words become cross-line pairs."""
+def _related(x: int, y: int, by_num: dict) -> bool:
+    """Lines of the same section, of sections of the same kind, or neighbouring lines. Two lines of unrelated sections are not linked only because their endings sound alike."""
+    lx, ly = by_num.get(x), by_num.get(y)
+    if lx is None or ly is None:
+        return True
+    return RM.related(getattr(lx, "section", -1), getattr(lx, "section_name", ""), x, getattr(ly, "section", -1), getattr(ly, "section_name", ""), y)
+
+
+def endings_to_pairs(ends: list, groups: list, by_num: dict, ignored: list, declared: str = "") -> list:
+    """The AI's groups as RhymePairs. Inside a group each line is linked to the NEAREST earlier line it may rhyme with (a related section, a different word) whose sound Python does not refuse; a
+    refused pair is kept apart as rejected, with the reason. The inner words become cross-line pairs."""
     pairs, seen = [], set()
 
     def add(p):
@@ -395,19 +464,32 @@ def endings_to_pairs(ends: list, groups: list, by_num: dict, ignored: list) -> l
             seen.add(p.key)
             pairs.append(p)
     for members in groups:
-        for x, y in zip(members, members[1:]):
-            reason = " · ".join(s for s in (f"{x.sound} / {y.sound}" if (x.sound or y.sound) else "", y.note) if s)
-            add(_pair_from("end", x.num, x.word, y.num, y.word, reason.replace("|", "/"), not (x.unsure or y.unsure), by_num, ignored, near=(x.near or y.near)))
+        for idx, y in enumerate(members):
+            blocked, linked = False, False
+            for x in reversed(members[:idx]):
+                if _norm(x.word) == _norm(y.word):
+                    continue                                                  # the same word again is repetition, not a rhyme
+                if not _related(x.num, y.num, by_num):
+                    blocked = True
+                    continue
+                reason = " · ".join(s for s in (f"{x.sound} / {y.sound}" if (x.sound or y.sound) else "", y.note) if s)
+                p = _pair_from("end", x.num, x.word, y.num, y.word, reason.replace("|", "/"), not (x.unsure or y.unsure), by_num, ignored, near=(x.near or y.near), declared=declared)
+                add(p)
+                if p is not None and p.verification != "rejected":
+                    linked = True
+                    break
+            if blocked and not linked:
+                ignored.append(f"{y.word}: line {y.num} is in a section that is not related to the lines it sounds like, so it was not linked.")
     ends_by = {e.num: e for e in ends}
     for e in ends:
         prev = ends_by.get(e.num - 1)
         if e.inner and prev is not None:
-            add(_pair_from("cross", prev.num, prev.word, e.num, e.inner, e.note.replace("|", "/"), not e.unsure, by_num, ignored))
+            add(_pair_from("cross", prev.num, prev.word, e.num, e.inner, e.note.replace("|", "/"), not e.unsure, by_num, ignored, declared=declared))
     return pairs
 
 
-def analyze_rhymes(lines: list, ask: Callable[[str, str], str], size: int = WINDOW_LINES, overlap: int = WINDOW_OVERLAP,
-                   progress: Callable[[int, int], None] | None = None) -> RhymeResult:
+def analyze_rhymes_v5(lines: list, ask: Callable[[str, str], str], size: int = WINDOW_LINES, overlap: int = WINDOW_OVERLAP,
+                      progress: Callable[[int, int], None] | None = None, language: str = "") -> RhymeResult:
     """Blocking (call from an executor). `ask(system, user) -> raw answer` is the existing AI backend. The AI answers one row per line (last word, sound, group) in ONE request per window and decides
     every rhyme itself: Python only checks that the quoted words are really at those places. The result is complete or it does not exist."""
     if not lines:
@@ -427,7 +509,7 @@ def analyze_rhymes(lines: list, ask: Callable[[str, str], str], size: int = WIND
         except AnalysisError as ex:
             ex.raw = raw
             raise
-        for p in endings_to_pairs(ends, group_endings(ends), {ln.num: ln for ln in window}, ignored):
+        for p in endings_to_pairs(ends, group_endings(ends), {ln.num: ln for ln in window}, ignored, language):
             if p.key in seen:
                 continue
             seen.add(p.key)
@@ -437,17 +519,229 @@ def analyze_rhymes(lines: list, ask: Callable[[str, str], str], size: int = WIND
     return result
 
 
+# ── Rhyme Analyzer AI: rhyme-map-v6 ────────────────────────────────────────────────────────────────────────────
+_SOUND_KIND = {"vowel_rhyme": "vowel", "assonance": "vowel", "multisyllabic": "vowel", "consonant_rhyme": "consonant", "consonance": "consonant", "alliteration": "consonant", "wordplay": "consonant"}
+_TYPE_OF = {"internal": "internal", "end_to_end": "end", "end_to_internal": "cross", "cross_line": "cross"}
+
+
+def system_prompt() -> str:
+    """The system prompt that is really sent: the user's editable rhyme_analyzer.md plus the program's OUTPUT FORMAT. AnalysisError when the prompt file is not valid (nothing is sent)."""
+    from . import specialists as SP
+    try:
+        return SP.effective_system("rhyme_analyzer", RV.CONTRACT)[0]
+    except ValueError as ex:
+        raise AnalysisError(str(ex)) from None
+
+
+def prompt_hash() -> str:
+    from . import specialists as SP
+    try:
+        return SP.load("rhyme_analyzer").hash
+    except Exception:
+        return ""
+
+
+def _consonant_facts(p: "RhymePair", p6, declared: str) -> None:
+    """A consonant rhyme / alliteration / consonance / wordplay: not a vowel rhyme, so it is never coloured as one. Thai pairs are checked by their first consonant sound."""
+    both_thai = TR.has_thai(p.a_word) and TR.has_thai(p.b_word)
+    p.kind, p.source, p.claimed = "consonant", "llm", p6.relation
+    p.sound = p6.relation
+    if both_thai and p6.sound_type in ("consonant_rhyme", "alliteration"):
+        ia, ib = RM.thai_initial(p.a_word), RM.thai_initial(p.b_word)
+        if ia is not None and ib is not None:
+            p.verification = "verified" if ia == ib else "rejected"
+            p.sound = "exact" if ia == ib else "different"
+            p.verify_note = "The first consonant sounds are the same." if ia == ib else "The first consonant sounds differ, so this is not a consonant rhyme."
+            p.verify = _VERIFY_VIEW[p.verification]
+            return
+    p.verification = "ai_assessed" if RM.language_of(p.a_word, declared) != RM.OTHER else "unverified"
+    p.verify = LLM_NEAR if p.sound == "near" else (LLM_EXACT if p.verification == "ai_assessed" and p.sound == "exact" else UNCERTAIN)
+    p.verify_note = "The AI's assessment of the consonant sounds: nothing independent verified it."
+
+
+def _v6_pair(p6, by_num: dict, declared: str, ignored: list) -> "RhymePair | None":
+    la, lb = by_num.get(p6.a.sung_line), by_num.get(p6.b.sung_line)
+    label = f"{p6.a.text} ↔ {p6.b.text}"
+    if la is None or lb is None:
+        ignored.append(f"{label}: a line of this pair is not in the lyrics that were sent.")
+        return None
+    mla = RM.Line(la.file_line, 0, la.text, la.num, la.section, la.section_name)
+    mlb = RM.Line(lb.file_line, 0, lb.text, lb.num, lb.section, lb.section_name)
+    for ep, ln, ml in ((p6.a, la, mla), (p6.b, lb, mlb)):
+        why = RV.validate_endpoint(ep, ml, "", declared)
+        if why:
+            ignored.append(f"{label}: {why}")
+            return None
+    a, b = p6.a, p6.b
+    if (a.sung_line, a.start_v, a.end_v) == (b.sung_line, b.start_v, b.end_v):
+        ignored.append(f"{label}: both words are the same word at the same place.")
+        return None
+    if _norm(a.text) == _norm(b.text):
+        ignored.append(f"{label}: the same word repeated is repetition, not a rhyme.")
+        return None
+    if (a.sung_line, a.start_v) > (b.sung_line, b.start_v):                    # always in text order
+        p6.a, p6.b, a, b, la, lb, mla, mlb = b, a, b, a, lb, la, mlb, mla
+    detail = RV.derive_placement(a, b, la, lb, mla, mlb)
+    both_end = RV._is_end(a, mla) and RV._is_end(b, mlb)
+    t = "end" if detail == "cross_section" and both_end else ("cross" if detail == "cross_section" else _TYPE_OF[detail])
+    langs = []
+    for code in (a.language, b.language):
+        code = code if _RH_LANG.match(code or "") and code != "other" else "und"
+        if code not in langs:
+            langs.append(code)
+    p = RhymePair(t, a.sung_line, a.text, b.sung_line, b.text, p6.confidence, "+".join(langs), p6.reason)
+    p.pair_id, p.group_id, p.sound_type, p.placement_detail, p.traditional_role = p6.pair_id, p6.group_id, p6.sound_type, detail, p6.traditional_role
+    p.a_start, p.a_end, p.b_start, p.b_end = a.start_v, a.end_v, b.start_v, b.end_v
+    p.position_validated, p.position_fixed = True, bool(a.fixed or b.fixed)
+    p.position_note = "; ".join(x.note for x in (a, b) if x.note)
+    if _SOUND_KIND.get(p6.sound_type, "vowel") == "vowel":
+        finish_pair(p, p6.relation, declared)
+    else:
+        _consonant_facts(p, p6, declared)
+    p.placement = _placement_of(p)
+    p.pair_id, p.group_id, p.sound_type, p.placement_detail = p6.pair_id, p6.group_id, p6.sound_type, detail
+    if not RM.related(la.section, la.section_name, la.num, lb.section, lb.section_name, lb.num):
+        p.verification, p.verify, p.verify_note = "rejected", TR.REJECTED, "These lines are in sections that are not related, so the sounds alone do not link them."
+    return p
+
+
+def _clip(x, n: int) -> str:
+    return re.sub(r"\s+", " ", str(x or "")).strip()[:n]
+
+
+def _section_infos(lines: list) -> list:
+    out: dict = {}
+    for ln in lines:
+        sec = out.setdefault(ln.section, RV.SectionInfo(ln.section, ln.section_name or "", []))
+        sec.sung_lines.append(ln.num)
+    return [out[k] for k in sorted(out)]
+
+
+def analyze_rhymes(lines: list, ask: Callable[[str, str], str], size: int = RV.WINDOW_MAX, overlap: int = RV.CONTEXT_LINES,
+                   progress: Callable[[int, int], None] | None = None, language: str = "", system: "str | None" = None) -> RhymeResult:
+    """Blocking (call from an executor). The Rhyme Analyzer AI (`ask(system, user) -> raw`, stateless: no session, no history) is asked once per window of at most `size` sung lines (whole sections
+    together; `overlap` lines of context before each next window). Python parses the answer strictly, places every word on the lyrics (rhyme_v6.validate_endpoint), derives each pair's placement
+    and each section's scheme, re-checks the sounds it can read, drops duplicates across windows, and keeps what it could not place, with the reason. A window that is not rhyme-map-v6 at all
+    raises: the result is complete or it does not exist."""
+    if not lines:
+        raise AnalysisError("There are no sung lines to analyze (only [tags] or empty).")
+    system = system if system is not None else system_prompt()
+    wins = RV.windows(lines, size, overlap)
+    result = RhymeResult([ln.text for ln in lines], [], schema=RV.SCHEMA)
+    by_num_all = {ln.num: ln for ln in lines}
+    secs = _section_infos(lines)
+    ai_sec: dict = {}
+    per_window, ov_text, ov_points, langs = [], [], [], []
+    for k, (window, ctx) in enumerate(wins, 1):
+        if progress:
+            progress(k, len(wins))
+        raw = ask(system, RV.build_request(window, ctx, language))
+        result.raw.append(raw)
+        try:
+            pairs6, sec6, ov, found, ignored = RV.parse(raw)
+        except RV.SchemaError as ex:
+            raise AnalysisError(str(ex), raw) from None
+        real = {ln.num for ln in window}
+        mine = []
+        for p6 in pairs6:
+            if p6.a.sung_line not in real and p6.b.sung_line not in real:
+                continue                                                          # both words lie in the context: that pair belongs to the previous window
+            p = _v6_pair(p6, by_num_all, language, ignored)
+            if p is not None:
+                mine.append(p)
+        per_window.append(mine)
+        for sd in sec6:
+            ai_sec.setdefault(str(sd.get("section_id") or ""), sd)
+        if ov.get("text"):
+            ov_text.append(_clip(ov["text"], 1200))
+        for pt in (ov.get("points") or [])[:12]:
+            if isinstance(pt, dict) and isinstance(pt.get("line"), int) and pt.get("text"):
+                ov_points.append({"line": pt["line"], "text": _clip(pt["text"], 300)})
+        langs += [x for x in found if x not in langs]
+        result.ignored.extend(i for i in ignored if i not in result.ignored)
+    for p in RV.merge_window_pairs(per_window):
+        (result.rejected if p.verification == "rejected" else result.pairs).append(p)
+    result.pairs.sort(key=lambda p: (p.a_line, p.a_start, p.b_line, p.b_start))
+    for sec in secs:
+        sd = ai_sec.get(RV.section_id(sec.index)) or {}
+        ls = sd.get("line_schemes") if isinstance(sd.get("line_schemes"), dict) else {}
+        sec.ai_scheme = re.sub(r"[^A-Za-z~-]", "", str(sd.get("scheme") or "")) or "".join(str(ls.get(str(n), "-"))[:2] for n in sec.sung_lines if ls)
+        sec.summary = _clip(sd.get("summary"), 600)
+        for ob in (sd.get("observations") or [])[:8]:
+            if isinstance(ob, dict) and isinstance(ob.get("line"), int) and ob.get("text"):
+                (sec.uncertain if str(ob.get("kind")) == "uncertain" else sec.quality).append((ob["line"], _clip(ob["text"], 300)))
+    RV.derive_schemes(secs, result.pairs)
+    from dataclasses import asdict
+    result.sections = [dict(asdict(sec), id=RV.section_id(sec.index)) for sec in secs]
+    result.overview = {"text": " ".join(ov_text), "points": ov_points[:24]}
+    result.languages = langs
+    return result
+
+
+def rhyme_map_dict(lyrics: str, result: RhymeResult, meta: "dict | None" = None) -> dict:
+    """The rhyme map of `lyrics` as the schema of the brief (rhyme-map-v6): sections with their schemes, and every pair with its validated local AND absolute positions. `meta` (song_id,
+    sheet_id, lyrics_hash, prompt_version, model_identity ...) is copied in. Pairs that cannot be placed on these lyrics are left out."""
+    from .lyric_analysis import original_lines, sung_lines
+    sung = sung_lines(lyrics)
+    by_file = {n: (start, content) for n, start, _end, content in original_lines(lyrics or "")}
+    lines = {}
+    for ln in sung:
+        f = by_file.get(ln.file_line)
+        if f is not None:
+            lines[ln.num] = RM.Line(ln.file_line, f[0], f[1], ln.num, ln.section, ln.section_name)
+
+    def side(num, word, a, b):
+        L = lines.get(num)
+        if L is None:
+            return None
+        got, _why = RM._local_span(L, word, a, b)
+        if got is None:
+            return None
+        return {"file_line": L.file_line, "sung_line": num, "text": lyrics[L.start + got[0]:L.start + got[1]], "start": a, "end": b,
+                "absolute_start": L.start + got[0], "absolute_end": L.start + got[1]}
+    pairs = []
+    for p in result.pairs:
+        if not p.position_validated:
+            continue
+        sa, sb = side(p.a_line, p.a_word, p.a_start, p.a_end), side(p.b_line, p.b_word, p.b_start, p.b_end)
+        if sa is None or sb is None:
+            continue
+        pairs.append({"pair_id": p.pair_id, "group_id": p.group_id, "sound_type": p.sound_type, "relation": p.sound, "placement": p.placement_detail,
+                      "traditional_role": p.traditional_role, "a": sa, "b": sb, "reason": p.reason, "confidence": p.confidence,
+                      "phonetic_verification": p.verification, "position_validated": p.position_validated, "position_fixed": p.position_fixed})
+    out = {"schema": RV.SCHEMA, "index_unit": "unicode_codepoint", "end_exclusive": True, "languages": list(result.languages),
+           "sections": [{"section": x.get("name") or "", "section_id": x.get("id"), "scheme": x.get("scheme"), "scheme_name": x.get("scheme_name"),
+                         "line_schemes": {str(n): c for n, c in zip(x.get("sung_lines", []), x.get("scheme", ""))}} for x in result.sections],
+           "pairs": pairs, "overview": result.overview}
+    out.update(meta or {})
+    return out
+
+
 # ── saving the last good result ──────────────────────────────────────────────────────────────────────────────
 def _pair_dict(p: RhymePair) -> dict:
     return {"type": p.type, "a_line": p.a_line, "a_word": p.a_word, "b_line": p.b_line, "b_word": p.b_word,
-            "confidence": p.confidence, "lang": p.lang, "reason": p.reason, "verify": p.verify, "verify_note": p.verify_note}
+            "confidence": p.confidence, "lang": p.lang, "reason": p.reason, "verify": p.verify, "verify_note": p.verify_note,
+            "sound": p.sound, "placement": p.placement, "verification": p.verification, "source": p.source, "kind": p.kind, "claimed": p.claimed,
+            "pair_id": p.pair_id, "group_id": p.group_id, "sound_type": p.sound_type, "placement_detail": p.placement_detail, "traditional_role": p.traditional_role,
+            "a_start": p.a_start, "a_end": p.a_end, "b_start": p.b_start, "b_end": p.b_end, "position_validated": p.position_validated,
+            "position_fixed": p.position_fixed, "position_note": p.position_note}
 
 
 def rhyme_to_dict(snap, result: RhymeResult, at: str) -> dict:
     return {"text_hash": snap.text_hash, "backend": snap.backend, "model": snap.model, "params": snap.params, "prompt_version": snap.prompt_version, "at": at,
-            "lines": list(result.lines), "ignored": list(result.ignored),
+            "analyzer_version": RM.ANALYZER_VERSION, "schema": result.schema, "lines": list(result.lines), "ignored": list(result.ignored),
+            "sections": list(result.sections), "overview": dict(result.overview), "languages": list(result.languages),
             "pairs": [_pair_dict(p) for p in result.pairs],
             "rejected": [_pair_dict(p) for p in result.rejected]}
+
+
+def finish_old(p: "RhymePair") -> None:
+    """The Shared Rhyme Map fields of a pair that the older flow (classify_sound) already judged: its verify is the source of the three facts."""
+    p.placement = _placement_of(p)
+    p.source = "python" if p.verify in (TR.VERIFIED, TR.REJECTED) else "llm"
+    p.verification = {TR.VERIFIED: "verified", TR.REJECTED: "rejected", LLM_EXACT: "ai_assessed", LLM_NEAR: "ai_assessed"}.get(p.verify, "unverified")
+    p.sound = {"near": "near"}.get(p.type, "exact") if p.verification in ("verified", "ai_assessed") else ("different" if p.verification == "rejected" else "uncertain")
+    p.claimed = p.claimed or ("near" if p.type == "near" else "exact")
 
 
 def _pair_from_dict(x, n_lines: int) -> "RhymePair | None":
@@ -462,6 +756,39 @@ def _pair_from_dict(x, n_lines: int) -> "RhymePair | None":
     return p
 
 
+def _v6_from_dict(d: dict, lines: list) -> "tuple | None":
+    """A rhyme-map-v6 result: each pair keeps its validated position (re-checked here against the saved lines) and its sound is judged again by the rules of the words' language."""
+    pairs, rejected, seen = [], [], set()
+    ignored = [str(i) for i in d.get("ignored", [])]
+    from .lyric_analysis import SungLine
+    for x in list(d.get("pairs") or []) + list(d.get("rejected") or []):
+        try:
+            p = RhymePair(str(x["type"]), int(x["a_line"]), str(x["a_word"]), int(x["b_line"]), str(x["b_word"]), str(x["confidence"]), str(x["lang"]), str(x.get("reason", "")))
+            p.pair_id, p.group_id, p.sound_type = str(x.get("pair_id", "")), str(x.get("group_id", "")), str(x.get("sound_type", ""))
+            p.placement_detail, p.traditional_role = str(x.get("placement_detail", "")), str(x.get("traditional_role", ""))
+            p.a_start, p.a_end, p.b_start, p.b_end = int(x["a_start"]), int(x["a_end"]), int(x["b_start"]), int(x["b_end"])
+            p.position_validated, p.position_fixed, p.position_note = bool(x.get("position_validated")), bool(x.get("position_fixed")), str(x.get("position_note", ""))
+        except Exception:
+            continue
+        ok = (1 <= p.a_line <= len(lines) and 1 <= p.b_line <= len(lines) and p.position_validated and p.confidence in CONFIDENCE
+              and lines[p.a_line - 1][p.a_start:p.a_end] == p.a_word and lines[p.b_line - 1][p.b_start:p.b_end] == p.b_word)
+        if not ok or p.pos_key in seen:
+            continue
+        seen.add(p.pos_key)
+        claim = str(x.get("claimed") or ("near" if x.get("sound") == "near" else "exact"))
+        if _SOUND_KIND.get(p.sound_type, "vowel") == "vowel":
+            finish_pair(p, claim)
+        else:
+            _consonant_facts(p, type("P6", (), {"relation": claim, "sound_type": p.sound_type})(), "")
+        p.placement = _placement_of(p)
+        (rejected if p.verification == "rejected" else pairs).append(p)
+    info = {k: str(d[k]) for k in ("text_hash", "backend", "model", "params", "prompt_version")}
+    info["at"] = str(d.get("at", ""))
+    res = RhymeResult(lines, pairs, ignored, rejected, [], [dict(s) for s in d.get("sections") or [] if isinstance(s, dict)],
+                      dict(d.get("overview") or {}), [str(x) for x in d.get("languages") or []], str(d.get("schema") or RV.SCHEMA))
+    return info, res
+
+
 def rhyme_from_dict(d) -> "tuple | None":
     """(info dict, RhymeResult) or None. A broken file is dropped. One bad pair is dropped; the rest is kept.
     Thai sounds are checked again on load, including saves from before `verify` existed."""
@@ -469,6 +796,8 @@ def rhyme_from_dict(d) -> "tuple | None":
         lines = [str(x) for x in d["lines"]]
         if not lines:
             return None
+        if str(d.get("prompt_version", "")) >= RHYME_PROMPT_VERSION and d.get("schema") == RV.SCHEMA:
+            return _v6_from_dict(d, lines)
         from .lyric_analysis import SungLine
         numbered = {i: SungLine(i, i, line) for i, line in enumerate(lines, 1)}
         pairs, rejected, seen = [], [], set()
@@ -483,10 +812,12 @@ def rhyme_from_dict(d) -> "tuple | None":
                 if why and why not in ignored:
                     ignored.append(why)
                 continue
-            if str(d.get("prompt_version", "")) >= "rhyme-v5":        # a result of the LLM-first flow keeps what the AI assessed: nothing is re-judged by Python
-                checked.verify, checked.verify_note = str(x.get("verify", UNCERTAIN)), str(x.get("verify_note", ""))
+            if str(d.get("prompt_version", "")) >= "rhyme-v5":        # a result of the LLM-first flow: what the AI said is the claim; the sound is checked again here by the rules of the words' language
+                stored = str(x.get("claimed") or {"llm_exact": "exact", "llm_near": "near"}.get(str(x.get("verify", "")), ""))
+                finish_pair(checked, stored if stored in ("exact", "near") else "uncertain")
             else:
                 classify_sound(checked, numbered)                    # an older result: the Thai sound check is made again on load, as it always was
+                finish_old(checked)
             seen.add(checked.key)
             if checked.verify == TR.REJECTED:
                 rejected.append(checked)

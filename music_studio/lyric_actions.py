@@ -555,11 +555,7 @@ def _check_phrasing(kind: str, target: str, prop: str) -> None:
             raise ActionError("The AI changed the words, but Smart Phrasing may only change spaces, line breaks and pause marks. The proposal was not offered. Nothing was changed.")
         if kind == "pauses" and prop.count("\n") != target.count("\n"):
             raise ActionError("The AI changed the line breaks, but you asked for pauses only. Nothing was changed.")
-        added = len(_PAUSE.findall(prop)) - len(_PAUSE.findall(target))
-        sung = sum(1 for l in target.split("\n") if l.strip() and not TAG_LINE.match(l))
-        if added > max(1, (sung + 1) // 2):
-            raise ActionError("The AI put a pause mark at almost every line. That is not a useful breathing guide, so it was not offered. Nothing was changed.")
-        return
+        return                                  # how many pauses the AI chose is the user's call to accept or not: the program only proves the words are unchanged
     if core(prop, False) != core(target, False):
         raise ActionError("The AI changed the words, but Smart Phrasing may only move spaces and line breaks. The proposal was not offered. Nothing was changed.")
     if kind == "spacing":
