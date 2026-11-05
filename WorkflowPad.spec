@@ -79,9 +79,13 @@ for _script, _name, _icon, _extra in (("prompt_lab.py", "PromptLab", "prompt_lab
                                       ("gallery_generator.py", "GalleryGenerator", "gallery_generator.ico", []),
                                       ("music_studio.py", "MusicStudio", "music_studio.ico", collect_submodules("music_studio") + ["flet_code_editor"]),
                                       ("simple_chat.py", "SimpleChat", "simple_chat.ico", [])):
-    _a = Analysis([_script], pathex=[str(ROOT)], binaries=[], datas=collect_data_files("flet") + (collect_data_files("music_studio") if _script == "music_studio.py" else []),      # music_studio/locales/*.json (the UI languages)
-                  hiddenimports=collect_submodules("flet") + collect_submodules("flet_desktop") + _extra, hookspath=[],
-                  runtime_hooks=[str(ROOT / "build_tools" / "flet_view_hook.py")], excludes=ie_excludes, noarchive=False)
+    _ms = _script == "music_studio.py"
+    # Music Studio counts Thai syllables and rhymes with pythainlp (tokenizers load their engines by name, so the whole tokenize package is collected) and draws the waveform with numpy:
+    # the lean excludes of the other apps would leave "No module named 'pythainlp.tokenize'" on opening a song.
+    _excl = [x for x in ie_excludes if not (_ms and x in ("pythainlp", "numpy"))]
+    _a = Analysis([_script], pathex=[str(ROOT)], binaries=[], datas=collect_data_files("flet") + (collect_data_files("music_studio") + collect_data_files("pythainlp") if _ms else []),      # music_studio/locales/*.json (the UI languages)
+                  hiddenimports=collect_submodules("flet") + collect_submodules("flet_desktop") + _extra + (collect_submodules("pythainlp.tokenize") + ["pythainlp.khavee", "pythainlp.corpus.common"] if _ms else []), hookspath=[],
+                  runtime_hooks=[str(ROOT / "build_tools" / "flet_view_hook.py")], excludes=_excl, noarchive=False)
     _exe = EXE(PYZ(_a.pure), _a.scripts, [], exclude_binaries=True, name=_name, console=CONSOLE,
                icon=str(ROOT / "icons" / _icon), contents_directory="_internal")
     parts += [_exe, _a.binaries, _a.datas]
