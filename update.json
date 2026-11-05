@@ -1,44 +1,44 @@
 {
   "story_generator": {
     "name": "Story Generator",
-    "version": "0.2.1",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.1/WorkflowPad-v0.2.1-Beta.zip",
-    "notes": "Music Studio: the Songwriting Assistant can now just talk and advise (it only proposes lyrics when you ask for lyrics); new Music Studio and Simple Chat Studio programs; Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
+    "version": "0.3.0",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.0/WorkflowPad-v0.3.0-Beta.zip",
+    "notes": "Music Studio: Rhythm & Duration judges every line (density and phrasing) and the song duration as a range; Rhyme Analyzer v6; Lyric Analysis, Vocal Analysis, Rhyme & Syllables and Rhythm & Duration are pages of the right-hand strip; Lyric Formatter works by rules (no AI, no word changed); sheet tabs above the editor"
   },
   "prompt_lab": {
     "name": "Prompt Lab",
-    "version": "0.2.1",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.1/WorkflowPad-v0.2.1-Beta.zip",
-    "notes": "Music Studio: the Songwriting Assistant can now just talk and advise (it only proposes lyrics when you ask for lyrics); new Music Studio and Simple Chat Studio programs; Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
+    "version": "0.3.0",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.0/WorkflowPad-v0.3.0-Beta.zip",
+    "notes": "Music Studio: Rhythm & Duration judges every line (density and phrasing) and the song duration as a range; Rhyme Analyzer v6; Lyric Analysis, Vocal Analysis, Rhyme & Syllables and Rhythm & Duration are pages of the right-hand strip; Lyric Formatter works by rules (no AI, no word changed); sheet tabs above the editor"
   },
   "image_editor": {
     "name": "Image Editor",
-    "version": "0.2.1",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.1/WorkflowPad-v0.2.1-Beta.zip",
-    "notes": "Music Studio: the Songwriting Assistant can now just talk and advise (it only proposes lyrics when you ask for lyrics); new Music Studio and Simple Chat Studio programs; Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
+    "version": "0.3.0",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.0/WorkflowPad-v0.3.0-Beta.zip",
+    "notes": "Music Studio: Rhythm & Duration judges every line (density and phrasing) and the song duration as a range; Rhyme Analyzer v6; Lyric Analysis, Vocal Analysis, Rhyme & Syllables and Rhythm & Duration are pages of the right-hand strip; Lyric Formatter works by rules (no AI, no word changed); sheet tabs above the editor"
   },
   "gallery_generator": {
     "name": "Gallery Generator",
-    "version": "0.2.1",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.1/WorkflowPad-v0.2.1-Beta.zip",
-    "notes": "Music Studio: the Songwriting Assistant can now just talk and advise (it only proposes lyrics when you ask for lyrics); new Music Studio and Simple Chat Studio programs; Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
+    "version": "0.3.0",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.0/WorkflowPad-v0.3.0-Beta.zip",
+    "notes": "Music Studio: Rhythm & Duration judges every line (density and phrasing) and the song duration as a range; Rhyme Analyzer v6; Lyric Analysis, Vocal Analysis, Rhyme & Syllables and Rhythm & Duration are pages of the right-hand strip; Lyric Formatter works by rules (no AI, no word changed); sheet tabs above the editor"
   },
   "batch_editor": {
     "name": "Batch Editor",
-    "version": "0.2.1",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.1/WorkflowPad-v0.2.1-Beta.zip",
-    "notes": "Music Studio: the Songwriting Assistant can now just talk and advise (it only proposes lyrics when you ask for lyrics); new Music Studio and Simple Chat Studio programs; Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
+    "version": "0.3.0",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.0/WorkflowPad-v0.3.0-Beta.zip",
+    "notes": "Music Studio: Rhythm & Duration judges every line (density and phrasing) and the song duration as a range; Rhyme Analyzer v6; Lyric Analysis, Vocal Analysis, Rhyme & Syllables and Rhythm & Duration are pages of the right-hand strip; Lyric Formatter works by rules (no AI, no word changed); sheet tabs above the editor"
   },
   "music_studio": {
     "name": "Music Studio",
-    "version": "0.2.1",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.1/WorkflowPad-v0.2.1-Beta.zip",
-    "notes": "Music Studio: the Songwriting Assistant can now just talk and advise (it only proposes lyrics when you ask for lyrics); new Music Studio and Simple Chat Studio programs; Image Editor: arrow keys open the previous / next picture; Prompt Lab: three-column layout from a narrower window"
+    "version": "0.3.0",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.0/WorkflowPad-v0.3.0-Beta.zip",
+    "notes": "Music Studio: Rhythm & Duration judges every line (density and phrasing) and the song duration as a range; Rhyme Analyzer v6; Lyric Analysis, Vocal Analysis, Rhyme & Syllables and Rhythm & Duration are pages of the right-hand strip; Lyric Formatter works by rules (no AI, no word changed); sheet tabs above the editor"
   },
   "simple_chat": {
     "name": "Simple Chat Studio",
-    "version": "0.2.1",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.2.1/WorkflowPad-v0.2.1-Beta.zip",
-    "notes": "Simple Chat Studio: a chat with a local LLM workflow"
+    "version": "0.3.0",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.0/WorkflowPad-v0.3.0-Beta.zip",
+    "notes": "Music Studio: Rhythm & Duration judges every line (density and phrasing) and the song duration as a range; Rhyme Analyzer v6; Lyric Analysis, Vocal Analysis, Rhyme & Syllables and Rhythm & Duration are pages of the right-hand strip; Lyric Formatter works by rules (no AI, no word changed); sheet tabs above the editor"
   }
 }
