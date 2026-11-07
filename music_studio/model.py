@@ -30,6 +30,10 @@ class SongSettings:
     style_mode: str = "basic"               # basic: tags are built from genre / mood / vocal / energy / extra; advanced: tags are exactly style_prompt
     style_prompt: str = ""                  # the Advanced "Music Style Prompt" (kept when the mode is switched back to basic)
     style_prompt_history: list = field(default_factory=list)    # [{"text": ..., "ts": ...}] newest first; saved with the song
+    basic_ver: int = 0                      # 0: a song from before the Caption Builder (its genre / mood / vocal / energy / extra tags are carried over); 1: basic_sel is the Basic selection
+    basic_sel: dict = field(default_factory=dict)       # the Basic Caption Builder: {section id: [catalog item id or "~custom phrase", ...]} (caption_builder.py)
+    basic_notes: str = ""                   # Basic: Additional Style Notes, appended to the caption as typed
+    basic_preset: str = ""                  # Basic: the preset the selection was loaded from ("" = none); only used to say "Modified"
     bpm: int = 120
     keyscale: str = "E minor"
     timesignature: str = "4"
@@ -57,7 +61,12 @@ class SongSettings:
 
 
 def build_basic_style(s: SongSettings) -> str:
-    """Basic mode: the tags built from the dropdowns, exactly as before."""
+    """Basic mode: the caption composed from the selected chips by caption_builder.compose (no AI). It is what the Caption Preview shows and what Generate sends."""
+    try:
+        from . import caption_builder as CB
+        return CB.caption_for(s)
+    except Exception:                       # the catalog file is missing or damaged: the old plain fields still give a usable caption
+        pass
     return ", ".join(x.strip() for x in (s.genre, s.mood, s.vocal, s.energy, s.extra_tags) if x and x.strip())
 
 
@@ -184,6 +193,9 @@ class ChatMessage:
     hints: list = field(default_factory=list)   # assistant: free-form music direction that is not a studio cue (not applicable here; it belongs in the Music Caption)
     caption: str = ""                           # assistant: a validated Music Caption offered with "Use in Music Style"
     caption_state: str = ""                     # "" | applied | ignored
+    settings: dict = field(default_factory=dict)         # assistant: Music Settings the Music Producer suggested next to the caption, already checked ({bpm, keyscale, timesignature}); nothing is applied until the user ticks and applies
+    settings_info: dict = field(default_factory=dict)    # {groove, reason, bad}: the groove is advice only (no Song Setting for it); bad = suggested values the program could not use
+    settings_state: dict = field(default_factory=dict)   # {applied: {field: value written}, previous: {field: value before}}: what Apply Selected Settings wrote, for Restore
     rejected: str = ""                          # assistant: lyrics the AI wrote that cannot be applied: kept to be read and copied, never part of `text`
 
 

@@ -118,6 +118,7 @@ class Prompt:
     ok: bool = False
     errors: tuple = ()
     path: str = ""
+    sections: bool = False                                   # True: written in the three mode sections (COMMON / CHAT / REPORT). False: a legacy file, sent whole in every mode
 
 
 _cache: dict = {}                                           # id -> Prompt of the last file that was valid
@@ -127,12 +128,58 @@ def text_hash(text: str) -> str:
     return hashlib.sha1(text.encode("utf-8")).hexdigest()[:12]
 
 
+# A prompt may be written in three mode sections, each started by a WHOLE LINE marker: `# [COMMON]`, `# [CHAT]`, `# [REPORT]`. The markers are read only as whole lines at the start of a line, never by searching
+# for the words. COMMON is sent in every mode; CHAT is added in the chat; REPORT is added in the Analyze Song report. A file with no marker line at all is a LEGACY file: it is sent whole in every mode.
+MODES = ("common", "chat", "report")
+MODE_MARKER = re.compile(r"^#[ \t]*\[(COMMON|CHAT|REPORT)\][ \t]*$", re.MULTILINE)
+
+
+def split_modes(text: str) -> "dict | None":
+    """{"common": text, "chat": text, "report": text} for a prompt written in mode sections, or None for a legacy file (no marker line). ValueError with the reason when the markers are not exactly one of
+    each or text stands before the first marker: nothing is guessed and nothing is dropped."""
+    found = list(MODE_MARKER.finditer(text))
+    if not found:
+        return None
+    names = [m.group(1).lower() for m in found]
+    if sorted(names) != sorted(MODES):
+        raise ValueError("The mode markers must be exactly one each of “# [COMMON]”, “# [CHAT]” and “# [REPORT]” (each on its own line); found: " + ", ".join("# [" + n.upper() + "]" for n in names) + ".")
+    if text[:found[0].start()].strip():
+        raise ValueError("Text stands before the first mode marker. Put it under “# [COMMON]”, “# [CHAT]” or “# [REPORT]”.")
+    out = {}
+    for i, m in enumerate(found):
+        end = found[i + 1].start() if i + 1 < len(found) else len(text)
+        out[m.group(1).lower()] = text[m.end():end].strip("\n")
+    return out
+
+
+def for_mode(text: str, mode: str) -> str:
+    """The part of a prompt that is sent for a mode: "chat" = COMMON + CHAT, "report" = COMMON + REPORT. A legacy file (no markers), or no mode, is returned whole."""
+    if mode not in ("chat", "report"):
+        return text
+    try:
+        parts = split_modes(text)
+    except ValueError:
+        return text                                          # check() refuses such a file before anything is sent
+    if parts is None:
+        return text
+    joined = (parts["common"].strip() + "\n\n" + parts[mode].strip()).strip() + "\n"
+    return re.sub(r"^<!--.*?-->[ \t]*\n?", "", joined, flags=re.MULTILINE).lstrip("\n")     # a whole-line HTML comment is a note for the people who edit the file, not an instruction: it is not sent
+
+
 def check(text: str) -> list:
-    """What is wrong with a prompt text (empty list = valid)."""
+    """What is wrong with a prompt text (empty list = valid). A section may be a `#` or a `##` heading, so a file written in mode sections keeps the same required sections."""
     errors = []
     if not text.strip():
         return ["The prompt is empty."]
-    heads = {m.group(1).strip().lower() for m in re.finditer(r"^#\s+(.+?)\s*$", text, re.MULTILINE)}
+    try:
+        parts = split_modes(text)
+    except ValueError as ex:
+        return [str(ex)]
+    if parts is not None:
+        for name, body in parts.items():
+            if not body.strip():
+                errors.append(f"The section “# [{name.upper()}]” is empty.")
+    heads = {m.group(1).strip().lower() for m in re.finditer(r"^#{1,2}\s+(.+?)\s*$", text, re.MULTILINE)}
     for sec in REQUIRED:
         if sec.lower() not in heads:
             errors.append(f"The section “# {sec}” is missing.")
@@ -232,7 +279,7 @@ def load(spec_id: str, user: Path | None = None, bundled: Path | None = None) ->
         text, err = _read(path)
     errors = [err] if err else check(text)
     if not errors:
-        p = Prompt(spec_id, text, text_hash(text), True, (), str(path))
+        p = Prompt(spec_id, text, text_hash(text), True, (), str(path), split_modes(text) is not None)
         _cache[spec_id] = p
         return p
     last = _cache.get(spec_id)
@@ -268,9 +315,16 @@ def reset(spec_id: str, user: Path | None = None, bundled: Path | None = None) -
     return backup
 
 
-def effective_system(spec_id: str, extra: str = "") -> tuple:
-    """(the system prompt that is really sent, Prompt). The file text plus the program's own blocks (`extra`: output contracts, craft notes). Raises ValueError with the reason when the prompt is not valid."""
+def mode_status(spec_id: str) -> str:
+    """"sections" when the prompt of this specialist is written in COMMON / CHAT / REPORT sections (each mode gets only its own part), "legacy" when it is one whole text (sent whole in every mode)."""
+    p = load(spec_id)
+    return "sections" if p.ok and p.sections else "legacy"
+
+
+def effective_system(spec_id: str, extra: str = "", mode: str = "") -> tuple:
+    """(the system prompt that is really sent, Prompt). The file text (for `mode` "chat" or "report" only COMMON plus that mode's section, when the file is written in sections; a legacy file is sent whole) plus
+    the program's own blocks (`extra`: output contracts, craft notes). Raises ValueError with the reason when the prompt is not valid. The hash is always that of the whole file."""
     p = load(spec_id)
     if not p.ok:
         raise ValueError(f"The prompt of {name_of(spec_id)} is not valid: " + " ".join(p.errors))
-    return (p.text.rstrip() + ("\n\n" + extra.strip() if extra.strip() else "")), p
+    return (for_mode(p.text, mode).rstrip() + ("\n\n" + extra.strip() if extra.strip() else "")), p

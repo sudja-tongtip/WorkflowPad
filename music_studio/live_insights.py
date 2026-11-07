@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 
 from . import lyric_analysis as LA
 from . import rhyme_map as RM
+from . import vocal_cues as VC
 from . import thai_rhyme as TR
 from .compiler import HOLD_SUFFIX, TAG_LINE, section_label
 
@@ -106,6 +107,8 @@ class Insights:
     tag_lines: list = field(default_factory=list)   # file lines where a [tag] sits inside sung words (not a section line)
     rhyme_links: list = field(default_factory=list)  # the Python rhyme links of the Shared Rhyme Map (rhyme_map.Link), for exactly this text
     language: str = ""                              # the lyrics language of the song these links were made for
+    text: str = ""                                  # the lyrics these results are for (the vocal cue check against a caption needs the cue lines)
+    vocal_cues: list = field(default_factory=list)  # vocal_cues.Finding: cues that apply together and may confuse ACE-Step (analysis only; nothing is rewritten)
 
     def line(self, file_line: int):
         return next((x for x in self.lines if x.line_number == file_line), None)
@@ -302,7 +305,11 @@ def analyze(text: str, corrections: "dict | None" = None, revision: int = 0, lan
         _section_pattern(sec, [li for li in lines if li.sec_index == k])
     for li in lines:
         del li._tokens, li._base
-    return Insights(hashlib.sha1((text or "").encode("utf-8")).hexdigest()[:12], lines, sections, spans, groups, revision, tag_lines, links, language)
+    try:
+        cue_findings = VC.analyze(text or "", _legacy_tag_conflict)
+    except Exception:                                                                 # a cue check must never stop the lyric analysis
+        cue_findings = []
+    return Insights(hashlib.sha1((text or "").encode("utf-8")).hexdigest()[:12], lines, sections, spans, groups, revision, tag_lines, links, language, text or "", cue_findings)
 
 
 def _rhymes(lines: list, sections: list, declared: str = "") -> list:
@@ -691,14 +698,20 @@ LINE_REFERENCE = (6, 10)
 MAX_HEALTH = 10
 STRUCTURE_MIN_SECTIONS = 4
 STRUCTURE_SECONDS_PER_SECTION = 12.0
-PRIORITY = {"song_density": 1, "length_fit": 1, "section_density": 2, "long_line": 3, "uneven": 4, "structure": 5, "duplicate_section": 6, "cue_conflict": 6, "tag_complexity": 6, "short_word": 7}
+PRIORITY = {"vocal_cue": 5, "song_density": 1, "length_fit": 1, "section_density": 2, "long_line": 3, "uneven": 4, "structure": 5, "duplicate_section": 6, "cue_conflict": 6, "tag_complexity": 6, "short_word": 7}
 DENSITY_KINDS = frozenset({"length_fit", "song_density", "section_density", "long_line", "uneven", "short_word"})
-STRUCTURE_KINDS = frozenset({"structure", "duplicate_section", "cue_conflict", "tag_complexity"})
+STRUCTURE_KINDS = frozenset({"structure", "duplicate_section", "cue_conflict", "tag_complexity", "vocal_cue"})
 # Same opposite-energy sets the Song Architect already refuses to write into a tag. A warning only: nothing here rewrites a tag.
 CUE_LOW = frozenset({"soft", "low energy", "whispered", "minimal", "soft vocals", "breathy vocals", "ambient", "soft piano"})
 CUE_HIGH = frozenset({"explosive", "high energy", "powerful", "powerful belting", "anthemic", "aggressive", "energetic", "punchy", "heavy drums", "heavy bass"})
 MAX_CUES = 2
 MAX_CUE_CHARS = 80
+
+
+def _legacy_tag_conflict(parts: list) -> bool:
+    """True when the older section-tag check (opposite energy sets above) already reports this tag, so the vocal cue check does not report it a second time."""
+    low = {p.lower() for p in parts}
+    return bool(low & CUE_LOW) and bool(low & CUE_HIGH)
 _REPEATABLE = frozenset({"chorus", "hook", "refrain", "pre-chorus", "pre chorus", "prechorus", "post-chorus", "post chorus", "postchorus", "final chorus"})
 _CUE_SPLIT = re.compile(r"\s*(?:,|&|\+|\band\b|\bwith\b)\s*", re.IGNORECASE)
 _CUE_SEP = re.compile(r"\s+(?:—|–|-|:)\s+")
@@ -887,6 +900,17 @@ def _structure_items(ins: Insights, name_of: dict) -> list:
     return out
 
 
+def _vocal_cue_items(ins: Insights, name_of: dict) -> list:
+    """The vocal cue findings as health notes for the Music Producer. Analysis only: no operation, and nothing here rewrites a cue."""
+    out = []
+    for f in ins.vocal_cues:
+        out.append(HealthItem("vocal_cue", {"high": 4, "medium": PRIORITY["vocal_cue"], "low": 7}[f.risk], f.section or "Structure", f.section_index, f.line, f.lines[-1] if f.lines else f.line, list(f.lines), f.title,
+                              f"Risk: {f.risk.capitalize()}. {f.summary}",
+                              f"Why ACE-Step may be confused: {f.reason} Suggestion: {f.advice} Benefit: {f.benefit} Cues are hints; ACE-Step may follow them loosely, and this note does not change the lyrics or the tags.",
+                              "detected" if f.kind == "conflicting" else "guideline", False, "music_producer"))
+    return out
+
+
 def _cap_health(out: list) -> list:
     """Keep section-structure notes even when many line notes would fill the list. Density notes still come first."""
     struct = [h for h in out if h.kind in STRUCTURE_KINDS]
@@ -992,6 +1016,7 @@ def health(ins: Insights, dn: Density) -> list:
                                   f"After the instrumental parts and rests there are about {dn.vocal_seconds:.0f} s for singing." + (f" Repeated sections: {', '.join(reps)}." if reps else "") +
                                   " The program makes no prediction and gives no probability of a skipped section.", "estimate", False, "music_producer"))
     out.extend(_structure_items(ins, name_of))
+    out.extend(_vocal_cue_items(ins, name_of))
     out.sort(key=lambda h: (h.priority, h.first_line))
     return _cap_health(out)
 
@@ -1090,14 +1115,32 @@ def lyric_report(text: str, corrections: "dict | None" = None) -> str:
     return "\n".join(rows)
 
 
-def songwriter_block(ins: Insights, dn: "Density | None" = None) -> str:
+def lyric_syllables(text: str, corrections: "dict | None" = None) -> str:
+    """The syllable counts of the lyrics for the Songwriter AI's Analyze Song request: line, syllables, how sure the count is, repeated words. NO rhyme claim of any kind: what rhymes with what comes from the
+    Rhyme Analyzer AI only (`lyric_report` keeps the rhyme columns for the Live Insights page and the chat)."""
+    ins = analyze(text or "", corrections)
+    if not ins.lines:
+        return ""
+    rows = [
+        "LYRIC SYLLABLES (Python count from the Thai dictionary and spelling rules. Not a recording. Not a judgement of the song. It says nothing about rhyme.)",
+        "dict = the syllable pieces are real syllables. est = the count is not fully confirmed. manual = the user's correction.",
+        "line | syllables | count | repeated words",
+    ]
+    for li in ins.lines:
+        rows.append(f"L{li.line_number:03d} | {li.syllable_count} syl | {_STATUS_NOTE[li.status]} | {', '.join(li.repeats) if li.repeats else '-'}")
+    return chr(10).join(rows)
+
+
+def songwriter_block(ins: Insights, dn: "Density | None" = None, rhyme: bool = True) -> str:
     """Per sung line: words / syllables, how sure the count is, the rhyme the PROGRAM verified, the density level; then the ACE-Step lyrics health and the assumptions. Program facts: the model must not recount them."""
     rows = ["PROGRAM FACTS (Python. dict = dictionary split confirmed as syllables, est = not fully confirmed, manual = the user's correction. Not audio. You may disagree; say why. Do not state an unverified sound as a fact, and do not call a repeated word a rhyme.):",
-            "line | words/syllables | count | rhyme (program sound check) | vocal density (estimate)"]
+            ("line | words/syllables | count | rhyme (program sound check) | vocal density (estimate)" if rhyme else "line | words/syllables | count | vocal density (estimate)")]
     by_line = {x.line_number: x for x in dn.lines} if dn else {}
     for li in ins.lines:
         r = ""
-        if li.rhyme_spans:
+        if not rhyme:
+            pass                                                        # the Analyze Song request carries no rhyme claim from Python: the Rhyme Analyzer AI is the only source
+        elif li.rhyme_spans:
             bits = []
             for sp in li.rhyme_spans:
                 sound = sp.group
@@ -1110,7 +1153,7 @@ def songwriter_block(ins: Insights, dn: "Density | None" = None) -> str:
         elif li.rhyme_status == "none":
             r = "no rhyme found"
         d = by_line.get(li.line_number)
-        rows.append(f"{li.line_number}| {li.word_count}/{li.syllable_count} | {_STATUS_NOTE[li.status]} | {r or '-'} | "
+        rows.append(f"{li.line_number}| {li.word_count}/{li.syllable_count} | {_STATUS_NOTE[li.status]} | {(r or '-') + ' | ' if rhyme else ''}"
                     f"{(LEVEL_NAME[d.level] + (f' {d.rate:.1f} syl/s' if d.level != 'unknown' else '') + (' (much longer than its section)' if d.outlier else '')) if d else '-'}")
     if dn:
         items = [h for h in health(ins, dn) if h.spec == "songwriter" or h.kind in STRUCTURE_KINDS]
@@ -1121,7 +1164,7 @@ def songwriter_block(ins: Insights, dn: "Density | None" = None) -> str:
     return chr(10).join(rows)
 
 
-def producer_block(ins: Insights, dn: Density) -> str:
+def producer_block(ins: Insights, dn: Density, caption: str = "") -> str:
     """Per section: syllables and the density estimate, then the structure/duration warnings and what the estimate assumes."""
     rows = ["PROGRAM FACTS (estimates by Python from the lyrics and the settings; the melody is NOT known and the real timing of the music generator is not controlled by these numbers):",
             f"Settings: {dn.settings.bpm:g} BPM, {pulses_per_bar(dn.settings.timesig)[1]}, target {dn.settings.duration:g} s.",
@@ -1138,4 +1181,8 @@ def producer_block(ins: Insights, dn: Density) -> str:
     rows += ["- " + t for t in health_text(health(ins, dn), dn)]
     rows.append(HEALTH_NOTE)
     rows.append("Assumptions: " + dn.assumptions)
+    cues = list(ins.vocal_cues) + (VC.caption_findings(getattr(ins, "text", "") or "", caption) if caption and getattr(ins, "text", "") else [])
+    rows.append("VOCAL CUE CHECK (the program compared the cues that apply to the same part at the same time; only cues the studio catalogue knows were judged; a custom cue is never called wrong; analysis only, "
+                "nothing was changed):")
+    rows += VC.findings_text(cues) if cues else ["- No vocal cue conflict, repetition or excess was found among the cues the catalogue knows."]
     return chr(10).join(rows)

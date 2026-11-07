@@ -17,6 +17,7 @@ import statistics
 from dataclasses import dataclass, field
 from typing import Callable
 
+from . import clear_tags as CG
 from .compiler import TAG_LINE, section_label
 from .lyric_analysis import AnalysisError, SEP_END, _is_sep, _norm, sung_lines
 
@@ -146,25 +147,26 @@ SYSTEM_PROMPT = (
     "- breath_point: a good place inside a long line to pause or breathe (say after which word).\n"
     "- phrasing: the line would be clearer or more natural split or grouped differently.\n"
     "- section_mismatch: this line is much longer or shorter than the matching line of a similar section (for example Verse 1 and Verse 2).\n\n"
-    "OUTPUT FORMAT: exactly these two marker lines around the rows, one row per remark, at most " + str(MAX_ITEMS_PER_REQUEST) + " rows, most useful first:\n"
-    + SEP_RHYTHM + "\n"
+    "OUTPUT FORMAT: one [RHYTHM.n] tag per remark, at most " + str(MAX_ITEMS_PER_REQUEST) + " tags, most useful first, then [DONE]:\n"
+    "[RHYTHM.1]\n"
     "N | <the lyric line copied exactly> | issue | severity | reason | suggested wording or -\n"
-    + SEP_END + "\n\n"
+    "[DONE]\n\n"
     "- N is the line number from the input. Copy the lyric line exactly as it is in the input.\n"
     "- severity is one of: info (an observation), suggestion (worth considering), uncertain (you are not sure).\n"
     "- reason: one short sentence about the TEXT. No counts. Do not use the character | inside any field.\n"
     "- The last field is OPTIONAL alternative wording in the SAME language as the line, keeping its meaning and mood; write - when you have none. It is only a proposal for the "
     "songwriter and is never applied. For breath_point write the word after which to pause instead of new wording.\n"
-    "- Lines that are fine need no row. If every line is fine write the two marker lines with nothing between them. Do not invent problems to fill the answer.\n\n"
+    "- Lines that are fine need no tag. If every line is fine write [RHYTHM.1] with the single word none, then [DONE]. Do not invent problems to fill the answer.\n\n"
     "EXAMPLE\n"
     "Input:\n1 | Verse 1 | 8 syllables | The river runs beside my door\n2 | Verse 1 | 8 syllables | And sings the songs I knew before\n"
     "3 | Verse 1 | 22 syllables | Every single morning I remember everything you said to me before you went away\n"
     "4 | Verse 1 | 7 syllables | Now the house is quiet here\n"
-    "Output:\n" + SEP_RHYTHM + "\n"
+    "Output:\n[RHYTHM.1]\n"
     "3 | Every single morning I remember everything you said to me before you went away | dense_phrase | suggestion | "
     "Much more text than the lines around it, so it may feel crowded when sung. | Every morning I remember all you said before you went away\n"
+    "[RHYTHM.2]\n"
     "3 | Every single morning I remember everything you said to me before you went away | breath_point | info | "
-    "A natural pause after the first clause. | morning\n" + SEP_END
+    "A natural pause after the first clause. | morning\n[DONE]\n"
 )
 
 
@@ -258,7 +260,9 @@ def _check_row(row: str, by_num: dict) -> tuple:
 
 def parse_window(raw: str, sent: list) -> tuple:
     """(items, ignored messages) or AnalysisError. Markers with nothing between them = 'nothing to remark' (a valid result); empty answer / missing markers / a broken row = error."""
-    text = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", raw or "").strip()
+    original = raw or ""
+    adapted, tag_notes = CG.unwrap(original, "rhythm")
+    text = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", adapted).strip()
     if not text:
         raise AnalysisError("The AI answer is empty.", raw)
     rows = text.splitlines()
@@ -289,6 +293,8 @@ def parse_window(raw: str, sent: list) -> tuple:
             items.append(it)
     if body and malformed == len(body):
         raise AnalysisError(ignored[0], raw)
+    if tag_notes:
+        ignored = [n for n in tag_notes if n not in ignored] + ignored
     return items, ignored
 
 

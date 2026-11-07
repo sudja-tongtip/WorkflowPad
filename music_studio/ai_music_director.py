@@ -19,6 +19,7 @@ import re
 from dataclasses import dataclass, field
 
 from . import basic_caption as BC
+from . import clear_tags as CG
 from . import llm_chat as LC
 from . import music_director_context as MX
 from . import music_options as MO
@@ -45,9 +46,9 @@ CONTRACT = """HARD CONSTRAINTS (the program checks these; the guidance above say
 - Settings use only valid values: BPM a number between 30 and 300; Key like "A minor" or "C major" (never "auto"; it is a recommended starting key, not a measured one); Time Signature one of 2/4, 3/4, 4/4, 6/8; Vocal one of: auto, male vocal, female vocal, duet vocals, choir; Energy one of: auto, low energy, medium energy, high energy; Mood one of: none, Melancholic, Happy, Energetic, Dreamy, Romantic, Dark, Calm, Nostalgic, Epic, Angry, Hopeful; Genre one of the genres the program knows (a common genre name); Language a code such as th, en, ja, ko, zh, or auto. The song's duration is the user's: do not propose one.
 - The final output is read by Python: follow the format exactly.
 
-OUTPUT FORMAT. Answer with exactly these marker lines, in this order, and nothing before the first marker or after END. No code fences, no extra commentary. Write every field name (Name:, Reason:, Music Caption:, Suggested Settings:) exactly as shown, in English. The Reason follows the reply language of the request. The direction Name, the Music Caption and every Suggested Settings value stay in English.
+OUTPUT FORMAT. Answer with exactly three [STYLE] tags, numbered 1, 2 and 3, then [DONE]. Nothing before the first tag. No code fences, no extra commentary. Write every field name (Name:, Reason:, Music Caption:, Suggested Settings:) exactly as shown, in English. The Reason follows the reply language of the request. The direction Name, the Music Caption and every Suggested Settings value stay in English.
 
-=========== DIRECTION 1 ===========
+[STYLE.1]
 Name: <short style name>
 Reason: <one or two sentences: the key musical decision and why it suits this song>
 Music Caption: <the English caption, one paragraph>
@@ -61,13 +62,13 @@ key|<recommended starting key, e.g. A minor>
 time_signature|<e.g. 4/4>
 language|<code or auto>
 
-=========== DIRECTION 2 ===========
+[STYLE.2]
 (same fields)
 
-=========== DIRECTION 3 ===========
+[STYLE.3]
 (same fields)
 
-=========== END ==========="""
+[DONE]"""
 
 REQUIRED_SETTINGS = ("genre", "mood", "vocal", "energy", "bpm", "keyscale", "timesignature")      # a V2 direction must give these (language may be left out: it is the user's)
 HARD_SETTINGS = ("bpm", "keyscale", "timesignature")                                              # a wrong TYPE / RANGE here refuses the answer; a value outside the program's choice lists (genre ...) is only shown, never applied
@@ -592,9 +593,11 @@ def parse(raw: str, lyrics: str = "") -> Proposal:
 
 
 def parse_v2(raw: str, lyrics: str = "") -> Proposal:
-    blocks, problems, warns = split_blocks_v2(raw)
+    original = raw or ""
+    adapted, tag_notes = CG.unwrap(original, "style")
+    blocks, problems, warns = split_blocks_v2(adapted)
     if problems:
-        raise DirectorError("The AI answer does not follow the required format.", problems, raw)
+        raise DirectorError("The AI answer does not follow the required format.", problems, original)
     dir_names = ("name", "reason", "characteristics", "music caption", "suggested settings")
     pos_names = ("name", "reason", "music caption", "suggested settings")
     directions, bad = [], []
@@ -631,13 +634,15 @@ def parse_v2(raw: str, lyrics: str = "") -> Proposal:
         d = Direction(i, f["name"][:60], f["reason"], "", cap, values, probs, settings_raw, notes, _caption_warnings(cap, lyrics))
         directions.append(d)
     if bad:
-        raise DirectorError("The AI answer is incomplete.", bad, raw)
+        raise DirectorError("The AI answer is incomplete.", bad, original)
     if len({d.caption.casefold() for d in directions}) < len(directions):
-        raise DirectorError("Two directions have the same caption.", ["Two directions have the same caption."], raw)
+        raise DirectorError("Two directions have the same caption.", ["Two directions have the same caption."], original)
     overlap = caption_overlap_warning([d.caption for d in directions])
     if overlap:
         warns.append(overlap)
-    prop = Proposal({}, directions, {}, [], [], warns, raw)
+    if tag_notes:
+        warns = [n for n in tag_notes if n not in warns] + warns
+    prop = Proposal({}, directions, {}, [], [], warns, original)
     prop.version = 2
     return prop
 

@@ -260,10 +260,24 @@ def final_syllable(word: str) -> "str | None":
             continue
         prefix = s[:-length]
         if any(ch in _LEAD for ch in prefix):
-            return None
+            break                                            # the spelling rules cannot cut this one safely: the dictionary split below may still, under its own checks
         if _segmentable(prefix):
             return suf
-    return None
+    return _dictionary_last_syllable(s)
+
+
+def _dictionary_last_syllable(s: str) -> "str | None":
+    """The last syllable of a word the spelling rules could not cut (a compound such as ไฟแดง, a loanword such as โอเค): the dictionary's syllables, accepted only when they join back into exactly the
+    word and the LAST one passes the same single-syllable test as any other syllable. Anything else stays None (unverified); nothing is guessed."""
+    try:
+        from pythainlp.tokenize import syllable_tokenize
+        parts = [p for p in syllable_tokenize(s, engine="dict") if p.strip()]
+    except Exception:
+        return None
+    if len(parts) < 2 or "".join(parts) != s:
+        return None
+    last = parts[-1]
+    return last if last[0] not in _DEPENDENT and is_single_syllable(last) else None
 
 
 def _rime(syllable: str) -> "tuple | None":

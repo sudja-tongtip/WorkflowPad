@@ -10,7 +10,7 @@ No UI, no I/O.
 """
 from __future__ import annotations
 
-KNOWLEDGE_VERSION = "ace-knowledge-v4"
+KNOWLEDGE_VERSION = "ace-knowledge-v5"
 SOURCE = "https://github.com/ace-step/ACE-Step-1.5/blob/main/docs/en/Tutorial.md"
 
 TOPICS = {
@@ -44,6 +44,10 @@ TOPICS = {
         "Studio line vocals, not in the official vocal table: breathy vocals, soft vocals, emotional vocals. "
         "Use a line cue only when that line needs a different delivery. Do not cue every line. Do not stack cues without a different job. "
         "Do not change the lyric to fit a cue. A line cue is a hint; ACE-Step may not follow it exactly. "
+        "(S) Vocal cue load: ACE-Step may be confused when many vocal-control instructions apply to the same part at once, and no official rule says one cue is the limit. The studio guideline is one main vocal "
+        "delivery per sung section; a lead delivery plus harmonies is fine because they do different jobs. What counts is the EFFECTIVE set of a part: its section cues, a line cue above a lyric, and the "
+        "vocal description of the caption. Opposite cues (whispered with powerful belting), repeated cues (soft vocals with breathy vocals) and a caption that describes the voice differently from the "
+        "cues are the risks; a cue the studio does not know is not a mistake. Choose the clearest cue, and put an overall vocal character in the caption. "
         "[Hold] stays after the words on that same line (love[Hold]). Never put [Hold] on its own line. "
         "A line that already starts with [Hold] is still a held note: leave it unless the user asks to move it.\n"
         "(S) Match the delivery to the section when it fits this song: e.g. a trap verse -> spoken word / rhythmic delivery; a soft pre-chorus -> breathy vocals; "

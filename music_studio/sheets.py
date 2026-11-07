@@ -11,6 +11,7 @@ import hashlib
 import json
 from dataclasses import asdict, fields
 
+from . import caption_builder as CB
 from .model import Song, SongSettings, Sheet, SheetBook, new_id, now_str
 
 NAME_MAX = 40
@@ -194,9 +195,15 @@ def apply_settings(song: Song, sheet_id: str, changes: dict) -> None:
     if target.id == book.active_id:
         for k, v in changes.items():
             setattr(song.settings, k, copy.deepcopy(v))
+        CB.follow_legacy(song.settings, changes)             # the Basic Caption Builder shows what Apply / Restore set in the old Basic fields
         flush(song)
     else:
-        target.settings = {**target.settings, **copy.deepcopy(changes)}
+        merged = {**target.settings, **copy.deepcopy(changes)}
+        if any(k in changes for k in CB.LEGACY_FIELDS):
+            st = settings_from_dict(merged)
+            CB.follow_legacy(st, changes)
+            merged = settings_to_dict(st)
+        target.settings = merged
         target.updated = now_str()
 
 

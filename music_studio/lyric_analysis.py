@@ -14,6 +14,7 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import Callable
 
+from . import clear_tags as CG
 from .compiler import HOLD_PREFIX, TAG_LINE, section_label
 
 PROMPT_VERSION = "syl-v2"
@@ -47,15 +48,16 @@ SYSTEM_PROMPT = (
     "- Japanese: one unit per MORA, written in kana (きょう -> きょ·う, がっこう -> が·っ·こ·う, ラーメン -> ラ·ー·メ·ン). Write kanji as their kana reading.\n"
     "- Chinese: one unit per character. Korean: one unit per Hangul syllable block.\n"
     "- Never skip, merge, add or reorder lines. Never write counts. Nothing outside the format.\n\n"
-    "OUTPUT FORMAT, exactly these two marker lines around the result lines:\n"
-    + SEP_ANALYSIS + "\n<one result line per input line>\n" + SEP_END + "\n\n"
+    "OUTPUT FORMAT, one [COUNT.n] tag per input line, then [DONE]. The payload is one row. Nothing else.\n"
+    "[COUNT.1]\n<N | the input text copied exactly | lang=unit·unit>\n[DONE]\n\n"
     "EXAMPLE\n"
     "Input:\n1| ฝนตกหนักคืนนี้\n2| Hello darkness my old friend\n3| ありがとう\n4| รักเธอ forever\n"
-    "Output:\n" + SEP_ANALYSIS + "\n"
-    "1 | ฝนตกหนักคืนนี้ | th=ฝน·ตก·หนัก·คืน·นี้\n"
-    "2 | Hello darkness my old friend | en=hel·lo·dark·ness·my·old·friend\n"
-    "3 | ありがとう | ja=あ·り·が·と·う\n"
-    "4 | รักเธอ forever | th=รัก·เธอ ; en=for·ev·er\n" + SEP_END
+    "Output:\n"
+    "[COUNT.1]\n1 | ฝนตกหนักคืนนี้ | th=ฝน·ตก·หนัก·คืน·นี้\n"
+    "[COUNT.2]\n2 | Hello darkness my old friend | en=hel·lo·dark·ness·my·old·friend\n"
+    "[COUNT.3]\n3 | ありがとう | ja=あ·り·が·と·う\n"
+    "[COUNT.4]\n4 | รักเธอ forever | th=รัก·เธอ ; en=for·ev·er\n"
+    "[DONE]\n"
 )
 
 
@@ -246,17 +248,19 @@ def _split_units(s: str) -> list:
 def parse_batch(raw: str, expected: list) -> list:
     """LineResult for each expected SungLine, or AnalysisError. Strict about structure (markers, one result per line, same numbers and order) because a shifted answer would
     put counts on the wrong lines; the counts themselves are taken from the units, never from the model."""
-    text = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", raw or "").strip()
+    original = raw or ""
+    adapted, _notes = CG.unwrap(original, "count")
+    text = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", adapted).strip()
     if not text:
-        raise AnalysisError("The AI answer is empty.", raw)
+        raise AnalysisError("The AI answer is empty.", original)
     rows = text.splitlines()
     a = [i for i, r in enumerate(rows) if _is_sep(r, SEP_ANALYSIS)]
     z = [i for i, r in enumerate(rows) if _is_sep(r, SEP_END)]
     if len(a) != 1 or len(z) != 1 or not a[0] < z[0]:
-        raise AnalysisError("The AI answer does not have the ANALYSIS ... END marker lines exactly once, in order.", raw)
+        raise AnalysisError("The AI answer does not have the ANALYSIS ... END marker lines exactly once, in order.", original)
     body = [r.strip() for r in rows[a[0] + 1:z[0]] if r.strip()]
     if len(body) != len(expected):
-        raise AnalysisError(f"The AI returned {len(body)} result line(s) for {len(expected)} sung line(s). Nothing was shown.", raw)
+        raise AnalysisError(f"The AI returned {len(body)} result line(s) for {len(expected)} sung line(s). Nothing was shown.", original)
     out = []
     for ln, row in zip(expected, body):
         parts = row.split("|")
@@ -291,14 +295,16 @@ def parse_batch_partial(raw: str, expected: list) -> tuple:
     """({line number: LineResult}, [problems]) for the rows of an answer that can be trusted. A row is read by ITS OWN NUMBER, so a missing or out-of-order row never shifts the others; a row that is
     not in the format, copies the wrong text or repeats a number is skipped (the first one of a number wins). The markers must be there. Nothing is guessed: the lines that are missing from the
     result are asked for again by analyze()."""
-    text = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", raw or "").strip()
+    original = raw or ""
+    adapted, tag_notes = CG.unwrap(original, "count")
+    text = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", adapted).strip()
     if not text:
-        raise AnalysisError("The AI answer is empty.", raw)
+        raise AnalysisError("The AI answer is empty.", original)
     rows = text.splitlines()
     a = [i for i, r in enumerate(rows) if _is_sep(r, SEP_ANALYSIS)]
     z = [i for i, r in enumerate(rows) if _is_sep(r, SEP_END)]
     if len(a) != 1 or len(z) != 1 or not a[0] < z[0]:
-        raise AnalysisError("The AI answer does not have the ANALYSIS ... END marker lines exactly once, in order.", raw)
+        raise AnalysisError("The AI answer does not have the ANALYSIS ... END marker lines exactly once, in order.", original)
     by_num = {ln.num: ln for ln in expected}
     found, problems = {}, []
     for row in (r.strip() for r in rows[a[0] + 1:z[0]] if r.strip()):
@@ -314,6 +320,10 @@ def parse_batch_partial(raw: str, expected: list) -> tuple:
             found[n] = parse_batch(SEP_ANALYSIS + chr(10) + row + chr(10) + SEP_END, [by_num[n]])[0]
         except AnalysisError as ex:
             problems.append(str(ex))
+    if tag_notes:
+        import logging
+        logging.getLogger("music_studio.lyric_analysis").debug("count format notes: %s", tag_notes)
+        problems = [n for n in tag_notes if n not in problems] + problems
     return found, problems
 
 

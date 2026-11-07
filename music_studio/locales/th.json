@@ -410,6 +410,11 @@
     "Style Settings": "ค่าตั้ง Style",
     "Song Metadata": "ข้อมูลเพลง",
     "Generating…": "กำลังสร้าง…",
+    "Add to queue": "เพิ่มเข้าคิว",
+    "Remove from the queue": "เอาออกจากคิว",
+    "Clear the queue": "ล้างคิว",
+    "The queue was cleared. The song that is running continues.": "ล้างคิวแล้ว เพลงที่กำลังสร้างอยู่ทำต่อ",
+    "A song is already being generated. A Cover starts when nothing else is running.": "กำลังสร้างเพลงอื่นอยู่ Cover จะเริ่มได้เมื่อไม่มีงานอื่น",
     "ComfyUI connected": "เชื่อมต่อ ComfyUI แล้ว",
     "Your Music Style Prompt": "Music Style Prompt ของคุณ",
     "No AI backend is available.": "ไม่มี AI backend ให้ใช้",
@@ -832,6 +837,7 @@
     "Change to": "เปลี่ยนเป็น",
     "Why": "เหตุผล",
     "Partial": "บางส่วน",
+    "Partial result — some items were incomplete. The details are in the diagnostic log.": "ผลวิเคราะห์บางส่วน — มีข้อมูลบางรายการไม่สมบูรณ์",
     "New message ↓": "ข้อความใหม่ ↓",
     "Overview": "ภาพรวม",
     "Fix first": "ควรแก้ก่อน",
@@ -1065,14 +1071,17 @@
     "The song length / language (or the reference style) changed — Reanalyze.": "ความยาว/ภาษาของเพลง (หรือสไตล์อ้างอิง) เปลี่ยนไป — วิเคราะห์ใหม่",
     "Click to use this style": "คลิกเพื่อใช้สไตล์นี้",
     "Applied. Undo is beside Generate.": "ใช้แล้ว ปุ่มย้อนกลับอยู่ข้างปุ่มสร้างเพลง",
-    "AI DIRECTIONS  (click a style to use it)": "ทิศทางจาก AI  (คลิกสไตล์เพื่อใช้)",
-    "Click to use this style: its caption and settings are put into the song. Nothing is generated and the lyrics are not changed; Undo is beside Generate.": "คลิกเพื่อใช้สไตล์นี้: ใส่ caption และค่าลงในเพลง ยังไม่สร้างเพลงและไม่แก้เนื้อเพลง ปุ่มย้อนกลับอยู่ข้างปุ่มสร้างเพลง",
+    "AI DIRECTIONS  (click a style to use it; Ctrl+click picks several)": "ทิศทางจาก AI  (คลิกสไตล์เพื่อใช้ / Ctrl+คลิกเพื่อเลือกหลายสไตล์)",
+    "Click to use this style: its caption and settings are put into the song. Nothing is generated and the lyrics are not changed; Undo is beside Generate. Ctrl+click picks several styles: Generate then adds one song per picked style to the queue.": "คลิกเพื่อใช้สไตล์นี้: ใส่ caption และค่าลงในเพลง ยังไม่สร้างเพลงและไม่แก้เนื้อเพลง ปุ่มย้อนกลับอยู่ข้างปุ่มสร้างเพลง / Ctrl+คลิกเพื่อเลือกหลายสไตล์: กดสร้างเพลงแล้วระบบจะเพิ่มเพลงละ 1 สไตล์เข้าคิว",
+    "Picked for the queue (Ctrl+click again to drop it)": "เลือกไว้สำหรับคิว (Ctrl+คลิกอีกครั้งเพื่อเอาออก)",
+    "Clear picks": "ล้างที่เลือก",
+    "A Cover is made from the song as it is. Clear the picked styles or turn Cover off.": "Cover สร้างจากเพลงตามที่เป็นอยู่ ล้างสไตล์ที่เลือก หรือปิด Cover ก่อน",
     "Show what the AI wrote (not applicable)": "ดูสิ่งที่ AI เขียน (ใช้ไม่ได้)",
     "What the AI wrote (not applicable)": "สิ่งที่ AI เขียน (ใช้ไม่ได้)",
     "Music direction: not a studio cue, so it is not applied. It can go into the Music Caption:": "ทิศทางดนตรี: ไม่ใช่ cue ที่ระบบรองรับ จึงไม่ถูกใส่ในแท็ก ใส่ใน Music Caption ได้:",
     "Copy this direction": "คัดลอกทิศทางนี้",
-    "New session: the AI forgets this conversation and starts clean (your messages stay here)": "เริ่ม session ใหม่: AI ลืมบทสนทนานี้และเริ่มใหม่ (ข้อความของคุณยังอยู่ที่นี่)",
-    "New session: the AI starts again without the earlier conversation (your messages stay here).": "เริ่ม session ใหม่: AI เริ่มใหม่โดยไม่เห็นบทสนทนาก่อนหน้า (ข้อความของคุณยังอยู่ที่นี่)",
+    "New session: the AI forgets this conversation and the earlier messages are cleared": "เริ่ม session ใหม่: AI ลืมบทสนทนานี้ และข้อความเก่าจะถูกล้างออก",
+    "Follow live": "ติดตามสด",
     "A new AI session started, so the AI does not see the earlier messages on screen.": "เริ่มเซสชัน AI ใหม่ AI จึงไม่เห็นข้อความเก่าที่แสดงบนหน้าจอ",
     "Section Options": "ตัวเลือกท่อน",
     "AI Actions": "คำสั่ง AI",
@@ -1250,6 +1259,11 @@
     "Archive · Song Architect": "คลังเก่า · Song Architect",
     "Music Caption": "Music Caption (คำอธิบายเสียง)",
     "Use in Music Style": "ใช้ใน Music Style",
+    "Apply Selected Settings": "ใช้ค่าที่เลือก",
+    "Undo settings": "ย้อนค่ากลับ",
+    "Suggested Music Settings (a recommendation from the lyrics, not detected from audio)": "ค่าดนตรีที่แนะนำ (คำแนะนำจากเนื้อเพลง ไม่ได้ตรวจจากเสียง)",
+    "Reason: ": "เหตุผล: ",
+    "Rhythm feel (advice, not a setting): ": "ลักษณะจังหวะ (คำแนะนำ ไม่ใช่ค่าตั้ง): ",
     "Preview this caption, then put it in Advanced style (lyrics and other settings stay)": "ดูตัวอย่าง caption นี้ก่อน แล้วใส่ใน Style แบบ Advanced (เนื้อเพลงและค่าอื่นไม่เปลี่ยน)",
     "✓ Used in Music Style (the previous style is kept in the style History).": "✓ ใช้ใน Music Style แล้ว (style เดิมเก็บไว้ในประวัติ style)",
     "This caption belongs to another sheet. Open that sheet to use it.": "caption นี้เป็นของอีกชีตหนึ่ง เปิดชีตนั้นเพื่อใช้",
@@ -1458,7 +1472,145 @@
     "long phrase without a break": "วลียาวไม่มีจุดพัก",
     "many syllables for the time": "พยางค์มากเมื่อเทียบกับเวลา",
     "too many syllables even with the most time": "พยางค์มากเกินไป แม้จะได้เวลามากที่สุด",
-    "Only phrasing and the longest-phrase case can be judged.": "ตอนนี้ประเมินได้เฉพาะการแบ่งวลีและกรณีวลียาวที่สุด"
+    "Only phrasing and the longest-phrase case can be judged.": "ตอนนี้ประเมินได้เฉพาะการแบ่งวลีและกรณีวลียาวที่สุด",
+    "Analysing the lyrics…": "กำลังวิเคราะห์เนื้อเพลง…",
+    "Rhyme & Flow": "สัมผัสและความลื่นไหล",
+    "Rhyme connections": "คู่สัมผัส",
+    "Quality analysis": "วิเคราะห์คุณภาพ",
+    "Recommendation": "คำแนะนำ",
+    "No rhyme pair was named for this section.": "ท่อนนี้ไม่มีคู่สัมผัสที่ระบุ",
+    "Recommendation: keep it as it is; nothing needs to change.": "คำแนะนำ: คงไว้อย่างนี้ ไม่จำเป็นต้องแก้",
+    "The AI was not sure about the sounds of this section.": "AI ไม่แน่ใจเรื่องเสียงของท่อนนี้",
+    "This report has no Rhyme & Flow part (it was written before that existed, or the AI left it out). Press Write the report to get it.": "รายงานนี้ไม่มีส่วนสัมผัสและความลื่นไหล (เขียนก่อนที่ส่วนนี้จะมี หรือ AI ไม่ได้ใส่มา) กด เขียนรายงาน เพื่อให้ได้ส่วนนี้",
+    "Earlier rhyme analysis (Rhyme Analyzer AI)": "ผลวิเคราะห์สัมผัสครั้งก่อน (Rhyme Analyzer AI)",
+    "from before Rhyme & Flow": "ก่อนมีส่วนสัมผัสและความลื่นไหล",
+    "Vowel rhyme": "สัมผัสสระ",
+    "Consonant rhyme": "สัมผัสอักษร",
+    "Assonance": "เสียงสระซ้ำ",
+    "Consonance": "เสียงพยัญชนะซ้ำ",
+    "Alliteration": "ซ้ำพยัญชนะต้นคำ",
+    "Sound link": "เสียงเชื่อมกัน",
+    "end rhyme": "สัมผัสนอก",
+    "internal rhyme": "สัมผัสใน",
+    "across lines": "ข้ามบรรทัด",
+    "Optional": "ไม่จำเป็น",
+    "Worthwhile": "น่าทำ",
+    "Important": "สำคัญ",
+    "(inside the line)": "(ในบรรทัดเดียวกัน)",
+    "Confirmed by the program's own sound reading": "โปรแกรมอ่านเสียงเองแล้วยืนยัน",
+    "The program could not confirm this one: it is the AI's reading": "โปรแกรมยืนยันคู่นี้ไม่ได้ เป็นการอ่านของ AI",
+    "Scheme": "รูปแบบสัมผัส",
+    "(partly the AI's reading)": "(บางส่วนเป็นการอ่านของ AI)",
+    "Confidence": "ความมั่นใจ",
+    "high": "สูง",
+    "medium": "ปานกลาง",
+    "low": "ต่ำ",
+    "Checked by the program": "โปรแกรมตรวจแล้ว",
+    "The AI's reading: the program cannot check this language": "เป็นการอ่านของ AI โปรแกรมตรวจภาษานี้ไม่ได้",
+    "Not checked by the program": "โปรแกรมยังไม่ได้ตรวจ",
+    "No rhyme pair was confirmed in this section.": "ท่อนนี้ไม่มีคู่สัมผัสที่ยืนยันได้",
+    "Repetition": "คำซ้ำ",
+    "Repetition (not a rhyme)": "คำซ้ำ (ไม่ใช่สัมผัส)",
+    "Not confirmed: the AI called these rhymes, the program could not read them": "ยืนยันไม่ได้: AI บอกว่าสัมผัสกัน แต่โปรแกรมอ่านเสียงไม่ได้",
+    "end to inside": "ท้ายบรรทัดกับในบรรทัดอื่น",
+    "across sections": "ข้ามท่อน",
+    "The Songwriter wrote no reading for this section.": "Songwriter ไม่ได้เขียนความเห็นสำหรับท่อนนี้",
+    "Recommendation: nothing needs to change in the writing; the pairs marked not confirmed above were not judged.": "คำแนะนำ: การเขียนไม่ต้องแก้ ส่วนคู่ที่ระบุว่ายืนยันไม่ได้ข้างบนไม่ได้ถูกตัดสิน",
+    "The rhyme sounds were not checked this time, so no scheme or pair is shown. Below is the Songwriter's reading of the flow only.": "ครั้งนี้ไม่ได้ตรวจเสียงสัมผัส จึงไม่แสดงรูปแบบหรือคู่สัมผัส ข้างล่างเป็นความเห็นเรื่องความลื่นไหลของ Songwriter เท่านั้น",
+    "Rhyme Analyzer: checking the sounds": "Rhyme Analyzer: ตรวจเสียงสัมผัส",
+    "The sounds, the letters and the schemes are the Rhyme Analyzer AI's own reading; the program only checked the format of its answer.": "เสียง ตัวอักษร และรูปแบบสัมผัสเป็นการอ่านของ Rhyme Analyzer AI เอง โปรแกรมตรวจแค่รูปแบบคำตอบ",
+    "Lyrics quality": "คุณภาพเนื้อเพลง",
+    "Strength": "จุดแข็ง",
+    "To consider": "จุดควรพิจารณา",
+    "Rhyme contribution": "บทบาทของสัมผัส",
+    "Why it can stay:": "ทำไมคงไว้ได้:",
+    "Lines the Analyzer gave no letter:": "บรรทัดที่ Analyzer ไม่ให้ตัวอักษร:",
+    "Analyzer output inconsistent: its own fields disagree. Nothing was changed or worked out for it.": "ผลของ Analyzer ขัดกันเอง: ข้อมูลในคำตอบเดียวกันไม่ตรงกัน โปรแกรมไม่ได้แก้หรือคำนวณแทน",
+    "pair(s) of the Analyzer's answer could not be read (a missing field or a line that is not in the song) and are not shown.": "คู่ในคำตอบของ Analyzer อ่านไม่ได้ (ขาดฟิลด์หรือบรรทัดไม่อยู่ในเพลง) จึงไม่แสดง",
+    "Issue": "ปัญหา",
+    "Checked:": "ตรวจแล้ว:",
+    "Expected benefit:": "ผลดีที่คาดว่าจะได้:",
+    "Partial analysis — some items were incomplete.": "ผลวิเคราะห์บางส่วน — มีข้อมูลบางรายการไม่สมบูรณ์",
+    "The analysis could not be read — please analyze again.": "ไม่สามารถอ่านผลวิเคราะห์ได้ — กรุณาวิเคราะห์ใหม่",
+    "No scheme or pair is shown. Below is the Songwriter's reading of the flow only.": "ไม่แสดงรูปแบบหรือคู่สัมผัส ด้านล่างเป็นความเห็นของ Songwriter เรื่องจังหวะและการไหลของเนื้อเพลงเท่านั้น",
+    "No rhyme group was reported for this line. This is missing information, not a statement that it has no rhyme.": "ไม่มีข้อมูลกลุ่มสัมผัสที่รายงานสำหรับบรรทัดนี้ ไม่ได้หมายความว่าบรรทัดนี้ไม่มีสัมผัส",
+    "Sending the lyrics…": "กำลังส่งเนื้อเพลง…",
+    "Overview of the rhymes…": "กำลังดูภาพรวมสัมผัส…",
+    "Rhyme & Flow so far: more sections appear as the Rhyme Analyzer answers.": "สัมผัสและความลื่นไหลเท่าที่ได้ตอนนี้ ท่อนอื่นจะทยอยขึ้นเมื่อ Rhyme Analyzer ตอบ",
+    "Sending the data…": "กำลังส่งข้อมูลเพลง…",
+    "Summary and strengths…": "กำลังเขียนสรุปและจุดเด่น…",
+    "Suggestions and notes…": "กำลังเขียนข้อเสนอแก้ไขและหมายเหตุ…",
+    "Still writing: the suggestions and the notes appear when the report is finished.": "ยังเขียนอยู่ ข้อเสนอแก้ไขและหมายเหตุจะขึ้นเมื่อรายงานเสร็จ",
+    "AI context size": "ขนาด context ของ AI",
+    "Local AI context (tokens)": "Context ของ AI ในเครื่อง (token)",
+    "Grok context (tokens)": "Context ของ Grok (token)",
+    "Leave a field empty to use its default (Local: the n_ctx of the workflow file; Grok: 32768). A Local value is sent to the model as n_ctx, so the model must be able to load it. A request may use only part of it, and the rest is kept for the answer.": "เว้นว่างเพื่อใช้ค่าเริ่มต้น (ในเครื่อง: ค่า n_ctx ในไฟล์ workflow, Grok: 32768) ค่าของในเครื่องจะถูกส่งให้โมเดลเป็น n_ctx จึงต้องเป็นขนาดที่โมเดลโหลดได้ คำขอหนึ่งใช้ได้เพียงบางส่วนของค่านี้ ที่เหลือกันไว้สำหรับคำตอบ",
+    "The Analyzer's answer for this section disagrees with itself:": "คำตอบของ Analyzer สำหรับท่อนนี้ขัดกันเอง:",
+    "Re-check this section": "ตรวจท่อนนี้ใหม่",
+    "Checking the section again…": "กำลังให้ตรวจท่อนนี้ใหม่…",
+    "The section was checked again and replaced. Write the report again to use it.": "ตรวจท่อนนี้ใหม่และแทนที่แล้ว เขียนรายงานใหม่เพื่อใช้ผลนี้",
+    "The section was checked again, but its answer still disagrees with itself.": "ตรวจท่อนนี้ใหม่แล้ว แต่คำตอบยังขัดกันเอง",
+    "The section could not be checked again; the earlier result is kept.": "ตรวจท่อนนี้ใหม่ไม่สำเร็จ ผลเดิมยังอยู่",
+    "Nothing to check again in this section (or the result was not made step by step).": "ท่อนนี้ไม่มีอะไรให้ตรวจใหม่ (หรือผลนี้ไม่ได้ทำทีละขั้น)",
+    "Press Analyze Rhymes first: there is no finished result for these lyrics.": "กดวิเคราะห์สัมผัสก่อน: ยังไม่มีผลที่เสร็จสำหรับเนื้อเพลงนี้",
+    "This section could not be found in the saved result. Press Analyze Rhymes again.": "หาท่อนนี้ในผลที่บันทึกไม่เจอ กดวิเคราะห์สัมผัสใหม่",
+    "The AI is busy. Try again in a moment.": "AI กำลังทำงานอยู่ ลองใหม่อีกครู่",
+    "Starting a new session…": "กำลังเริ่มบทสนทนาใหม่ (บทสนทนาเดิมเต็ม)…",
+    "Preset": "Preset (รูปแบบสำเร็จรูป)",
+    "Pick ready-made chips, then change them as you like": "เลือกชุดสไตล์สำเร็จรูป แล้วปรับแต่งต่อได้ตามใจ",
+    "Manage presets...": "จัดการ Preset…",
+    "My presets": "Preset ส่วนตัว (My Presets)",
+    "Modified": "แก้ไขแล้ว (Modified)",
+    "Save as a new preset": "บันทึกเป็น Preset ใหม่",
+    "Update this preset with the chips now": "อัปเดต Preset นี้ด้วย chips ปัจจุบัน",
+    "Rename this preset": "เปลี่ยนชื่อ Preset นี้",
+    "Delete this preset": "ลบ Preset นี้",
+    "Rename the preset": "เปลี่ยนชื่อ Preset",
+    "Delete the preset?": "ลบ Preset นี้?",
+    "Preset name": "ชื่อ Preset",
+    "Style": "ตั้ง Style",
+    "Vocal Setup": "Vocal Setup (ตั้งค่าเสียงร้อง)",
+    "Sound & Production": "Sound & Production (เสียงและโปรดักชัน)",
+    "Choose one": "เลือกได้ 1 แบบ",
+    "Choose several": "เลือกได้หลายแบบ",
+    "Search, or type your own phrase and press Enter": "ค้นหา หรือพิมพ์คำของคุณเองแล้วกด Enter",
+    "Show less": "แสดงน้อยลง",
+    "Additional Style Notes (optional)": "โน้ตเสริม (ไม่บังคับ)",
+    "e.g. a story about the city at night, a warm intro, a slow fade": "เช่น เล่าเรื่องคืนในเมือง, อินโทรอบอุ่น, ค่อยๆ เฟดตอนท้าย (เขียนเป็นภาษาอังกฤษ)",
+    "Quick presets": "Preset เร็ว",
+    "Caption sent to ACE-Step": "Caption ที่จะส่งไป ACE-Step",
+    "Built from your chips and notes only. No AI rewrites it; what you see here is what Generate sends.": "สร้างจาก chips และโน้ตของคุณเท่านั้น ไม่มี AI เรียบเรียงใหม่ สิ่งที่เห็นตรงนี้คือสิ่งที่ส่งตอนสร้างเพลง",
+    "Choose chips (a Genre first) to build the caption.": "เลือก chips (เริ่มจากแนวเพลง) เพื่อประกอบ Caption",
+    "Male Lead and Female Lead are both selected. Choose Duet if you want both.": "เลือกทั้งนักร้องนำชายและนักร้องนำหญิง ถ้าต้องการทั้งคู่ให้เลือก Duet",
+    "Instrumental (no vocals) is selected together with vocal choices.": "เลือกแบบไม่มีเสียงร้อง (Instrumental) พร้อมกับตัวเลือกเสียงร้อง",
+    "Minimal Stripped-Back Arrangement is selected together with a dense, layered sound.": "เลือกการเรียบเรียงแบบมินิมอลพร้อมกับซาวด์ที่หนาแน่นหลายชั้น",
+    "Only your own presets can be updated. Use + to save a copy.": "อัปเดตได้เฉพาะ Preset ของคุณเอง กด + เพื่อบันทึกเป็นสำเนา",
+    "That preset no longer exists.": "ไม่มี Preset นี้แล้ว",
+    "Give the preset a name.": "ตั้งชื่อ Preset ก่อน",
+    "A builtin preset cannot be changed. Use Save As to make your own copy.": "Preset ที่มากับโปรแกรมแก้ไม่ได้ ใช้ \"บันทึกเป็น\" เพื่อทำสำเนาของคุณเอง",
+    "A builtin preset cannot be renamed.": "Preset ที่มากับโปรแกรมเปลี่ยนชื่อไม่ได้",
+    "A builtin preset cannot be deleted.": "Preset ที่มากับโปรแกรมลบไม่ได้",
+    "You have no presets of your own yet. Choose chips, then press + to save them.": "ยังไม่มี Preset ของคุณเอง เลือก chips แล้วกด + เพื่อบันทึก",
+    "Generate anyway": "สร้างเพลงต่อไป",
+    "The caption is long": "Caption ยาว",
+    "Choose at least a Genre first": "เลือกแนวเพลงก่อน",
+    "Choose chips, or write notes, to build the caption": "เลือก chips หรือเขียนโน้ตเพื่อประกอบ Caption",
+    "Choose chips; the caption is built from them (no AI)": "เลือก chips แล้วประกอบ Caption ให้เอง (ไม่ใช้ AI)",
+    "The caption is built from the chips you choose (no AI).": "Caption ประกอบจาก chips ที่คุณเลือก (ไม่ใช้ AI)",
+    "Active Caption Source: Basic. The caption is composed from your chips and notes; no AI writes it. The Advanced prompt is kept but not sent.": "แหล่ง Caption ที่ใช้อยู่: Basic ประกอบจาก chips และโน้ตของคุณ ไม่มี AI เขียน Prompt ของ Advanced ยังเก็บไว้แต่ไม่ถูกส่ง",
+    "Text size": "ขนาดตัวอักษร",
+    "Small (85%)": "เล็ก (85%)",
+    "Normal (100%)": "ปกติ (100%)",
+    "Large (115%)": "ใหญ่ (115%)",
+    "Larger (130%)": "ใหญ่มาก (130%)",
+    "Largest (150%)": "ใหญ่ที่สุด (150%)",
+    "Applies to the whole program after Save. Dialogs that are already open keep their size until they are opened again.": "มีผลทั้งโปรแกรมทันทีหลังกดบันทึก กล่องโต้ตอบที่เปิดค้างอยู่จะใช้ขนาดใหม่เมื่อเปิดครั้งถัดไป",
+    "This section could not be read — please check it again.": "ไม่สามารถอ่านผลวิเคราะห์ท่อนนี้ได้ — กรุณาตรวจใหม่",
+    "no end group was read for any line of this section": "ไม่มีบรรทัดใดของท่อนนี้ถูกจัดกลุ่มเสียงท้ายวรรค",
+    "Vocal Analysis: the Music Producer AI reads the song and writes its report on the structure, cues, hook, arrangement and delivery": "วิเคราะห์การร้อง: Music Producer AI อ่านเพลงแล้วเขียนรายงานเรื่องโครงสร้าง cue Hook การเรียบเรียง และการถ่ายทอดเสียงร้อง",
+    "Rhyme & Syllables: the lyrics with the rhyme colours (the Rhyme Analyzer AI's reading of the sounds; the program checks the format of its answer) and the syllable counts (counted by the program)": "สัมผัสและพยางค์: เนื้อเพลงพร้อมสีสัมผัส (Rhyme Analyzer AI อ่านเสียงเอง โปรแกรมตรวจแค่รูปแบบคำตอบ) และจำนวนพยางค์ (โปรแกรมนับ)",
+    "Rhythm & Duration: how dense the lines and sections are for the BPM and the length (an estimate counted by the program, no AI)": "จังหวะและความยาว: ความหนาแน่นของบรรทัดและท่อนเทียบกับ BPM และความยาวเพลง (ค่าประมาณที่โปรแกรมนับ ไม่ใช้ AI)",
+    "The Music Producer AI reads the whole song (structure, cues, hook, arrangement, delivery) and writes its own report. Suggestions you can apply": "Music Producer AI อ่านทั้งเพลง (โครงสร้าง cue Hook การเรียบเรียง การร้อง) และเขียนรายงานของตัวเอง พร้อมคำแนะนำที่นำไปใช้ได้"
   },
   "prefixes": {
     "Prompt History (": "ประวัติ Prompt (",
@@ -1512,6 +1664,9 @@
     "Meaning changes: ": "ความหมายที่เปลี่ยน: ",
     "Meaning difference: ": "ความหมายที่ต่างกัน: ",
     "Singability: ": "ความร้องได้: ",
+    "Meaning: ": "ความหมาย: ",
+    "Rhyme: ": "สัมผัส: ",
+    "Syllables: ": "พยางค์: ",
     "Could not play ": "เล่นไม่ได้ ",
     "The preview could not be made: ": "สร้างตัวอย่างไม่ได้: ",
     "Take: Take ": "เทค: เทค ",
@@ -2416,12 +2571,56 @@
       "\\1 (ทิศทางดนตรีอิสระ ไม่ใช่ cue ของระบบ ใส่ใน Music Caption: \\2)"
     ],
     [
-      "Heads-up:\\ this\\ conversation\\ is\\ using\\ about\\ (\\d+)%\\ of\\ the\\ local\\ model's\\ memory\\.\\ Start\\ a\\ new\\ session\\ soon\\ with\\ the\\ New\\ session\\ button\\ \\(your\\ messages\\ stay\\ here\\),\\ or\\ switch\\ to\\ Grok\\.",
-      "เตือน: บทสนทนานี้ใช้หน่วยความจำของโมเดลในเครื่องไปราว \\1% แล้ว ควรเริ่ม session ใหม่เร็วๆ นี้ด้วยปุ่ม New session (ข้อความของคุณยังอยู่ที่นี่) หรือสลับไปใช้ Grok"
+      "Add\\ (\\d+)\\ (?:style|styles)\\ to\\ queue\\ \\((\\d+)\\ waiting\\)",
+      "เพิ่ม \\1 สไตล์เข้าคิว (รออยู่ \\2)"
     ],
     [
-      "This\\ conversation\\ is\\ full\\ for\\ the\\ local\\ model\\ \\(about\\ (\\d+)\\ of\\ (\\d+)\\ tokens\\ it\\ can\\ use\\)\\.\\ Nothing\\ was\\ sent\\.\\ Press\\ the\\ New\\ session\\ button\\ to\\ start\\ again\\ \\(your\\ messages\\ stay\\ here\\),\\ or\\ switch\\ to\\ Grok\\.",
-      "บทสนทนานี้เต็มสำหรับโมเดลในเครื่องแล้ว (ราว \\1 จาก \\2 token ที่ใช้ได้) ยังไม่ได้ส่งอะไร กดปุ่ม New session เพื่อเริ่มใหม่ (ข้อความของคุณยังอยู่ที่นี่) หรือสลับไปใช้ Grok"
+      "Add\\ (\\d+)\\ (?:style|styles)\\ to\\ queue",
+      "เพิ่ม \\1 สไตล์เข้าคิว"
+    ],
+    [
+      "Generate\\ (\\d+)\\ (?:style|styles)",
+      "สร้างเพลง \\1 สไตล์"
+    ],
+    [
+      "(\\d+)\\ styles\\ picked:\\ Generate\\ adds\\ one\\ song\\ per\\ style\\ to\\ the\\ queue,\\ each\\ with\\ its\\ own\\ BPM,\\ key\\ and\\ time\\ signature\\.\\ The\\ song's\\ own\\ settings\\ are\\ not\\ changed\\.",
+      "เลือก \\1 สไตล์: กดสร้างเพลงแล้วจะเพิ่มเพลงละ 1 สไตล์เข้าคิว แต่ละเพลงใช้ BPM คีย์ และจังหวะของสไตล์นั้นเอง ค่าของเพลงเดิมไม่ถูกเปลี่ยน"
+    ],
+    [
+      "(\\d+)\\ style\\(s\\)\\ added\\ to\\ the\\ queue\\.",
+      "เพิ่ม \\1 สไตล์เข้าคิวแล้ว"
+    ],
+    [
+      "(\\d+)\\ style\\(s\\):\\ the\\ first\\ starts\\ now,\\ the\\ others\\ wait\\ in\\ the\\ queue\\.",
+      "\\1 สไตล์: เพลงแรกเริ่มสร้างทันที ที่เหลือรอในคิว"
+    ],
+    [
+      "Nothing\\ was\\ queued\\.\\ (.*)",
+      "ยังไม่ได้เพิ่มเข้าคิว \\1"
+    ],
+    [
+      "Add\\ to\\ queue\\ \\((\\d+)\\ waiting\\)",
+      "เพิ่มเข้าคิว (รออยู่ \\1)"
+    ],
+    [
+      "In\\ the\\ queue\\ (\\d+):\\ (.*)",
+      "ในคิวที่ \\1: \\2"
+    ],
+    [
+      "“(.*)”\\ was\\ added\\ to\\ the\\ queue\\ \\(place\\ (\\d+)\\)\\.",
+      "เพิ่ม “\\1” เข้าคิวแล้ว (ลำดับที่ \\2)"
+    ],
+    [
+      "Next\\ in\\ the\\ queue:\\ “(.*)”",
+      "ต่อไปในคิว: “\\1”"
+    ],
+    [
+      "Heads-up:\\ this\\ conversation\\ is\\ using\\ about\\ (\\d+)%\\ of\\ the\\ local\\ model's\\ memory\\.\\ Start\\ a\\ new\\ session\\ soon\\ with\\ the\\ New\\ session\\ button\\ \\(it\\ clears\\ this\\ conversation\\),\\ or\\ switch\\ to\\ Grok\\.",
+      "เตือน: บทสนทนานี้ใช้หน่วยความจำของโมเดลในเครื่องไปราว \\1% แล้ว ควรเริ่ม session ใหม่เร็วๆ นี้ด้วยปุ่ม New session (จะล้างบทสนทนานี้) หรือสลับไปใช้ Grok"
+    ],
+    [
+      "This\\ conversation\\ is\\ full\\ for\\ the\\ local\\ model\\ \\(about\\ (\\d+)\\ of\\ (\\d+)\\ tokens\\ it\\ can\\ use\\)\\.\\ Nothing\\ was\\ sent\\.\\ Press\\ the\\ New\\ session\\ button\\ to\\ start\\ again\\ \\(it\\ clears\\ this\\ conversation\\),\\ or\\ switch\\ to\\ Grok\\.",
+      "บทสนทนานี้เต็มสำหรับโมเดลในเครื่องแล้ว (ราว \\1 จาก \\2 token ที่ใช้ได้) ยังไม่ได้ส่งอะไร กดปุ่ม New session เพื่อเริ่มใหม่ (จะล้างบทสนทนานี้) หรือสลับไปใช้ Grok"
     ],
     [
       "Opened\\ “(.*?)”\\ as\\ a\\ new\\ sheet",
@@ -2822,6 +3021,130 @@
     [
       "Vocal\\ density\\ is\\ not\\ judged\\ for\\ the\\ language\\ '(.+)'\\.",
       "ยังไม่ประเมินความแน่นของการร้องสำหรับภาษา '\\1'"
+    ],
+    [
+      "lines\\ (\\d+)-(\\d+)",
+      "บรรทัด \\1-\\2"
+    ],
+    [
+      "(\\d+)\\ section\\(s\\)",
+      "\\1 ท่อน"
+    ],
+    [
+      "Why:\\ (.+)",
+      "เพราะ: \\1"
+    ],
+    [
+      "Not\\ rhymes:\\ (.+)\\ \\(the\\ sounds\\ differ\\)",
+      "ไม่ใช่สัมผัส: \\1 (เสียงต่างกัน)"
+    ],
+    [
+      "Not\\ judged:\\ (.+)",
+      "ไม่ได้ตัดสิน: \\1"
+    ],
+    [
+      "The\\ AI\\ answer\\ was\\ cut\\ off\\ or\\ malformed\\ \\((.+)\\);\\ only\\ the\\ complete\\ pairs\\ were\\ read,\\ the\\ rest\\ is\\ missing\\.",
+      "คำตอบของ AI ขาดหรือรูปแบบเสีย (\\1) อ่านได้เฉพาะคู่ที่สมบูรณ์ ส่วนที่เหลือหายไป"
+    ],
+    [
+      "Pair\\ (\\d+)\\ was\\ left\\ out:\\ a\\ word,\\ its\\ line\\ or\\ its\\ text\\ is\\ missing\\ or\\ has\\ the\\ wrong\\ type\\.",
+      "ข้ามคู่ที่ \\1: ขาดคำ เลขบรรทัด หรือข้อความ หรือชนิดข้อมูลผิด"
+    ],
+    [
+      "^Section (\\d+) of (\\d+): (.*)$",
+      "ท่อน \\1 จาก \\2: \\3"
+    ],
+    [
+      "^(Local AI context|Grok context|Local AI context and Grok context): a number of at least (\\d+) is needed, so the default is used\\.$",
+      "\\1: ต้องเป็นตัวเลขอย่างน้อย \\2 จึงใช้ค่าเริ่มต้นแทน"
+    ],
+    [
+      "^Last check, the Analyzer's reason: (.*)$",
+      "เหตุผลจากการตรวจครั้งล่าสุดของ Analyzer: \\1"
+    ],
+    [
+      "^Checked again, the Analyzer's reason: (.*)$",
+      "ตรวจใหม่แล้ว เหตุผลของ Analyzer: \\1"
+    ],
+    [
+      "^the end sound `(.+)` is written under different end groups \\((.+)\\); lines with the same sound belong to one group$",
+      "เสียงท้ายวรรค `\\1` ถูกเขียนไว้คนละกลุ่ม (\\2) ทั้งที่เสียงเดียวกันต้องอยู่กลุ่มเดียวกัน"
+    ],
+    [
+      "^lines (.+) are in no end group$",
+      "บรรทัด \\1 ไม่อยู่ในกลุ่มเสียงท้ายวรรคใดเลย"
+    ],
+    [
+      "^lines (\\d+) and (\\d+) are reported as an exact end rhyme but sit in different end groups \\((.+) and (.+)\\)$",
+      "บรรทัด \\1 กับ \\2 ถูกรายงานว่าสัมผัสท้ายวรรคแบบตรง แต่อยู่คนละกลุ่ม (\\3 กับ \\4)"
+    ],
+    [
+      "^the end sound `(.+)` is written in (\\d+) separate \\[END\\] tags \\(lines (.+)\\); lines with the same sound belong to one \\[END\\] tag$",
+      "เสียงท้ายวรรค `\u0001` ถูกเขียนแยกเป็น \u0002 แท็ก [END] (บรรทัด \u0003) ทั้งที่เสียงเดียวกันต้องอยู่ [END] เดียว"
+    ],
+    [
+      "^(\\d+) selected$",
+      "เลือกแล้ว \\1"
+    ],
+    [
+      "^(\\d+) selected \\(suggested up to (\\d+)\\)$",
+      "เลือกแล้ว \\1 (แนะนำไม่เกิน \\2)"
+    ],
+    [
+      "^\\+ (\\d+) more$",
+      "+ อีก \\1"
+    ],
+    [
+      "^\\+ Add \\\"(.*)\\\"$",
+      "+ เพิ่ม \"\\1\""
+    ],
+    [
+      "^(\\d+) characters$",
+      "\\1 ตัวอักษร"
+    ],
+    [
+      "^(\\d+) characters: longer than the (\\d+) suggested for ACE-Step\\. It is sent as it is; shorter usually follows better\\.$",
+      "\\1 ตัวอักษร: ยาวกว่าที่แนะนำ (\\2) สำหรับ ACE-Step จะส่งตามที่เห็นโดยไม่ตัด; Caption สั้นกว่ามักถูกทำตามได้ดีกว่า"
+    ],
+    [
+      "^(\\d+) characters: over the (\\d+) limit\\. Generate is blocked until you remove some chips or notes \\(nothing is cut for you\\)\\.$",
+      "\\1 ตัวอักษร: เกินขีดจำกัด \\2 สร้างเพลงไม่ได้จนกว่าจะลบ chips หรือโน้ตบางส่วน (โปรแกรมไม่ตัดให้เอง)"
+    ],
+    [
+      "^This catalog no longer has: (.*)\\. They are kept but not sent\\.$",
+      "Catalog นี้ไม่มีรายการ: \\1 เก็บไว้แต่ไม่ถูกส่ง"
+    ],
+    [
+      "^Preset \\\"(.*)\\\" saved$",
+      "บันทึก Preset \"\\1\" แล้ว"
+    ],
+    [
+      "^Preset \\\"(.*)\\\" updated$",
+      "อัปเดต Preset \"\\1\" แล้ว"
+    ],
+    [
+      "^\\\"(.*)\\\" will be deleted\\. Songs that used it keep their chips\\.$",
+      "จะลบ \"\\1\" เพลงที่เคยใช้ Preset นี้ยังคง chips เดิมไว้"
+    ],
+    [
+      "^Could not save the presets: (.*)$",
+      "บันทึก Preset ไม่ได้: \\1"
+    ],
+    [
+      "^The caption has (\\d+) characters; (\\d+) are suggested for ACE-Step\\. It will be sent exactly as it is \\(nothing is cut\\)\\. Shorter captions are usually followed better\\.$",
+      "Caption มี \\1 ตัวอักษร ที่แนะนำสำหรับ ACE-Step คือ \\2 จะส่งตามที่เห็นทั้งหมด (ไม่ตัด) Caption สั้นกว่ามักถูกทำตามได้ดีกว่า"
+    ],
+    [
+      "^The caption has (\\d+) characters; the limit is (\\d+)\\. Remove some chips or notes \\(nothing is cut for you\\)\\.$",
+      "Caption มี \\1 ตัวอักษร เกินขีดจำกัด \\2 ลบ chips หรือโน้ตบางส่วนก่อน (โปรแกรมไม่ตัดให้เอง)"
+    ],
+    [
+      "^Details \\((\\d+)\\)$",
+      "รายละเอียด (\\1)"
+    ],
+    [
+      "^Not confirmed \\((\\d+)\\)$",
+      "ยังไม่ยืนยัน (\\1)"
     ]
   ]
 }

@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from . import clear_tags as CG
 from . import llm_chat as LC
 from . import music_director_context as MX
 from . import template_arrange as TA
@@ -84,11 +85,11 @@ vocal.
 
 """ + MX.CAPTION_CRAFT + """
 
-Return exactly:
+Return exactly one caption tag and [DONE]. No code fence and no explanation.
 
-=========== CAPTION ===========
+[CAPTION.1]
 <one polished English music caption>
-=========== END ==========="""
+[DONE]"""
 
 
 class CaptionError(ValueError):
@@ -163,28 +164,30 @@ def vocal_range_warning(caption: str, *settings: str) -> str:
 
 def parse(raw: str, lyrics: str = "", vocal: str = "", energy: str = "", extra: str = "") -> Result:
     """The AI answer -> Result. Raises CaptionError for anything that must not reach ACE-Step. A missing END marker only warns (the real Gemma4 sometimes forgets it)."""
-    text = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", raw or "").strip()
+    original = raw or ""
+    adapted, tag_notes = CG.unwrap(original, "caption")
+    text = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", adapted).strip()
     lines = [l for l in text.splitlines() if not re.fullmatch(r"\s*(?:```[A-Za-z]*|<<<|>>>)\s*", l)]
     cap_i = [i for i, l in enumerate(lines) if LC._is_sep(l, M_CAPTION)]
     end_i = [i for i, l in enumerate(lines) if LC._is_sep(l, M_END)]
     if not cap_i:
-        raise CaptionError("The AI answer has no CAPTION marker.", ["The CAPTION marker is missing."], raw)
+        raise CaptionError("The AI answer has no CAPTION marker.", ["The CAPTION marker is missing."], original)
     if len(cap_i) > 1 or len(end_i) > 1:
-        raise CaptionError("The AI answer repeats a marker.", ["A marker appears more than once."], raw)
+        raise CaptionError("The AI answer repeats a marker.", ["A marker appears more than once."], original)
     start = cap_i[0] + 1
     stop = end_i[0] if end_i and end_i[0] > cap_i[0] else len(lines)
     if end_i and end_i[0] < cap_i[0]:
-        raise CaptionError("The markers are in the wrong order.", ["END comes before CAPTION."], raw)
+        raise CaptionError("The markers are in the wrong order.", ["END comes before CAPTION."], original)
     body = "\n".join(lines[start:stop]).strip()
-    warns = []
+    warns = [n for n in tag_notes if n]
     if not end_i:
         warns.append("The AI did not write the END marker; the caption was complete enough to use.")
     if text and lines[:cap_i[0]] and any(l.strip() for l in lines[:cap_i[0]]):
         warns.append("Text before the CAPTION marker was ignored.")
     if "=====" in body:
-        raise CaptionError("The caption contains marker text.", ["The caption contains marker lines."], raw)
-    cap, more = check_caption(body, lyrics, vocal, energy, extra, raw)
-    return Result(cap, warns + more, raw)
+        raise CaptionError("The caption contains marker text.", ["The caption contains marker lines."], original)
+    cap, more = check_caption(body, lyrics, vocal, energy, extra, original)
+    return Result(cap, warns + more, original)
 
 
 def check_caption(body: str, lyrics: str = "", vocal: str = "", energy: str = "", extra: str = "", raw: str = "") -> tuple:

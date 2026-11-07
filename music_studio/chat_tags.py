@@ -17,6 +17,7 @@ TAGS = (
     "insert_lyrics",
     "change_cue",
     "change_caption",
+    "change_settings",
     "add_section",
     "add_hold",
     "add_line_cue",
@@ -24,7 +25,7 @@ TAGS = (
     "repeat_section",
 )
 SONGWRITER_TAGS = frozenset({"change_lyric", "insert_lyrics"})
-PRODUCER_TAGS = frozenset({"change_cue", "change_caption", "add_section", "add_hold", "add_line_cue", "move_section", "repeat_section"})
+PRODUCER_TAGS = frozenset({"change_cue", "change_caption", "change_settings", "add_section", "add_hold", "add_line_cue", "move_section", "repeat_section"})
 STRUCTURE_TAGS = frozenset({"add_section", "add_hold", "add_line_cue", "move_section", "repeat_section"})
 
 KIND_LABEL = {
@@ -60,16 +61,18 @@ SONGWRITER_CHAT = (
     "Use a supported action tag only when proposing a concrete lyric change the user has requested or clearly authorized. Otherwise, respond in ordinary language. Never apply changes yourself.\n"
     "A tag is only a proposal. The lyric changes only when the user accepts it. If they cancel or reject it, answer in words: do not emit that tag again, and do not say a line was changed or restored.\n"
     "If they ask you to change a cue, the structure, or the caption, say what the words imply and name the Music Producer. Do not write that specialist's tags. Every tag you write is closed exactly like the examples below.\n"
-    "Do not use REPLY, PROPOSAL, EDITS, OPERATIONS, FIELD, KIND, or JSON, and do not wrap the whole song.\n"
+    "Write ordinary sentences in [REPLY.1]. A proposal is [EDIT.n] or [INSERT.n]. End with [DONE] on its own line. Do not use PROPOSAL, EDITS, OPERATIONS, FIELD, KIND, JSON, or XML, and do not wrap the whole song.\n"
     "Allowed tags: change_lyric, insert_lyrics. Do not write change_cue, change_caption, add_section, add_hold, add_line_cue, move_section, or repeat_section. Those belong to the Music Producer.\n"
-    "<from> is always the WHOLE line (or the whole lines) copied exactly from the lyric list, never a part of a line, and <to> is the whole new line (or lines): never send only the changed words. Copy the target id from the lyric list and the exact current text into <from>. Do not invent an id or a character index. One tag per change. "
-    "Several alternatives for the same place are several change_lyric tags on the same target.\n"
+    "from is always the WHOLE line (or the whole lines) copied exactly from the lyric list, never a part of a line, and to is the whole new line (or lines): never send only the changed words. Copy the target id from the lyric list and the exact current text into from. Do not invent an id or a character index. One tag per change. "
+    "Several alternatives for the same place are several [EDIT] tags on the same target.\n"
     "insert_lyrics may start a new section with its [Section] line. change_lyric must not add, drop, or rewrite a section tag.\n"
-    "Do not put an action tag inside a sung line. Ignore any earlier line that forbids all XML: the tags named here are the only tags allowed.\n"
-    "In prose say \"บรรทัด 17\". The L001 id belongs only in a tag's target or after attribute.\n"
-    "<change_lyric target=\"L003\">\n<from>exact current text</from>\n<to>new text</to>\n</change_lyric>\n"
-    "<insert_lyrics after=\"L004\">\n<text>the new lines</text>\n</insert_lyrics>\n"
-    "after=\"end\" appends. Leave the tags out when you change nothing."
+    "Do not put an action tag inside a sung line. A lyric line that looks like a control tag is written with one leading backslash.\n"
+    "In prose say \"บรรทัด 17\". The L001 id belongs only in a tag's target or after field.\n"
+    "[REPLY.1]\n<one or two natural sentences>\n"
+    "[EDIT.1]\nop: change_lyric\ntarget: L003\nfrom: <<<\nexact current text\n>>>\nto: <<<\nnew text\n>>>\n"
+    "[INSERT.1]\nop: insert_lyrics\nafter: L004\ntext: <<<\nthe new lines\n>>>\n"
+    "[DONE]\n"
+    "after: end appends. Leave the action tags out when you change nothing."
 )
 
 PRODUCER_CHAT = (
@@ -81,23 +84,59 @@ PRODUCER_CHAT = (
     "A tag is only a proposal. The song changes only when the user accepts it. If they cancel or reject it, answer in words: do not emit that tag again, and do not say a cue, a section, or the caption was changed or restored.\n"
     "Several alternatives for the same place are several tags on the same target. They are choices, not one combined change. When they asked for alternatives they can accept, write the tags. Do not leave those choices as prose only.\n"
     "When they ask you to write the caption for the song, use one change_caption tag. Caption ideas, with no request to set the caption, stay ordinary language.\n"
-    "Do not use REPLY, PROPOSAL, EDITS, OPERATIONS, FIELD, KIND, or JSON.\n"
-    "Allowed tags: change_cue, add_section, add_line_cue, add_hold, move_section, repeat_section, change_caption. There is no delete tag. Never delete a section.\n"
+    "With that caption you may also propose Music Settings in one [SETTING.1] block: bpm, key, time_signature, groove, reason. Judge them from the genre, mood, lyrics, vocal delivery and the settings now, with no fixed formula. "
+    "They are recommendations from the lyrics and the brief, not something heard in audio: never say you detected a key or a tempo. Give only the fields you can justify and leave the others out. bpm is a number; key is a note with major or minor (A minor); time_signature is 2/4, 3/4, 4/4 or 6/8; "
+    "groove is a short phrase about the rhythmic feel (laid-back, syncopated, half-time): it is advice, not a time signature. Do not write the bpm, key or time signature into the caption text.\n"
+    "Write ordinary sentences in [REPLY.1]. A proposal is [CUE.n], [SECTION.n], [CAPTION.1] or [SETTING.1]. End with [DONE] on its own line. Do not use PROPOSAL, EDITS, OPERATIONS, FIELD, KIND, JSON, or XML.\n"
+    "Allowed tags: change_cue, add_section, add_line_cue, add_hold, move_section, repeat_section, change_caption, change_settings. There is no delete tag. Never delete a section.\n"
     "add_line_cue puts one vocal cue on its own line immediately before the target lyric. The lyric characters stay. cues is one of: whispered, raspy vocal, falsetto, powerful belting, spoken word, harmonies, call and response, ad-lib, breathy vocals, soft vocals, emotional vocals. "
     "breathy vocals, soft vocals and emotional vocals are studio guidance, not in the official vocal table. Do not cue every line. Do not stack cues. [Hold] stays after the words on the same line; never on its own line.\n"
-    "A cue change always gives the WHOLE old tag line in <from> (copied exactly from the lyric list) and the WHOLE new tag line in <to>. Keep the same section name (Verse, Chorus, Bridge, Outro, and the others). Use at most 2 short cues. Use none or one when that is enough; do not pad to 2. Do not pair cues that mean the same thing, such as fast-paced with slightly faster phrasing. A standalone vocal cue is add_line_cue, not one of those 2, and only when one lyric needs it. Do not delete or rewrite a short custom cue the user wrote unless they asked. A long description belongs in the caption, not in the tag. Never send only the changed cues. To clear the cues, <to> is just the section tag, for example [Verse 1]. "
+    "A cue change always gives the WHOLE old tag line in from (copied exactly from the lyric list) and the WHOLE new tag line in to. Keep the same section name (Verse, Chorus, Bridge, Outro, and the others). Use at most 2 short cues. Use none or one when that is enough; do not pad to 2. Do not pair cues that mean the same thing, such as fast-paced with slightly faster phrasing. A standalone vocal cue is add_line_cue, not one of those 2, and only when one lyric needs it. Do not delete or rewrite a short custom cue the user wrote unless they asked. A long description belongs in the caption, not in the tag. Never send only the changed cues. To clear the cues, to is just the section tag, for example [Verse 1]. "
     "For the other tags you name the target id and the section name. A caption is English, one paragraph, and only when the user asked for one.\n"
-    "Ignore any earlier line that forbids all XML: the tags named here are the only tags allowed.\n"
+    "A lyric line that looks like a control tag is written with one leading backslash.\n"
     "In prose say \"บรรทัด 17\". The L001 id belongs only in a tag.\n"
-    "<change_cue target=\"L001\">\n<from>[Verse 1 - exact current tag line]</from>\n<to>[Verse 1 - whole new tag line]</to>\n</change_cue>\n"
-    "<add_section target=\"L001\" name=\"Intro\" cues=\"soft\"/>\n"
-    "<add_line_cue target=\"L004\" cues=\"whispered\"/>\n"
-    "<add_hold target=\"L003\"/>\n"
-    "<move_section target=\"L006\" to=\"L001\"/>\n"
-    "<repeat_section target=\"L006\" to=\"end\"/>\n"
-    "<change_caption>\n<text>the English caption</text>\n</change_caption>\n"
-    "Leave the tags out when you change nothing."
+    "[CUE.1]\nop: change_cue\ntarget: L001\nfrom: <<<\n[Verse 1 - exact current tag line]\n>>>\nto: <<<\n[Verse 1 - whole new tag line]\n>>>\n"
+    "[SECTION.1]\nop: add_section\ntarget: L001\nname: Intro\ncues: soft\n"
+    "[CUE.2]\nop: add_line_cue\ntarget: L004\ncues: whispered\n"
+    "[SECTION.2]\nop: add_hold\ntarget: L003\n"
+    "[SECTION.3]\nop: move_section\ntarget: L006\nto: L001\n"
+    "[SECTION.4]\nop: repeat_section\ntarget: L006\nto: end\n"
+    "[CAPTION.1]\ntext: <<<\nthe English caption\n>>>\n"
+    "[SETTING.1]\nbpm: 92\nkey: A minor\ntime_signature: 4/4\ngroove: laid-back, sparse hi-hats\nreason: one sentence, in the user's language\n"
+    "[DONE]\n"
+    "Leave the action tags out when you change nothing."
 )
+
+
+LINE_REF_RE = re.compile(r"(?<![A-Za-z0-9])L0*(\d{1,4})(?:\s*[-\u2013\u2014~]\s*L?0*(\d{1,4}))?(?!\d)")
+
+
+def line_ref_parts(text: str) -> list:
+    """The text of a chat answer cut into plain strings and line references: ("แถวที่ 4", 4, 4) for L004 and ("แถวที่ 14-16", 14, 16) for L014-L016. Display only: the stored answer is never changed.
+    The label is Thai when the answer has Thai in it, otherwise `line 4`. A reference to line 0 is left as written."""
+    text = text or ""
+    thai = bool(re.search(r"[\u0E00-\u0E7F]", text))
+    out, pos = [], 0
+    for m in LINE_REF_RE.finditer(text):
+        a = int(m.group(1))
+        b = int(m.group(2)) if m.group(2) else a
+        if a < 1 or b < 1:
+            continue
+        if b < a:
+            a, b = b, a
+        if m.start() > pos:
+            out.append(text[pos:m.start()])
+        span = str(a) if a == b else f"{a}-{b}"
+        out.append((("แถวที่ " if thai else ("line " if a == b else "lines ")) + span, a, b))
+        pos = m.end()
+    if pos < len(text):
+        out.append(text[pos:])
+    return out
+
+
+def line_refs_markdown(text: str) -> str:
+    """The same, as Markdown links `[แถวที่ 4](wp-line:4-4)` that the chat opens in the editor."""
+    return "".join(p if isinstance(p, str) else f"[{p[0]}](wp-line:{p[1]}-{p[2]})" for p in line_ref_parts(text))
 
 
 def lyric_index(text: str) -> list:
@@ -125,6 +164,12 @@ def lyric_index(text: str) -> list:
     return out
 
 
+def listed_lines(text: str) -> list:
+    """The lines that carry an id in a request: exactly the lines the parser can address (lyric_index without the phantom empty line that a final newline makes). Every context that prints `L001| text` uses this
+    one list, so an id shown to the AI is an id the parser accepts. The text itself is never changed; a final newline simply has no line of its own (to add after the last line the answer says `after: end`)."""
+    return [ln["text"] for ln in lyric_index(text or "") if not ln["phantom"]]
+
+
 def _attrs(blob: str) -> dict:
     out = {}
     for m in _ATTR.finditer(blob or ""):
@@ -140,11 +185,25 @@ def _xml_text(raw: str) -> str:
     return raw
 
 
+_ID_PREFIX = re.compile(r"^[ \t]*L\d{3,4}\|[ \t]?")
+
+
+def strip_line_ids(text: str) -> str:
+    """The numbered lyric list the model reads writes each line as `L052| words`. When EVERY non-blank line of a quoted text still carries that prefix, the model copied the list's numbering into the
+    lyric: the prefixes are taken off (format only, the words stay). Text where only some lines have it is left as written."""
+    rows = (text or "").split("\n")
+    filled = [r for r in rows if r.strip()]
+    if not filled or not all(_ID_PREFIX.match(r) for r in filled):
+        return text
+    return "\n".join(_ID_PREFIX.sub("", r, count=1) if r.strip() else r for r in rows)
+
+
 def _child(body: str, name: str):
     m = re.search(rf"<{name}\b[^>]*>(.*?)</{name}\s*>", body or "", re.IGNORECASE | re.DOTALL)
     if not m:
         return None
-    return _xml_text(m.group(1))
+    got = _xml_text(m.group(1))
+    return strip_line_ids(got) if name in ("from", "to", "text") else got
 
 
 def _iter_tags(text: str) -> list:
@@ -262,16 +321,33 @@ def _resolve_change(lyrics: str, lines: list, target: str, frm: str):
             return f"Target {target} is not a line in these lyrics, so nothing was offered."
         if "\n" in frm:
             if lyrics[ln["start"]:ln["start"] + len(frm)] != frm:
-                return f"The text in <from> is not exactly at {ln['id']}, so nothing was offered."
+                return f"The old text in <from> does not match the lines from {ln['id']} as they are now, so the change looks out of date and nothing was offered."
             return ln["start"], ln["start"] + len(frm)
         hits = _find_exact(lyrics, frm, ln["start"], ln["end"])
+        if not hits:
+            return (f"The old text in <from> does not match {ln['id']} as it is now (the line now says: “{ln['text'].strip()[:80]}”). "
+                    "The change looks out of date or quotes the wrong line, so nothing was offered.")
         if len(hits) != 1:
-            return f"The text in <from> is not exactly once on {ln['id']}, so nothing was offered."
+            return f"The text in <from> is found more than once on {ln['id']}, so nothing was offered. Quote the whole line."
         return hits[0], hits[0] + len(frm)
     hits = _find_exact(lyrics, frm)
     if len(hits) != 1:
         return "The text in <from> is missing or appears more than once, and no target id was given, so nothing was offered."
     return hits[0], hits[0] + len(frm)
+
+
+def _no_change_reason(frm: str, to: str, fitted: str) -> str:
+    """'' when the change is a real one. Otherwise the TRUE reason, told apart: the AI wrote the same text in <to> as in <from> (a real no-op), an empty <to>, or a <to> that differs from <from> but was reduced to it by the
+    section-header check (prepare_replacement), which is a normalization issue and is said so. Nothing here changes any text."""
+    if not (to or "").strip():
+        return "The new text in <to> is empty, so nothing was offered. A line is not deleted by a change: write the replacement in <to>."
+    if to.strip() == frm.strip():
+        return "<to> is the same as <from>: the AI proposed no change to this line, so nothing was offered."
+    if not fitted.strip():
+        return "Nothing was left of <to> after the repeated section header was removed, so nothing was offered."
+    if fitted.strip() == frm.strip():
+        return "<to> differs from <from> only by a section header it repeated, which the program removes, so the change is the same as the current text and nothing was offered."
+    return ""
 
 
 def _whole(frm: str, lyrics: str) -> bool:
@@ -386,8 +462,9 @@ def _lyric_change(o, spec: str, lyrics: str, lines: list, attrs: dict, body: str
     if missing:
         _reject(o, raw_tag, to, "A proposal was not offered for Apply: it dropped or changed the tag " + next(iter(missing)) + ". Section tags and cues are the Music Producer's work; they are kept as they are.")
         return None
-    if fitted.strip() == frm.strip() or not fitted.strip():
-        _reject(o, raw_tag, to, "The lyric change is the same as the current text, so nothing was offered.")
+    why = _no_change_reason(frm, to, fitted)
+    if why:
+        _reject(o, raw_tag, to, why)
         return None
     from .lyric_review import Item
     item = Item("probe", "edit", 1, 1, frm, fitted, "")
@@ -522,13 +599,11 @@ def _cue_change(o, lyrics: str, ln: dict, body: str, raw_tag: str, song_id: str,
         _reject(o, raw_tag, "", "<to> must be one whole section tag line such as [Verse 1 - soft vocals], so nothing was offered.")
         return None
     from . import cue_library as CL
-    fix = CL.assess_tag(new)
+    fmt = CL.format_tag(new)                      # format only: every cue the model wrote stays, word for word
+    new = fmt.after
     reason = _child(body, "reason") or ""
-    if fix.changed:
-        new = fix.after
-        reason = (reason + " " + fix.reason).strip()
-        if fix.caption:
-            reason += " Caption: " + fix.caption
+    if fmt.notes:
+        reason = (reason + " Note: " + "; ".join(fmt.notes) + ". Nothing was removed.").strip()
     old_p, new_p = TP.parse_tag(cur[1:-1]), TP.parse_tag(new[1:-1])
     if old_p.section:
         if new_p.name != old_p.name:
@@ -557,6 +632,39 @@ def _lines_of(lyrics: str) -> list:
     return lyric_index(lyrics)
 
 
+SETTING_FIELDS = (("bpm", "bpm"), ("keyscale", "key"), ("timesignature", "time_signature"))
+
+
+def _settings(o, body: str, raw_tag: str) -> None:
+    """Music Settings suggested next to a caption. Each value is checked by the same rules as the Style / Output controls (template_arrange.check_field); a value that fails is reported, never
+    repaired or clamped, and the valid ones are still offered. The groove is advice: no Song Setting exists for it."""
+    from . import template_arrange as TA
+    if o.settings or o.settings_info:
+        _reject(o, raw_tag, "", "More than one settings block was sent; the first one is used.")
+        return
+    got, bad = {}, []
+    for field_, tag in SETTING_FIELDS:
+        names = {tag, field_, tag.replace("_", "")} | ({"key_scale"} if field_ == "keyscale" else set())
+        raw = next((v for v in (_child(body, n) for n in sorted(names)) if v is not None), None)
+        if raw is None or not raw.strip() or raw.strip().casefold() in ("-", "none", "auto"):
+            continue
+        v, why = TA.check_field(field_, raw)
+        if why:
+            bad.append([field_, raw.strip(), why])
+        else:
+            got[field_] = v
+    groove = re.sub(r"\s+", " ", _child(body, "groove") or "").strip()[:160]
+    reason = re.sub(r"\s+", " ", _child(body, "reason") or "").strip()[:400]
+    for f_, written, why in bad:
+        o.notes.append(f"The suggested {f_} “{written[:40]}” was not used: {why}.")
+    if not got and not groove:
+        _reject(o, raw_tag, "", "The settings block had no usable value, so nothing was offered.")
+        return
+    o.settings = got
+    o.settings_info = {"groove": groove, "reason": reason, "bad": bad}
+    o.steps.append("settings: " + ", ".join(f"{k}={v}" for k, v in got.items()) + (f"; groove {groove!r}" if groove else "") + (f"; refused {len(bad)}" if bad else ""))
+
+
 def _caption(o, lyrics: str, body: str, attrs: dict, raw_tag: str) -> None:
     from . import basic_caption as BC
     text = _child(body, "text")
@@ -582,7 +690,11 @@ def answer(spec: str, raw: str, text: str, selected: str = "", has_sel: bool = F
     after_offer and pending_lyrics are accepted so older callers keep working. They do not choose a mode and they do not drop a tag.
     A well-formed tag is checked even when the words around it are only a question. Prose without a tag never becomes a card.
     """
+    from . import clear_tags as CG
     from . import specialist_engine as SE
+    tag_notes: list = []
+    if CG.is_chat(raw or ""):
+        raw, tag_notes = CG.chat_to_xml(raw or "")
     o = SE.ChatOutcome()
     lyrics = text or ""
     lines = lyric_index(lyrics)
@@ -612,6 +724,9 @@ def answer(spec: str, raw: str, text: str, selected: str = "", has_sel: bool = F
         if kind == "change_caption":
             _caption(o, lyrics, body, attrs, literal)
             continue
+        if kind == "change_settings":
+            _settings(o, body, literal)
+            continue
         made = None
         if kind == "change_lyric":
             made = _lyric_change(o, spec, lyrics, lines, attrs, body, literal, has_sel, sel_bounds, song_id, sheet_id, snap)
@@ -627,6 +742,8 @@ def answer(spec: str, raw: str, text: str, selected: str = "", has_sel: bool = F
     if not reply and (edits or o.caption or o.rejected):
         o.notes.append("The reply was empty. What the AI wrote for a change is under “Show what the AI wrote”, or on its card when it could be checked.")
         o.steps.append("reply empty; checked actions were kept")
+    if tag_notes:
+        o.notes = [n for n in tag_notes if n not in o.notes] + o.notes
     o.reply, o.proposal, o.edits = reply, "", edits
     o.steps.append(f"parsed: reply {len(reply)} chars, actions {len(edits)}, caption {bool(o.caption)}")
     _ = (selected, corrections, after_offer, pending_lyrics)

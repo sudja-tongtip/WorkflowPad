@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from . import cue_library as CL
 
 TAG_RE = re.compile(r"\[[^\[\]\n]*\]")
-_CONNECT = re.compile(r"\s*(?:,|&|\+|\band\b|\bwith\b)\s*", re.IGNORECASE)
+_CONNECT = re.compile(r"\s*(?:,|&|\+|\band\b|\bwith\b|(?<=\s)[-–—](?=\s))\s*", re.IGNORECASE)
 MANY_CUES = 4
 
 

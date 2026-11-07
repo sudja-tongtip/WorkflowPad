@@ -27,7 +27,7 @@ CATEGORIES = (
     ("arrangement", "Arrangement / Special"),
 )
 
-_CONNECT = re.compile(r"\s*(?:,|&|\+|\band\b|\bwith\b)\s*", re.IGNORECASE)
+_CONNECT = re.compile(r"\s*(?:,|&|\+|\band\b|\bwith\b|(?<=\s)[-–—](?=\s))\s*", re.IGNORECASE)
 _NAME_CUE = re.compile(r"\s+(?:\u2014|\u2013|-|:)\s+")
 _LONG_WORD = re.compile(r"\b(becomes|underneath|almost|across|throughout|supported)\b", re.IGNORECASE)
 _DEBRIS = re.compile(r"\b(just|only|almost|very|underneath|becomes|throughout|across|supported|light)\b", re.IGNORECASE)
@@ -361,6 +361,52 @@ def _join_phrases(phrases: list) -> str:
     return ", ".join(items[:-1]) + glue + items[-1]
 
 
+_FMT_SPLIT = re.compile(r"(?<!\d),|,(?!\d)|(?<=\s)[-–—](?=\s)")
+
+
+@dataclass(frozen=True)
+class TagFormat:
+    before: str
+    after: str
+    changed: bool
+    notes: tuple = ()
+
+
+def tag_notes(tag: str) -> tuple:
+    """Validator: warnings about a section tag (a repeated cue, a very long cue). It never changes the tag."""
+    raw = (tag or "").strip()
+    if not (raw.startswith("[") and raw.endswith("]")):
+        return ()
+    name, cue_text = _split_tag(raw[1:-1].strip())
+    notes, seen = [], set()
+    for part in cue_parts(cue_text):
+        key = part.casefold()
+        if key in seen:
+            notes.append(f"the cue “{part}” is written more than once")
+        seen.add(key)
+        if cue_is_long(part):
+            notes.append(f"the cue “{part[:40]}” is long for a tag")
+    return tuple(notes)
+
+
+def format_tag(tag: str) -> TagFormat:
+    """Format only: `[Name - a - b]` / `[Name – a, b]` become `[Name - a, b]`. Every cue, in the order written, word for word. Nothing is added, removed, merged, shortened or replaced.
+    A tag whose parts cannot be told apart with confidence (an empty part, no name) is returned as written, with a note."""
+    raw = (tag or "").strip()
+    if not (raw.startswith("[") and raw.endswith("]") and raw.count("[") == 1 and raw.count("]") == 1 and "\n" not in raw):
+        return TagFormat(tag, tag, False, ())
+    m = _NAME_CUE.search(raw[1:-1])
+    if not m:
+        return TagFormat(tag, tag, False, ())
+    inner = raw[1:-1]
+    name, cue_text = inner[:m.start()].strip(), inner[m.end():].strip()
+    parts = [re.sub(r"\s+", " ", p).strip() for p in _FMT_SPLIT.split(cue_text)]
+    if not name or not parts or any(not p for p in parts):
+        return TagFormat(tag, tag, False, ("the tag could not be split into a name and cues with confidence, so it was left as written",))
+    after = f"[{name} - {', '.join(parts)}]"
+    return TagFormat(tag, after, after != raw, tag_notes(after))
+
+
 @dataclass(frozen=True)
 class TagRepair:
     before: str
@@ -395,7 +441,7 @@ def assess_tag(tag: str) -> TagRepair:
     issues = []
     parts = cue_parts(cue_text)
     known, custom, dropped = [], [], []
-    whole_long = cue_is_long(cue_text)
+    whole_long = len(cue_text) > 80 or any(cue_is_long(p) for p in parts) or (not parts and cue_is_long(cue_text))
     long = whole_long
     drop_soft = whole_long or _pseudo_section(name)
     for part in parts:

@@ -197,6 +197,7 @@ def _write_sheets(s: Song) -> None:
 def save_song(s: Song) -> None:
     """sheets.json first, then song.json (which repeats the revision and mirrors the ACTIVE sheet, so older code that reads only song.json still sees the lyrics being worked on)."""
     with _lock:
+        _save_gen[s.id] = _save_gen.get(s.id, 0) + 1
         s.updated = now_str()
         _write_sheets(s)
         _atomic(song_dir(s.id) / "song.json", json.dumps(song_to_dict(s), ensure_ascii=False, indent=2))
@@ -250,13 +251,30 @@ def load_song(song_id: str) -> Song:
         return song
 
 
-def write_autosave(s: Song) -> None:
+_save_gen: dict = {}                    # song id -> how many times the song was saved for real: an autosave made before a save must not land after it (it would be older than song.json but newer on disk)
+
+
+def autosave_snapshot(s: Song) -> tuple:
+    """(song id, the JSON text, the save generation it was made at): taken on the caller's thread so the text is consistent, written later by write_autosave_text (any thread)."""
     with _lock:
         book = SH.ensure_book(s)
         SH.flush(s)
         data = song_to_dict(s)
         data["sheets"] = SH.book_to_dict(book)
-        _atomic(song_dir(s.id) / "song.autosave.json", json.dumps(data, ensure_ascii=False))
+        return s.id, json.dumps(data, ensure_ascii=False), _save_gen.get(s.id, 0)
+
+
+def write_autosave_text(song_id: str, text: str, gen: int) -> bool:
+    """Write an autosave made by autosave_snapshot. False (nothing written) when the song was saved after the snapshot."""
+    with _lock:
+        if _save_gen.get(song_id, 0) != gen:
+            return False
+        _atomic(song_dir(song_id) / "song.autosave.json", text)
+        return True
+
+
+def write_autosave(s: Song) -> None:
+    write_autosave_text(*autosave_snapshot(s))
 
 
 def newer_autosave(song_id: str) -> Song | None:

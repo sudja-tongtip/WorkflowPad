@@ -15,6 +15,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Callable
 
+from . import clear_tags as CG
 from .compiler import TAG_LINE
 from . import section_apply as SA
 from .lyric_analysis import AnalysisError, SEP_END, _is_sep
@@ -44,23 +45,24 @@ SYSTEM_PROMPT = (
     "- A suggestion may change words, spaces, a line break or a pause mark `...` when that is what helps. Never touch a [section tag]. You may remove a [Hold] cue that no longer fits, but never add one. Never use HTML or XML tags.\n"
     "- The reason is one or two sentences for the songwriter, in the REPLY LANGUAGE: say what is wrong or weak and why the suggestion is better, naming the sounds when it is about rhyme or flow.\n"
     "- confidence: high, medium or low, your own honest confidence (you can be wrong about sound and feeling).\n\n"
-    "OUTPUT FORMAT: exactly this, nothing before the first marker or after the last:\n"
-    + SEP_REVIEW + "\n"
+    "OUTPUT FORMAT: numbered clear tags, nothing before the first tag or after [DONE]:\n"
+    "[REVIEW.1]\n"
     "VERDICT: ok | needs_work\n"
     "SUMMARY: one sentence for the songwriter, in the REPLY LANGUAGE\n"
-    "ITEM\n"
+    "[ITEM.1]\n"
     "focus: " + " | ".join(FOCUS) + "\n"
     "lines: N or N-M (the line numbers of `original`)\n"
     "original: <<<\nthe exact text\n>>>\n"
     "suggestion: <<<\nthe replacement text\n>>>\n"
     "reason: ...\n"
     "confidence: high | medium | low\n"
-    "(repeat ITEM ... for each item; write no ITEM when VERDICT is ok)\n"
-    + SEP_END + "\n\n"
+    "(repeat [ITEM.n] for each item; write no ITEM tag when VERDICT is ok)\n"
+    "[DONE]\n\n"
     "EXAMPLE\nInput lines: 14| ฉันยังคงเฝ้ารอเธอแม้วันเวลาจะผ่านไป\n"
-    "Output:\n" + SEP_REVIEW + "\nVERDICT: needs_work\nSUMMARY: บรรทัดที่ 14 ยาวและความคิดสองช่วงติดกัน\nITEM\nfocus: phrasing\nlines: 14\n"
+    "Output:\n[REVIEW.1]\nVERDICT: needs_work\nSUMMARY: บรรทัดที่ 14 ยาวและความคิดสองช่วงติดกัน\n"
+    "[ITEM.1]\nfocus: phrasing\nlines: 14\n"
     "original: <<<\nฉันยังคงเฝ้ารอเธอแม้วันเวลาจะผ่านไป\n>>>\nsuggestion: <<<\nฉันยังคงเฝ้ารอเธอ\nแม้วันเวลาจะผ่านไป\n>>>\n"
-    "reason: แยกเป็นสองวลีทำให้แต่ละช่วงความคิดชัดและมีที่หายใจตรงรอยต่อ\nconfidence: medium\n" + SEP_END
+    "reason: แยกเป็นสองวลีทำให้แต่ละช่วงความคิดชัดและมีที่หายใจตรงรอยต่อ\nconfidence: medium\n[DONE]\n"
 )
 
 
@@ -193,14 +195,16 @@ def _kv(line: str):
 def parse_answer(raw: str, text: str, scope: Scope) -> tuple:
     """(verdict, summary, items, ignored messages). AnalysisError when the markers are broken or the answer is empty. An item that is not usable is dropped with a message:
     a suggestion that does not name real lines of the scope, does not quote them exactly, touches a [tag] or adds [Hold] / HTML is never offered."""
-    clean = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", raw or "").strip()
+    original = raw or ""
+    adapted, tag_notes = CG.unwrap(original, "review")
+    clean = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", adapted).strip()
     if not clean:
-        raise AnalysisError("The AI answer is empty.", raw)
+        raise AnalysisError("The AI answer is empty.", original)
     rows = clean.splitlines()
     a = [i for i, r in enumerate(rows) if _is_sep(r, SEP_REVIEW)]
     z = [i for i, r in enumerate(rows) if _is_sep(r, SEP_END)]
     if len(a) != 1 or len(z) != 1 or not a[0] < z[0]:
-        raise AnalysisError("The AI answer does not have the REVIEW ... END marker lines exactly once, in order.", raw)
+        raise AnalysisError("The AI answer does not have the REVIEW ... END marker lines exactly once, in order.", original)
     body = rows[a[0] + 1:z[0]]
     verdict, summary, blocks, cur = "", "", [], None
     for line in body:
@@ -256,6 +260,8 @@ def parse_answer(raw: str, text: str, scope: Scope) -> tuple:
         verdict = "needs_work" if items else "ok"
     if verdict == "needs_work" and not items and not ignored:
         ignored.append("The AI said something should change but gave no usable suggestion.")
+    if tag_notes:
+        ignored = [n for n in tag_notes if n not in ignored] + ignored
     return verdict, summary, items, ignored
 
 

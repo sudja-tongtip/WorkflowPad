@@ -199,11 +199,21 @@ class Relation:
     lang: str = TH
 
 
+def _same_word(a: str, b: str) -> bool:
+    x, y = unicodedata.normalize("NFC", a or "").strip().casefold(), unicodedata.normalize("NFC", b or "").strip().casefold()
+    return bool(x) and x == y
+
+
 def relation(word_a: str, word_b: str, declared: str = "") -> Relation:
     """How two words sound, by the rules of THEIR language. Thai: thai_rhyme (verified when both syllables could be read). English: a spelling estimate (unverified). Another language, or two
     different languages: uncertain (unsupported). A pair whose vowel rhyme is absent but whose first consonant sound is the same is a consonant rhyme (kind 'consonant'), not a vowel rhyme."""
     la, lb = language_of(word_a, declared), language_of(word_b, declared)
+    if _same_word(word_a, word_b):                    # the same word again: repetition (a hook, an echo). It is not a rhyme and never part of a scheme.
+        return Relation("exact", "verified", "repetition", "", "the same word again: repetition, not a rhyme", la if la == lb else OTHER)
     if la == TH and lb == TH:
+        sa, sb = TR.final_syllable(word_a), TR.final_syllable(word_b)
+        if sa and sb and _same_word(sa, sb):          # the last syllable is the very same one (ใจ / สบายใจ): the same word's sound again, not a rhyme
+            return Relation("exact", "verified", "repetition", "", f"the same last syllable again ({sa}): repetition, not a rhyme", TH)
         rel, detail = TR.sound_relation(word_a, word_b)
         if rel in ("exact", "near", "different"):
             group = ""
@@ -227,6 +237,8 @@ def judge(claimed: str, rel: Relation) -> tuple:
     """(sound, verification, reason) for a pair the AI proposed. `claimed` is what the AI said: exact or near (anything else = uncertain). Python decides only when it could READ both words:
     a Thai pair whose sounds are exact stays/becomes exact, close ones become near, different ones are rejected with the reason. Everything else keeps the AI's word as ai_assessed."""
     claim = claimed if claimed in ("exact", "near") else "uncertain"
+    if rel.kind == "repetition":
+        return "exact", "verified", "Repetition: the same word again. It is shown as repetition and is not counted as a rhyme."
     if rel.verification == "verified":
         if rel.sound == "exact":
             return "exact", "verified", ("Sound check: " + rel.detail) if claim == "exact" else f"The AI called this a near rhyme, but the sounds match exactly. Sound check: {rel.detail}"

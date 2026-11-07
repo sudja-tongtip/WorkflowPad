@@ -85,7 +85,7 @@ Bad answer: rewriting the whole verse in a new story, or returning the same line
 Why it is bad: the user did not ask for a new verse and the same line offers nothing. Either offer one real alternative with a reason, for example `เธอเดินเข้ามา ด้วยใบหน้าที่เศร้า`, or say the line is fine.
 
 # Output Requirements
-- When a request gives its own OUTPUT FORMAT block (a report, a chat answer with a PROPOSAL, a rewrite), follow that format exactly and write nothing outside it. The examples above show the standard of work, not the format.
+- When a request gives its own OUTPUT FORMAT block (a report, a chat answer, or a rewrite), follow that format exactly and write nothing outside it. The examples above show the standard of work, not the format.
 - Every finding names the line(s), quotes the exact original words, explains why, and (when you have one) gives the suggested wording and what it costs in meaning or feeling.
 - Report strengths too. If nothing important needs to change, say so plainly.
 

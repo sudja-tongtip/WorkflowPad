@@ -21,6 +21,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from . import specialists as SP
+from . import rhyme_flow as RF
 from .songwriting_craft import THAI_LYRIC_PROSODY
 from . import store as ST
 from .compiler import HOLD_PREFIX, HOLD_SUFFIX, TAG_LINE, lyric_body
@@ -30,6 +31,7 @@ from .lyric_review import locate_in
 from . import cue_library as CL
 from . import tag_parser as TP
 from . import basic_caption as BC
+from . import clear_tags as CG
 from . import section_apply as SA
 
 log = logging.getLogger("music_studio.editor")
@@ -65,6 +67,9 @@ class Finding:
     reason: str = ""
     suggestion: str = ""
     tradeoff: str = ""
+    meaning: str = ""                 # optional, only with a suggestion: what stays / changes in the meaning (the AI's own check, shown as the AI's)
+    rhyme_effect: str = ""            # optional: what the suggestion does to the rhyme with the neighbouring lines
+    syllables: str = ""               # optional: spoken syllables before -> after (the AI's estimate, `uncertain` when it is not sure)
     also_by: list = field(default_factory=list)       # other specialists that found the same place (set by aggregate)
     options: list = field(default_factory=list)       # when the AI offered several wordings in quotes: each one is a replacement the user can apply on its own
     conflicts: list = field(default_factory=list)     # other specialists that suggest a DIFFERENT change for the same lines (set by aggregate)
@@ -350,11 +355,11 @@ LITE_TASKS = ("syl", "rhyme", "rhythm")
 LITE_ROLE = {"songwriter": "You are the Songwriter AI of a songwriting team. For this task you count syllables, mark rhymes and judge the rhythm of Thai (and English) lyric lines precisely. Follow the TASK below exactly."}
 
 
-def prepare(sess: SpecSession, chat_msgs: list, task_system: str, task_user: str, n_ctx: int, extra_system: str = "", lyrics_hash: str = "", backend: str = "", model: str = "", strict: bool = False, lite: bool = False) -> Prepared:
+def prepare(sess: SpecSession, chat_msgs: list, task_system: str, task_user: str, n_ctx: int, extra_system: str = "", lyrics_hash: str = "", backend: str = "", model: str = "", strict: bool = False, lite: bool = False, mode: str = "chat") -> Prepared:
     """The request for the next call of this specialist. Raises ValueError (with the reason) when the prompt file is not valid: nothing is sent then.
     Opens a NEW generation when the prompt changed, or when the history does not fit the context (the older messages are folded into the summary).
     strict=True (the chat with the LOCAL model): the whole conversation is replayed and NOTHING is folded; when it would pass LIMIT_RATIO of the context, ContextFull is raised so the user can start a new session."""
-    system, prompt = SP.effective_system(sess.spec, extra_system)
+    system, prompt = SP.effective_system(sess.spec, extra_system, mode)
     if lite:                    # a mechanical task (count syllables, find rhymes, rhythm): the task prompt has its own rules, so the whole persona file is not sent; the file is still validated and hashed above
         system = LITE_ROLE.get(sess.spec, "") or system
     system_full = system + ("\n\n" + task_system.strip() if task_system.strip() else "")
@@ -502,12 +507,12 @@ def _msg_tokens(text: str) -> int:
     return estimate_tokens(text) + MSG_OVERHEAD
 
 
-def prepare_live(sess: "SpecSession", backend: str, model: str, task_system: str, task_user: str, n_ctx: int, extra_system: str = "", lyrics_hash: str = "") -> LivePrepared:
+def prepare_live(sess: "SpecSession", backend: str, model: str, task_system: str, task_user: str, n_ctx: int, extra_system: str = "", lyrics_hash: str = "", include_report: bool = True, mode: str = "chat") -> LivePrepared:
     """The next request of this specialist's live conversation. Raises ValueError (with the reason) when the prompt file is not valid: nothing is sent then.
     Local: nothing is folded or dropped; when the conversation would pass LIMIT_RATIO of the context, ContextFull is raised (the user starts a new session). Grok: when the messages would not fit
     CTX_RATIO of the context, the OLDEST exchanges are folded into the summary and a new generation starts (as before)."""
     kind = live_kind(backend)
-    system, prompt = SP.effective_system(sess.spec, extra_system)
+    system, prompt = SP.effective_system(sess.spec, extra_system, mode)
     system_base = system + ("\n\n" + task_system.strip() if task_system.strip() else "")
     live = get_live(sess, kind, model)
     notes, new_gen = [], False
@@ -525,7 +530,7 @@ def prepare_live(sess: "SpecSession", backend: str, model: str, task_system: str
 
     def build() -> tuple:
         sys_full = system_base + (f"\n\nSUMMARY OF YOUR EARLIER CONVERSATION WITH THE USER ABOUT THIS SONG (the full messages are not replayed):\n{live.summary.strip()}" if live.summary.strip() else "")
-        parts = (["YOUR LATEST ANALYSIS REPORT OF THIS SONG:\n" + rep_txt] if rep_txt and not live.report_sent else []) + [task_user]
+        parts = (["YOUR LATEST ANALYSIS REPORT OF THIS SONG:\n" + rep_txt] if rep_txt and not live.report_sent and include_report else []) + [task_user]
         return sys_full, "\n\n".join(parts)
 
     system_full, user = build()
@@ -581,12 +586,23 @@ KIND_HINT = {
     "music_producer": "structure | section_review | cue | hook | arrangement | change",
 }
 TASK_FOCUS = {
-    "songwriter": "ALL THREE SIDES OF THE LYRICS TOGETHER, in ONE report: (1) the craft of the language (natural wording, word choice, imagery and metaphors, filler or repeated words); (2) meaning and story (the theme, the narrator, "
-                  "continuity between sections, the emotional arc, contradictions and unclear lines, telling deliberate ambiguity from mistakes); (3) the sound of Thai when sung (syllables per line, exact and near rhymes, lines that are crowded or hard to sing). "
-                  "Rank findings by what matters to the song, whichever side they come from; say what already works; leave a good line alone. Counts and rhyme remarks are information, never a verdict, and a pronunciation you are unsure of goes in UNCERTAIN. You advise; the user is the songwriter.",
+    "songwriter": "judge the LYRICS AS WRITING, whole song first: what the song is trying to do, whether a listener can hold on to it, and whether each section adds something (a view, a detail, a turn) or only repeats the feeling in new words; "
+                  "then the language, the story and the sound of Thai when sung (syllables, rhyme, lines that are crowded or hard to sing) together, ranked by what matters to the song. Say what works, and why; leave a good line alone. "
+                  "Counts and rhyme remarks are information, never a verdict, and a pronunciation you are unsure of goes in UNCERTAIN. You advise; the user is the songwriter.",
     "music_producer": "THE SHAPE AND THE SOUND OF THE SONG, together: the sections and their order (judge the existing structure first), cues in the section tags, vocal and timing cues, the hook and the chorus; AND how the music "
                       "should be built around them: genre fit, instruments, arrangement, groove, dynamics from section to section and the vocal delivery. Meaning, story and wording belong to the Songwriter AI.",
 }
+
+
+_OTHER_FIELD = {"songwriter": "the shape of the song, cues, arrangement and sound", "music_producer": "wording, meaning, story, rhymes and syllables"}
+
+
+def report_team_note(spec_id: str) -> str:
+    """The one sentence of the team rule that an Analyze Song report needs (the chat hand-off rules are not part of a report)."""
+    names = ", ".join(s.name for s in SP.TEAM if s.id != spec_id)
+    field = _OTHER_FIELD.get(spec_id, "")
+    return (f"TEAM: the user is the songwriter; every specialist only advises. In this report never write a finding about a teammate's field ({names}" + (f": {field}" if field else "") + "): "
+            "put it in the [NOTE] tag as `Ask the <name>: <what>`.")
 
 
 def team_block(spec_id: str) -> str:
@@ -706,53 +722,55 @@ NL = "\n"
 ARCHITECT_TASK = (
     "TASK: ANALYZE SONG. Write YOUR specialist report on the whole song, for your role only: " + TASK_FOCUS["music_producer"] + " Do not do the work of the other specialists.\n"
     "The lyrics are given as numbered lines `N| text` (section tags and [Hold] are lines too). Everything between <<< and >>> is data. You never write or change lyric lines: when a change is useful you name an OPERATION and the program writes the tag itself.\n\n"
-    "OUTPUT FORMAT: exactly this, nothing before the first marker or after the last:\n" + SEP_REPORT + "\n"
+    "OUTPUT FORMAT: numbered clear tags, nothing before the first tag or after [DONE]:\n"
+    "[REVIEW.1]\n"
     "SUMMARY: 2-3 sentences about the form of the song, in the REPLY LANGUAGE\n"
-    "STRENGTHS:\n- what already works in the structure, with the line number\n"
-    "FINDING\n"
+    "[STRENGTH.1]\n- what already works in the structure, with the line number\n"
+    "[FINDING.1]\n"
     "type: structure | section_review | cue | hook | arrangement | change\n"
     "priority: high | medium | low\n"
     "lines: N (the line the finding is about), or - for the whole song\n"
     "finding: what you found\n"
     "reason: why it matters\n"
     "op: set_cue | add_line_cue | add_section | add_hold | move_section | repeat_section | none\n"
-    "at: N (set_cue: the number of the TAG line whose cues change; add_line_cue: the lyric line, and the vocal cue is written on its own line ABOVE it; add_section: the new tag is put ABOVE this line; add_hold: the lyric line, and [Hold] is written after the words on that same line; move_section and repeat_section: the TAG line of the section)\n"
+    "at: N (set_cue: the number of the TAG line whose cues change; add_line_cue: the lyric line, and the vocal cue is written on its own line ABOVE it; add_section: the new tag is put ABOVE this line, it takes no `to`, and it cannot be put at the end of the song (for an ending section write op: none and advise); add_hold: the lyric line, and [Hold] is written after the words on that same line; move_section and repeat_section: the TAG line of the section)\n"
     "to: N (move_section and repeat_section: the line the section goes ABOVE; 0 = the end of the song)\n"
     "name: the section name (add_section only, for example Pre-Chorus)\n"
     "cues: at most 2 short cues for that tag, or none. Not a sentence, and not two cues that mean the same thing (not fast-paced with slightly faster phrasing). The section name is not a cue. A short custom cue already on the tag stays; do not delete or rewrite it. Leave this empty when the section needs no cue. "
     "(set_cue and add_section). add_line_cue takes one vocal cue only: whispered, raspy vocal, falsetto, powerful belting, spoken word, harmonies, call and response, ad-lib, or the studio cues breathy vocals, soft vocals, emotional vocals.\n"
     "tradeoff: what the change costs (or -)\n"
-    "(repeat FINDING ... for each finding; write op: none and leave out at, name and cues when you only advise)\n"
+    "(repeat [FINDING.n] for each finding; write op: none and leave out at, name and cues when you only advise)\n"
     "(type: arrangement = advice about the SOUND: instruments, groove, dynamics, build-ups or vocal delivery of a section or of the whole song; always op: none, `lines` = the tag line of that section or - for the whole song)\n"
-    "SECTION CUES:\n"
-    "N | at most 2 short cues, or - | short reason   (ONE row for EVERY section tag line, N = that tag's line number. The section name is not a cue. Use - or one cue when that is enough; do not pad to 2. "
+    "[CUE.1]\n"
+    "N | at most 2 short cues, or - | short reason   (ONE row for EVERY section tag line, N = that tag's line number. The section name is not a cue. Use `-` when the tag should stay as it is (it never deletes the cues a tag already has) or one cue when that is enough; do not pad to 2. "
     "Do not pair cues that repeat one idea. A standalone vocal line such as [whispered] is not this field. Keep a short custom cue the user wrote.)\n"
-    "ARRANGEMENT:\n"
+    "[ARRANGE.1]\n"
     "N | instruments and groove | how the energy and the vocal move   (the SOUND of the sections, for the song's genre, mood and energy: one row for each section whose sound you have something concrete to say about, N = the number of that section's TAG line; "
     "name real instruments, the groove or density, and how it differs from the section before; write it in the REPLY LANGUAGE; leave a section out when there is nothing to add; at most " + str(MAX_ARRANGEMENT_ROWS) + " rows)\n"
-    "UNCERTAIN:\n- what you could not decide, and why\n" + SEP_END + "\n\n"
-    "RULES: at most " + str(MAX_ARCH_FINDINGS) + " findings, the most important first; quality over quantity. Judge the existing structure first. If the structure is good, say so in SUMMARY and STRENGTHS and write no FINDING.\n"
+    "[NOTE.1]\n- what you could not decide, and why\n[DONE]\n\n"
+    "RULES: " + "Write every free-text field in the REPLY LANGUAGE (lyric quotes, tag names, field names and `-` stay as they are). " + "At most " + str(MAX_ARCH_FINDINGS) + " findings, the most important first; quality over quantity. Judge the existing structure first. If the structure is good, say so in SUMMARY and STRENGTHS and write no FINDING. A song that ends on a Bridge or on a short section can be a deliberate choice: propose a new or repeated section only when you can say what the song loses without it. SUMMARY and findings must agree: if a finding says the form is incomplete, SUMMARY must not call it complete without saying why.\n"
     "YOU OWN THE STRUCTURE: when the order or the build of the sections would serve the song better (a repeated chorus, a section in another place), propose it with move_section / repeat_section; the program moves the lines and keeps every word.\n"
     "ARRANGEMENT AND DYNAMICS: read STYLE (genre, mood, energy, vocal, BPM). Say, as `arrangement` findings (op: none), where the sound does not serve the song: a section that needs a different density of instruments, a chorus that does not lift above the verse, "
     "a missing build-up or drop, a groove that does not fit the genre. Name concrete instruments and the change of energy, in the REPLY LANGUAGE; do not repeat what a set_cue already says. If the arrangement is fine, say so in STRENGTHS and write none.\n"
     "MATCH THE SOUND TO THE GENRE: look at STYLE (genre and mood). For EVERY section tag decide whether its cues fit that genre and that section's job, and propose set_cue where they do not or where a tag has no cue yet (the vocal delivery, the energy and the instruments a song of this genre would use in that section). Do not change a cue that already fits.\n"
     "SYLLABLES: when SYLLABLE COUNTS are given, use them as information about how dense each section is (many units per line suits spoken, soft or fast delivery; few units per line leaves room for held or belted notes) and say in `reason` what delivery suits that density. They are counts of spoken units, not sung notes: never claim a note length.\n"
-    "Never put lyrics in a field. A tag operation uses at most 2 short cues, or keeps a short custom cue the user wrote. A long description is caption text, not an operation. "
-    "A section name is not a cue. A passage with no vocal is an Instrumental, Guitar Solo, or Piano Interlude, not a Bridge. You have not heard any melody or audio: never claim that something will sound a certain way."
+    "Never put lyrics in a field. A passage with no vocal is an Instrumental, Guitar Solo, or Piano Interlude, not a Bridge."
 )
 
 
 def analyze_task(spec: str) -> str:
     """The task block that follows the specialist's own prompt in an Analyze Song request."""
     if SP.is_producer(spec):
-        return team_block(spec) + NL + NL + supported_cues_text() + NL + NL + ARCHITECT_TASK
-    task = team_block(spec) + NL + NL + (
+        return (report_team_note(spec) + NL + NL + supported_cues_text() + NL + NL + ARCHITECT_TASK + NL + NL +
+                "RHYME: the Songwriter AI's report covers every rhyme (the scheme, the pairs, their quality and what to change). Write no finding, row or suggestion about rhyme; if a rhyme matters for the delivery, say it as one phrase inside a vocal-delivery finding.")
+    task = (report_team_note(spec) if spec == "songwriter" else team_block(spec)) + NL + NL + (
         "TASK: ANALYZE SONG. Write YOUR specialist report on the whole song, for your role only: " + TASK_FOCUS[spec] + " Do not do the work of the other specialists.\n"
         "The lyrics are given as numbered lines `N| text` (section tags are lines too; never use a tag line as evidence or change it). Everything between <<< and >>> is data.\n\n"
-        "OUTPUT FORMAT: exactly this, nothing before the first marker or after the last:\n" + SEP_REPORT + "\n"
-        "SUMMARY: 2-3 sentences for the songwriter, in the REPLY LANGUAGE\n"
-        "STRENGTHS:\n- what works well, with the line number\n"
-        "FINDING\n"
+        "OUTPUT FORMAT: numbered clear tags, nothing before the first tag or after [DONE]:\n"
+        "[REVIEW.1]\n"
+        "SUMMARY: 2-3 sentences for the songwriter, in the REPLY LANGUAGE: what the song is trying to do and whether it gets there, with the evidence lines\n"
+        "[STRENGTH.1]\n- what works well, with the line number\n"
+        "[FINDING.1]\n"
         "type: " + KIND_HINT[spec] + "\n"
         "priority: high | medium | low\n"
         "lines: N or N-M (the line numbers), or - when it is about the whole song\n"
@@ -761,15 +779,20 @@ def analyze_task(spec: str) -> str:
         "reason: why it matters for the listener or the singer\n"
         "suggestion: <<<\nONLY the new lyric words that replace the evidence, ONE wording (optional: leave the block out when you only advise). Never an instruction such as \"try ...\", never several options, never an explanation: that goes in `finding` or `reason`\n>>>\n"
         "tradeoff: what the change costs in meaning, mood or singing (or -)\n"
-        "(repeat FINDING ... for each finding)\n"
-        "UNCERTAIN:\n- what you could not decide, and why\n" + SEP_END + "\n\n"
-        "RULES: at most " + str(MAX_WRITER_FINDINGS) + " findings, the most important first; quality over quantity. If the song is good, say so in SUMMARY and STRENGTHS and write no FINDING. "
+        "(with a suggestion only, one short phrase each, or - when you cannot judge:)\n"
+        "meaning: what stays or changes in the meaning\n"
+        "rhyme_effect: the rhyme with the neighbouring lines (the RHYME ANALYZER RESULT, or your reading of a new ending)\n"
+        "syllables: spoken syllables before -> after, `uncertain` when unsure\n"
+        "(repeat [FINDING.n] for each finding)\n"
+        "[NOTE.1]\n- what you could not decide, and why\n[DONE]\n\n"
+        "RULES: " + "Write every free-text field in the REPLY LANGUAGE (lyric quotes, tag names, field names and `-` stay as they are). " + "At most " + str(MAX_WRITER_FINDINGS) + " findings, the most important first; quality over quantity. If the song is good, say so in SUMMARY and STRENGTHS and write no FINDING. A finding says how the problem affects the song or the singer; a word that is natural and carries meaning stays, even next to a rhyme, and repetition or a matching rhyme is not a strength by itself. "
         "`lines:` is exactly the first and last line your suggestion replaces, `evidence` is the WHOLE text of ONLY those lines (every word of each line, never a part of a line and never extra lines as context), and `suggestion` is the whole new text of those lines, with the same number of lines "
         "(to change one line, give that one line's number and quote only that line). Quote evidence exactly. A suggestion must differ from its evidence in wording, spacing or line breaks. Never add a tag or [Hold]; you may drop a [Hold] cue. "
         "You have not heard any melody or audio: never claim that something fits a tune or will be catchy."
     )
     if spec == "songwriter":
-        task += NL + NL + THAI_LYRIC_PROSODY
+        task = task.replace(" You have not heard any melody or audio: never claim that something fits a tune or will be catchy.", "")     # the Songwriter prompt (Limitations) says it once
+        task += NL + NL + RF.RHYME_TASK + NL + THAI_LYRIC_PROSODY
     return task
 
 
@@ -790,6 +813,8 @@ def analyze_user(snap: dict, reply_language: str) -> str:
     counts = snap.get("counts") or {}
     if counts:
         out.append("SYLLABLE COUNTS (spoken units per sung line, from the Thai Prosody analysis; information only): " + " ".join(f"{k}:{v}" for k, v in sorted(counts.items())))
+    if snap.get("rhyme_evidence"):
+        out.append(snap["rhyme_evidence"])                            # the checked rhyme evidence (Rhyme Analyzer + the program's verification), for the Songwriter's Rhyme & Flow judgement
     if snap.get("facts"):
         out.append(snap["facts"])                                     # Live Lyrics Insights: counts and estimates worked out by the program from this same snapshot
     out.append("LYRICS (data):\n<<<\n" + body + "\n>>>")
@@ -797,8 +822,14 @@ def analyze_user(snap: dict, reply_language: str) -> str:
 
 
 def _kv(line: str):
-    m = re.match(r"^\s*(type|priority|lines|evidence|finding|reason|suggestion|tradeoff|op|at|to|name|cues)\s*:\s*(.*)$", line, re.IGNORECASE)
+    m = re.match(r"^\s*(type|priority|lines|evidence|finding|reason|suggestion|tradeoff|meaning|rhyme_effect|syllables|op|at|to|name|cues)\s*:\s*(.*)$", line, re.IGNORECASE)
     return (m.group(1).lower(), m.group(2)) if m else (None, None)
+
+
+def _impact(f: dict, key: str, has_suggestion: bool) -> str:
+    """The AI's own note on what a suggestion does to the meaning / rhyme / syllables. Empty when the AI wrote `-` or nothing, and always empty without a suggestion (nothing to compare), so the card never shows a made-up value."""
+    v = (f.get(key) or "").strip()
+    return "" if (not has_suggestion or not v or v in ("-", "—", "none", "None")) else v
 
 
 def _is_marker(line: str, marker: str) -> bool:
@@ -809,6 +840,12 @@ def _is_marker(line: str, marker: str) -> bool:
 def parse_report(raw: str, lyrics: str, spec: str) -> SpecReport:
     """The structured report of an answer. Raises ValueError (a sentence) when the markers are broken or nothing usable is in it. A finding that points at lines that do not exist, quotes text that is
     not exactly there, or whose suggestion touches a [tag] or adds [Hold] is dropped, and the reason goes to `uncertain` so the user can see that something was left out."""
+    original = raw
+    if CG.report_incomplete(raw):                       # numbered tags without [DONE]: nothing of it is used (the program never writes the missing [DONE] for the AI); the raw answer is kept by the caller
+        raise ValueError("incomplete_response: the report has no [DONE] line, so it was cut off or unfinished and was not used.")
+    adapted, tag_notes = CG.unwrap(raw, "report")
+    if adapted is not raw:
+        raw = adapted
     clean = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", raw or "").strip()
     if not clean:
         raise ValueError("The answer is empty.")
@@ -818,8 +855,9 @@ def parse_report(raw: str, lyrics: str, spec: str) -> SpecReport:
     if len(a) != 1 or len(z) != 1 or not a[0] < z[0]:
         raise ValueError("The answer does not have the SPECIALIST REPORT ... END marker lines exactly once, in order.")
     body = rows[a[0] + 1:z[0]]
-    rep = SpecReport(spec, "ok", raw=raw)
+    rep = SpecReport(spec, "ok", raw=original)
     section, cur, blocks, seccues, arrrows = "", None, [], [], []
+    rcur, rblocks = None, []                                           # the RHYME_SECTION blocks of the Songwriter AI
     for line in body:
         s = line.strip()
         u = s.upper()
@@ -827,16 +865,27 @@ def parse_report(raw: str, lyrics: str, spec: str) -> SpecReport:
             rep.summary, section = s.split(":", 1)[1].strip(), "summary"
         elif u == "STRENGTHS:" and cur is None:
             section = "strengths"
+        elif u == "FINDING":                                            # before the table rows: a FINDING that follows the CUE / ARRANGE rows is a finding, not one more row of the table (whatever the order of the parts)
+            section, cur = "finding", []
+            blocks.append(cur)
         elif u.startswith("SECTION CUES") and SP.is_producer(spec):
             section, cur = "seccues", None
         elif u.startswith("ARRANGEMENT") and u.rstrip().endswith(":") and "|" not in u and SP.is_producer(spec):
             section, cur = "arrangement", None
+        elif u == "UNCERTAIN:":                                         # before the table rows: the notes that follow the CUE / ARRANGE rows are notes, not one more row of the table
+            section, cur, rcur = "uncertain", None, None
         elif section == "arrangement" and s:
             arrrows.append(s)
         elif section == "seccues" and s:
             seccues.append(s)
+        elif u == RF.MARK and not SP.is_producer(spec):
+            section, cur = "rhyme", None
+            rcur = []
+            rblocks.append(rcur)
+        elif section == "rhyme" and rcur is not None and u != "FINDING" and u != "UNCERTAIN:":
+            rcur.append(line)
         elif u == "UNCERTAIN:":
-            section, cur = "uncertain", None
+            section, cur, rcur = "uncertain", None, None
         elif u == "FINDING":
             section, cur = "finding", []
             blocks.append(cur)
@@ -849,6 +898,13 @@ def parse_report(raw: str, lyrics: str, spec: str) -> SpecReport:
         elif section == "summary" and s:
             rep.summary += " " + s
     lines = lyrics.split("\n")
+    if rblocks:
+        try:                                                            # Rhyme & Flow: the Songwriter's critique per section (the pairs and the scheme come from the checked evidence, never from this answer)
+            flow = RF.parse_blocks(rblocks, lyrics, rep.diagnostics)
+            if flow:
+                rep.data["rhyme_flow"] = flow
+        except Exception as ex:                                         # the text report is still shown
+            rep.diagnostics.append(f"The rhyme section could not be read: {ex}")
     for blk in blocks:
         f: dict = {}
         i = 0
@@ -873,7 +929,7 @@ def parse_report(raw: str, lyrics: str, spec: str) -> SpecReport:
             else:
                 f[k] = v.strip()
         ref = f.get("lines") or "-"                              # "1-4 (whole verse)" / "line 3" / "ทั้งเพลง": the numbers are what counts, text without numbers means the whole song
-        mr = re.search(r"(\d+)\s*(?:-|–|to)\s*(\d+)", ref) or re.search(r"(\d+)", ref)
+        mr = re.search(r"L?(\d+)\s*(?:-|–|to)\s*L?(\d+)", ref) or re.search(r"(\d+)", ref)          # `L12-L13` as well as `12-13`
         f["lines"] = (mr.group(1) + (("-" + mr.group(2)) if mr.lastindex == 2 else "")) if mr else "-"
         if not SP.is_producer(spec):
             _relocate_evidence(f, lines, rep.diagnostics)                  # exact words only: a wrong line number or lines joined with ' / ' are repaired, anything else is still rejected below
@@ -906,7 +962,8 @@ def parse_report(raw: str, lyrics: str, spec: str) -> SpecReport:
         pr = (f.get("priority") or "medium").lower()
         rep.findings.append(Finding(f"{spec[:2]}{len(rep.findings) + 1}", spec, re.sub(r"[^a-z_]", "", (f.get("type") or "other").lower())[:24] or "other", pr if pr in PRIORITY else "medium",
                                     first, last, (f.get("evidence") or "").strip("\n"), f.get("finding", ""), f.get("reason", ""), ((f.get("suggestion") or "") if SP.is_producer(spec) else (f.get("suggestion") or "").strip("\n")),
-                                    f.get("tradeoff", "") if f.get("tradeoff", "-") != "-" else "", options=opts if len(opts) > 1 else []))
+                                    f.get("tradeoff", "") if f.get("tradeoff", "-") != "-" else "", *(_impact(f, k, bool(f.get("suggestion"))) for k in ("meaning", "rhyme_effect", "syllables")),
+                                    options=opts if len(opts) > 1 else []))
     if SP.is_producer(spec):
         _section_cue_findings(rep, seccues, lines)
         _arrangement_findings(rep, arrrows, lines)
@@ -918,6 +975,8 @@ def parse_report(raw: str, lyrics: str, spec: str) -> SpecReport:
         rep.findings = rep.findings[:cap]
     if not (rep.summary or rep.findings or rep.strengths):
         raise ValueError("The report has no summary, strengths or findings.")
+    if tag_notes:
+        rep.diagnostics = [n for n in tag_notes if n not in rep.diagnostics] + rep.diagnostics
     return rep
 
 
@@ -1094,6 +1153,8 @@ def _section_cue_findings(rep, rows: list, lines: list) -> None:
         if at in done or not (1 <= at <= len(lines)) or not TAG_LINE.match(lines[at - 1]):
             continue                                              # a row that is not about a tag line is noise, not a finding
         cue_field = re.sub(r"^\[[^\[\]]*\]\s*-?\s*", "", parts[1]).strip()       # a model that copies the tag into the cue column: only what follows it counts
+        if not [c for c in re.split(r"\s*(?:,|&|\+|and|with)\s*", cue_field, flags=re.IGNORECASE) if c.strip() and c.strip().lower() not in ("-", "none", "n/a")]:
+            continue                                              # `-` in this table means "no cue needed / leave the tag": it is never a proposal to delete the cues the tag already has
         ff: list = []
         ev, sug, why = _line_operation("set_cue", at, "", cue_field, lines, ff)
         if why:
@@ -1181,6 +1242,9 @@ def _architect_operation(f: dict, lines: list, notes: list) -> None:
     m = re.search(r"\d+", f.get("at") or f.get("lines") or "")
     at = int(m.group()) if m else 0
     m2 = re.search(r"\d+", f.get("to") or "")
+    if op == "add_section" and (f.get("to") or "").strip():              # add_section has `at` only (the tag goes ABOVE that line): ANY `to` (a number, `end`, `-`) means the AI had another place in mind or broke the format, so the place is unclear and nothing is offered to Apply
+        notes.append(f"No automatic change for “{(f.get('finding') or '')[:40]}”: add_section takes only `at` (the new tag goes above that line); a `to` was also given, so the place is unclear.")
+        return
     ff: list = []
     ev, sug, why, ref = build_operation(op, at, f.get("name", ""), f.get("cues", ""), lines, int(m2.group()) if m2 else 0, ff)
     if why:
@@ -1335,22 +1399,20 @@ CONVERSATION_RULES = (
 def chat_contract(spec: str) -> str:
     """The one chat contract for this specialist, for the whole conversation.
 
-    Analyze Song does not call this. AI Actions keep llm_chat.CHAT_CONTRACT and parse_answer.
+    Analyze Song does not call this. AI Actions use lyric_actions.system_prompt and llm_chat.parse_answer.
     """
     from . import chat_tags as CT
     return CT.PRODUCER_CHAT if SP.is_producer(spec) else CT.SONGWRITER_CHAT
 
 
 def sound_evidence(lyrics: str) -> str:
-    """The Songwriter report from Live Lyrics Insights: line id, syllables, end sound, confirmed rhymes, repeats.
-
-    The same numbers the highlight uses. A word that cannot be read stays unverified. The model may disagree.
-    """
+    """The syllable table of the Songwriter's Analyze Song request (Live Lyrics Insights counts): line id, syllables, how sure, repeated words. It carries NO rhyme claim: the Rhyme Analyzer AI is the only
+    source of what rhymes with what in that request."""
     try:
         from . import live_insights as LI
     except Exception:
         return ""
-    return LI.lyric_report(lyrics)
+    return LI.lyric_syllables(lyrics)
 
 
 def segment_word(word: str) -> "list | None":
@@ -1507,7 +1569,8 @@ def numbered_lyrics(text: str) -> str:
     """Lyric lines for a chat request, each with the id an action tag copies. Not used by Analyze Song."""
     if not (text or "").strip():
         return "(empty)"
-    return chr(10).join(f"L{i:03d}| {l}" for i, l in enumerate((text or "").split(chr(10)), 1))
+    from .chat_tags import listed_lines                  # only ids the parser can address
+    return chr(10).join(f"L{i:03d}| {l}" for i, l in enumerate(listed_lines(text), 1))
 
 
 def architect_user_message(title: str, settings: dict, text: str, instruction: str, sel_lines: "tuple | None" = None, selected: str = "") -> str:
@@ -2262,6 +2325,15 @@ def apply_change(item, lyrics: str, spec: str, allow_repeat: bool = False, span=
         a, b, repl = SA.prepare_replacement(lyrics, a, b, item.suggestion or "")
         if not repl.strip() and (item.suggestion or "").strip():
             return "This change repeated the section header and had no new lyric lines, so it was not applied."
+        if a == b and not (item.original or "").strip() and (a == 0 or lyrics[a - 1] == "\n") and (a == len(lyrics) or lyrics[a] == "\n"):
+            # new lines "after" a BLANK line: that blank line stays where it is, the new lines come after it, and a section that follows stays one blank line away. (Used as a plain replacement the blank line would be used up as the first new line.)
+            rest = lyrics[b + 1:]
+            extra = "\n" if rest.lstrip(" \t").startswith("[") else ""
+            put = "\n" + repl + extra
+            new = lyrics[:a] + put + lyrics[b:]
+            if SA.outside_headers(lyrics, a, b) != SA.outside_headers(new, a, a + len(put)):
+                return "This change would alter a [section tag], so it was not applied."
+            return new, (a + 1, a + 1 + len(repl))
         new = lyrics[:a] + repl + lyrics[b:]
         if SA.outside_headers(lyrics, a, b) != SA.outside_headers(new, a, a + len(repl)):
             return "This change would alter a [section tag], so it was not applied."
@@ -2438,6 +2510,8 @@ class ChatOutcome:
     hints: list = field(default_factory=list)          # free-form music direction that is not a studio cue
     rejected: str = ""                                 # lyrics that cannot be applied (readable / copyable, apart from the answer)
     caption: str = ""                                  # a Music Caption that passed the caption validation (offered with "Use in Music Style")
+    settings: dict = field(default_factory=dict)       # Suggested Music Settings that passed the program's checks: {bpm:int, keyscale:str, timesignature:str} (only the ones that are valid)
+    settings_info: dict = field(default_factory=dict)  # {groove, reason, bad: [[field, written, why]]}: the groove is advice (no Song Setting exists for it); bad = values that could not be used
     steps: list = field(default_factory=list)          # what was done with the answer (for the trace)
 
     @property

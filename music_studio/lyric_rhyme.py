@@ -12,12 +12,13 @@ import re
 from dataclasses import dataclass, field
 from typing import Callable
 
+from . import clear_tags as CG
 from . import rhyme_map as RM
 from . import rhyme_v6 as RV
 from . import thai_rhyme as TR
 from .lyric_analysis import AnalysisError, SEP_END, _is_sep, _norm
 
-RHYME_PROMPT_VERSION = "rhyme-v6"                  # the Rhyme Analyzer AI (rhyme-map-v6). rhyme-v5 (line endings) results can still be read and are shown as an older analysis
+RHYME_PROMPT_VERSION = "rhyme-v9"                  # the Rhyme Analyzer AI (rhyme-map-v6). rhyme-v5 (line endings) results can still be read and are shown as an older analysis
 LEGACY_VERSION = "rhyme-v5"
 LLM_EXACT, LLM_NEAR, UNCERTAIN = "llm_exact", "llm_near", "uncertain"        # what the AI (the Thai Prosody Expert) assessed: no Python sound check stands behind these
 KIND = "rhyme"                                  # the analysis type that is part of the cache key
@@ -35,10 +36,10 @@ SYSTEM_PROMPT = (
     "You never rewrite, translate, correct or comment on the lyrics.\n\n"
     "INPUT: numbered lines written as `N| text`. Section tags are already removed. Decide the language of every line yourself; a line may mix languages.\n\n"
     "TASK: for EVERY line find its LAST WORD, say how its last syllable sounds, and say which lines END in the same sound.\n\n"
-    "OUTPUT FORMAT: exactly these marker lines and rows, one ENDINGS row for every input line, in the same order:\n"
-    + SEP_ENDINGS + "\n"
+    "OUTPUT FORMAT: one [ENDING.n] tag for every input line, in the same order, then [DONE]:\n"
+    "[ENDING.1]\n"
     "N | last word | sound | group | inner | note\n"
-    + SEP_END + "\n\n"
+    "[DONE]\n\n"
     "- last word: copied EXACTLY as written. For Thai give only the LAST SYLLABLE of the last word (ต่อไป -> ไป, ใจดำ -> ดำ, หัวใจ -> ใจ, เหงาใจ -> ใจ); for other languages the last word.\n"
     "- sound: the vowel and the final consonant of the last syllable in simple Latin letters, tone ignored (for example -aao, -ai, -am, -uea, -ok).\n"
     "- group: a capital letter. Lines whose last syllables share EXACTLY the same vowel and final sound get the SAME letter; every different sound gets its own new letter. "
@@ -51,11 +52,11 @@ SYSTEM_PROMPT = (
     "SOUND RULES: Thai: compare the vowel INCLUDING its length and the final consonant, ignore tone (ดาว and หนาว rhyme; ใจ and ไป rhyme; บ้าน and ฝัน do not rhyme exactly: the vowel length differs, so near at most; "
     "กาน and กิน do not rhyme). English: the stressed vowel and everything after it as spoken. Japanese: the vowel of the final mora. Other languages: their own pronunciation.\n\n"
     "EXAMPLE\nInput:\n1| ฉันมองดาวบนฟ้า\n2| เธอยังหนาวอยู่ไหม\n3| ฉันคิดถึงเธอเสมอมา\n4| ฝันถึงเธอทุกคืน\n"
-    "Output:\n" + SEP_ENDINGS + "\n"
-    "1 | ฟ้า | -aa | A | - | -\n"
-    "2 | ไหม | -ai | - | - | -\n"
-    "3 | มา | -aa | A | - | -\n"
-    "4 | คืน | -uen | - | - | -\n" + SEP_END
+    "Output:\n[ENDING.1]\n1 | ฟ้า | -aa | A | - | -\n"
+    "[ENDING.2]\n2 | ไหม | -ai | - | - | -\n"
+    "[ENDING.3]\n3 | มา | -aa | A | - | -\n"
+    "[ENDING.4]\n4 | คืน | -uen | - | - | -\n"
+    "[DONE]\n"
 )
 
 
@@ -112,6 +113,7 @@ class RhymeResult:
     overview: dict = field(default_factory=dict)  # rhyme-map-v6: {"text": ..., "points": [{"line": n, "text": ...}]}
     languages: list = field(default_factory=list)
     schema: str = ""                              # "rhyme-map-v6" for a result of the Rhyme Analyzer AI, "" for the older line-endings result
+    llm: dict = field(default_factory=dict)       # what the Analyzer said, format-checked ONLY (rhyme_v6.llm_data): its pairs, letters, scheme, endings and repeats exactly as given. The Analyze Song report reads this and nothing else
 
     def of_type(self, t: str) -> list:
         return [p for p in self.pairs if p.type == t]
@@ -361,7 +363,9 @@ class Ending:
 def parse_endings(raw: str, sent: list) -> tuple:
     """(endings, [], ignored messages) for one answer, or AnalysisError when the markers or every row are missing. A row that cannot be used is dropped with a message:
     the answer is never guessed at, and nothing here judges the sounds (that is the AI's job)."""
-    text = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", raw or "").strip()
+    source = raw or ""
+    adapted, tag_notes = CG.unwrap(source, "ending")
+    text = re.sub(r"(?:\s*</?(?:end_of_turn|end_turn|start_of_turn|eos)>)+\s*$", "", adapted).strip()
     if not text:
         raise AnalysisError("The AI answer is empty.", raw)
     rows = text.splitlines()
@@ -395,6 +399,8 @@ def parse_endings(raw: str, sent: list) -> tuple:
                            parts[5] if len(parts) > 5 and parts[5] not in ("", "-", "—") else ""))
     if not ends:
         raise AnalysisError("The AI answer has no readable ending rows.", raw)
+    if tag_notes:
+        ignored = [n for n in tag_notes if n not in ignored] + ignored
     return ends, [], ignored
 
 
@@ -533,6 +539,15 @@ def system_prompt() -> str:
         raise AnalysisError(str(ex)) from None
 
 
+def step_system_prompt() -> str:
+    """The system prompt of the step-by-step analysis (music_studio/rhyme_steps.py): the user's editable rhyme_analyzer.md plus the program's answer format for one section."""
+    from . import specialists as SP
+    try:
+        return SP.effective_system("rhyme_analyzer", RV.STEP_CONTRACT)[0]
+    except ValueError as ex:
+        raise AnalysisError(str(ex)) from None
+
+
 def prompt_hash() -> str:
     from . import specialists as SP
     try:
@@ -632,15 +647,33 @@ def analyze_rhymes(lines: list, ask: Callable[[str, str], str], size: int = RV.W
     secs = _section_infos(lines)
     ai_sec: dict = {}
     per_window, ov_text, ov_points, langs = [], [], [], []
+    llm = {"pairs": [], "sections": {}, "endings": {}, "sounds": {}, "repeats": [], "notes": [], "dropped_pairs": 0}
+    f2s = {ln.file_line: ln.num for ln in lines}
     for k, (window, ctx) in enumerate(wins, 1):
         if progress:
             progress(k, len(wins))
         raw = ask(system, RV.build_request(window, ctx, language))
         result.raw.append(raw)
         try:
-            pairs6, sec6, ov, found, ignored = RV.parse(raw)
+            pairs6, sec6, ov, found, ignored = RV.parse(raw, f2s)
+            win = RV.llm_data(raw, f2s)
         except RV.SchemaError as ex:
             raise AnalysisError(str(ex), raw) from None
+        keys = {frozenset({(p["a"]["file_line"], p["a"]["text"], p["a"]["occurrence"]), (p["b"]["file_line"], p["b"]["text"], p["b"]["occurrence"])}) for p in llm["pairs"]}
+        for p in win["pairs"]:
+            kk = frozenset({(p["a"]["file_line"], p["a"]["text"], p["a"]["occurrence"]), (p["b"]["file_line"], p["b"]["text"], p["b"]["occurrence"])})
+            if kk not in keys:
+                keys.add(kk)
+                llm["pairs"].append(p)
+        for sd in win["sections"]:
+            llm["sections"].setdefault(sd["section_id"], sd)
+        for n, w in win["endings"].items():
+            llm["endings"].setdefault(n, w)
+        for n, w in win.get("sounds", {}).items():
+            llm["sounds"].setdefault(n, w)
+        llm["repeats"] += [r for r in win["repeats"] if r not in llm["repeats"]]
+        llm["notes"] += [x for x in win["notes"] if x not in llm["notes"]]
+        llm["dropped_pairs"] += int(win.get("dropped_pairs") or 0)
         real = {ln.num for ln in window}
         mine = []
         for p6 in pairs6:
@@ -675,6 +708,8 @@ def analyze_rhymes(lines: list, ask: Callable[[str, str], str], size: int = RV.W
     result.sections = [dict(asdict(sec), id=RV.section_id(sec.index)) for sec in secs]
     result.overview = {"text": " ".join(ov_text), "points": ov_points[:24]}
     result.languages = langs
+    llm["sections"] = list(llm["sections"].values())
+    result.llm = llm
     return result
 
 
@@ -730,7 +765,7 @@ def _pair_dict(p: RhymePair) -> dict:
 def rhyme_to_dict(snap, result: RhymeResult, at: str) -> dict:
     return {"text_hash": snap.text_hash, "backend": snap.backend, "model": snap.model, "params": snap.params, "prompt_version": snap.prompt_version, "at": at,
             "analyzer_version": RM.ANALYZER_VERSION, "schema": result.schema, "lines": list(result.lines), "ignored": list(result.ignored),
-            "sections": list(result.sections), "overview": dict(result.overview), "languages": list(result.languages),
+            "sections": list(result.sections), "overview": dict(result.overview), "languages": list(result.languages), "llm": dict(result.llm),
             "pairs": [_pair_dict(p) for p in result.pairs],
             "rejected": [_pair_dict(p) for p in result.rejected]}
 
@@ -785,7 +820,7 @@ def _v6_from_dict(d: dict, lines: list) -> "tuple | None":
     info = {k: str(d[k]) for k in ("text_hash", "backend", "model", "params", "prompt_version")}
     info["at"] = str(d.get("at", ""))
     res = RhymeResult(lines, pairs, ignored, rejected, [], [dict(s) for s in d.get("sections") or [] if isinstance(s, dict)],
-                      dict(d.get("overview") or {}), [str(x) for x in d.get("languages") or []], str(d.get("schema") or RV.SCHEMA))
+                      dict(d.get("overview") or {}), [str(x) for x in d.get("languages") or []], str(d.get("schema") or RV.SCHEMA), dict(d.get("llm") or {}))
     return info, res
 
 
@@ -796,7 +831,7 @@ def rhyme_from_dict(d) -> "tuple | None":
         lines = [str(x) for x in d["lines"]]
         if not lines:
             return None
-        if str(d.get("prompt_version", "")) >= RHYME_PROMPT_VERSION and d.get("schema") == RV.SCHEMA:
+        if str(d.get("prompt_version", "")) >= "rhyme-v6" and d.get("schema") == RV.SCHEMA:
             return _v6_from_dict(d, lines)
         from .lyric_analysis import SungLine
         numbered = {i: SungLine(i, i, line) for i, line in enumerate(lines, 1)}

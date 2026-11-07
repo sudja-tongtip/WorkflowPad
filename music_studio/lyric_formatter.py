@@ -44,6 +44,23 @@ REASON_FORMAT = "The formatter changed more than spacing, so nothing was applied
 REASON_CUES = "The formatter left cues in place, so nothing was applied."
 REASON_SAME = "The lyrics were already in that form."
 
+OUTPUT_CONTRACT = (
+    "OUTPUT FORMAT (this block is how the program reads the answer; it overrides an older rule that the sheet itself is the whole answer). "
+    "Numbered clear tags. Nothing before the first tag and nothing after [DONE]. No title, no note, no apology, no Markdown heading, no bullet list, no JSON, and no code fence.\n"
+    "[FORMAT.1]\n"
+    "the whole lyric sheet. Its first character is the first character of the sheet. Section tags such as [Verse] and [Hold] stay as they are.\n"
+    "[DONE]\n"
+    "Do not write [REPLY]. Do not echo MODE: or LYRICS:."
+)
+
+
+def with_contract(system: str) -> str:
+    """The formatter prompt plus the tag contract, once."""
+    text = system or ""
+    if "[FORMAT.1]" in text and "[DONE]" in text:
+        return text
+    return text.rstrip() + "\n\n" + OUTPUT_CONTRACT
+
 _TAG = re.compile(r"\[[^\[\]\n]*\]")
 _HOLD = re.compile(r"\[Hold\]", re.IGNORECASE)
 _HEADING = re.compile(r"(?m)^[ \t]*#{1,6}[ \t]+\S")
@@ -105,7 +122,9 @@ def plan(req: FormatRequest, raw: "str | None", *, now_song_id: str, now_sheet_i
         return _reject(REASON_EDITED)
     if error:
         return _reject(REASON_ERROR)
-    out = _newlines(raw or "").lstrip("\ufeff")
+    out = _sheet_from_answer(raw)
+    if out is None:
+        return _reject(REASON_EXPLAIN)
     if not out.strip():
         return _reject(REASON_EMPTY)
     if _explained(out):
@@ -184,6 +203,21 @@ def _hold_bodies(text: str) -> list:
         if body:
             bodies.append(unicodedata.normalize("NFC", body))
     return bodies
+
+
+def _sheet_from_answer(raw: str) -> "str | None":
+    """The lyric sheet. None when the answer uses control tags but has no usable [FORMAT] sheet.
+
+    An answer with no control tag is the sheet itself, which is how older formatter answers were written.
+    """
+    from . import clear_tags as CG
+    text = _newlines(raw or "").lstrip("\ufeff")
+    if not CG.looks_like(text):
+        return text
+    blocks = [b.payload for b in CG.parse(text).blocks if b.type == "FORMAT" and b.usable and b.payload.strip()]
+    if not blocks:
+        return None
+    return "\n".join(blocks).strip("\n")
 
 
 def _explained(text: str) -> bool:

@@ -110,10 +110,10 @@ Only blank lines changed. Every tag and every word stays.
 รัก[Hold]
 
 # Output Requirements
-- Return the whole lyric sheet and nothing else.
-- No title, no note, no apology, no Markdown heading, no bullet list, no JSON, and no code fence.
-- Do not echo `MODE:` or `LYRICS:`.
-- The first character of the answer is the first character of the sheet.
+- The program reads numbered clear tags. The sheet is the payload of one [FORMAT.1] tag, then [DONE] on its own line.
+- Nothing before [FORMAT.1] and nothing after [DONE]. No title, no note, no apology, no Markdown heading, no bullet list, no JSON, and no code fence.
+- Do not echo `MODE:` or `LYRICS:`. Do not write [REPLY].
+- The first character inside [FORMAT.1] is the first character of the sheet. Section tags such as [Verse] and [Hold] stay inside that payload.
 
 # Self-check
 Before you answer, check that: the mode is the only change you made; every sung word and its punctuation is still there, including parentheses; the sections are the same names in the same order; `[Hold]` is still after the same words on that line; a section line you edited has at most 2 cues and you did not add cues just to fill that number; a custom cue you did not understand is still there unless the mode is Clear All Cues; the answer contains no explanation and no code fence.

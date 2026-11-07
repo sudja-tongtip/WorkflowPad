@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from . import feature_flags as FF
 from . import live_insights as LI
 from . import rhyme_map as RM
 from .compiler import HOLD_PREFIX, TAG_LINE  # noqa: F401
@@ -60,9 +61,11 @@ def _old_verify(link: "RM.Link") -> str:
     return "uncertain" if link.sound == "uncertain" else "unverified"
 
 
-def colorize(lyrics: str, result=None, language: str = "") -> RhymeColors:
+def colorize(lyrics: str, result=None, language: str = "", ins=None) -> RhymeColors:
     """The rhyme groups of `lyrics`: the Shared Rhyme Map's colourable links. `result` is the AI's Analyze Rhymes (lyric_rhyme.RhymeResult) or None; `language` is the song's lyrics language."""
-    m = LI.rhyme_map(lyrics or "", result, language)
+    if FF.PYTHON_RHYME_PRIMARY:
+        result = None                                  # one source for the colours and the Songwriter's evidence: the Python links. A saved Rhyme Analyzer AI result is not merged in.
+    m = LI.rhyme_map(lyrics or "", result, language, ins=ins)          # `ins`: an analysis of exactly these lyrics the caller already has (nothing is analysed again)
     rc = RhymeColors(skipped=list(m.skipped), stale=m.stale, map=m)
     spans: dict = {}                                # (start, end) -> Span
     touching: dict = {}

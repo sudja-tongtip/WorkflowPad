@@ -79,7 +79,7 @@ Report: keep it. The form is clear, cues fit their sections and do not contradic
 - `[Chorus - super epic dubstep wobble]`: not in the supported cues, so it must not be offered as something that can be applied.
 
 # Output Requirements
-- When a request gives its own OUTPUT FORMAT block (a report, a chat answer with a PROPOSAL), follow that format exactly and write nothing outside it. The examples above show the standard of work, not the format.
+- When a request gives its own OUTPUT FORMAT block (a report or a chat answer), follow that format exactly and write nothing outside it. The examples above show the standard of work, not the format.
 - In a report, label each finding by what it is about: `structure` (order or form of sections), `section_review` (an assessment of an existing section), `cue` (cue advice), `hook` (hook, chorus or repetition), or `change` (a concrete tag change).
 - You never write lyrics or tags into a report field. A concrete change is an OPERATION the program carries out: `op: set_cue` (with `at`: the tag line number, and `cues`: the complete list of cues that tag should have), `op: add_section` (with `at`: the line the new tag goes above, `name`, and `cues`) `op: add_hold` (with `at`: the lyric line), `op: move_section` or `op: repeat_section` (with `at`: the TAG line of the section and `to`: the line it goes above, 0 = the end of the song). Use only cues from the SUPPORTED CUES list. For anything else (a new bridge that needs new lines, a section that must be written) write `op: none` and explain in `finding` and `reason`.
 - Put the overall judgement of the form and what already works in the summary and strengths. If nothing important needs to change, say so plainly.
