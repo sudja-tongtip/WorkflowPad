@@ -1,44 +1,44 @@
 {
   "story_generator": {
     "name": "Story Generator",
-    "version": "0.3.1",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.1/WorkflowPad-v0.3.1-Beta.zip",
-    "notes": "Fixes Music Studio in the packaged program: opening a song no longer fails with 'No module named pythainlp.tokenize'. 0.3.0 features: Rhythm & Duration judges every line; Rhyme Analyzer v6; right-hand report pages; rule-based Lyric Formatter; sheet tabs above the editor"
+    "version": "0.3.2",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.2/WorkflowPad-v0.3.2-Beta.zip",
+    "notes": "Music Studio: Analyze Song uses a Python rhyme analysis as its rhyme evidence and refuses malformed or copied AI output (the page lists why); Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards and queue one song per card with its own BPM, key and time signature. 0.3.1 fix: the packaged Music Studio bundles pythainlp and numpy."
   },
   "prompt_lab": {
     "name": "Prompt Lab",
-    "version": "0.3.1",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.1/WorkflowPad-v0.3.1-Beta.zip",
-    "notes": "Fixes Music Studio in the packaged program: opening a song no longer fails with 'No module named pythainlp.tokenize'. 0.3.0 features: Rhythm & Duration judges every line; Rhyme Analyzer v6; right-hand report pages; rule-based Lyric Formatter; sheet tabs above the editor"
+    "version": "0.3.2",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.2/WorkflowPad-v0.3.2-Beta.zip",
+    "notes": "Music Studio: Analyze Song uses a Python rhyme analysis as its rhyme evidence and refuses malformed or copied AI output (the page lists why); Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards and queue one song per card with its own BPM, key and time signature. 0.3.1 fix: the packaged Music Studio bundles pythainlp and numpy."
   },
   "image_editor": {
     "name": "Image Editor",
-    "version": "0.3.1",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.1/WorkflowPad-v0.3.1-Beta.zip",
-    "notes": "Fixes Music Studio in the packaged program: opening a song no longer fails with 'No module named pythainlp.tokenize'. 0.3.0 features: Rhythm & Duration judges every line; Rhyme Analyzer v6; right-hand report pages; rule-based Lyric Formatter; sheet tabs above the editor"
+    "version": "0.3.2",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.2/WorkflowPad-v0.3.2-Beta.zip",
+    "notes": "Music Studio: Analyze Song uses a Python rhyme analysis as its rhyme evidence and refuses malformed or copied AI output (the page lists why); Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards and queue one song per card with its own BPM, key and time signature. 0.3.1 fix: the packaged Music Studio bundles pythainlp and numpy."
   },
   "gallery_generator": {
     "name": "Gallery Generator",
-    "version": "0.3.1",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.1/WorkflowPad-v0.3.1-Beta.zip",
-    "notes": "Fixes Music Studio in the packaged program: opening a song no longer fails with 'No module named pythainlp.tokenize'. 0.3.0 features: Rhythm & Duration judges every line; Rhyme Analyzer v6; right-hand report pages; rule-based Lyric Formatter; sheet tabs above the editor"
+    "version": "0.3.2",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.2/WorkflowPad-v0.3.2-Beta.zip",
+    "notes": "Music Studio: Analyze Song uses a Python rhyme analysis as its rhyme evidence and refuses malformed or copied AI output (the page lists why); Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards and queue one song per card with its own BPM, key and time signature. 0.3.1 fix: the packaged Music Studio bundles pythainlp and numpy."
   },
   "batch_editor": {
     "name": "Batch Editor",
-    "version": "0.3.1",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.1/WorkflowPad-v0.3.1-Beta.zip",
-    "notes": "Fixes Music Studio in the packaged program: opening a song no longer fails with 'No module named pythainlp.tokenize'. 0.3.0 features: Rhythm & Duration judges every line; Rhyme Analyzer v6; right-hand report pages; rule-based Lyric Formatter; sheet tabs above the editor"
+    "version": "0.3.2",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.2/WorkflowPad-v0.3.2-Beta.zip",
+    "notes": "Music Studio: Analyze Song uses a Python rhyme analysis as its rhyme evidence and refuses malformed or copied AI output (the page lists why); Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards and queue one song per card with its own BPM, key and time signature. 0.3.1 fix: the packaged Music Studio bundles pythainlp and numpy."
   },
   "music_studio": {
     "name": "Music Studio",
-    "version": "0.3.1",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.1/WorkflowPad-v0.3.1-Beta.zip",
-    "notes": "Fixes Music Studio in the packaged program: opening a song no longer fails with 'No module named pythainlp.tokenize'. 0.3.0 features: Rhythm & Duration judges every line; Rhyme Analyzer v6; right-hand report pages; rule-based Lyric Formatter; sheet tabs above the editor"
+    "version": "0.3.2",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.2/WorkflowPad-v0.3.2-Beta.zip",
+    "notes": "Music Studio: Analyze Song uses a Python rhyme analysis as its rhyme evidence and refuses malformed or copied AI output (the page lists why); Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards and queue one song per card with its own BPM, key and time signature. 0.3.1 fix: the packaged Music Studio bundles pythainlp and numpy."
   },
   "simple_chat": {
     "name": "Simple Chat Studio",
-    "version": "0.3.1",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.1/WorkflowPad-v0.3.1-Beta.zip",
-    "notes": "Fixes Music Studio in the packaged program: opening a song no longer fails with 'No module named pythainlp.tokenize'. 0.3.0 features: Rhythm & Duration judges every line; Rhyme Analyzer v6; right-hand report pages; rule-based Lyric Formatter; sheet tabs above the editor"
+    "version": "0.3.2",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.2/WorkflowPad-v0.3.2-Beta.zip",
+    "notes": "Music Studio: Analyze Song uses a Python rhyme analysis as its rhyme evidence and refuses malformed or copied AI output (the page lists why); Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards and queue one song per card with its own BPM, key and time signature. 0.3.1 fix: the packaged Music Studio bundles pythainlp and numpy."
   }
 }
