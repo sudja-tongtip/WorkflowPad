@@ -4,6 +4,12 @@
     "note": "UI texts only; lyrics, captions and AI prompts are never translated"
   },
   "strings": {
+    "Live / Dead": "คำเป็น–คำตาย",
+    "Live syllable": "คำเป็น",
+    "Dead syllable": "คำตาย",
+    "Not sure": "ไม่แน่ใจ",
+    "dead": "คต",
+    "not Thai": "ไม่ใช่ภาษาไทย",
     "Song title": "ชื่อเพลง",
     "Edit the cues of this [tag] (Section Options)": "แก้ cue ของ [แท็ก] นี้ (Section Options)",
     "Undo": "ย้อนกลับ",

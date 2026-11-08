@@ -21,12 +21,13 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 from . import thai_rhyme as TR
 from .compiler import HOLD_PREFIX, TAG_LINE  # noqa: F401  (re-exported for the colour module)
 from .lyric_analysis import _INLINE_TAG
 
-ANALYZER_VERSION = "rmap-1"                      # part of any cache key that holds a map; bump it when a rule here changes what a map says
+ANALYZER_VERSION = "rmap-2"                      # part of any cache key that holds a map; bump it when a rule here changes what a map says
 
 SOUNDS = ("exact", "near", "different", "uncertain")
 PLACEMENTS = ("internal", "end", "cross", "end_to_end", "end_to_internal", "cross_line", "cross_section", "alliteration")   # the first three are the compact view; the others are the v6 names
@@ -397,21 +398,78 @@ def _word(pl: PyLine, tok: tuple, declared: str) -> Word:
     return Word(pl.file_line, pl.sung, pl.section, pl.section_name, text, start, end, language_of(text, declared))
 
 
+@lru_cache(maxsize=8192)
 def _thai_rime_of(word: str):
+    """The (vowel, final) sound of a Thai word's last syllable. Cached: it is a pure function of the text and the syllable step asks it for every syllable of the line on each keystroke."""
     if not TR.has_thai(word):
         return None
     syl = TR.final_syllable(word)
     return TR._rime(syl) if syl else None
 
 
+def _units(pl: "PyLine", declared: str, diag: "list | None") -> list:
+    """The syllables of a line that may take part in an INNER rhyme: [{a, b (offsets in the masked line), text, key, rime, word (a Word at its real place), end}] sorted by position.
+    A one-syllable Thai token is one unit; a token of several syllables gives one unit per syllable when the dictionary's syllables add up to the token EXACTLY and every one is a real
+    single syllable. A token that does not (a fragment, a loan word, a non-NFC spelling) is skipped and the reason goes to `diag`: a syllable is never cut at a guess. The last syllable of the
+    line's end token is the same word the end rhyme uses (the same span), so a word is never coloured twice with two different extents."""
+    out = []
+    last_ti = len(pl.tokens) - 1
+    for ti, tok in enumerate(pl.tokens):
+        if tok[3] != "th":
+            continue
+        text, syls = tok[2], tok[4]
+        if unicodedata.normalize("NFC", text) != text:
+            if diag is not None:
+                diag.append(f"line {pl.file_line}: “{text}” is not in normal Unicode form, so its syllables were not checked.")
+            continue
+        if len(syls) == 1:
+            parts = [(tok[0], tok[1], text)]
+        else:
+            if "".join(syls) != text:
+                if diag is not None:
+                    diag.append(f"line {pl.file_line}: the syllables of “{text}” do not add up to the word, so they were not checked.")
+                continue
+            parts, at, bad = [], tok[0], ""
+            for sy in syls:
+                if sy != "ๆ":                                   # the repeat mark is not a syllable
+                    if not TR.is_single_syllable(sy):
+                        bad = sy
+                        break
+                    parts.append((at, at + len(sy), sy))
+                at += len(sy)
+            cut = next((i for i in range(1, len(text)) if unicodedata.category(text[i]) == "Mn" and any(p[1] - tok[0] == i for p in parts)), 0) if not bad else 0
+            if cut:                                             # a syllable boundary that falls BEFORE a tone mark or a vowel mark would cut the mark off its syllable (ไม่ read as ไม + ่)
+                bad = text[cut - 1:cut + 1]
+            if bad:
+                if diag is not None:
+                    diag.append(f"line {pl.file_line}: “{bad}” in “{text}” is not one complete readable syllable (or a boundary cuts a tone/vowel mark), so the word's syllables were not checked.")
+                continue
+            if ti == last_ti and len(parts) > 1:
+                w = _word(pl, tok, declared)                    # the end rhyme's own word: the last syllable, or the whole word when that cannot be separated
+                if (w.start, w.end) != (pl.base + parts[-1][0], pl.base + parts[-1][1]):
+                    parts = [(tok[0], tok[1], text)]
+        for k, (a, b, sy) in enumerate(parts):
+            if sy in FUNCTION_WORDS:
+                continue
+            r = _thai_rime_of(sy)
+            if r is None:
+                continue
+            out.append({"a": a, "b": b, "text": sy, "key": _rime_key(r), "rime": r, "end": ti == last_ti and k == len(parts) - 1, "mid": k < len(parts) - 1,
+                        "word": Word(pl.file_line, pl.sung, pl.section, pl.section_name, sy, pl.base + a, pl.base + b, language_of(sy, declared))})
+    return sorted(out, key=lambda u: u["a"])
+
+
 def _rime_key(r: tuple) -> str:
     return f"{r[0]}+{r[1]}"
 
 
-def python_links(lines: list, declared: str = "") -> tuple:
+def python_links(lines: list, declared: str = "", diag: "list | None" = None) -> tuple:
     """(links, end_info) from the Python rules alone, for the current lyrics. Thai line endings that end in the same sound (exact), or close ones (near), are linked when the lines are related;
     one-syllable Thai words of one line that share a sound are internal rhymes; English words get a spelling-estimate link (unverified, never coloured). The same word again is repetition,
-    not a rhyme. `end_info` is {file_line: (word, sound key or '', status)} with status rhymed | none | unverified, for Live Insights."""
+    not a rhyme. `end_info` is {file_line: (word, sound key or '', status)} with status rhymed | none | unverified, for Live Insights.
+    Inner rhymes are read per SYLLABLE (see `_units`): a syllable inside a longer word rhymes with another syllable of the same line (exact, or near by the same rules as the line endings), and the
+    last syllable of a line end can rhyme with a syllable inside the next line of the same section (end_to_internal, one link per pair of lines). `diag`, when given, receives one message per
+    word whose syllables were not checked."""
     links: list = []
     ends = []                                       # (pyline, token, rime)
     info: dict = {}
@@ -480,25 +538,48 @@ def python_links(lines: list, declared: str = "") -> tuple:
             for g in near_groups:
                 if any(id(m) in {id(x) for x in left} for m in g):
                     add_chain(g, "near", shown)
-    # internal rhymes of one line (Thai: single-syllable words with the same sound, the line's end word included; English: a spelling estimate)
+    # inner rhymes of one line (Thai: SYLLABLES with the same sound, the end syllable included; English: a spelling estimate)
+    seen = {k.key for k in links}
+    units: dict = {}
     for pl in lines:
-        words = [t for t in pl.tokens if t[3] == "th" and len(t[4]) == 1 and t[2] not in FUNCTION_WORDS]
-        got = [(t, _rime_key(r)) for t in words if (r := _thai_rime_of(t[2])) is not None]
-        end_tok = pl.tokens[-1] if pl.tokens and pl.tokens[-1][3] == "th" else None
-        st = info.get(pl.file_line)
-        if end_tok is not None and st and st[2] == "rhymed" and st[1] and not any(t[0] == end_tok[0] for t, _k in got):
-            got.append((end_tok, st[1]))                 # the end word joins an inner rhyme only when the line already rhymes at its end
+        us = units[pl.file_line] = _units(pl, declared, diag)
         keyed: dict = {}
-        for t, k in got:
-            keyed.setdefault(k, []).append(t)
-        for k, ts in keyed.items():
-            ts = sorted(ts, key=lambda t: t[0])
-            if len({t[2] for t in ts}) < 2:
+        for u in us:
+            keyed.setdefault(u["key"], []).append(u)
+        for k, g in keyed.items():                                   # exact: the same sound, in the order of the line
+            if len({u["text"] for u in g}) < 2:
                 continue
-            for ta, tb in zip(ts, ts[1:]):
-                if ta[2] == tb[2]:
+            for ua, ub in zip(g, g[1:]):
+                if ua["text"] == ub["text"] or frozenset((ua["word"].span, ub["word"].span)) in seen:
                     continue
-                links.append(Link(_word(pl, ta, declared), _word(pl, tb, declared), "exact", "internal", "verified", "python", "vowel", k, f"Sound check: {ta[2]} · {tb[2]} {k}"))
+                seen.add(frozenset((ua["word"].span, ub["word"].span)))
+                links.append(Link(ua["word"], ub["word"], "exact", "internal", "verified", "python", "vowel", k, f"Sound check: {ua['text']} · {ub['text']} {k}"))
+        ks = sorted(keyed)
+        sim: dict = {}
+        for i, ka in enumerate(ks):
+            for kb in ks[i + 1:]:
+                if TR._similar(keyed[ka][0]["rime"], keyed[kb][0]["rime"]):
+                    sim.setdefault(ka, set()).add(kb)
+                    sim.setdefault(kb, set()).add(ka)
+        done: set = set()
+        for ka in sorted(sim):                                       # near: syllables of keys that are close by the rules of the line endings, neighbours of different keys in the line
+            if ka in done:
+                continue
+            comp, todo = set(), [ka]
+            while todo:
+                x = todo.pop()
+                if x not in comp:
+                    comp.add(x)
+                    todo += list(sim.get(x, ()))
+            done |= comp
+            mem = sorted((u for k in comp for u in keyed[k]), key=lambda u: u["a"])
+            for ua, ub in zip(mem, mem[1:]):
+                if ua["key"] == ub["key"] or ua["text"] == ub["text"] or ub["key"] not in sim.get(ua["key"], ()) or frozenset((ua["word"].span, ub["word"].span)) in seen:
+                    continue
+                if ua["mid"] or ub["mid"]:                           # a syllable in front of the last one of a longer word (ประ, ระ, น้ำ-): only an EXACT rhyme counts there; a near one would colour weak syllables all over the song
+                    continue
+                seen.add(frozenset((ua["word"].span, ub["word"].span)))
+                links.append(Link(ua["word"], ub["word"], "near", "internal", "verified", "python", "vowel", min(ua["key"], ub["key"]), f"Sound check: {ua['text']} {ua['key']} · {ub['text']} {ub['key']}"))
         en = [t for t in pl.tokens if t[3] == "en" and _en_letters(t[2]) not in _EN_FUNCTION and len(_en_letters(t[2])) >= 2]
         for i in range(len(en)):
             for j in range(i + 1, len(en)):
@@ -507,6 +588,35 @@ def python_links(lines: list, declared: str = "") -> tuple:
                 snd, detail = en_relation(en[i][2], en[j][2])
                 if snd == "exact":
                     links.append(Link(_word(pl, en[i], declared), _word(pl, en[j], declared), "exact", "internal", "unverified", "python", "vowel", "", detail))
+    # the end of a line with a syllable inside the NEXT line of the same section (ฟ้า ... น้ำ-ตา): one link per pair of lines, the exact sound before a near one, the first syllable of the line when
+    # several fit. Not across sections, not when the two line endings already rhyme with each other (that is an end rhyme), never the same word.
+    by_sung = {pl.sung: pl for pl in lines}
+    for pl in lines:
+        nxt = by_sung.get(pl.sung + 1)
+        if nxt is None or nxt.section != pl.section:
+            continue
+        mine, theirs = units.get(pl.file_line) or [], units.get(nxt.file_line) or []
+        ue = next((u for u in reversed(mine) if u["end"]), None)
+        if ue is None:
+            continue
+        ne = next((u for u in reversed(theirs) if u["end"]), None)
+        if ne is not None and (ne["key"] == ue["key"] or TR._similar(ue["rime"], ne["rime"])):
+            continue
+        cand = [u for u in theirs if not u["end"] and u["text"] != ue["text"]]
+        hit = [u for u in cand if u["key"] == ue["key"]]
+        sound = "exact"
+        if not hit:
+            hit = [u for u in cand if TR._similar(ue["rime"], u["rime"])]
+            sound = "near"
+        if not hit:
+            continue
+        u = min(hit, key=lambda x: x["a"])
+        pair = frozenset((ue["word"].span, u["word"].span))
+        if pair in seen:
+            continue
+        seen.add(pair)
+        links.append(Link(ue["word"], u["word"], sound, "end_to_internal", "verified", "python", "vowel", ue["key"] if sound == "exact" else min(ue["key"], u["key"]),
+                          f"Sound check: {ue['text']} {ue['key']} · {u['text']} {u['key']}"))
     # English line endings of related lines: a spelling estimate, never coloured
     en_ends = [(pl, t) for pl, t, r in ends if t is not None and t[3] == "en" and language_of(t[2], declared) == EN]
     for i in range(len(en_ends)):

@@ -145,6 +145,29 @@ def build(lyrics: str, language: str = "", ins=None) -> "dict | None":
                     letter[b_] = letter[a_]; near_line.add(b_)
                 elif b_ in letter and a_ not in letter:
                     letter[a_] = letter[b_]; near_line.add(a_)
+        # lines that are joined ONLY by near end pairs (no exact partner anywhere) also get a letter, and every line of such a group is marked near (`~`): the letter then says "a similar sound", never "the same sound"
+        par2 = {n: n for n in parent if n not in letter}
+
+        def find2(x):
+            while par2[x] != x:
+                par2[x] = par2[par2[x]]
+                x = par2[x]
+            return x
+        for p in end_pairs:
+            if p["sound"] == "near" and p["a"]["line"] in par2 and p["b"]["line"] in par2:
+                par2[find2(p["a"]["line"])] = find2(p["b"]["line"])
+        grp2: dict = {}
+        for n in par2:
+            grp2.setdefault(find2(n), []).append(n)
+        new_groups = sorted((sorted(g) for g in grp2.values() if len(g) >= 2), key=lambda g: g[0])
+        if new_groups:
+            for j, g in enumerate(new_groups):
+                for n in g:
+                    letter[n] = "#%d" % j
+                    near_line.add(n)
+            order = sorted({v for v in letter.values()}, key=lambda v: min(n for n, l in letter.items() if l == v))      # letters follow the first line of each group, as before
+            rename = {v: chr(65 + i % 26) for i, v in enumerate(order)}
+            letter = {n: rename[v] for n, v in letter.items()}
         rep_lines = {p["a"]["line"] for p in bucket["repetitions"]} | {p["b"]["line"] for p in bucket["repetitions"]}
         # the same ending word on two lines of the section is repetition too (python_links never links the same word)
         ends_seen: dict = {}
@@ -207,7 +230,7 @@ def evidence_text(ev: "dict | None") -> str:
     rows += [f"- {t}" for t in (ev.get("limitations") or LIMITATIONS)]
     for t in ev.get("facts") or []:
         rows.append(f"- {t}")
-    rows.append("Letters: the same letter = Python read the same end sound, `-` = Python found no partner for that line (not proof that it has none), `~` = only a near rhyme.")
+    rows.append("Letters: the same letter = Python read the same end sound, `-` = Python found no partner for that line (not proof that it has none), `~` = only a similar sound (a whole letter made of `~` lines has no exact partner).")
     for sec in ev["sections"]:
         rows.append(f"- {sec['name'] or '(start)'} (lines {sec['first']}-{sec['last']}): scheme {sec['pattern'] or 'no end pair found by Python'}")
         rows.append("    line endings: " + "; ".join(f"L{x['line']} {x['ending'] or '?'} [" + (((x['label'] or '-') + ('~' if x.get('near') else '')) if x.get('ending') else '?') + "]" for x in sec["lines"]))

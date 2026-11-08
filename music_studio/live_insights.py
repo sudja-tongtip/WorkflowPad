@@ -316,7 +316,11 @@ def _rhymes(lines: list, sections: list, declared: str = "") -> list:
     """The rhymes of the Python rules (rhyme_map.python_links: the one place that decides them), turned into this module's spans. Returns the links. A word is coloured only for a Thai pair whose
     sound was read; English endings stay unverified (never coloured). Lines of unrelated sections are not linked only because the sounds match."""
     pls = [RM.PyLine(li.line_number, li.sung_number, li.sec_index, sections[li.sec_index].name if 0 <= li.sec_index < len(sections) else "", li._base, li._tokens) for li in lines]
-    links, info = RM.python_links(pls, declared)
+    diag: list = []
+    links, info = RM.python_links(pls, declared, diag)
+    if diag:
+        import logging
+        logging.getLogger(__name__).debug("syllable rhymes: %d word(s) not checked: %s", len(diag), diag[:6])          # a word whose syllables could not be read is skipped, never guessed
     by_line = {li.line_number: li for li in lines}
     for li in lines:
         word, key, status = info.get(li.line_number, ("", "", ""))

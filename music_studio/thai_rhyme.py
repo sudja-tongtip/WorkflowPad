@@ -31,6 +31,7 @@ _CLUST = frozenset({
     "บร", "บล", "ดร", "ฟร", "ฟล", "สร", "ศร", "ซร", "จร",
 })
 _NAM = frozenset({"หง", "หญ", "หน", "หม", "หย", "หร", "หล", "หว", "อย"})
+_CLUST_NARROW = {"ผล": frozenset("ัาุ")}      # ผล is one of the 15 true clusters (ผลัก ผลัด ผลาญ ผลุบ are one syllable); ผลิต ผลึก ผลิ are two syllables (ผะ-หลิด), so it counts as a cluster only before ั า ุ
 _LENGTH = {frozenset(p) for p in (
     ("อา", "อะ"), ("อี", "อิ"), ("อือ", "อึ"), ("อู", "อุ"), ("เอ", "เอะ"), ("แอ", "แอะ"),
     ("โอ", "โอะ"), ("ออ", "เอาะ"), ("เอีย", "เอียะ"), ("เอือ", "เอือะ"), ("อัว", "อัวะ"),
@@ -57,7 +58,7 @@ def _skip_tone(s: str, i: int) -> int:
 def _take_onset(s: str, i: int, lead: bool) -> "int | None":
     if i >= len(s) or s[i] not in _CONS:
         return None
-    if i + 1 < len(s) and s[i:i + 2] in _CLUST | _NAM:
+    if i + 1 < len(s) and (s[i:i + 2] in _CLUST | _NAM or (i + 2 < len(s) and s[i + 2] in _CLUST_NARROW.get(s[i:i + 2], ""))):
         nxt = i + 2
         if nxt < len(s) and (s[nxt] in _ABOVE or s[nxt] in _BELOW or s[nxt] in "ะาำๅ็อ" or s[nxt] in _TONE):
             return nxt

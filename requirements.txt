@@ -25,7 +25,7 @@ ultralytics
 
 # Thai word segmentation for the PIL narration box (Thai has no spaces, so without it a Thai sentence is one
 # unbreakable line and the card gets very wide). Pure Python, small. Optional: without it Thai breaks at syllables.
-pythainlp
+pythainlp>=5.4.0
 
 # Build the portable EXE release only (not needed to run from source):  python make_release.py
 # pyinstaller

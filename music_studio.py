@@ -29,6 +29,7 @@ from music_studio import live_scheduler as LS
 from music_studio import vocal_cues as VC
 from music_studio import rhyme_flow as RF
 from music_studio import python_rhyme_evidence as PRE
+from music_studio import live_dead as LD
 from music_studio import report_steps as RPT              # the Songwriter / Music Producer report asked step by step (summary, one section at a time, suggestions)
 from music_studio import rhyme_steps as RS               # the Rhyme Analyzer asked step by step (overview, then one section at a time, shown as it arrives)
 from music_studio import rhyme_color as RC
@@ -1496,7 +1497,6 @@ def main(page: ft.Page):
     copy_menu = tpop(ft.Icons.CONTENT_COPY_ROUNDED, "Copy / export lyrics",
                      [ft.PopupMenuItem(content=ft.Text("Copy original lyrics"), on_click=lambda e: page.run_task(copy_variant, "original")),
                       ft.PopupMenuItem(content=ft.Text("Copy ACE-Step lyrics"), on_click=lambda e: page.run_task(copy_variant, "ace")),
-                      ft.PopupMenuItem(content=ft.Text("Copy for AI (with notes)"), on_click=lambda e: page.run_task(copy_variant, "ai")),
                       ft.PopupMenuItem(content=ft.Text("Export TXT (ACE-Step)"), on_click=export_txt)])
 
     # ═══ EDITOR: Section Options (cue editor for one [tag]) ═════════════════════════════════════════════════
@@ -2790,6 +2790,10 @@ def main(page: ft.Page):
             return
         if dr_wrong_target():
             dr_tick(); return
+        if not dr["multi"]:                                      # the card shown "Applied" (chosen by a plain click) is the first pick; Ctrl+click adds to it
+            u = dr["undo"]
+            if u and u["song"] == S.song.id and u.get("index", -1) != i and 0 <= u.get("index", -1) < len(dr["prop"].directions):
+                dr["multi"] = [u["index"]]
         dr["multi"] = [x for x in dr["multi"] if x != i] if i in dr["multi"] else dr["multi"] + [i]
         dr_render()
         update_generate_button()
@@ -2891,7 +2895,7 @@ def main(page: ft.Page):
             SH.apply_settings(S.song, sh, plan.changes)         # the analyzed sheet, by id; never the lyrics
         except SH.SheetError as ex:
             toast(str(ex), C["amber"]); return False
-        dr["undo"] = {"song": sid, "sheet": sh, "previous": plan.previous, "applied": dict(plan.changes), "name": d.name}
+        dr["undo"] = {"song": sid, "sheet": sh, "previous": plan.previous, "applied": dict(plan.changes), "name": d.name, "index": dr["sel"]}
         dr_rebase(sid, sh, ly)                                   # the draft stays usable: it now describes the sheet as applied
         dr["fields"] = AD.default_selection(dr["snap"], dr["prop"], d)
         mark_dirty(); build_settings()
@@ -2956,7 +2960,7 @@ def main(page: ft.Page):
         i = d.index - 1
         sug = AD.suggested(dr["prop"], d)
         u = dr["undo"]
-        applied = bool(u and S.song and u["song"] == S.song.id and u["name"] == d.name) and not dr["multi"]      # while picking for the queue only the picked cards are marked: the count starts fresh
+        applied = bool(u and S.song and u["song"] == S.song.id and u["name"] == d.name and u.get("index", i) == i) and not dr["multi"]      # while picking for the queue only the picked cards are marked: the count starts fresh
         picked = i in dr["multi"]
         chips = [dr_chip(lbl, dr_show(n, sug[n])) for n, lbl in (("genre", "Style"), ("mood", "Mood"), ("vocal", "Vocal"), ("energy", "Energy"), ("bpm", "BPM"), ("keyscale", "Start key"), ("timesignature", "Time sig.")) if sug.get(n) not in (None, "")]
         cap_open = d.index in dr["cap_open"]
@@ -4592,7 +4596,7 @@ def main(page: ft.Page):
     # reset by a rebuild. The framework's auto_scroll is off: the program scrolls to the end itself, and only when the user sent a message or was already reading the end.
     chat_scroll = {"pixels": 0.0, "max": 0.0, "at_end": True, "keys": [], "ctx": None, "saved": {}, "wait": False}
     chat_list = ft.Column(expand=True, spacing=8, scroll=ft.ScrollMode.AUTO, auto_scroll=False, on_scroll=lambda e: _chat_scrolled(e))
-    chat_new_chip = ft.TextButton("New message ↓", icon=ft.Icons.ARROW_DOWNWARD_ROUNDED, visible=False, on_click=lambda e: page.run_task(_chat_to_end), style=ft.ButtonStyle(color=C["accent"], padding=po(6, 0, 6, 0)))
+    chat_new_chip = ft.TextButton("New message ↓", icon=ft.Icons.ARROW_DOWNWARD_ROUNDED, visible=False, on_click=lambda e: page.run_task(_chat_to_end), style=ft.ButtonStyle(color="#FFFFFF", bgcolor=C["accent"], padding=po(14, 4, 14, 4), shape=ft.RoundedRectangleBorder(radius=16)))       # a filled pill (a plain text link was not noticed)
     _chat_focus = {"on": False}                                       # does the message box hold the keyboard focus (so it can be given back after the chat list is redrawn)
 
     async def refocus_chat(had_focus: bool):
@@ -5239,8 +5243,10 @@ def main(page: ft.Page):
                 log.debug("chat scroll_to(message) failed: %r", ex)
                 await _chat_to_end()
                 return
-        if chat_new_chip.visible:
-            chat_new_chip.visible = False
+        await asyncio.sleep(0.25)                                 # the scroll events of the jump have arrived: is the rest of the answer below the visible part?
+        below = (chat_scroll["max"] - chat_scroll["pixels"]) > 48
+        if chat_new_chip.visible != below:
+            chat_new_chip.visible = below                         # a long answer is read from its first line: the pill says there is more below (and that the AI has finished)
             safe_update(chat_new_chip)
 
     async def _chat_to_end(animated: bool = False):
@@ -5291,7 +5297,7 @@ def main(page: ft.Page):
         keys = [_msg_sig(x) for _i, x in vis]
         old = chat_scroll["keys"]
         same_conv = chat_scroll["ctx"] == ctx and len(old) <= len(keys) and all(old[k][0] == keys[k][0] for k in range(len(old))) and len(chat_list.controls) == len(old)
-        user_sent = False
+        user_sent, grew = False, False
         if not same_conv:                                          # another conversation (or the first draw): build it and go back to where the user was in it
             if chat_scroll["ctx"] is not None and chat_scroll["ctx"] != ctx:
                 pass
@@ -5304,6 +5310,7 @@ def main(page: ft.Page):
             for k in range(len(old)):
                 if old[k] != keys[k]:                              # only the bubble that changed (Apply / Ignore / a state that changed) is replaced
                     chat_list.controls[k] = bubble(vis[k][0], vis[k][1])
+                    grew = grew or (vis[k][1].role != "user" and keys[k][1] > old[k][1])          # an answer that got longer (it was written while the user read above)
             added = vis[len(old):]
             for i, x in added:
                 chat_list.controls.append(bubble(i, x))
@@ -5317,7 +5324,7 @@ def main(page: ft.Page):
                     page.run_task(_chat_to_message, "msg_" + last.id)        # an answer arrived: its TOP is shown, so it is read from the beginning without scrolling back
                 else:
                     page.run_task(_chat_to_end)                    # the user sent it, or was reading the end: show the newest
-            elif added and not at_end:
+            elif (added or grew) and not at_end:
                 chat_new_chip.visible = True                       # the user is reading older messages: do not take the scroll from them
                 safe_update(chat_new_chip)
         refresh_chat_ctx()
@@ -6564,7 +6571,7 @@ def main(page: ft.Page):
     backend_dd.expand = True
     chat_view = ft.Column([ft.Row([ft.Text("Model", size=11, color=C["text3"]), backend_dd], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER),
                            ft.Row([ft.Text("Talk to", size=11, color=C["text3"]), spec_dd], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER), chat_who,
-                           ft.Container(chat_list, expand=True), chat_new_chip, chat_ctx, sel_toolbar, chat_input_row], spacing=6, expand=True)
+                           ft.Container(chat_list, expand=True), ft.Row([chat_new_chip], alignment=ft.MainAxisAlignment.CENTER), chat_ctx, sel_toolbar, chat_input_row], spacing=6, expand=True)
     # Lyrics Analysis (syllables: the AI splits, Python validates and counts; Phase 2: the user's manual corrections, kept apart from the raw AI result) ----
     an_cache = LA.ResultCache()
     rh_cache = LA.ResultCache()
@@ -7025,11 +7032,13 @@ def main(page: ft.Page):
         for k in links:
             mine, other = (k.a, k.b) if k.a.span == key else (k.b, k.a)
             picked.add(other.span)
-            facts = " · ".join(x for x in (k.sound_type.replace("_", " ") if k.sound_type else ("vowel rhyme" if k.kind == "vowel" else "consonant rhyme"), k.sound,
+            facts = " · ".join(x for x in (k.sound_type.replace("_", " ") if k.sound_type else ("vowel rhyme" if k.kind == "vowel" else "consonant rhyme"),
                                            k.placement.replace("_", " "), k.traditional_role) if x)
+            sound_tag = {"exact": "EXACT", "near": "NEAR"}.get(k.sound, (k.sound or "").upper())          # the sound level of THIS pair, in front: a shared colour does not make every pair exact
             ids = " · ".join(x for x in ((f"pair {k.pair_id}" if k.pair_id else ""), (f"group {k.group}" if k.group else "")) if x)
             body = [ft.Text(f"“{mine.text}” (line {mine.file_line}) ↔ “{other.text}” (line {other.file_line})", size=12, weight=ft.FontWeight.W_600, color=C["text1"], selectable=True),
-                    ft.Text(facts, size=11, color=C["text2"])]
+                    ft.Text(spans=[ft.TextSpan(sound_tag, style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=(k.sound == "near"), color=C["green"] if k.sound == "exact" else C["amber"])),
+                                   ft.TextSpan(("  ·  " + facts) if facts else "", style=ft.TextStyle(color=C["text2"]))], size=11)]
             if ids:
                 body.append(ft.Text(ids, size=10, color=C["text3"]))
             if k.reason:
@@ -9636,7 +9645,7 @@ def main(page: ft.Page):
     # The editor cannot colour single words, so the same lyrics are drawn again in a column beside it (read-only, ordinary Text spans: rhyme colours). The two do not share a scroll bar (the editor
     # reports no scroll position); instead the column follows the CARET: moving the cursor in the editor scrolls the column to that line (highlighted), and a click on a line of the column puts the
     # caret on that line of the editor. The column is redrawn shortly after typing stops, and only when the lyrics or the rhyme result changed.
-    cc = {"on": False, "rows": {}, "line": 0, "sig": None, "task": False, "due": 0.0, "sug": False, "more": set(), "view": "rhyme", "rev": 0}            # "sug": suggestions under the lines: off (the colour column is for something else now)
+    cc = {"on": False, "rows": {}, "line": 0, "sig": None, "task": False, "due": 0.0, "sug": False, "more": set(), "view": "rhyme", "rev": 0, "style": "rhyme"}            # "sug": suggestions under the lines: off (the colour column is for something else now)
     cc_list = ft.Column([], spacing=0, scroll=ft.ScrollMode.AUTO, expand=True)       # a Column, not a ListView: scroll_to(scroll_key) does not work on the lazily built items of a ListView
     cc_title = ft.Text("Rhyme & Syllables", size=11, weight=ft.FontWeight.BOLD, color=C["text3"])
     cc_chips = ft.Row([], spacing=6)
@@ -9644,7 +9653,16 @@ def main(page: ft.Page):
     cc_rhythm_bar = ft.Row([cc_chips], spacing=8, wrap=True, vertical_alignment=ft.CrossAxisAlignment.CENTER, visible=False)
     cc_sug_btn = ibtn(ft.Icons.LIGHTBULB_OUTLINE_ROUNDED, "Show the AI suggestions under their lines (Apply or Ignore them here)", lambda e: cc_toggle_sug(), 16, color=C["text3"], w=26)
     cc_sug_btn.visible = False
-    cc_panel = ft.Container(ft.Column([ft.Row([cc_sug_btn], spacing=2, wrap=True), cc_title, cc_rhythm_bar, cc_list], spacing=4, expand=True), expand=True, visible=True, bgcolor="#00000000",
+    LD_COL = {"live": "#34D399", "dead": "#FB923C", "unsure": "#94A3B8"}                       # light green = live, orange = dead, grey = not sure
+    cc_style_btns = {k: ft.Container(ft.Text(lbl, size=11, weight=ft.FontWeight.W_600), padding=po(10, 3, 10, 3), border_radius=12, ink=True, on_click=lambda e, k=k: cc_set_style(k))
+                     for k, lbl in (("rhyme", "Rhyme"), ("ld", "Live / Dead"))}
+    cc_style_row = ft.Row([cc_style_btns["rhyme"], cc_style_btns["ld"]], spacing=6, visible=True)
+    for _k, _b in cc_style_btns.items():                                                      # the first paint (Rhyme is the open view)
+        _b.bgcolor = ft.Colors.with_opacity(0.30, C["accent"]) if _k == "rhyme" else ft.Colors.with_opacity(0.06, "#FFFFFF")
+        _b.content.color = C["text1"] if _k == "rhyme" else C["text3"]
+    cc_legend = ft.Row([ft.Container(ft.Text(lbl, size=10, color="#E7EEFA"), bgcolor=ft.Colors.with_opacity(0.30, LD_COL[k]), border_radius=6, padding=po(6, 1, 6, 1)) for k, lbl in
+                        (("live", "Live syllable"), ("dead", "Dead syllable"), ("unsure", "Not sure"))], spacing=6, wrap=True, visible=False)
+    cc_panel = ft.Container(ft.Column([ft.Row([cc_sug_btn], spacing=2, wrap=True), cc_title, cc_style_row, cc_legend, cc_rhythm_bar, cc_list], spacing=4, expand=True), expand=True, visible=True, bgcolor="#00000000",
                             border_radius=8, padding=po(0, 0, 4, 0))
 
     def cc_line_of_caret() -> int:
@@ -9876,7 +9894,7 @@ def main(page: ft.Page):
         sess = sessions.get(S.song.id)
         st = S.song.settings
         return (S.song.id, LA.text_hash(lyr()), cc["sug"], tuple(sorted(sess.fd_status.items())) if sess else (), tuple(sorted(cc["more"])), tuple(sorted(fd_view["pick"].items())),
-                len(sess.specreports) if sess else 0, cc["view"], st.bpm, st.timesignature, st.duration, tuple(sorted(map(str, li["open"]))),
+                len(sess.specreports) if sess else 0, cc["view"], cc["style"], st.bpm, st.timesignature, st.duration, tuple(sorted(map(str, li["open"]))),
                 li_key()[2:])
 
     def li_counter(x):
@@ -9885,7 +9903,43 @@ def main(page: ft.Page):
                 "unverified": "Could not be counted"}[x.status] + (chr(10) + chr(10).join(x.warnings) if x.warnings else ""))
         return ft.Text(f"{LI_MARK[x.status]}{x.word_count} / {x.syllable_count}", size=10, color=C["text3"], width=54, text_align=ft.TextAlign.RIGHT, tooltip=tip)
 
+    def ld_counter(row):
+        """"dead 3 / 7": the dead syllables of the line out of the syllables that were classified (live + dead + not sure). Words that are not Thai are not counted."""
+        tip = (f"{I18N.tr('Live syllable')}: {row.live} · {I18N.tr('Dead syllable')}: {row.dead} · {I18N.tr('Not sure')}: {row.unsure}" + (f" · {I18N.tr('not Thai')}: {row.other}" if row.other else ""))
+        return ft.Text(f"{I18N.tr('dead')} {row.dead}/{row.total}" if row.total else "", size=10, color=C["text3"], width=62, text_align=ft.TextAlign.RIGHT, tooltip=tip)
+
+    def cc_rebuild_ld(text: str, ins):
+        """The live / dead view: the lyrics as written, every classified syllable on a tint (light green live, orange dead, grey not sure). Nothing here changes the rhyme colours or the lyrics."""
+        res = LD.analyze(text, ins)
+        secs = {s.first_line: s for s in res.sections}
+        rows = []
+        if res.reader_warning:                                  # an old pythainlp misreads vowels: said once, above the lines (nothing is corrected silently)
+            rows.append(ft.Container(ft.Text(res.reader_warning, size=11, color=C["amber"], selectable=True), padding=po(4, 4, 4, 6)))
+        for n, segs in LD.paint_segments(text, res):
+            if not segs:
+                row = ft.Container(height=12, data=n)
+            else:
+                tag = n in secs
+                spans = [ft.TextSpan(t, style=(ft.TextStyle(color=C["text1"], bgcolor=ft.Colors.with_opacity(0.26 if sy.cls != "unsure" else 0.20, LD_COL[sy.cls])) if sy else ft.TextStyle(color=C["text3"] if tag else C["text1"])))
+                         for t, sy in segs]
+                end = []
+                if tag:
+                    s_ = secs[n]
+                    end = [ft.Text(f"{I18N.tr('dead')} {s_.dead}/{s_.total}" if s_.total else "", size=10, color=C["text3"], width=62, text_align=ft.TextAlign.RIGHT,
+                                   tooltip=f"{I18N.tr('Live syllable')}: {s_.live} · {I18N.tr('Dead syllable')}: {s_.dead} · {I18N.tr('Not sure')}: {s_.unsure}")]
+                elif n in res.lines:
+                    end = [ld_counter(res.lines[n])]
+                row = ft.Container(ft.Row([ft.Text(str(n), size=10, color=C["text3"], width=22), ft.Text(spans=spans, size=13, expand=True)] + end, spacing=6, vertical_alignment=ft.CrossAxisAlignment.START),
+                                   padding=po(4, 2, 4, 2), border_radius=4, ink=True, on_click=lambda e, n=n: cc_go_line(n), data=n)
+            row.key = ft.ScrollKey(f"cc{n}")
+            cc["rows"][n] = row
+            rows.append(row)
+        cc_title.value = f"{I18N.tr('Live / Dead')} · {len(ins.lines)} {I18N.tr('lines')} · {I18N.tr('dead')} {res.dead}/{res.total}" + (f" · {res.unsure} {I18N.tr('Not sure')}" if res.unsure else "")
+        return rows
+
     def cc_rebuild_rhyme(text: str, ins):
+        if cc["style"] == "ld":
+            return cc_rebuild_ld(text, ins)
         by_n = {x.line_number: x for x in ins.lines}
         secs = {s.first_line: s for s in ins.sections}
         rows, lines_all = [], text.split(chr(10))
@@ -10100,6 +10154,23 @@ def main(page: ft.Page):
             mark.bgcolor = ft.Colors.with_opacity(0.16, C["accent"])
         cc["line"] = cur
 
+    def cc_style_paint():
+        for k, b in cc_style_btns.items():
+            on = cc["style"] == k
+            b.bgcolor = ft.Colors.with_opacity(0.30, C["accent"]) if on else ft.Colors.with_opacity(0.06, "#FFFFFF")
+            b.content.color = C["text1"] if on else C["text3"]
+        cc_style_row.visible = cc["view"] == "rhyme"
+        cc_legend.visible = cc["view"] == "rhyme" and cc["style"] == "ld"
+        safe_update(cc_style_row, cc_legend)
+
+    def cc_set_style(k: str):
+        """Rhyme | Live / Dead: the same column, two views. The scroll position and the open sections are kept; neither view changes the other's analysis."""
+        if cc["style"] == k:
+            return
+        cc["style"] = k
+        cc_style_paint()
+        cc_refresh(force=True)
+
     def cc_view(v: str):
         if cc["view"] == v:
             return
@@ -10107,6 +10178,7 @@ def main(page: ft.Page):
         dark = v == "rhythm"
         cc_title.visible = not dark
         cc_rhythm_bar.visible = dark
+        cc_style_paint()
         safe_update(cc_panel, cc_title, cc_rhythm_bar)
         cc_refresh(force=True)
 
