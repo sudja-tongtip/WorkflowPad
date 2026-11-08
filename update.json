@@ -1,44 +1,44 @@
 {
   "story_generator": {
     "name": "Story Generator",
-    "version": "0.3.2",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.2/WorkflowPad-v0.3.2-Beta.zip",
-    "notes": "Music Studio: Analyze Song uses a Python rhyme analysis as its rhyme evidence and refuses malformed or copied AI output (the page lists why); Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards and queue one song per card with its own BPM, key and time signature. 0.3.1 fix: the packaged Music Studio bundles pythainlp and numpy."
+    "version": "0.3.3",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.3/WorkflowPad-v0.3.3-Beta.zip",
+    "notes": "Music Studio: rhyme colours read inner rhymes per syllable (exact and near) and link a line end with a syllable in the next line; the pair details show EXACT / NEAR; new view 'live / dead syllables' (คำเป็น–คำตาย) in Rhyme & Syllables; the Python rhyme analysis gives near-only groups a letter; ผลัก is read as one syllable. Needs pythainlp 5.4.0 or newer (5.3.x misreads some vowels). 0.3.2: Analyze Song uses a Python rhyme analysis and refuses malformed AI output; Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards."
   },
   "prompt_lab": {
     "name": "Prompt Lab",
-    "version": "0.3.2",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.2/WorkflowPad-v0.3.2-Beta.zip",
-    "notes": "Music Studio: Analyze Song uses a Python rhyme analysis as its rhyme evidence and refuses malformed or copied AI output (the page lists why); Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards and queue one song per card with its own BPM, key and time signature. 0.3.1 fix: the packaged Music Studio bundles pythainlp and numpy."
+    "version": "0.3.3",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.3/WorkflowPad-v0.3.3-Beta.zip",
+    "notes": "Music Studio: rhyme colours read inner rhymes per syllable (exact and near) and link a line end with a syllable in the next line; the pair details show EXACT / NEAR; new view 'live / dead syllables' (คำเป็น–คำตาย) in Rhyme & Syllables; the Python rhyme analysis gives near-only groups a letter; ผลัก is read as one syllable. Needs pythainlp 5.4.0 or newer (5.3.x misreads some vowels). 0.3.2: Analyze Song uses a Python rhyme analysis and refuses malformed AI output; Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards."
   },
   "image_editor": {
     "name": "Image Editor",
-    "version": "0.3.2",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.2/WorkflowPad-v0.3.2-Beta.zip",
-    "notes": "Music Studio: Analyze Song uses a Python rhyme analysis as its rhyme evidence and refuses malformed or copied AI output (the page lists why); Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards and queue one song per card with its own BPM, key and time signature. 0.3.1 fix: the packaged Music Studio bundles pythainlp and numpy."
+    "version": "0.3.3",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.3/WorkflowPad-v0.3.3-Beta.zip",
+    "notes": "Music Studio: rhyme colours read inner rhymes per syllable (exact and near) and link a line end with a syllable in the next line; the pair details show EXACT / NEAR; new view 'live / dead syllables' (คำเป็น–คำตาย) in Rhyme & Syllables; the Python rhyme analysis gives near-only groups a letter; ผลัก is read as one syllable. Needs pythainlp 5.4.0 or newer (5.3.x misreads some vowels). 0.3.2: Analyze Song uses a Python rhyme analysis and refuses malformed AI output; Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards."
   },
   "gallery_generator": {
     "name": "Gallery Generator",
-    "version": "0.3.2",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.2/WorkflowPad-v0.3.2-Beta.zip",
-    "notes": "Music Studio: Analyze Song uses a Python rhyme analysis as its rhyme evidence and refuses malformed or copied AI output (the page lists why); Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards and queue one song per card with its own BPM, key and time signature. 0.3.1 fix: the packaged Music Studio bundles pythainlp and numpy."
+    "version": "0.3.3",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.3/WorkflowPad-v0.3.3-Beta.zip",
+    "notes": "Music Studio: rhyme colours read inner rhymes per syllable (exact and near) and link a line end with a syllable in the next line; the pair details show EXACT / NEAR; new view 'live / dead syllables' (คำเป็น–คำตาย) in Rhyme & Syllables; the Python rhyme analysis gives near-only groups a letter; ผลัก is read as one syllable. Needs pythainlp 5.4.0 or newer (5.3.x misreads some vowels). 0.3.2: Analyze Song uses a Python rhyme analysis and refuses malformed AI output; Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards."
   },
   "batch_editor": {
     "name": "Batch Editor",
-    "version": "0.3.2",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.2/WorkflowPad-v0.3.2-Beta.zip",
-    "notes": "Music Studio: Analyze Song uses a Python rhyme analysis as its rhyme evidence and refuses malformed or copied AI output (the page lists why); Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards and queue one song per card with its own BPM, key and time signature. 0.3.1 fix: the packaged Music Studio bundles pythainlp and numpy."
+    "version": "0.3.3",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.3/WorkflowPad-v0.3.3-Beta.zip",
+    "notes": "Music Studio: rhyme colours read inner rhymes per syllable (exact and near) and link a line end with a syllable in the next line; the pair details show EXACT / NEAR; new view 'live / dead syllables' (คำเป็น–คำตาย) in Rhyme & Syllables; the Python rhyme analysis gives near-only groups a letter; ผลัก is read as one syllable. Needs pythainlp 5.4.0 or newer (5.3.x misreads some vowels). 0.3.2: Analyze Song uses a Python rhyme analysis and refuses malformed AI output; Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards."
   },
   "music_studio": {
     "name": "Music Studio",
-    "version": "0.3.2",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.2/WorkflowPad-v0.3.2-Beta.zip",
-    "notes": "Music Studio: Analyze Song uses a Python rhyme analysis as its rhyme evidence and refuses malformed or copied AI output (the page lists why); Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards and queue one song per card with its own BPM, key and time signature. 0.3.1 fix: the packaged Music Studio bundles pythainlp and numpy."
+    "version": "0.3.3",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.3/WorkflowPad-v0.3.3-Beta.zip",
+    "notes": "Music Studio: rhyme colours read inner rhymes per syllable (exact and near) and link a line end with a syllable in the next line; the pair details show EXACT / NEAR; new view 'live / dead syllables' (คำเป็น–คำตาย) in Rhyme & Syllables; the Python rhyme analysis gives near-only groups a letter; ผลัก is read as one syllable. Needs pythainlp 5.4.0 or newer (5.3.x misreads some vowels). 0.3.2: Analyze Song uses a Python rhyme analysis and refuses malformed AI output; Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards."
   },
   "simple_chat": {
     "name": "Simple Chat Studio",
-    "version": "0.3.2",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.2/WorkflowPad-v0.3.2-Beta.zip",
-    "notes": "Music Studio: Analyze Song uses a Python rhyme analysis as its rhyme evidence and refuses malformed or copied AI output (the page lists why); Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards and queue one song per card with its own BPM, key and time signature. 0.3.1 fix: the packaged Music Studio bundles pythainlp and numpy."
+    "version": "0.3.3",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.3/WorkflowPad-v0.3.3-Beta.zip",
+    "notes": "Music Studio: rhyme colours read inner rhymes per syllable (exact and near) and link a line end with a syllable in the next line; the pair details show EXACT / NEAR; new view 'live / dead syllables' (คำเป็น–คำตาย) in Rhyme & Syllables; the Python rhyme analysis gives near-only groups a letter; ผลัก is read as one syllable. Needs pythainlp 5.4.0 or newer (5.3.x misreads some vowels). 0.3.2: Analyze Song uses a Python rhyme analysis and refuses malformed AI output; Basic caption builder; app-wide font size; Ctrl+click several AI Recommend style cards."
   }
 }
