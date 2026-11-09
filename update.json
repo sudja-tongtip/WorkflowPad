@@ -1,44 +1,44 @@
 {
   "story_generator": {
     "name": "Story Generator",
-    "version": "0.3.4",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.4/WorkflowPad-v0.3.4-Beta.zip",
-    "notes": "AI Recommend: every style word the AI wrote (Genre / Mood / Energy / Vocal that are not one of the choices) is added to the caption that is used, and the cards no longer show the 'not applied' warnings for them; Genre and Mood take the first of the AI's words that is a choice. 0.3.3: syllable-level rhyme map (rmap-2), live / dead syllable view; needs pythainlp 5.4.0 or newer."
+    "version": "0.3.5",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.5/WorkflowPad-v0.3.5-Beta.zip",
+    "notes": "The Generate / Add to queue button shows a spinner from the click until the song is queued or started, and cannot be pressed twice meanwhile. 0.3.4: AI Recommend adds every style word the AI wrote to the caption that is used. 0.3.3: syllable-level rhyme map (rmap-2), live / dead syllable view; needs pythainlp 5.4.0 or newer."
   },
   "prompt_lab": {
     "name": "Prompt Lab",
-    "version": "0.3.4",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.4/WorkflowPad-v0.3.4-Beta.zip",
-    "notes": "AI Recommend: every style word the AI wrote (Genre / Mood / Energy / Vocal that are not one of the choices) is added to the caption that is used, and the cards no longer show the 'not applied' warnings for them; Genre and Mood take the first of the AI's words that is a choice. 0.3.3: syllable-level rhyme map (rmap-2), live / dead syllable view; needs pythainlp 5.4.0 or newer."
+    "version": "0.3.5",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.5/WorkflowPad-v0.3.5-Beta.zip",
+    "notes": "The Generate / Add to queue button shows a spinner from the click until the song is queued or started, and cannot be pressed twice meanwhile. 0.3.4: AI Recommend adds every style word the AI wrote to the caption that is used. 0.3.3: syllable-level rhyme map (rmap-2), live / dead syllable view; needs pythainlp 5.4.0 or newer."
   },
   "image_editor": {
     "name": "Image Editor",
-    "version": "0.3.4",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.4/WorkflowPad-v0.3.4-Beta.zip",
-    "notes": "AI Recommend: every style word the AI wrote (Genre / Mood / Energy / Vocal that are not one of the choices) is added to the caption that is used, and the cards no longer show the 'not applied' warnings for them; Genre and Mood take the first of the AI's words that is a choice. 0.3.3: syllable-level rhyme map (rmap-2), live / dead syllable view; needs pythainlp 5.4.0 or newer."
+    "version": "0.3.5",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.5/WorkflowPad-v0.3.5-Beta.zip",
+    "notes": "The Generate / Add to queue button shows a spinner from the click until the song is queued or started, and cannot be pressed twice meanwhile. 0.3.4: AI Recommend adds every style word the AI wrote to the caption that is used. 0.3.3: syllable-level rhyme map (rmap-2), live / dead syllable view; needs pythainlp 5.4.0 or newer."
   },
   "gallery_generator": {
     "name": "Gallery Generator",
-    "version": "0.3.4",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.4/WorkflowPad-v0.3.4-Beta.zip",
-    "notes": "AI Recommend: every style word the AI wrote (Genre / Mood / Energy / Vocal that are not one of the choices) is added to the caption that is used, and the cards no longer show the 'not applied' warnings for them; Genre and Mood take the first of the AI's words that is a choice. 0.3.3: syllable-level rhyme map (rmap-2), live / dead syllable view; needs pythainlp 5.4.0 or newer."
+    "version": "0.3.5",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.5/WorkflowPad-v0.3.5-Beta.zip",
+    "notes": "The Generate / Add to queue button shows a spinner from the click until the song is queued or started, and cannot be pressed twice meanwhile. 0.3.4: AI Recommend adds every style word the AI wrote to the caption that is used. 0.3.3: syllable-level rhyme map (rmap-2), live / dead syllable view; needs pythainlp 5.4.0 or newer."
   },
   "batch_editor": {
     "name": "Batch Editor",
-    "version": "0.3.4",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.4/WorkflowPad-v0.3.4-Beta.zip",
-    "notes": "AI Recommend: every style word the AI wrote (Genre / Mood / Energy / Vocal that are not one of the choices) is added to the caption that is used, and the cards no longer show the 'not applied' warnings for them; Genre and Mood take the first of the AI's words that is a choice. 0.3.3: syllable-level rhyme map (rmap-2), live / dead syllable view; needs pythainlp 5.4.0 or newer."
+    "version": "0.3.5",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.5/WorkflowPad-v0.3.5-Beta.zip",
+    "notes": "The Generate / Add to queue button shows a spinner from the click until the song is queued or started, and cannot be pressed twice meanwhile. 0.3.4: AI Recommend adds every style word the AI wrote to the caption that is used. 0.3.3: syllable-level rhyme map (rmap-2), live / dead syllable view; needs pythainlp 5.4.0 or newer."
   },
   "music_studio": {
     "name": "Music Studio",
-    "version": "0.3.4",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.4/WorkflowPad-v0.3.4-Beta.zip",
-    "notes": "AI Recommend: every style word the AI wrote (Genre / Mood / Energy / Vocal that are not one of the choices) is added to the caption that is used, and the cards no longer show the 'not applied' warnings for them; Genre and Mood take the first of the AI's words that is a choice. 0.3.3: syllable-level rhyme map (rmap-2), live / dead syllable view; needs pythainlp 5.4.0 or newer."
+    "version": "0.3.5",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.5/WorkflowPad-v0.3.5-Beta.zip",
+    "notes": "The Generate / Add to queue button shows a spinner from the click until the song is queued or started, and cannot be pressed twice meanwhile. 0.3.4: AI Recommend adds every style word the AI wrote to the caption that is used. 0.3.3: syllable-level rhyme map (rmap-2), live / dead syllable view; needs pythainlp 5.4.0 or newer."
   },
   "simple_chat": {
     "name": "Simple Chat Studio",
-    "version": "0.3.4",
-    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.4/WorkflowPad-v0.3.4-Beta.zip",
-    "notes": "AI Recommend: every style word the AI wrote (Genre / Mood / Energy / Vocal that are not one of the choices) is added to the caption that is used, and the cards no longer show the 'not applied' warnings for them; Genre and Mood take the first of the AI's words that is a choice. 0.3.3: syllable-level rhyme map (rmap-2), live / dead syllable view; needs pythainlp 5.4.0 or newer."
+    "version": "0.3.5",
+    "download_url": "https://github.com/sudja-tongtip/WorkflowPad/releases/download/v0.3.5/WorkflowPad-v0.3.5-Beta.zip",
+    "notes": "The Generate / Add to queue button shows a spinner from the click until the song is queued or started, and cannot be pressed twice meanwhile. 0.3.4: AI Recommend adds every style word the AI wrote to the caption that is used. 0.3.3: syllable-level rhyme map (rmap-2), live / dead syllable view; needs pythainlp 5.4.0 or newer."
   }
 }
