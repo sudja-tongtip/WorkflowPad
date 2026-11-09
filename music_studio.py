@@ -3524,6 +3524,12 @@ def main(page: ft.Page):
     # ═══ EDITOR: generation + output ════════════════════════════════════════════════════════════════════════
     btn_generate = ft.FilledButton("Generate", icon=ft.Icons.MUSIC_NOTE_ROUNDED, height=46, expand=True, on_click=lambda e: page.run_task(generate),
                                    style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF", shape=ft.RoundedRectangleBorder(radius=10), text_style=ft.TextStyle(size=15, weight=ft.FontWeight.BOLD)))
+    gen_click = {"busy": False}                                        # True from the click until the song is queued / started or the click fails: the button shows a spinner and cannot be pressed twice
+
+    def _gen_spinner(label: str):
+        return ft.Row([ft.ProgressRing(width=18, height=18, stroke_width=2.5, color="#FFFFFF"), ft.Text(label, size=15, weight=ft.FontWeight.BOLD, color="#FFFFFF")], spacing=10,
+                      alignment=ft.MainAxisAlignment.CENTER, tight=True)
+
     gen_status = ft.Text("", size=12, color=C["text2"])
     btn_cancel_gen = ft.OutlinedButton("Cancel", height=46, visible=False, on_click=lambda e: request_cancel())
     output_title = ft.Text("Output", size=17, weight=ft.FontWeight.BOLD, color=C["text1"])
@@ -3562,6 +3568,12 @@ def main(page: ft.Page):
             btn_generate.content = "Cover"
         else:
             btn_generate.content = "Generate"
+        if gen_click["busy"]:                                                   # the click is being prepared (the workflow is loaded and checked, the song is copied): a spinner, and no second press
+            btn_generate.content = _gen_spinner(btn_generate.content if isinstance(btn_generate.content, str) else "Generate")
+            btn_generate.icon = None
+            btn_generate.disabled = True
+        else:
+            btn_generate.icon = ft.Icons.MUSIC_NOTE_ROUNDED
         safe_update(btn_generate)
         if btn_repaint is not None:
             btn_repaint.disabled = busy_any or S.song is None
@@ -4381,7 +4393,23 @@ def main(page: ft.Page):
         finally:
             release_gen(own["gen"])
 
+    def _gen_click_done():
+        if gen_click["busy"]:
+            gen_click["busy"] = False
+            update_generate_button()
+
     async def generate():
+        if gen_click["busy"]:
+            return
+        gen_click["busy"] = True
+        update_generate_button()
+        await asyncio.sleep(0.05)                                # let the spinner reach the screen before the (synchronous) preparation starts
+        try:
+            await _generate_click()
+        finally:
+            _gen_click_done()
+
+    async def _generate_click():
         cards = dr_multi_cards() if style_tab["v"] == "ai" else []
         if cards is None:
             return
@@ -4402,6 +4430,7 @@ def main(page: ft.Page):
             if len(entries) == n0:
                 return                                           # a check failed and said why: nothing is queued
         busy_now = S.gen is not None and S.gen["status"] in ("captioning", "queued", "running", "cancelling")
+        _gen_click_done()
         dr["multi"] = []
         if style_tab["v"] == "ai":
             dr_render()
@@ -4510,6 +4539,7 @@ def main(page: ft.Page):
                 return
             if S.gen and S.gen["status"] in ("captioning", "queued", "running", "cancelling"):
                 gen_queue.append(entry)                              # another song is being generated: this one is prepared now (what the editor holds NOW) and waits its turn
+                _gen_click_done()
                 update_generate_button(); rebuild_output()
                 toast(f"“{title}” was added to the queue (place {len(gen_queue)}).", C["green"])
                 return
@@ -4552,6 +4582,7 @@ def main(page: ft.Page):
         """Run one prepared (queued or direct) generation: everything it needs was captured when it was requested; nothing is read from the editor now."""
         loop = asyncio.get_running_loop()
         gen = S.gen = own["gen"] = {"song_id": e["song_id"], "status": "queued", "pid": "", "cancel": False, "card": e.get("card", ""), "line": e.get("line", "")}
+        gen_click["busy"] = False                                # the click is done: from here the button says Generating… / the Output panel shows the progress
         update_generate_button(); rebuild_output()
 
         def on_state(st):
