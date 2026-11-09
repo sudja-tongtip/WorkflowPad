@@ -2964,8 +2964,7 @@ def main(page: ft.Page):
         picked = i in dr["multi"]
         chips = [dr_chip(lbl, dr_show(n, sug[n])) for n, lbl in (("genre", "Style"), ("mood", "Mood"), ("vocal", "Vocal"), ("energy", "Energy"), ("bpm", "BPM"), ("keyscale", "Start key"), ("timesignature", "Time sig.")) if sug.get(n) not in (None, "")]
         cap_open = d.index in dr["cap_open"]
-        notes = [ft.Text(f"⚠ {AD.LABELS.get(f, f)}: the AI wrote “{str(raw)[:40]}” ({why_}); it is not applied.", size=10, color=C["amber"]) for f, raw, why_ in AD.problems_of(dr["prop"], d)[:2]]
-        notes += [ft.Text("⚠ " + w, size=10, color=C["amber"]) for w in (d.warnings + d.notes)[:2]]
+        notes = [ft.Text(f"⚠ {AD.LABELS.get(f, f)}: the AI wrote “{str(raw)[:40]}” ({why_}); it is not applied.", size=10, color=C["amber"]) for f, raw, why_ in AD.problems_of(dr["prop"], d) if f not in AD.STYLE_WORD_FIELDS][:2]       # Genre / Mood / Energy / Vocal words are all in the caption that is applied (AD.full_caption), so nothing is "not applied" and nothing is said; the caption remarks (BPM mentioned, cue vs caption) are not shown on the card
         hint = "Picked for the queue (Ctrl+click again to drop it)" if picked else ("Applied. Undo is beside Generate." if applied else "Click to use this style")
         foot = ft.Row([ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED if (applied or picked) else ft.Icons.TOUCH_APP_OUTLINED, size=14, color=C["green"] if (applied or picked) else C["text3"]),
                        ft.Text(hint, size=10, color=C["green"] if (applied or picked) else C["text3"], expand=True),
@@ -3071,8 +3070,6 @@ def main(page: ft.Page):
                                                     size=11, color=C["text1"], expand=True),
                                             ft.TextButton("Clear picks", on_click=dr_clear_multi)], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER),
                                     padding=po(10, 6, 6, 6), border_radius=10, bgcolor=DR_BG, border=ft.Border.all(1, C["green"])))
-        for w in prop.warnings:
-            ctl.append(ft.Text("⚠ " + w, size=11, color=C["amber"]))
         ai_box.controls = ctl
         safe_update(ai_box)
         dr_side_buttons()

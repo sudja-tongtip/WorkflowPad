@@ -414,8 +414,30 @@ def _settings_lines(text: str) -> dict:
     return raw
 
 
+_LIST_SPLIT = re.compile(r"\s*(?:,|;|/|&|\band\b|\+)\s*", re.IGNORECASE)
+
+
 def check_value(name: str, raw) -> tuple:
-    """(value, None) or (None, reason): the rules of the Style / Output controls (template_arrange.check_field) plus Genre and Language. Nothing is clamped and 'auto' never becomes a BPM / Key."""
+    """(value, None) or (None, reason): the rules of the Style / Output controls (template_arrange.check_field) plus Genre and Language. Nothing is clamped and 'auto' never becomes a BPM / Key.
+    Genre and Mood are choices from a fixed list. When the AI wrote SEVERAL words ("Ambient, Electronic", "Dark, Atmospheric"), the first of its own words that is a choice is taken (the whole text with the
+    separators read as spaces is tried first, so "Alternative, Rock" is "Alternative Rock"); a word of the AI's that is not a choice is never turned into a different one. `_check_values` says what was chosen."""
+    one = _check_one(name, raw)
+    if one[1] is None or name not in ("genre", "mood"):
+        return one
+    text = ("" if raw is None else str(raw)).strip()
+    if not _LIST_SPLIT.search(text):
+        return one
+    joined = _check_one(name, _LIST_SPLIT.sub(" ", text))
+    if joined[1] is None and joined[0]:
+        return joined
+    for part in _LIST_SPLIT.split(text):
+        got = _check_one(name, part)
+        if got[1] is None and got[0]:
+            return got
+    return one
+
+
+def _check_one(name: str, raw) -> tuple:
     s = ("" if raw is None else str(raw)).strip()
     if name == "genre":
         if not s:
@@ -788,10 +810,32 @@ def finish(raw: str, snap: Snapshot) -> Proposal:
 
 
 # ── settings: user-selected / AI-suggested / effective ───────────────────────────────────────────────────────
+STYLE_WORD_FIELDS = ("genre", "mood", "energy", "vocal")        # fields whose value must be one of the program's choices; the AI's own words for them are not lost (see full_caption)
+
+
+def full_caption(prop: Proposal, d: Direction) -> str:
+    """EVERY word the AI wrote for the style goes into the caption that is sent. The caption itself is never cut or filtered. The words the AI gave for Genre / Mood / Energy / Vocal that are not one of the
+    program's choices (so no field can hold them: "Ambient, Electronic", "Moderate Energy") are added at the end of the caption, unless the caption already has all of their words."""
+    cap = (d.caption or "").strip()
+    have = {w.casefold() for w in re.findall(r"\w+", cap)}
+    extra = []
+    for name, text, _why in problems_of(prop, d):
+        t = ("" if text is None else str(text)).strip()
+        if name not in STYLE_WORD_FIELDS or not t:
+            continue
+        words = [w.casefold() for w in re.findall(r"\w+", t)]
+        if words and not all(w in have for w in words) and t.casefold() not in (e.casefold() for e in extra):
+            extra.append(t)
+            have.update(words)
+    if not extra:
+        return cap
+    return cap + (" " if cap.endswith((".", "!", "?")) else ", ") + ", ".join(extra) + "."
+
+
 def suggested(prop: Proposal, d: Direction) -> dict:
-    """The AI-suggested valid values of a direction: its own settings over the METADATA block, plus its caption."""
+    """The AI-suggested valid values of a direction: its own settings over the METADATA block, plus its caption (all of its words: see full_caption)."""
     out = {**prop.meta, **{k: v for k, v in d.values.items()}}
-    out["style_prompt"] = d.caption
+    out["style_prompt"] = full_caption(prop, d)
     return out
 
 
