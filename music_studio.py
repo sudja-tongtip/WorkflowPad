@@ -3,7 +3,7 @@ WorkflowPad Music Studio: a music library and a lyrics editor for ACE-Step 1.5 (
 Two pages: My Music (library + player) and Editor (lyrics, AI chat, settings, takes). The logic lives in music_studio/ (model, store, compiler,
 lyrics_tools, comfy_audio, player, llm_chat); this file is the Flet screen only.
 """
-import asyncio, copy, json, logging, logging.handlers, os, re, subprocess, sys, tempfile, threading, time, types, zlib
+import asyncio, copy, hashlib, json, logging, logging.handlers, os, re, subprocess, sys, tempfile, threading, time, types, zlib
 from pathlib import Path
 from dataclasses import asdict, replace
 import flet as ft
@@ -5377,6 +5377,7 @@ def main(page: ft.Page):
     spec_sessions: dict = {}
     spec_locks: dict = {}
     _open_task: dict = {}                                       # (song, sheet, specialist) -> the next message gets the fact that a task waits for the user's lyrics (the model decides what to do with it)
+    handoff_pending: dict = {}                                  # (song, sheet) -> {"label", "finding_id", "rep", "t"}: the Song Critic report that travels with the NEXT Songwriter message of that exact label
     chat_who = ft.Text("", size=11, color=C["accent"], height=16)             # always in the layout (empty when idle): showing / hiding it would move the chat list and its scroll position
 
     def get_spec_session(song_id: str, sheet_id: str, spec: str):
@@ -5613,6 +5614,26 @@ def main(page: ft.Page):
             user_msg += chr(10) * 2 + block                                          # findings only: the model may propose, the user still previews. No extra LLM call.
         if open_note:
             user_msg = SE.OPEN_TASK_NOTE + chr(10) * 2 + user_msg                    # a fact for this message only; the model decides whether the message is the awaited lyrics or something new
+        ho = handoff_pending.pop((song.id, sheet0), None) if spec == "songwriter" else None
+        if ho is not None and ho.get("label") == instruction and time.time() - ho.get("t", 0) < 120:
+            try:                                                                     # "Discuss with Songwriter": the Song Critic report (or one finding) travels as DATA with this message only; no Song Critic call
+                n_ctx = n_ctx_for(backend)
+                avail = sr_handoff_avail(backend, user_msg, live_now)
+                budget = min(3500, avail)
+                ho_text, ho_info = sr_handoff_text(ho, text, budget) if budget > 0 else (None, {"refused": True, "budget": budget, "tokens": 0})
+                if ho_text is None:                                                    # the smallest useful hand-off does not fit: NOTHING is sent to the model, and the user is told why
+                    TRC.log_event("handoff", specialist="songwriter", song_id=song.id, sheet_id=sheet0, finding=ho.get("finding_id") or "(whole report)", backend=backend, n_ctx=n_ctx, budget=budget, info=ho_info, text="(refused: no room)")
+                    append_chat(song.id, M.ChatMessage("note", I18N.tr("The Song Critic report was NOT sent, and nothing was sent to the model: this conversation has no room for it. Start a new session (New session) and press Discuss again."),
+                                                       specialist="songwriter", sheet_id=sheet0))
+                    return
+                user_msg = ho_text + chr(10) * 2 + user_msg
+                TRC.log_event("handoff", specialist="songwriter", song_id=song.id, sheet_id=sheet0, finding=ho.get("finding_id") or "(whole report)", backend=backend, n_ctx=n_ctx, budget=budget, info=ho_info, text=ho_text)
+                cut_note = (" Shortened: " + ", ".join(ho_info["shortened"]) + "." if ho_info["shortened"] else "") + (" Left out: " + ", ".join(ho_info["left_out"]) + "." if ho_info["left_out"] else "")
+                append_chat(song.id, M.ChatMessage("note", f"Sent with this message: the Song Critic report ({'one finding' if ho.get('finding_id') else 'the whole report'}), about {ho_info['tokens']} tokens of a {budget}-token budget." + cut_note,
+                                                   specialist="songwriter", sheet_id=sheet0))
+            except Exception as ex:
+                dbg_once("handoff", ex)
+                toast("The report could not be added to the message. The message was sent without it.", C["amber"])
         S.chat_busy_song = song.id
         chat_who.value = f"{SP.name_of(spec)} is answering…"
         chat_busy.visible = True; safe_update(chat_busy, chat_who)
@@ -11826,6 +11847,118 @@ def main(page: ft.Page):
     def sr_chip(text: str, color: "str | None" = None, tip: str = ""):
         return ft.Container(ft.Text(text, size=10, color=color or C["text2"], weight=ft.FontWeight.W_600), padding=po(8, 2, 8, 2), border_radius=10, bgcolor=C["field"], border=ft.Border.all(1, C["border"]), tooltip=tip or None)
 
+    def sr_handoff_text(ho: dict, lyrics_now: str, budget: int) -> tuple:
+        """The context of one 'Discuss with Songwriter' (pure builder in spec_reports): the report as it is stored, its status NOW and what changed since it was made."""
+        rep = ho["rep"]
+        d = rep.data or {}
+        st = S.song.settings
+        state = SR.state_of(rep, LA.text_hash(lyrics_now), running=False, current_input_fp=sr_input_fp("song_critic"))
+        why = SR.outdated_why(rep, LA.text_hash(lyrics_now), sr_input_fp("song_critic"))
+        return SR.handoff_text(title=S.song.title or "", song_id=S.song.id, sheet_id=S.song.book.active_id, style={"genre": st.genre, "mood": st.mood, "energy": st.energy, "vocal": st.vocal, "language": st.language},
+                               settings={k: v for k, v in SH.settings_to_dict(st).items() if k in ("bpm", "timesignature", "duration", "keyscale")}, sr_data=d.get("sr") or {}, rep_ts=str(rep.ts or ""),
+                               backend=rep.backend or "", model=rep.model or "", state=state, why=why, lyrics_then=d.get("lyrics") or lyrics_now, lyrics_now=lyrics_now, finding_id=ho.get("finding_id") or "", budget_tokens=budget)
+
+    def sr_handoff_avail(backend: str, user_msg: str, live=None) -> int:
+        """Tokens the hand-off may use: what the conversation can still hold (the engine's own limit) minus the system prompt, the conversation so far (earlier hand-offs stay in it), this message and a margin.
+        Can be zero or negative: then there is no room and nothing is built."""
+        n_ctx = n_ctx_for(backend)
+        sys_est = LC.estimate_tokens(SP.effective_system("songwriter")[0])
+        if live is None:
+            try:
+                sess = get_spec_session(S.song.id, S.song.book.active_id, "songwriter")
+                live = SE.get_live(sess, SE.live_kind(backend), an_identity(backend)[0] or "")
+            except Exception:
+                live = None
+        cap = int(SE.LIMIT_RATIO * n_ctx) - SE.OUT_RESERVE
+        return cap - sys_est - int(getattr(live, "tokens", 0) or 0) - LC.estimate_tokens(user_msg) - 300
+
+    def sr_discuss(finding_id: str = ""):
+        """'Discuss with Songwriter': the Songwriter chat of this song and sheet gets a message of the user's, and the report (or the finding) goes with it as data. The Songwriter's session is kept (nothing is
+        reset), the Song Critic is not asked again, and nothing in the lyrics changes."""
+        if not S.song:
+            toast("Open or create a song first.", C["amber"]); return
+        rep = sr_get("song_critic")
+        if rep is None or rep.status != "ok" or not (rep.data or {}).get("sr"):
+            toast("There is no readable Song Critic report to discuss yet. Press Analyze first.", C["amber"]); return
+        if S.chat_busy_song or S.an_busy or sr["running"]:
+            toast("The AI is still busy. Try again in a moment.", C["amber"]); return
+        if not S.backend:
+            toast("No AI backend: put an LLM workflow in comfy_apis/llm or set a Grok key in Prompt Lab", C["amber"]); return
+        f = next((x for x in (rep.data["sr"].get("findings") or []) if x.get("id") == finding_id), None) if finding_id else None
+        if finding_id and f is None:
+            toast("That finding is not in the report any more.", C["amber"]); return
+        if f is not None:
+            refs = sr_refs_of(f)
+            where = SR.refs_label(refs) if refs else I18N.tr("the whole song")
+            label = I18N.tr("Let's discuss this Song Critic finding") + f" ({where}): " + (f.get("observation") or f.get("interpretation") or "")[:90]
+        else:
+            label = I18N.tr("Let's discuss the Song Critic report") + ": " + (rep.data["sr"].get("headline") or "")[:110]
+        sheet0 = S.song.book.active_id
+        ho_try = {"label": label, "finding_id": finding_id, "rep": rep, "t": time.time()}
+        room = min(3500, sr_handoff_avail(S.backend, lyr() + chr(10) * 3 + label))
+        if room <= 0 or sr_handoff_text(ho_try, lyr(), room)[0] is None:               # checked BEFORE anything is sent or written to the chat
+            toast("This conversation has no room for the report. Start a new session (New session), then press Discuss again. Nothing was sent.", C["amber"]); return
+        handoff_pending[(S.song.id, sheet0)] = ho_try
+        set_spec("songwriter")
+        pick_ai_tab("chat")
+        append_chat(S.song.id, M.ChatMessage("user", label, specialist="songwriter", sheet_id=sheet0))
+        page.run_task(ask_ai, label)
+
+    def sr_ensure_proposal(f: dict, rep):
+        """(chat message, edit) that holds the Song Critic's proposed wording of ONE finding in the Songwriter chat, so Preview, Apply and Undo are the existing ones. Made once per finding of a report."""
+        key = f"critic:{rep.ts}:{f['id']}"
+        sheet0 = S.song.book.active_id
+        for m in S.chat:
+            for e in (m.edits or []):
+                if e.get("critic_key") == key and (not m.sheet_id or m.sheet_id == sheet0):
+                    return m, e
+        a, b = sr_refs_of(f)[0]
+        rows = lyr().split(chr(10))
+        original = chr(10).join(rows[a - 1:b])
+        start = sum(len(r) + 1 for r in rows[:a - 1])
+        e = {"id": "crit_" + hashlib.sha1(key.encode("utf-8")).hexdigest()[:8], "kind": "change_lyric", "first": a, "last": b, "original": original, "replacement": f["proposal"], "reason": (f.get("recommendation") or f.get("observation") or "")[:300],
+             "status": "open", "label": "", "start": start, "end": start + len(original), "target": "", "section": "", "snap_hash": SE.text_hash_of(lyr()), "song_id": S.song.id, "sheet_id": sheet0, "critic_key": key}
+        m = M.ChatMessage("assistant", I18N.tr("A proposed wording from the Song Critic report, to preview and apply here. Nothing changes until you apply it."), specialist="songwriter", sheet_id=sheet0, edits=[e])
+        append_chat(S.song.id, m)
+        return m, e
+
+    def sr_proposal_ui(f: dict, rep, stale: bool) -> list:
+        """Original vs proposed for a finding that carries a real wording. Preview / Apply are the chat's own (apply_chat_edit, rv_preview, Undo of the editor); a conceptual finding has none of it."""
+        refs = sr_refs_of(f)
+        if not f.get("proposal") or len(refs) != 1:
+            return []
+        a, b = refs[0]
+        rows = lyr().split(chr(10))
+        cur = chr(10).join(rows[a - 1:b])
+        out = [ft.Row([ft.Container(ft.Column([ft.Text(I18N.tr("ORIGINAL"), size=9, weight=ft.FontWeight.W_700, color=C["text3"]), ft.Text(f.get("quote", ""), size=12, color=C["text1"], selectable=True)], spacing=2),
+                                    padding=po(10, 7, 10, 7), border_radius=8, bgcolor=C["field"], border=ft.Border.all(1, C["border"]), expand=True)]),
+               ft.Row([ft.Container(ft.Column([ft.Text(I18N.tr("PROPOSED"), size=9, weight=ft.FontWeight.W_700, color=C["green"]), ft.Text(f["proposal"], size=12, color=C["text1"], selectable=True)], spacing=2),
+                                    padding=po(10, 7, 10, 7), border_radius=8, bgcolor=ft.Colors.with_opacity(0.10, C["green"]), border=ft.Border.all(1, ft.Colors.with_opacity(0.35, C["green"])), expand=True)])]
+        blank = any((not r.strip()) or SE.TAG_LINE.match(r) for r in rows[a - 1:b])
+        existing = next((e for m in S.chat for e in (m.edits or []) if e.get("critic_key") == f"critic:{rep.ts}:{f['id']}"), None)
+        state = SE.edit_state(existing, lyr(), "songwriter") if existing is not None else "open"
+        if state == "applied":                                                  # read from the lyrics as they are now: an Undo makes it open again
+            out.append(ft.Text(I18N.tr("✓ Applied. Undo in the editor brings the old lines back."), size=11, color=C["green"]))
+        elif state == "ignored":
+            out.append(ft.Text(I18N.tr("Ignored"), size=11, color=C["text3"]))
+        elif stale:
+            out.append(ft.Text(I18N.tr("This report is outdated, so its proposal is not applied directly. Analyze again, or discuss it with the Songwriter."), size=11, color=C["amber"]))
+        elif blank or not (1 <= a <= b <= len(rows)) or cur.strip() != (f.get("quote") or "").strip() or state == "stale":
+            out.append(ft.Text(I18N.tr("The lines changed since the report, so this proposal cannot be applied. Analyze again, or discuss it with the Songwriter."), size=11, color=C["amber"]))
+        else:
+            def go(apply_now: bool):
+                m, e = sr_ensure_proposal(f, rep)
+                if apply_now:
+                    apply_chat_edit(m.id, e["id"])
+                    sr_render()
+                else:
+                    item = RV.Item(e["id"], "edit", e["first"], e["last"], e["original"], e["replacement"], e.get("reason", ""))
+                    rv_preview(item, lambda: (apply_chat_edit(m.id, e["id"]), sr_render()))
+            out.append(ft.Row([ft.OutlinedButton(I18N.tr("Preview"), tooltip=I18N.tr("See the lines before and after; nothing changes"), on_click=lambda ev: go(False)),
+                               ft.FilledButton(I18N.tr("Apply"), tooltip=I18N.tr("Put the proposed wording in the lyrics (Undo brings the old back)"), on_click=lambda ev: go(True),
+                                               style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF"))], spacing=6, wrap=True))
+        return out
+
     def sr_toggle_arc():
         sr["arc"].symmetric_difference_update({(S.song.id, S.song.book.active_id)})
         sr_render()
@@ -11852,11 +11985,26 @@ def main(page: ft.Page):
     def sr_card(*rows, tint: "str | None" = None):
         return ft.Container(ft.Column(list(rows), spacing=6, tight=True), padding=po(12, 10, 12, 10), border_radius=10, bgcolor=C["panel2"], border=ft.Border.all(1, tint or C["border"]))
 
-    def sr_quote(text: str, first: int = 0, last: int = 0, stale: bool = False):
-        """The lyric lines of a finding, as written (the program's own text, never the AI's copy)."""
-        rows = [ln for ln in (text or "").split("\n") if ln.strip()]
-        return ft.Container(ft.Column([ft.Row([sr_ref(first, last, stale)] if first else [], spacing=6)] + [ft.Text(x, size=12, color=C["text1"], selectable=True) for x in rows[:6]] + ([ft.Text("…", size=11, color=C["text3"])] if len(rows) > 6 else []),
-                                      spacing=3, tight=True), padding=po(10, 7, 10, 7), bgcolor=C["field"], border=ft.Border(left=ft.BorderSide(3, C["accent"])))      # no border_radius: Flutter refuses a radius with a one-sided border (grey error box)
+    def sr_refs_of(f: dict) -> list:
+        """[(first, last), ...] of a finding: its `refs`, or the single first / last of a report saved before several references were supported."""
+        r = f.get("refs")
+        if r:
+            return [(int(a), int(b)) for a, b in r]
+        return [(f["first"], f["last"])] if f.get("first") else []
+
+    def sr_refs_row(f: dict, stale: bool):
+        chips = [sr_ref(a, b, stale) for a, b in sr_refs_of(f)]
+        if f.get("lines_invalid"):                                            # the AI wrote lines the program could not read: the finding is kept, with this mark instead of a link
+            chips.append(ft.Container(ft.Text(I18N.tr("Lines not readable:") + " " + str(f["lines_invalid"])[:30], size=11, color=C["amber"], weight=ft.FontWeight.W_700), padding=po(7, 1, 7, 1),
+                                      border_radius=6, bgcolor=ft.Colors.with_opacity(0.12, C["amber"]), tooltip=I18N.tr("The AI cited lines in a form the program does not accept, so there is no line link and the quotation was not checked.")))
+        return ft.Row(chips, spacing=6, wrap=True, run_spacing=4) if chips else None
+
+    def sr_quote(text: str, f: dict, stale: bool = False):
+        """The lyric lines of a finding, as written (the program's own text, never the AI's copy); several separate places are shown one after the other with a gap mark."""
+        rows = [ln for ln in (text or "").split(chr(10)) if ln.strip()]
+        head = sr_refs_row(f, stale)
+        kids = ([head] if head is not None else []) + [ft.Text(x, size=12, color=C["text3"] if x.strip() == "…" else C["text1"], selectable=True) for x in rows[:10]] + ([ft.Text("…", size=11, color=C["text3"])] if len(rows) > 10 else [])
+        return ft.Container(ft.Column(kids, spacing=3, tight=True), padding=po(10, 7, 10, 7), bgcolor=C["field"], border=ft.Border(left=ft.BorderSide(3, C["accent"])))      # no border_radius: Flutter refuses a radius with a one-sided border (grey error box)
 
     def sr_kv(label: str, text: str, color: "str | None" = None, size: int = 12):
         if not (text or "").strip():
@@ -11871,8 +12019,12 @@ def main(page: ft.Page):
         label, col, icon = KIND_STYLE.get(f["kind"], ("Note", "text3", ft.Icons.INFO_OUTLINE))
         head = ft.Row([ft.Icon(icon, size=14, color=C[col]), ft.Text(I18N.tr(label), size=11, weight=ft.FontWeight.W_700, color=C[col]), ft.Container(expand=True),
                        ft.Text(I18N.tr({"high": "High priority", "medium": "Medium priority", "low": "Low priority"}.get(f.get("priority"), "")), size=10, color=C["text3"])], spacing=6)
-        body = [head, sr_quote(f.get("quote", ""), f.get("first", 0), f.get("last", 0), stale)]
-        if f.get("quote_ok") is False:                                      # the AI's quotation was not in the lyrics: the lines above are the program's, and the reading below is the AI's own and unchecked
+        body = [head, sr_quote(f.get("quote", ""), f, stale)]
+        if f.get("lines_invalid"):
+            body.append(ft.Row([ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, size=13, color=C["amber"]),
+                                ft.Text(I18N.tr("Unverified: the lines this finding cites could not be read, so the quotation above is the AI's own words and was not checked against the lyrics."), size=10, color=C["amber"], expand=True)],
+                               spacing=4, vertical_alignment=ft.CrossAxisAlignment.START))
+        elif f.get("quote_ok") is False:                                      # the AI's quotation was not in the lyrics: the lines above are the program's, and the reading below is the AI's own and unchecked
             body.append(ft.Row([ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, size=13, color=C["amber"]),
                                 ft.Text(I18N.tr("Unverified: the quotation the AI gave does not match these lines, so the lines above are the program's own. Read the comments below with care."), size=10, color=C["amber"], expand=True)],
                                spacing=4, vertical_alignment=ft.CrossAxisAlignment.START))
@@ -11881,10 +12033,17 @@ def main(page: ft.Page):
                                           padding=po(10, 7, 10, 7), border_radius=8, bgcolor=C["field"], border=ft.Border.all(1, C["border"]), expand=True)]),
                      ft.Row([ft.Container(ft.Column([ft.Text(I18N.tr("ALTERNATIVE · for you to consider"), size=9, weight=ft.FontWeight.W_700, color=C["green"]), ft.Text(f["alternative"], size=12, color=C["text1"], selectable=True)], spacing=2),
                                           padding=po(10, 7, 10, 7), border_radius=8, bgcolor=ft.Colors.with_opacity(0.10, C["green"]), border=ft.Border.all(1, ft.Colors.with_opacity(0.35, C["green"])), expand=True)])]
-        for lab, key, colr in (("What the text shows", "observation", None), ("The specialist's reading", "interpretation", None), ("Try", "recommendation", C["accent"]), ("Keep because", "keep", C["green"])):
+        crit = spec == "song_critic"
+        keep_lab = ("Trade-off" if f["kind"] == "concern" else "Keep the original because") if crit else "Keep because"
+        for lab, key, colr in (("What was found" if crit else "What the text shows", "observation", None), ("Why it matters" if crit else "The specialist's reading", "interpretation", None),
+                               ("Suggested action" if crit else "Try", "recommendation", C["accent"]), (keep_lab, "keep", C["green"])):
             x = sr_kv(I18N.tr(lab), f.get(key, ""), colr)
             if x is not None:
                 body.append(x)
+        if crit:
+            body += sr_proposal_ui(f, sr_get("song_critic"), stale)
+            body.append(ft.Row([ft.OutlinedButton(I18N.tr("Discuss with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this finding and its evidence; nothing changes in the lyrics"),
+                                                  on_click=lambda ev, i=f["id"]: sr_discuss(i))], spacing=6, wrap=True))
         if spec == "lyric_language" and f.get("alternative"):
             for lab, key in (("Meaning impact", "meaning"), ("Rhyme impact", "rhyme"), ("Syllable / flow impact", "syllables")):
                 x = sr_kv(I18N.tr(lab), f.get(key, ""))
@@ -12136,6 +12295,9 @@ def main(page: ft.Page):
                  "vocal_flow": [sr_chip(I18N.tr("Live / dead syllables from Python")), sr_chip(I18N.tr("Text only: no melody heard"))],
                  "lyric_language": [sr_chip(I18N.tr("Original lyric lines")), sr_chip(I18N.tr("Alternatives are for you to consider"))]}[spec]
         ctl += sr_verdict(r, srd, chips)
+        if spec == "song_critic":
+            ctl.append(ft.Row([ft.OutlinedButton(I18N.tr("Discuss the whole report with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this report; nothing changes in the lyrics"),
+                                                 on_click=lambda ev: sr_discuss(""))], spacing=6, wrap=True))
         if spec == "song_critic":
             ctl += sr_critic_ribbon(srd, evid, stale)
             ctl += sr_findings(srd, spec, lyrics_then, stale, (("concern",), ("strength",), ("keep",)), {"concern": "Issues worth a look", "strength": "Strengths", "keep": "Keep"})

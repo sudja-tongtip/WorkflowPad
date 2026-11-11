@@ -1,0 +1,6 @@
+PRE-REGISTRATION (written before the first request of the 12 runs)
+time: 2026-11-12T00:41:55
+433629b117ae2bbdf4291a1900671e6d2dda98595d4870f1931d1cf67930ed81  EXPECTED_OBSERVATIONS.md
+89e3b2777a04c2ed66e10012a44a999b664c61015f00b1bcf152c338e3308b4c  CANDIDATE_PROMPT.md
+360fb428bafc82b216f79cf31e067a5558f0f64c38f6cc794d37c515a9b7c7fc  run_ab.py
+Rule: one candidate, no re-tuning after the results, no retries, 12 runs.

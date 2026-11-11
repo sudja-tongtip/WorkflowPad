@@ -1,0 +1,66 @@
+PASS refs: L005
+PASS refs: L005-L008
+PASS refs: L005, L016 stays TWO references and is never joined into L005-L016  ([(5, 5), (16, 16)], 'ok')
+PASS refs: L005, L016-L018
+PASS refs: short ids and no space (L5,L16), semicolon, lower case
+PASS refs: three places (L011, L023, L035)
+PASS refs: a repeated id is kept once
+PASS refs: order as written is kept (L16, L5)
+PASS refs invalid, nothing guessed: 'verse 2'  ([], 'invalid')
+PASS refs invalid, nothing guessed: '12'  ([], 'invalid')
+PASS refs invalid, nothing guessed: 'L12-13'  ([], 'invalid')
+PASS refs invalid, nothing guessed: 'L13-L12'  ([], 'invalid')
+PASS refs invalid, nothing guessed: 'L12 and L14'  ([], 'invalid')
+PASS refs invalid, nothing guessed: 'lines 12 and 13'  ([], 'invalid')
+PASS refs invalid, nothing guessed: 'L99'  ([], 'invalid')
+PASS refs invalid, nothing guessed: 'L5, L99'  ([], 'invalid')
+PASS refs invalid, nothing guessed: 'L5 L16'  ([], 'invalid')
+PASS refs invalid, nothing guessed: 'L5, verse 2'  ([], 'invalid')
+PASS refs invalid, nothing guessed: 'L0'  ([], 'invalid')
+PASS refs invalid, nothing guessed: 'L5-'  ([], 'invalid')
+PASS refs invalid, nothing guessed: 'section 3, L5'  ([], 'invalid')
+PASS refs: nothing / '-' / whole song = none
+PASS refs_label
+PASS parse_lines (the single-reference reader used for sections) is unchanged: a list is NOT one reference
+PASS finding L005, L016: kept, two references, first/last = the first one, quote verified
+PASS finding L005, L016: the shown lines are the two places with a gap mark, not the lines in between  ฉันเดินไปในความงามอันเงียบงัน
+…
+ฉันเดินไปในความงามอันเงียบงัน
+PASS finding L005, L016-L017: ranges kept as written, quote checked against the union of the places  ([[5, 5], [16, 17]], True)
+PASS a quotation that is in neither place is replaced by the program's lines and flagged
+PASS a line that is only BETWEEN the two places does not verify the quote (no range is built)
+PASS invalid lines 'verse 2': the finding is KEPT (text intact), without a link, flagged, quote unverified, with a diagnostic  ['[FINDING.1]: its lines “verse 2” are not a readable reference (use L12, L12-L13 or a list such as L5, L16-L18; every line must exist). The finding is kept WITHOUT a lin
+PASS invalid lines 'L5-L99': the finding is KEPT (text intact), without a link, flagged, quote unverified, with a diagnostic  ['[FINDING.1]: its lines “L5-L99” are not a readable reference (use L12, L12-L13 or a list such as L5, L16-L18; every line must exist). The finding is kept WITHOUT a line
+PASS invalid lines 'L005, L999': the finding is KEPT (text intact), without a link, flagged, quote unverified, with a diagnostic  ['[FINDING.1]: its lines “L005, L999” are not a readable reference (use L12, L12-L13 or a list such as L5, L16-L18; every line must exist). The finding is kept WITHOUT a 
+PASS invalid lines '12': the finding is KEPT (text intact), without a link, flagged, quote unverified, with a diagnostic  ['[FINDING.1]: its lines “12” are not a readable reference (use L12, L12-L13 or a list such as L5, L16-L18; every line must exist). The finding is kept WITHOUT a line lin
+PASS invalid lines 'L005 and L016': the finding is KEPT (text intact), without a link, flagged, quote unverified, with a diagnostic  ['[FINDING.1]: its lines “L005 and L016” are not a readable reference (use L12, L12-L13 or a list such as L5, L16-L18; every line must exist). The finding is kept WITHOUT
+PASS a Song Critic finding with no line (whole song) is kept as before
+PASS proposal for one reference is kept as the wording of those lines
+PASS a proposal for two separate references is not used (it would need to replace the lines between)
+PASS a proposal equal to the original is not used
+PASS a proposal with a [tag] is not used
+PASS Rhyme & Flow: unreadable lines still drop the finding (not part of Task A)  ['[FINDING.1] was not used: its lines “verse 2” are not a reference to lines of the lyrics (it must be L12, L12-L13 or a list such as L5, L16-L18, and every line must exi
+PASS raw answer specialist_quality_audit_01/S1_gemma_response1.txt: every finding the model wrote is kept (4 written, 4 kept)
+PASS raw answer specialist_quality_audit_01/S1_grok_response1.txt: every finding the model wrote is kept (2 written, 2 kept)
+PASS raw answer specialist_quality_audit_01/S2_gemma_response1.txt: every finding the model wrote is kept (4 written, 4 kept)
+PASS raw answer specialist_quality_audit_01/S2_grok_response1.txt: every finding the model wrote is kept (2 written, 2 kept)
+PASS raw answer specialist_quality_audit_01/S3_gemma_response1.txt: every finding the model wrote is kept (4 written, 4 kept)
+PASS raw answer specialist_quality_audit_01/S3_grok_response1.txt: every finding the model wrote is kept (2 written, 2 kept)
+PASS raw answer song_critic_tune_02/TestSong01_gemma_baseline_response.txt: every finding the model wrote is kept (4 written, 4 kept)
+PASS raw answer song_critic_tune_02/TestSong01_gemma_candidate_response.txt: every finding the model wrote is kept (4 written, 4 kept)
+PASS raw answer song_critic_tune_02/TestSong01_grok_baseline_response.txt: every finding the model wrote is kept (2 written, 2 kept)
+PASS raw answer song_critic_tune_02/TestSong01_grok_candidate_response.txt: every finding the model wrote is kept (2 written, 2 kept)
+PASS raw answer song_critic_tune_02/TestSong02_gemma_baseline_response.txt: every finding the model wrote is kept (4 written, 4 kept)
+PASS raw answer song_critic_tune_02/TestSong02_gemma_candidate_response.txt: every finding the model wrote is kept (3 written, 3 kept)
+PASS raw answer song_critic_tune_02/TestSong02_grok_baseline_response.txt: every finding the model wrote is kept (2 written, 2 kept)
+PASS raw answer song_critic_tune_02/TestSong02_grok_candidate_response.txt: every finding the model wrote is kept (2 written, 2 kept)
+PASS raw answer song_critic_tune_02/TestSong03_gemma_baseline_response.txt: every finding the model wrote is kept (4 written, 4 kept)
+PASS raw answer song_critic_tune_02/TestSong03_gemma_candidate_response.txt: every finding the model wrote is kept (3 written, 3 kept)
+PASS raw answer song_critic_tune_02/TestSong03_grok_baseline_response.txt: every finding the model wrote is kept (2 written, 2 kept)
+PASS raw answer song_critic_tune_02/TestSong03_grok_candidate_response.txt: every finding the model wrote is kept (2 written, 2 kept)
+PASS the comma-list answers of Audit 01 / Tune 02 are in the test set (S1 Gemma 01, S1 Grok, ...)  ['S1_gemma_response1.txt', 'S1_grok_response1.txt', 'TestSong01_gemma_candidate_response.txt', 'TestSong01_grok_baseline_response.txt', 'TestSong02_grok_candidate_respons
+PASS Audit 01 S1 Gemma (4 findings all with comma lists, 0 kept before): 4 kept now, each with its own references  [[[5, 5], [16, 16]], [[11, 11], [23, 23], [35, 35]], [[2, 2], [3, 3]], [[28, 28], [29, 29]]]
+PASS no quote of those answers was replaced (all verbatim) after the change  [True, True, True, True]
+PASS a legacy finding (first / last, no refs) still has one reference to show
+
+62 / 62 passed

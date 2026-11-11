@@ -1,0 +1,262 @@
+diff --git a/music_studio.py b/music_studio.py
+index 5f594ca..1031391 100644
+--- a/music_studio.py
++++ b/music_studio.py
+@@ -30,6 +30,7 @@ from music_studio import vocal_cues as VC
+ from music_studio import rhyme_flow as RF
+ from music_studio import python_rhyme_evidence as PRE
+ from music_studio import live_dead as LD
++from music_studio import audio_export as AX
+ from music_studio import spec_reports as SR
+ from music_studio import report_steps as RPT              # the Songwriter / Music Producer report asked step by step (summary, one section at a time, suggestions)
+ from music_studio import rhyme_steps as RS               # the Rhyme Analyzer asked step by step (overview, then one section at a time, shown as it arrives)
+@@ -3625,7 +3626,7 @@ def main(page: ft.Page):
+                  ft.PopupMenuItem(content=ft.Text("Open as Editable Sheet"), on_click=lambda e: open_take_as_sheet(song_id, t))]
+         if FF.ENABLE_REPAINT:
+             items.append(ft.PopupMenuItem(content=ft.Text("Repaint"), on_click=lambda e: open_repaint_from(song_id, t)))
+-        items.append(ft.PopupMenuItem(content=ft.Text("Export Audio"), on_click=lambda e: export_take(title, t)))
++        items.append(ft.PopupMenuItem(content=ft.Text("Export Audio…"), on_click=lambda e: open_audio_export(title, t)))
+         items.append(ft.PopupMenuItem(content=ft.Text("Export to Video…"), on_click=lambda e: open_video_export(title, t)))
+         if allow_delete:
+             items.append(ft.PopupMenuItem(content=ft.Text("Delete take…"), on_click=lambda e: delete_take_confirm(song_id, t, on_changed)))
+@@ -3640,7 +3641,7 @@ def main(page: ft.Page):
+         if FF.ENABLE_REPAINT:
+             actions.append(repaint_btn)
+         if wide_enough:
+-            actions.append(ibtn(ft.Icons.FILE_DOWNLOAD_OUTLINED, "Export Audio", lambda e: export_take(title, t), 16 if compact else 18, w=26 if compact else 30))
++            actions.append(ibtn(ft.Icons.FILE_DOWNLOAD_OUTLINED, "Export Audio (the whole take or a part of it)", lambda e: open_audio_export(title, t), 16 if compact else 18, w=26 if compact else 30))
+         actions.append(menu)
+         if compact:                                                            # one small line per take: more of the list is visible at once
+             return ft.Container(padding=po(left=4, right=0, top=1, bottom=1), border_radius=8, bgcolor=C["accent_soft"] if playing else "#00000000",
+@@ -3780,6 +3781,217 @@ def main(page: ft.Page):
+         except Exception as ex:
+             toast(f"Export failed: {ex}", C["red"])
+ 
++    # ═══ EXPORT AUDIO: the whole take (a plain copy) or a PART of it, chosen on the waveform like the part of the take in Export to Video (cut by ffmpeg without re-encoding: audio_export.py) ═════════════
++    def open_audio_export(title: str, t: M.Take):
++        audio = ST.take_path(t)
++        if audio is None:
++            toast("The audio file of this take is missing.", C["red"]); return
++        song_id, label = t.song_id, f"Take {t.number:02d}"
++        vs = VX.load_settings()
++        W = 548
++        st = {"start": 0.0, "end": 0.0, "dur": 0.0, "wave": None, "whole": True, "busy": False, "drag": None, "anchor": 0.0, "png_n": 0}
++        tmp = Path(tempfile.gettempdir()) / "workflowpad_audio_export"
++        tmp.mkdir(parents=True, exist_ok=True)
++        wave_img = ft.Image(src="", width=W, height=72, fit=ft.BoxFit.FILL, visible=False)
++        wave_msg = ft.Text("Drawing the waveform…", size=11, color=C["text3"])
++        sel_box = ft.Container(left=0, top=0, width=0, height=72, bgcolor="#2E2B73FF", border=ft.Border.all(1, "#662B73FF"), visible=False)
++        h_a = ft.Container(left=0, top=0, width=4, height=72, bgcolor=C["accent"], border_radius=2, visible=False)
++        h_b = ft.Container(left=0, top=0, width=4, height=72, bgcolor=C["accent"], border_radius=2, visible=False)
++        stack = ft.Stack([ft.Container(width=W, height=72, bgcolor=C["field"], border_radius=8), wave_img, sel_box, h_a, h_b], width=W, height=72)
++        start_tf = tfield("Start", "0:00.00", None, 120)
++        end_tf = tfield("End", "0:00.00", None, 120)
++        len_txt = ft.Text("", size=12, weight=ft.FontWeight.W_600, color=C["text2"])
++        result = ft.Text("", size=11, color=C["green"], selectable=True, visible=False)
++        ring = ft.ProgressRing(width=16, height=16, stroke_width=2, visible=False)
++        btn_export = ft.FilledButton("Export", icon=ft.Icons.FILE_DOWNLOAD_OUTLINED, style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF"))
++        btn_close = ft.TextButton("Close", on_click=lambda e: page.pop_dialog())
++
++        def is_whole() -> bool:
++            d = st["dur"]
++            return st["whole"] or d <= 0 or (st["start"] <= 0.05 and st["end"] >= d - 0.05)
++
++        def place():
++            d = st["dur"]
++            if d <= 0:
++                return
++            left, wid = WF.selection_rect(W, 0, d, st["start"], st["end"])
++            sel_box.left, sel_box.width = left, wid
++            h_a.left, h_b.left = max(0, left - 2), min(W - 4, left + wid - 2)
++            sel_box.visible = h_a.visible = h_b.visible = not st["whole"]
++            safe_update(sel_box, h_a, h_b)
++
++        def write_times(fields: bool = True):
++            if fields:
++                start_tf.value, end_tf.value = VX.fmt_time(st["start"]), VX.fmt_time(st["end"])
++                start_tf.error_text = end_tf.error_text = None
++            d, a, b = st["dur"], st["start"], st["end"]
++            len_txt.value = (f"Whole take · {VX.fmt_time(d)}" if is_whole() else f"Part · {VX.fmt_time(a)} → {VX.fmt_time(b)} · {b - a:.1f} s") if d > 0 else ""
++            btn_export.disabled = st["busy"] or (d > 0 and not is_whole() and b - a < 0.2)
++            safe_update(start_tf, end_tf, len_txt, btn_export)
++
++        def whole(_e=None):
++            st.update(start=0.0, end=st["dur"], whole=True)
++            write_times(); place()
++
++        def _bound():
++            d = st["dur"]
++            a = min(max(0.0, st["start"]), d)
++            b = min(max(a + 0.2, st["end"]), d)
++            st["start"], st["end"] = min(a, max(0.0, b - 0.2)), b
++
++        def time_typed(which: str):
++            def h(e):
++                tf = e.control
++                try:
++                    v = VX.parse_time(tf.value)
++                except ValueError:
++                    tf.error_text = "m:ss or seconds"
++                    safe_update(tf); return
++                st[which] = v
++                if st["dur"] > 0 and not (0 <= st["start"] < st["end"] <= st["dur"] + 0.01):
++                    tf.error_text = "Inside the take, start before end"
++                    safe_update(tf); return
++                st["whole"] = False
++                tf.error_text = None
++                _bound(); write_times(fields=False); place()
++                safe_update(tf)
++            return h
++        start_tf.on_change, end_tf.on_change = time_typed("start"), time_typed("end")
++
++        def _x(e) -> float:
++            pos = getattr(e, "local_position", None)
++            return float(pos.x if pos is not None else 0)
++
++        def pan_start(e):
++            d = st["dur"]
++            if d <= 0:
++                return
++            x, a, b = _x(e), st["start"] / d * W, st["end"] / d * W
++            da, db = abs(x - a), abs(x - b)
++            if min(da, db) <= 12 and not st["whole"]:
++                st["drag"] = "start" if da <= db else "end"
++            else:
++                st["drag"] = "new"
++                st["anchor"] = WF.x_to_time(x, W, 0, d)
++                st["start"] = st["end"] = st["anchor"]
++            st["whole"] = False
++
++        def pan_update(e):
++            d, drag = st["dur"], st["drag"]
++            if d <= 0 or drag is None:
++                return
++            tt = WF.x_to_time(_x(e), W, 0, d)
++            if drag == "start":
++                st["start"] = min(tt, st["end"] - 0.2)
++            elif drag == "end":
++                st["end"] = max(tt, st["start"] + 0.2)
++            else:
++                a, b = sorted((st["anchor"], tt))
++                st["start"], st["end"] = a, b
++            st["start"] = max(0.0, st["start"])
++            st["end"] = min(d, max(st["end"], st["start"]))
++            write_times(); place()
++
++        def pan_end(_e=None):
++            st["drag"] = None
++            if st["dur"] > 0:
++                _bound(); write_times(); place()
++        gd = ft.GestureDetector(content=stack, drag_interval=16, on_pan_start=pan_start, on_pan_update=pan_update, on_pan_end=pan_end, on_pan_cancel=pan_end, mouse_cursor=ft.MouseCursor.CLICK)
++
++        async def load_wave():
++            loop = asyncio.get_running_loop()
++            wave, dur = None, 0.0
++            try:
++                wave = await loop.run_in_executor(None, lambda: WF.load_peaks(str(audio), cache_dir=WF.default_cache_dir()))
++                dur = float(wave.duration)
++            except Exception as ex:
++                dbg_once("audio export wave", ex)
++            if dur <= 0:
++                try:
++                    ms = await loop.run_in_executor(None, PlayerService.probe_length_ms, str(audio))
++                    dur = (ms / 1000.0) if ms else 0.0
++                except Exception:
++                    dur = 0.0
++            st["wave"], st["dur"] = wave, dur
++            st["start"], st["end"] = 0.0, dur
++            if dur <= 0:
++                wave_msg.value, wave_msg.color = "The length of this take could not be read. The whole take will be exported.", C["amber"]
++                safe_update(wave_msg); write_times(); return
++            if wave is not None:
++                mins, maxs = WF.visible_peaks(wave, 0, dur, W)
++                st["png_n"] += 1
++                dest = tmp / f"wave_{st['png_n']}.png"
++                try:
++                    await loop.run_in_executor(None, lambda: WF.render_png(mins, maxs, dest, W, 72))
++                    wave_img.src, wave_img.visible, wave_msg.visible = str(dest), True, False
++                except Exception as ex:
++                    dbg_once("audio export wave png", ex)
++                    wave_msg.value = "The waveform could not be drawn. You can still type the start and the end."
++            else:
++                wave_msg.value = "The waveform could not be drawn. You can still type the start and the end."
++            safe_update(wave_img, wave_msg)
++            write_times(); place()
++
++        def listen(_e=None):
++            a, b = st["start"], st["end"]
++            if st["dur"] <= 0 or b <= a:
++                toast("Choose a part of the take first.", C["amber"]); return
++            item = QItem(song_id, t.id, title, label, str(audio))
++            if not player.is_current(t.id):
++                player.play_take(item, [item])
++            err = player.seek_ms(int(a * 1000), song_id, t.id)
++            if err:
++                toast(err, C["red"]); return
++            if player.state != "playing":
++                player.toggle()
++            _repaint_play["until"] = (song_id, t.id, int(b * 1000))
++
++        async def go():
++            if st["busy"]:
++                return
++            st["busy"] = True
++            btn_export.disabled, ring.visible, result.visible = True, True, False
++            safe_update(btn_export, ring, result)
++            loop = asyncio.get_running_loop()
++            try:
++                if is_whole():
++                    p = await loop.run_in_executor(None, lambda: ST.export_take(t, title))              # the whole take: the plain copy, no ffmpeg
++                else:
++                    a, b = st["start"], st["end"]
++                    base = f"{ST.safe_name(title)} - Take {t.number:02d} ({AX.range_tag(a, b)})"
++                    dest = AX.unique_dest(ST.exports_dir(), base, Path(audio).suffix)
++                    p = await loop.run_in_executor(None, lambda: AX.trim_audio(audio, dest, a, b, vs.ffmpeg))
++                result.value, result.color, result.visible = f"Exported: {p}", C["green"], True
++                toast(f"Exported: {p}", C["green"])
++                try:
++                    os.startfile(str(Path(p).parent))
++                except Exception:
++                    pass
++            except Exception as ex:
++                result.value, result.color, result.visible = f"Export failed: {ex}", C["red"], True
++            finally:
++                st["busy"], ring.visible = False, False
++                write_times(fields=False)
++                safe_update(ring, result)
++        btn_export.on_click = lambda e: page.run_task(go)
++
++        btn_whole = ft.TextButton("Whole take", icon=ft.Icons.SELECT_ALL_ROUNDED, on_click=whole)
++        btn_listen = ft.OutlinedButton("Listen to the part", icon=ft.Icons.HEADPHONES_ROUNDED, on_click=listen)
++        body = ft.Column([
++            ft.Text("Drag on the waveform to choose a part, or drag the edges of the part to adjust it. Nothing chosen = the whole take.", size=12, color=C["text3"]),
++            ft.Stack([gd, ft.Container(wave_msg, left=10, top=26, ignore_interactions=True)], width=W, height=72),
++            ft.Row([start_tf, end_tf, ft.Container(expand=True), btn_whole, btn_listen], spacing=10, vertical_alignment=ft.CrossAxisAlignment.CENTER),
++            ft.Row([len_txt, ring], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER),
++            result,
++        ], spacing=12, width=W + 32, tight=True)
++        page.show_dialog(ft.AlertDialog(modal=True, bgcolor=C["panel"], inset_padding=po(16, 16, 16, 16),
++                                        title=ft.Row([ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, size=22, color=C["accent"]),
++                                                      ft.Column([ft.Text("Export Audio", size=18, weight=ft.FontWeight.BOLD), ft.Text(f"{title} · {label}", size=11, color=C["text3"])], spacing=0, tight=True)], spacing=10),
++                                        content=ft.Container(body, width=W + 32), actions=[btn_close, btn_export], actions_padding=po(16, 4, 16, 14), actions_alignment=ft.MainAxisAlignment.END))
++        write_times()
++        page.run_task(load_wave)
++
++
+     # ═══ EXPORT TO VIDEO: a picture + the take's audio + an animated waveform, made by ffmpeg (music_studio/video_export.py builds and runs the command) ═══════════════════════════════
+     def open_video_export(title: str, t: M.Take):
+         audio = ST.take_path(t)
+@@ -4755,7 +4967,12 @@ def main(page: ft.Page):
+                                h2_text_style=ft.TextStyle(size=15, color=C["text1"], weight=ft.FontWeight.W_600),
+                                h3_text_style=ft.TextStyle(size=14, color=C["text1"], weight=ft.FontWeight.W_600),
+                                table_head_text_style=ft.TextStyle(size=12, color=C["text1"], weight=ft.FontWeight.W_600),
+-                               table_body_text_style=ft.TextStyle(size=12, color=C["text1"])))
++                               table_body_text_style=ft.TextStyle(size=12, color=C["text1"]),
++                               # a code block (a fenced ``` block, or lines indented too deep under a bullet) was drawn on the default LIGHT grey with light text: a big empty grey box. It is drawn dark and readable now.
++                               code_text_style=ft.TextStyle(size=12, color=C["text1"], font_family="Consolas"),
++                               codeblock_decoration=ft.BoxDecoration(bgcolor=C["panel2"], border_radius=ft.BorderRadius.all(6)),
++                               codeblock_padding=po(8, 6, 8, 6)),
++                           code_theme=ft.MarkdownCustomCodeTheme(root=ft.TextStyle(color=C["text1"], bgcolor=C["panel2"])))
+ 
+     def bubble(i: int, m: M.ChatMessage):
+         c = _bubble(i, m)

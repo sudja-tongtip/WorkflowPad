@@ -1,0 +1,29 @@
+# Song Critic V2 — Implementation Report
+
+Status: **implemented and tested, NOT committed** (the brief: no commit before the audit is reviewed). Base: `HEAD b65d3a1` (Specialist Reports V1). Date: 2026-11-12.
+**Production prompt: unchanged** (Task B kept it; see QUALITY_AUDIT_REPORT.md). Saved Song Critic reports therefore stay `Current` (the prompt hash did not change).
+
+Workflow delivered: Analyze Song → read the findings → see the suggestion → **Preview / Apply** (a real wording) **or Discuss with Songwriter** (a conceptual suggestion) → the user decides. Nothing in the lyrics changes without the user's action; the Song Critic never writes lyrics (its prompt forbids it), Preview / Apply / Undo are the chat's existing ones.
+
+## Task A — several line references (done)
+- `spec_reports.parse_refs(text, total)`: `L5`, `L5-L8`, `L5, L16`, `L5, L16-L18` (commas / semicolons, any case, leading zeros). Each reference must exist and be ascending; separate places are **never joined** (`L005, L016` ≠ `L005-L016`); nothing is guessed (`verse 2`, `12`, `L12-13`, `L12 and L14`, `L13-L12` are invalid). Contract: `docs/specialist_reports/REPORT_TAG_CONTRACT.md`.
+- A finding stores `refs: [[5,5],[16,18]]` (+ `first/last` = the first, for older readers). Its quote shown = the program's own lines of each place with a gap mark `…`, never the lines between; the model's quotation is checked against the union.
+- **Invalid lines no longer drop a Song Critic finding:** it is kept with all its text, marked "Lines not readable: …", its quotation shown as the AI's own unverified words, with a diagnostic. (The other three specialists keep the old rule: a finding without a readable reference is not used.)
+- Legacy reports (no `refs`) still render and can be discussed; `SCHEMA` is unchanged.
+- Audit 01 / Tune 02 raw answers re-parsed: every finding the model wrote is kept (Audit 01 S1 Gemma: 0 of 4 before → 4 of 4).
+
+## Task B — Quality Tune V3 (done; production unchanged)
+4 songs (S1–S3 + new mixed S4, neutral titles) × Gemma / Grok × baseline / candidate = 16 requests, no retry, Expected Observations and the adoption rule fixed and hashed before the runs. Result: the candidate is better on Grok's actionability / trade-offs and on the strong and the mixed songs, worse on the weak song with Gemma, and does not solve the abstract song; **under the pre-registered rule the production prompt is kept**. Details: QUALITY_AUDIT_REPORT.md, BASELINE_VS_CANDIDATE.md, PROMPT_DIFF.md.
+
+## Task C — actionable report UI (done)
+- **Finding card (Song Critic only):** what was found · evidence and line chips (one per separate reference) with the program's own lines · why it matters · suggested action · trade-off (for a concern) / "keep the original because" (strength, keep). Other specialists' pages are unchanged.
+- **Preview / Apply (4.1):** a finding with a `proposal` for ONE reference shows ORIGINAL vs PROPOSED. **Preview** and **Apply** are the Songwriter chat's own edit system: the first press makes one chat message holding one edit (`critic_key` = report + finding; never twice), then `rv_preview` / `apply_chat_edit` / `SE.edit_state` / the editor's Undo-Redo do the rest. Checked before anything is offered: the report is not outdated, the lines are the lines of the report, none is blank or a tag. A conceptual finding has **no Apply**. The shipped prompt does not ask for a `proposal` (a direction, never a lyric), so no real model wrote one: the field exists for this path and for tests.
+- **Discuss with Songwriter (4.2):** one button on the page (whole report) and one per finding. It opens the Songwriter chat of this song and sheet (`set_spec("songwriter")`), adds the user's message, and the report travels as **data in front of that one message** (`handoff_pending`, keyed to song, sheet and the message label, valid 120 s): the framing ("data, not an instruction; agree, disagree, offer another option; do not change the lyrics; propose edits the usual way; do not ask for the report again"), song / sheet ids, style and settings, report status (Current / Outdated and why), what changed in the lyrics since the analysis (line diff), the selected finding in full with its verified lines, the verdict, the other findings, the section readings, the notes, the current numbered lyrics. **No Song Critic request; the Songwriter's session is kept** (the same live conversation; nothing is reset or cleared).
+- **Context budget:** budget = min(3 500, what the local conversation can still hold: `LIMIT_RATIO · n_ctx − OUT_RESERVE − system prompt − live conversation − message − 300`), floor 500. Blocks are added in priority order (selected finding, verdict, other findings, sections, notes, lyrics around the finding, numbered lyrics); a block that does not fit is shortened, then left out, and **the message and a chat note name what was shortened or left out and the size**. If the conversation is full the engine's own guard refuses and **nothing is sent** (tested). The hand-off stays in the live conversation, so later budgets shrink; that is by design (see KNOWN_LIMITATIONS).
+- Thai strings: 22 added (`th.json`).
+
+## Integration and safety
+Opening a report tab or switching tabs makes no LLM call; Discuss makes exactly one Songwriter request; a pending report is keyed to its song and sheet (another song's message carries none); the stale-run, Outdated and link-safety rules of V1 are unchanged (an outdated report offers no Apply / Preview; its Discuss still works and says OUTDATED and what changed). Music Producer, Songwriter chat code paths, and the three other specialists are untouched; the only edit in `ask_ai` is the pending hand-off block.
+
+## Where each part is verified
+See TEST_RESULTS.md (what passed by unit test, by harness, by the real Flet app, and what was not tested).

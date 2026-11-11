@@ -1,0 +1,184 @@
+{
+ "tag": "TestSong02_gemma_candidate",
+ "raw_findings": 4,
+ "parser_findings": 4,
+ "ok": true,
+ "diagnostics": [
+  "song_critic: placeholder_copied: in [SECTION.1] the line “(one [SECTION.n] for each sung section, in order)” is the format's own text, not an answer, so it was not used.",
+  "song_critic: placeholder_copied: in [SECTION.2] the line “(one [SECTION.n] for each sung section, in order)” is the format's own text, not an answer, so it was not used.",
+  "song_critic: placeholder_copied: in [SECTION.3] the line “(one [SECTION.n] for each sung section, in order)” is the format's own text, not an answer, so it was not used.",
+  "song_critic: placeholder_copied: in [SECTION.4] the line “(one [SECTION.n] for each sung section, in order)” is the format's own text, not an answer, so it was not used.",
+  "song_critic: placeholder_copied: in [SECTION.5] the line “(one [SECTION.n] for each sung section, in order)” is the format's own text, not an answer, so it was not used.",
+  "song_critic: placeholder_copied: in [SECTION.6] the line “(one [SECTION.n] for each sung section, in order)” is the format's own text, not an answer, so it was not used.",
+  "song_critic: placeholder_copied: in [SECTION.7] the line “(one [SECTION.n] for each sung section, in order)” is the format's own text, not an answer, so it was not used."
+ ],
+ "seconds": 15.3,
+ "error": null,
+ "parsed": {
+  "ok": true,
+  "sr": {
+   "schema": 1,
+   "headline": "เพลงนี้สื่อถึงการวิ่งที่เต็มไปด้วยความรู้สึกที่ปะปนกันระหว่างความคาดหวัง ความผิดหวัง และความรักที่ได้รับในท้ายที่สุด",
+   "reading": "เนื้อเพลงเล่าเรื่องราวของเด็กที่วิ่งแข่งตามคำสัญญาของพ่อ แต่เมื่อได้เห็นพ่อที่มาสายและเหนื่อยล้า ความรู้สึกแรกคือความโกรธ แต่ความรู้สึกนั้นถูกแทนที่ด้วยความอบอุ่นเมื่อพ่อแสดงความรักออกมาอย่างเปิดเผย ซึ่งการเล่าเรื่องนี้ประสบความสำเร็จในการทำให้ผู้ฟังรู้สึกถึงการเดินทางทางอารมณ์ที่สมบูรณ์",
+   "findings": [
+    {
+     "id": "so1",
+     "kind": "strength",
+     "priority": "",
+     "first": 14,
+     "last": 15,
+     "refs": [
+      [
+       14,
+       15
+      ]
+     ],
+     "lines_invalid": "",
+     "quote": "พอข้ามเส้นชัยผมก็เห็นพ่อ\nยืนหอบอยู่ข้างรั้ว เสื้อเปียกเหงื่อทั้งตัว",
+     "quote_ok": true,
+     "observation": "การบรรยายเหตุการณ์ที่จุดเปลี่ยนของเรื่องอย่างชัดเจน",
+     "interpretation": "ภาพของ \"พ่อ\" ที่ปรากฏตัวในสภาพเหนื่อยล้าหลังการวิ่ง ทำให้ผู้ฟังสัมผัสได้ถึงความพยายามของพ่อทันที และเป็นจุดที่ความรู้สึกของตัวเอกเริ่มเปลี่ยนจากความคาดหวังไปสู่ความประทับใจ",
+     "recommendation": "",
+     "keep": "ควรคงไว้ เพราะภาพนี้เป็นหัวใจของฉากแรก และสื่อถึงความรักที่มาพร้อมความเหนื่อยล้า",
+     "alternative": "",
+     "proposal": "",
+     "meaning": "",
+     "rhyme": "",
+     "syllables": ""
+    },
+    {
+     "id": "so2",
+     "kind": "strength",
+     "priority": "",
+     "first": 28,
+     "last": 30,
+     "refs": [
+      [
+       28,
+       30
+      ]
+     ],
+     "lines_invalid": "",
+     "quote": "ผมวิ่งไปทั้งที่ไม่มีใครเชียร์\nได้ที่สุดท้ายแต่พ่อเห็นผมวิ่งจนจบ\nพ่อหัวเราะทั้งน้ำตา บอกว่าเหรียญนี้สวยที่สุด",
+     "quote_ok": true,
+     "observation": "การเปลี่ยนแปลงของประโยคในท่อนฮุค (Chorus) ที่มีการเพิ่มข้อมูลใหม่เข้าไป",
+     "interpretation": "การเปลี่ยนจาก \"ผมเห็นพ่อ\" (L14) เป็น \"พ่อเห็นผม\" (L29) ทำให้เกิดการสลับมุมมอง (Perspective Shift) และการเพิ่มบทสรุปทางอารมณ์ (พ่อหัวเราะทั้งน้ำตา) ซึ่งทำให้ท่อนฮุคที่สองมีความลึกซึ้งกว่าครั้งแรก",
+     "recommendation": "",
+     "keep": "ควรคงไว้ เพราะการขยายความของท่อนฮุคทำให้การเดินทางทางอารมณ์ไม่หยุดอยู่แค่การรอคอย แต่เป็นการได้รับความรักตอบกลับ",
+     "alternative": "",
+     "proposal": "",
+     "meaning": "",
+     "rhyme": "",
+     "syllables": ""
+    },
+    {
+     "id": "so3",
+     "kind": "concern",
+     "priority": "medium",
+     "first": 20,
+     "last": 20,
+     "refs": [
+      [
+       20,
+       20
+      ]
+     ],
+     "lines_invalid": "",
+     "quote": "ผมโกรธที่พ่อมาช้าจนผมอยากร้องไห้",
+     "quote_ok": true,
+     "observation": "การระบุอารมณ์ความรู้สึกที่ชัดเจนและรุนแรงใน Verse 2",
+     "interpretation": "แม้ว่าการระบุความโกรธจะชัดเจน แต่การใช้คำว่า \"อยากร้องไห้\" อาจทำให้ความรู้สึกดูเป็นเพียงการระบายอารมณ์ชั่วขณะ มากกว่าจะเป็นความรู้สึกที่ฝังลึกในความสัมพันธ์",
+     "recommendation": "ลองปรับการบรรยายความโกรธให้มีความเป็นภาพมากขึ้น แทนที่จะบอกว่า \"อยากร้องไห้\" เช่น ให้บรรยายถึงการกระทำที่เกิดจากความโกรธนั้น เช่น การกัดริมฝีปาก หรือการมองพ่อด้วยสายตาที่แข็งกร้าว",
+     "keep": "การคงคำว่า \"อยากร้องไห้\" ไว้จะช่วยรักษาความรู้สึกที่เปราะบางและเป็นเด็กของตัวเอกไว้ได้",
+     "alternative": "",
+     "proposal": "",
+     "meaning": "",
+     "rhyme": "",
+     "syllables": ""
+    },
+    {
+     "id": "so4",
+     "kind": "strength",
+     "priority": "",
+     "first": 34,
+     "last": 35,
+     "refs": [
+      [
+       34,
+       35
+      ]
+     ],
+     "lines_invalid": "",
+     "quote": "วันนี้พ่อยังขับแท็กซี่เหมือนเดิม\nแต่เหรียญนั้นแขวนอยู่หน้ารถทุกวัน",
+     "quote_ok": true,
+     "observation": "การสรุปสถานการณ์ปัจจุบัน (Present Day) และการเชื่อมโยงอดีตเข้ากับปัจจุบัน",
+     "interpretation": "การใช้ภาพ \"เหรียญ\" เป็นสัญลักษณ์ของความสำเร็จและความรักที่ได้รับ ทำให้ผู้ฟังเข้าใจว่าความรู้สึกในวันนั้นไม่ได้หายไป แต่ได้กลายเป็นส่วนหนึ่งของชีวิตประจำวันของครอบครัว",
+     "recommendation": "",
+     "keep": "ควรคงไว้ เพราะเป็นการปิดฉากที่สมบูรณ์และให้ความรู้สึกถึงความยั่งยืนของความรักนั้น",
+     "alternative": "",
+     "proposal": "",
+     "meaning": "",
+     "rhyme": "",
+     "syllables": ""
+    }
+   ],
+   "sections": [
+    {
+     "name": "Verse 1",
+     "first": 2,
+     "last": 6,
+     "reading": "ส่วนนี้เป็นการปูพื้นเรื่องราวโดยการระบุคำสัญญาของพ่อ (L002) และภาพของการรอคอยที่เกิดขึ้น ณ บริเวณประตู (L003) พร้อมทั้งระบุสถานการณ์ว่าพ่อกำลังติดอยู่ตรงไหน (L005)"
+    },
+    {
+     "name": "Pre-Chorus",
+     "first": 8,
+     "last": 10,
+     "reading": "ส่วนนี้เป็นการเร่งอารมณ์ขึ้นจากการถูกเรียกชื่อให้วิ่ง (L008) และการที่ตัวเอกหันไปมองถนนอีกครั้ง (L009) ซึ่งเป็นการเน้นย้ำถึงการรอคอยที่ยังไม่สิ้นสุด"
+    },
+    {
+     "name": "Chorus",
+     "first": 12,
+     "last": 16,
+     "reading": "ส่วนนี้คือการประกาศความรู้สึกหลักว่าแม้จะวิ่งโดยไม่มีคนเชียร์ (L012) แต่ก็วิ่งจนจบ และจุดไคลแม็กซ์ของฉากแรกคือการได้เห็นพ่อที่กำลังเหนื่อยล้า (L014-L015)"
+    },
+    {
+     "name": "Verse 2",
+     "first": 18,
+     "last": 22,
+     "reading": "ส่วนนี้เป็นการเล่าเหตุการณ์ที่เกิดขึ้นหลังจากฉากแรก โดยพ่อได้วิ่งตามมา (L018) และการเปรียบเทียบความพยายามของพ่อ (รองเท้าคู่เก่าหลุดข้างหนึ่ง L019) ซึ่งนำไปสู่ความรู้สึกโกรธของตัวเอก (L020)"
+    },
+    {
+     "name": "Pre-Chorus",
+     "first": 24,
+     "last": 26,
+     "reading": "ส่วนนี้เป็นการแสดงการตอบสนองของตัวเอกต่อการมาถึงของพ่อ โดยการเลือกที่จะไม่พูดอะไร (L024) แต่กลับมอบเหรียญให้พ่อ (L025) ซึ่งเป็นการแสดงออกทางอารมณ์ที่เงียบงัน"
+    },
+    {
+     "name": "Chorus",
+     "first": 28,
+     "last": 32,
+     "reading": "ส่วนนี้เป็นการย้ำประเด็นหลักของ Chorus เดิม แต่มีการปรับเปลี่ยนเล็กน้อยที่สำคัญคือการเน้นว่า \"พ่อเห็นผมวิ่งจนจบ\" (L029) และการตอบสนองเชิงบวกของพ่อ (L030) ซึ่งช่วยปลดล็อกความรู้สึกโกรธของตัวเอก (L031)"
+    },
+    {
+     "name": "Outro",
+     "first": 34,
+     "last": 36,
+     "reading": "ส่วนนี้เป็นการสรุปเรื่องราวทั้งหมดโดยการย้อนกลับไปสู่สถานการณ์เดิม (พ่อยังขับแท็กซี่เหมือนเดิม L034) แต่มีการเปลี่ยนแปลงที่สำคัญคือการมีสัญลักษณ์ของความรัก (เหรียญ) ที่คงอยู่ทุกวัน (L035)"
+    }
+   ],
+   "notes": [
+    "การเชื่อมโยงระหว่างการวิ่ง (Action) กับความรู้สึก (Emotion) ทำได้ดีมากตลอดทั้งเพลง โดยเฉพาะการที่ความโกรธ (L020) ถูกแทนที่ด้วยความรัก (L030) อย่างเป็นธรรมชาติ"
+   ]
+  },
+  "diagnostics": [
+   "song_critic: placeholder_copied: in [SECTION.1] the line “(one [SECTION.n] for each sung section, in order)” is the format's own text, not an answer, so it was not used.",
+   "song_critic: placeholder_copied: in [SECTION.2] the line “(one [SECTION.n] for each sung section, in order)” is the format's own text, not an answer, so it was not used.",
+   "song_critic: placeholder_copied: in [SECTION.3] the line “(one [SECTION.n] for each sung section, in order)” is the format's own text, not an answer, so it was not used.",
+   "song_critic: placeholder_copied: in [SECTION.4] the line “(one [SECTION.n] for each sung section, in order)” is the format's own text, not an answer, so it was not used.",
+   "song_critic: placeholder_copied: in [SECTION.5] the line “(one [SECTION.n] for each sung section, in order)” is the format's own text, not an answer, so it was not used.",
+   "song_critic: placeholder_copied: in [SECTION.6] the line “(one [SECTION.n] for each sung section, in order)” is the format's own text, not an answer, so it was not used.",
+   "song_critic: placeholder_copied: in [SECTION.7] the line “(one [SECTION.n] for each sung section, in order)” is the format's own text, not an answer, so it was not used."
+  ],
+  "incomplete": false
+ }
+}
