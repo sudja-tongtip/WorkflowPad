@@ -54,7 +54,14 @@ SPECIALISTS = (
     # Analyze Rhymes (rhyme-map-v6): a structured analysis of its own. Its editable prompt holds the craft; the OUTPUT FORMAT and the validation stay in rhyme_v6.py. One stateless request per window:
     # no chat, no session, no history, and never shown in the chat list.
     Specialist("rhyme_analyzer", "Rhyme Analyzer", "The whole-song rhyme map of Analyze Rhymes: pairs, positions, schemes and a short reading", "rhyme_analyzer.md", analyzes=False),
+    # The four SPECIALIST REPORTS (spec_reports.py): each one reads the lyrics (and the program's own Python evidence) for its own question and writes one read-only report. One stateless request per report, started by
+    # the report's own Analyze button, never by Analyze Song and never by opening a tab. Not chat specialists (the Songwriter AI is the chat); their prompts are editable like the others.
+    Specialist("song_critic", "Song Critic AI", "What the song is trying to communicate and whether the text succeeds: meaning, story, emotion and hook", "song_critic.md", analyzes=False),
+    Specialist("rhyme_flow", "Rhyme & Flow AI", "Whether the actual rhymes serve the meaning and sound natural (reads the Python rhyme evidence)", "rhyme_flow.md", analyzes=False),
+    Specialist("vocal_flow", "Vocal Flow AI", "Which passages deserve a singing test: syllables, phrases, live / dead syllables", "vocal_flow.md", analyzes=False),
+    Specialist("lyric_language", "Lyric Language AI", "Whether each phrase keeps its meaning and sounds like natural language: idiom, word choice, alternatives", "lyric_language.md", analyzes=False),
 )
+REPORT_IDS = ("song_critic", "rhyme_flow", "vocal_flow", "lyric_language")          # the specialists of the four report tabs (spec_reports.py)
 PRODUCER = "music_producer"
 ANALYSIS_ID = "music_producer_analysis"             # the Music Producer's ANALYSIS session: its own live conversation and its own session file, never mixed with the chat session
 # The Music Producer AI replaced the Song Architect (and took over the sound side of the Music Director's work in the chat). The Song Architect's saved chats, reports and prompt file stay as they are (an archive,

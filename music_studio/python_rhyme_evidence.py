@@ -60,6 +60,10 @@ def build(lyrics: str, language: str = "", ins=None) -> "dict | None":
     ins = ins if ins is not None and ins.language == language else LI.analyze(lyrics, None, 0, language)
     m = LI.rhyme_map(lyrics, None, language, ins=ins)                # result=None: only the Python links, whatever AI result may be saved
     info = {x.line_number: x for x in ins.lines}
+    comp_of: dict = {}                     # the Real-time colour group (connected component, numbered by position) of every word: the SAME ids as rhyme_color
+    for gi_, g_ in enumerate(RM.groups(m.links)):
+        for w_ in g_:
+            comp_of[w_.span] = gi_
     sec_of = {x.file_line: x.section for x in sung}
     by_sec: dict = {}
     for ln in sung:
@@ -100,7 +104,7 @@ def build(lyrics: str, language: str = "", ins=None) -> "dict | None":
             why = (why + " · " if why else "") + "the lines are in sections that are not next to each other: weak as a heard rhyme"
         elif conf == "medium" and sa != sb:
             why = (why + " · " if why else "") + "across neighbouring sections"
-        row = {"a": a, "b": b, "kind": "vowel", "placement": placement, "sound": k.sound, "verification": SOURCE, "confidence": conf, "why": why, "sound_type": "vowel_rhyme", "group": k.group}
+        row = {"a": a, "b": b, "kind": "vowel", "placement": placement, "sound": k.sound, "verification": SOURCE, "confidence": conf, "why": why, "sound_type": "vowel_rhyme", "group": k.group, "comp": comp_of.get(k.a.span, -1)}
         if k.colourable and k.verification == "verified":
             bucket["pairs"].append(row)
             if k.placement == "end" and la != lb:
@@ -197,7 +201,7 @@ def build(lyrics: str, language: str = "", ins=None) -> "dict | None":
                           "pos": end_pos.get(x.file_line), "repeat": x.file_line in rep_lines})
         pattern = "".join((y["label"] or "-") for y in lines) if any(y["label"] for y in lines) else ""
         out.append({"name": lns[0].section_name or "", "first": min(files), "last": max(files), "pattern": pattern, "scheme_name": "", "scheme_unverified": False, "lines": lines,
-                    "pairs": bucket["pairs"][:RF.MAX_PAIRS], "repetitions": bucket["repetitions"][:RF.MAX_PAIRS], "not_confirmed": bucket["not_confirmed"][:RF.MAX_PAIRS], "rejected": [], "misplaced": [],
+                    "pairs": bucket["pairs"][:RF.MAX_PAIRS], "pairs_total": len(bucket["pairs"]), "repetitions": bucket["repetitions"][:RF.MAX_PAIRS], "not_confirmed": bucket["not_confirmed"][:RF.MAX_PAIRS], "rejected": [], "misplaced": [],
                     "reported": True, "letters_from": SOURCE, "inconsistent": False, "inconsistencies": [], "group_conflicts": 0, "unlettered": [], "uncertain": unread[:6]})
     limits = list(LIMITATIONS)
     n_unread = sum(len(s["uncertain"]) for s in out)
