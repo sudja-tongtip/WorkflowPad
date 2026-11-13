@@ -1,0 +1,726 @@
+diff --git a/music_studio.py b/music_studio.py
+index 9649a03..1ba0f98 100644
+--- a/music_studio.py
++++ b/music_studio.py
+@@ -30,6 +30,7 @@ from music_studio import vocal_cues as VC
+ from music_studio import rhyme_flow as RF
+ from music_studio import python_rhyme_evidence as PRE
+ from music_studio import live_dead as LD
++from music_studio import spec_reports as SR
+ from music_studio import report_steps as RPT              # the Songwriter / Music Producer report asked step by step (summary, one section at a time, suggestions)
+ from music_studio import rhyme_steps as RS               # the Rhyme Analyzer asked step by step (overview, then one section at a time, shown as it arrives)
+ from music_studio import rhyme_color as RC
+@@ -6535,6 +6753,11 @@ def main(page: ft.Page):
+         I18N.refresh(page)
+         if bb["obj"] is not None and S.song:
+             bb["obj"].build()                                       # chip labels follow the UI language; the caption (English phrases) does not change
++        try:
++            if S.song and rp["tab"] in SR.TABS:                     # an open report page: the window language is part of its request, so its status (Current -> Outdated) is redrawn now; no request, no dirty mark
++                sr_render()
++        except Exception as ex:
++            dbg_once("sr relang", ex)
+ 
+     def build_lang_row():
+         lang_row.controls = [ft.Container(ft.Text(t, size=11, weight=ft.FontWeight.W_600, color="#FFFFFF" if I18N.lang() == c else C["text2"]), padding=po(8, 3, 8, 3),
+@@ -9055,6 +9278,8 @@ def main(page: ft.Page):
+         """The button of a report panel (`only` = that specialist) or AI Actions → Analyze Song (both, one after the other). The song, sheet and lyrics are captured now; each step re-checks them before it starts."""
+         if not S.song:
+             toast("Open or create a song first.", C["amber"]); return
++        if only == "songwriter":
++            toast("The Songwriter AI is the chat now. The lyric reports are the four icons in the strip: Song Critic, Rhyme & Flow, Vocal Flow, Lyric Language.", C["amber"]); return
+         if rep_busy() or S.chat_busy_song or S.an_busy:
+             toast("The AI is still busy. Try again in a moment.", C["amber"]); return
+         if not S.backend:
+@@ -9259,7 +9484,7 @@ def main(page: ft.Page):
+         render_review(); refresh_actions_ui()
+         try:
+             snap = snap or spec_snapshot()                                     # taken synchronously at the click: the whole job works on THIS song, sheet and lyrics
+-            specs = [only] if only else list(SP.ANALYZE_ORDER)
++            specs = [only] if only else [SP.PRODUCER]                  # Analyze Song asks the Music Producer; the lyric reports have their own buttons (spec_reports)
+             for i, spec in enumerate(specs, 1):
+                 if not (S.song and S.song.id == song_id and S.song.book.active_id == sheet0 and lyr() == text0):
+                     break                                              # the song, sheet or lyrics changed: nothing more is started; what finished stays (tied to its snapshot)
+@@ -11766,7 +11991,466 @@ def main(page: ft.Page):
+     # Right Panel: three tabs (Lyrics Tools | Analysis | Generate) and the Output takes below. In Generate, Basic / Advanced / AI Music Director are a small navigation: a menu, and the chosen
+     # page slides in from the right (← Back). The Generate button, the caption and the status stay under both, so Generate is one tap away. Opening a page starts nothing.
+     RP_ANIM = ft.Animation(220, ft.AnimationCurve.EASE_OUT_CUBIC)
+-    RP_TABS = [("tools", "Lyrics Tools"), ("rep_lyrics", "Lyric Analysis"), ("rep_vocal", "Vocal Analysis"), ("cc_rhyme", "Rhyme & Syllables"), ("cc_rhythm", "Rhythm & Duration"), ("gen", "Generate"), ("settings", "Song Settings"), ("results", "Results")]                  # Repaint is a center tab beside Lyrics, not a sidebar page
++    # ═══ SPECIALIST REPORTS: Song Critic · Rhyme & Flow · Vocal Flow · Lyric Language (spec_reports.py) ══════════════════════════════════════════════════════════════════════════
++    # Four pages of the right panel, one icon each in the vertical strip. Opening a page shows the saved report (nothing is asked); ITS button analyzes that one report with one stateless request. A report
++    # is kept in the specialist's session file of the song and the sheet (specialist_engine), so it comes back after a restart; changed lyrics only make it "Outdated" (the old report stays readable).
++    # Reports are read-only: an alternative wording is a comparison, never applied.
++    sr = {"spec": "song_critic", "running": None, "err": {}, "cache": {}, "sig": None, "rall": set(), "arc": set()}
++    sr_col = ft.Column([], spacing=10, scroll=ft.ScrollMode.AUTO, expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
++    sr_page = ft.Container(sr_col, left=0, top=0, right=0, bottom=0, visible=False)
++    SR_WHY_TEXT = {"lyrics": "The lyrics changed after this report. It is still readable, but its line numbers and its findings may no longer match. Press Analyze again to update it.",
++                   "inputs": "The song settings, the language or the syllable corrections changed after this report, so its numbers may no longer match. It is still readable. Press Analyze again to update it.",
++                   "prompt": "The prompt of this specialist changed after this report. It is still readable. Press Analyze again to update it."}
++    SR_STATE = {"not_analyzed": ("Not analyzed", "text3"), "running": ("Running", "accent"), "current": ("Current", "green"), "outdated": ("Outdated", "amber"), "partial": ("Partial", "amber"),
++                "error": ("Error", "red")}
++
++    def sr_key(spec: str) -> tuple:
++        return (S.song.id, S.song.book.active_id, spec)
++
++    def sr_get(spec: str):
++        """The saved report of this specialist for the open song and sheet (from its session file, once; the cache is replaced when a run finishes). Never asks the AI."""
++        if not S.song:
++            return None
++        k = sr_key(spec)
++        if k not in sr["cache"]:
++            try:
++                sr["cache"][k] = SE.load_session(k[0], k[1], spec).latest_report()
++            except Exception as ex:
++                dbg_once("sr load", ex)
++                sr["cache"][k] = None
++        return sr["cache"][k]
++
++    def sr_input_fp(spec: str) -> str:
++        """The inputs that change what THIS report says: lyrics, language, and per report the settings / corrections it really uses. Cheap; the evidence is rebuilt only by Analyze."""
++        if not S.song:
++            return ""
++        st = S.song.settings
++        return SR.input_fp(spec, lyr(), song_lang(), SH.settings_to_dict(st), li_corrections(), {"genre": st.genre, "mood": st.mood, "energy": st.energy, "vocal": st.vocal, "language": st.language}, S.song.title, "Thai" if I18N.lang() == "th" else "English")
++
++    def sr_state(spec: str) -> str:
++        return SR.state_of(sr_get(spec), LA.text_hash(lyr()) if S.song else "", running=bool(sr["running"] == spec), current_input_fp=sr_input_fp(spec))
++
++    def sr_sync(*_a):
++        """Called on every edit: the open report page is redrawn only when its state or its lyrics changed (Current -> Outdated)."""
++        if rp["tab"] not in SR.TABS or not S.song:
++            return
++        sig = (sr["spec"], sr_state(sr["spec"]), sr["running"], S.song.id, S.song.book.active_id)
++        if sig != sr["sig"]:
++            sr_render()
++
++    dr_hooks.append(sr_sync)
++
++    def sr_chip(text: str, color: "str | None" = None, tip: str = ""):
++        return ft.Container(ft.Text(text, size=10, color=color or C["text2"], weight=ft.FontWeight.W_600), padding=po(8, 2, 8, 2), border_radius=10, bgcolor=C["field"], border=ft.Border.all(1, C["border"]), tooltip=tip or None)
++
++    def sr_toggle_arc():
++        sr["arc"].symmetric_difference_update({(S.song.id, S.song.book.active_id)})
++        sr_render()
++
++    def sr_toggle_all():
++        k = (S.song.id, S.song.book.active_id)
++        sr["rall"].symmetric_difference_update({k})
++        sr_render()
++
++    def sr_ref(first: int, last: int, stale: bool = False):
++        """`L12` / `L12-L13`: opens that line in the editor (the lyrics are not changed). A report of older lyrics says so: its numbers may not match the editor now."""
++        if not first:
++            return sr_chip("Whole song")
++        label = f"L{first}" if first == last else f"L{first}-L{last}"
++        if stale:                                                           # the lyrics changed: the number is kept as it was written, but it no longer jumps to whatever line has that number now
++            return ft.Container(ft.Text(label, size=11, color=C["text3"], weight=ft.FontWeight.W_700), padding=po(7, 1, 7, 1), border_radius=6, bgcolor=C["field"], border=ft.Border.all(1, C["border"]),
++                                tooltip=I18N.tr("The lyrics changed after this report: this line number is from the old lyrics, so it does not open the editor."))
++        return ft.Container(ft.Text(label, size=11, color=C["accent"], weight=ft.FontWeight.W_700), padding=po(7, 1, 7, 1), border_radius=6, bgcolor=C["accent_soft"], ink=True,
++                            tooltip="Show this line in the editor", on_click=lambda e, a=first, b=last: goto_file_line(a, b))
++
++    def sr_title(text: str, note: str = ""):
++        return ft.Row([ft.Text(text, size=13, weight=ft.FontWeight.BOLD, color=C["text1"], expand=True), ft.Text(note, size=10, color=C["text3"])], vertical_alignment=ft.CrossAxisAlignment.CENTER)
++
++    def sr_card(*rows, tint: "str | None" = None):
++        return ft.Container(ft.Column(list(rows), spacing=6, tight=True), padding=po(12, 10, 12, 10), border_radius=10, bgcolor=C["panel2"], border=ft.Border.all(1, tint or C["border"]))
++
++    def sr_quote(text: str, first: int = 0, last: int = 0, stale: bool = False):
++        """The lyric lines of a finding, as written (the program's own text, never the AI's copy)."""
++        rows = [ln for ln in (text or "").split("\n") if ln.strip()]
++        return ft.Container(ft.Column([ft.Row([sr_ref(first, last, stale)] if first else [], spacing=6)] + [ft.Text(x, size=12, color=C["text1"], selectable=True) for x in rows[:6]] + ([ft.Text("…", size=11, color=C["text3"])] if len(rows) > 6 else []),
++                                      spacing=3, tight=True), padding=po(10, 7, 10, 7), bgcolor=C["field"], border=ft.Border(left=ft.BorderSide(3, C["accent"])))      # no border_radius: Flutter refuses a radius with a one-sided border (grey error box)
++
++    def sr_kv(label: str, text: str, color: "str | None" = None, size: int = 12):
++        if not (text or "").strip():
++            return None
++        return ft.Column([ft.Text(label, size=10, weight=ft.FontWeight.W_700, color=color or C["text3"]), ft.Text(text, size=size, color=C["text1"], selectable=True)], spacing=1, tight=True)
++
++    KIND_STYLE = {"strength": ("Strength", "green", ft.Icons.CHECK_ROUNDED), "concern": ("Worth a look", "amber", ft.Icons.DIAMOND_OUTLINED), "keep": ("Keep", "green", ft.Icons.CHECK_ROUNDED),
++                  "change": ("Language issue", "amber", ft.Icons.DIAMOND_OUTLINED)}
++
++    def sr_finding(f: dict, spec: str, lyrics: str, stale: bool):
++        """One finding: its lines and the lyric text, what can be seen (observation), the AI's reading (interpretation, said as a reading), what to try or why to keep, and the trade-offs of an alternative."""
++        label, col, icon = KIND_STYLE.get(f["kind"], ("Note", "text3", ft.Icons.INFO_OUTLINE))
++        head = ft.Row([ft.Icon(icon, size=14, color=C[col]), ft.Text(I18N.tr(label), size=11, weight=ft.FontWeight.W_700, color=C[col]), ft.Container(expand=True),
++                       ft.Text(I18N.tr({"high": "High priority", "medium": "Medium priority", "low": "Low priority"}.get(f.get("priority"), "")), size=10, color=C["text3"])], spacing=6)
++        body = [head, sr_quote(f.get("quote", ""), f.get("first", 0), f.get("last", 0), stale)]
++        if f.get("quote_ok") is False:                                      # the AI's quotation was not in the lyrics: the lines above are the program's, and the reading below is the AI's own and unchecked
++            body.append(ft.Row([ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, size=13, color=C["amber"]),
++                                ft.Text(I18N.tr("Unverified: the quotation the AI gave does not match these lines, so the lines above are the program's own. Read the comments below with care."), size=10, color=C["amber"], expand=True)],
++                               spacing=4, vertical_alignment=ft.CrossAxisAlignment.START))
++        if spec == "lyric_language" and f.get("alternative"):
++            body += [ft.Row([ft.Container(ft.Column([ft.Text(I18N.tr("ORIGINAL"), size=9, weight=ft.FontWeight.W_700, color=C["text3"]), ft.Text(f["quote"], size=12, color=C["text1"], selectable=True)], spacing=2),
++                                          padding=po(10, 7, 10, 7), border_radius=8, bgcolor=C["field"], border=ft.Border.all(1, C["border"]), expand=True)]),
++                     ft.Row([ft.Container(ft.Column([ft.Text(I18N.tr("ALTERNATIVE · for you to consider"), size=9, weight=ft.FontWeight.W_700, color=C["green"]), ft.Text(f["alternative"], size=12, color=C["text1"], selectable=True)], spacing=2),
++                                          padding=po(10, 7, 10, 7), border_radius=8, bgcolor=ft.Colors.with_opacity(0.10, C["green"]), border=ft.Border.all(1, ft.Colors.with_opacity(0.35, C["green"])), expand=True)])]
++        for lab, key, colr in (("What the text shows", "observation", None), ("The specialist's reading", "interpretation", None), ("Try", "recommendation", C["accent"]), ("Keep because", "keep", C["green"])):
++            x = sr_kv(I18N.tr(lab), f.get(key, ""), colr)
++            if x is not None:
++                body.append(x)
++        if spec == "lyric_language" and f.get("alternative"):
++            for lab, key in (("Meaning impact", "meaning"), ("Rhyme impact", "rhyme"), ("Syllable / flow impact", "syllables")):
++                x = sr_kv(I18N.tr(lab), f.get(key, ""))
++                if x is not None:
++                    body.append(x)
++            body.append(ft.Text(I18N.tr("Comparison only: it is not applied to the lyrics."), size=10, color=C["text3"], italic=True))
++        return sr_card(*body, tint=ft.Colors.with_opacity(0.45, C[col]) if col != "text3" else None)
++
++    def sr_findings(sr_data: dict, spec: str, lyrics: str, stale: bool, order: tuple, titles: dict):
++        out = []
++        for kind_group in order:
++            items = [f for f in sr_data.get("findings", []) if f["kind"] in kind_group]
++            if not items:
++                continue
++            items.sort(key=lambda f: {"high": 0, "medium": 1, "low": 2}.get(f.get("priority"), 3))
++            out.append(sr_title(I18N.tr(titles[kind_group[0]]), I18N.tr("Most important first") if len(items) > 1 else ""))
++            out += [sr_finding(f, spec, lyrics, stale) for f in items]
++        return out
++
++    def sr_sections_tile(spec: str, sr_data: dict, title: str, stale: bool = False):
++        rows = []
++        for s in sr_data.get("sections", []):
++            rows.append(ft.Column([ft.Row([ft.Text(s["name"], size=12, weight=ft.FontWeight.W_700, color=C["text1"]), sr_ref(s["first"], s["last"], stale) if s["first"] else ft.Container()], spacing=8),
++                                   ft.Text(s["reading"], size=12, color=C["text2"], selectable=True)], spacing=2, tight=True))
++        if not rows:
++            return None
++        return _rep_tile(f"sr:{spec}:sections", title, rows, I18N.tr("Open for the section by section reading"))
++
++    # the evidence drawn by the program ----------------------------------------------------------------------------------------------------------------------------------------
++    def sr_rhyme_lines(sr_data: dict, evid: dict, lyrics: str, stale: bool):
++        """Rhyme & Flow: the lyric lines that have pairs, with the paired WORDS marked at their real place (bold underline = exact, italic wavy underline = near), then one card per pair. The program draws
++        this from the Python rhyme evidence stored with the report; a shared colour never makes a pair."""
++        rows_l = lyrics.split("\n")
++        out = []
++        pairs = [p for s in evid.get("sections", []) for p in s.get("pairs", [])]
++        # colour = the Real-time colour GROUP of the pair (the connected component the Rhyme Map numbers by position: the same id and the same palette as the editor); exact / near is the STYLE.
++        # A report saved before the component id was stored falls back to one colour per sound key, in order of appearance.
++        fallback: dict = {}
++
++        def pkey(p_):
++            c_ = p_.get("comp")
++            if isinstance(c_, int) and c_ >= 0:
++                return ("c", c_)
++            return ("g", p_.get("group") or p_.get("sound") or "")
++
++        for p_ in pairs:
++            if pkey(p_)[0] == "g":
++                fallback.setdefault(pkey(p_), len(fallback))
++
++        def gcol(key):
++            return LI.PALETTE[(key[1] if key[0] == "c" else fallback.get(key, 0)) % len(LI.PALETTE)]
++        marks: dict = {}
++        for p in pairs:
++            for side in ("a", "b"):
++                w = p[side]
++                if w.get("pos"):
++                    marks.setdefault(w["line"], []).append((w["pos"][0], w["pos"][1], p["sound"], pkey(p)))
++        all_on = (S.song.id, S.song.book.active_id) in sr["rall"]
++        out.append(sr_title(I18N.tr("Lyrics with the evidence"), I18N.tr("Python rhyme analysis")))
++        shown = []
++        mline = sorted(marks)
++        for n in (mline if all_on else mline[:12]):
++            line = rows_l[n - 1] if 1 <= n <= len(rows_l) else ""
++            spans, pos = [], 0
++            for a, b, snd, grp in sorted(marks[n]):
++                if a < pos or b > len(line):
++                    continue
++                if a > pos:
++                    spans.append(ft.TextSpan(line[pos:a]))
++                near = snd == "near"
++                spans.append(ft.TextSpan(line[a:b], style=ft.TextStyle(color=gcol(grp), weight=ft.FontWeight.BOLD, italic=near, decoration=ft.TextDecoration.UNDERLINE, decoration_color=gcol(grp),
++                                                                       decoration_style=ft.TextDecorationStyle.WAVY if near else ft.TextDecorationStyle.SOLID)))
++                pos = b
++            spans.append(ft.TextSpan(line[pos:]))
++            shown.append(ft.Row([sr_ref(n, n, stale), ft.Text(spans=spans, size=13, color=C["text1"], expand=True, selectable=True)], spacing=8, vertical_alignment=ft.CrossAxisAlignment.START))
++        if not shown:
++            shown = [ft.Text(I18N.tr("Python listed no rhyme pair for these lyrics. That is not proof that there is no rhyme."), size=12, color=C["text2"])]
++        legend = ft.Row([sr_chip(I18N.tr("Bold underline = Exact: same sound")), sr_chip(I18N.tr("Italic wavy underline = Near: a similar sound")), sr_chip(I18N.tr("Colour = rhyme group (the same sound family)")),
++                         sr_chip(I18N.tr("A word that is not marked = no pair in the evidence"))], spacing=6, wrap=True, run_spacing=4)
++        more_l = []
++        if len(mline) > 12:
++            more_l = [ft.Row([ft.Text((I18N.tr("Showing all") + f" {len(mline)} " + I18N.tr("marked lines")) if all_on else (I18N.tr("Showing") + f" 12 / {len(mline)} " + I18N.tr("marked lines")), size=10, color=C["text3"], expand=True),
++                              ft.TextButton(I18N.tr("Show fewer") if all_on else I18N.tr("Show all"), on_click=lambda e: sr_toggle_all())], vertical_alignment=ft.CrossAxisAlignment.CENTER)]
++        out.append(sr_card(ft.Text(I18N.tr("A shared colour helps you see the relation but never creates a pair."), size=10, color=C["text3"]), *shown, *more_l, legend))
++        detected = sum(max(int(s_.get("pairs_total") or 0), len(s_.get("pairs", []))) for s_ in evid.get("sections", []))
++        capped = detected > len(pairs)                                       # the Rhyme Map's own per-section cap (RF.MAX_PAIRS) cut pairs before this report saw them
++        out.append(sr_title(I18N.tr("Pairs found"), f"{len(pairs)} " + I18N.tr("pairs") + (f" ({I18N.tr('detected')}: {detected})" if capped else "")))
++        prow = []
++        for p in (pairs if all_on else pairs[:24]):
++            a, b = p["a"], p["b"]
++            where = f"L{a['line']}" if a["line"] == b["line"] else f"L{a['line']} · L{b['line']}"
++            snd = p["sound"]
++            prow.append(ft.Container(ft.Row([ft.Column([ft.Row([ft.Text(where, size=10, color=C["text3"]), ft.Text(a["word"], size=13, weight=ft.FontWeight.BOLD, color=C["text1"]), ft.Text("↔", size=12, color=C["text3"]),
++                                                          ft.Text(b["word"], size=13, weight=ft.FontWeight.BOLD, color=C["text1"])], spacing=6, wrap=True, run_spacing=2),
++                                             ft.Text(f"{p.get('group') or ''} · {I18N.tr(p['placement'].replace('_', ' '))}" + (f" · {I18N.tr('confidence')}: {p['confidence']}" if p.get("confidence") else ""), size=10, color=C["text3"])], spacing=1, tight=True, expand=True),
++                                     ft.Container(width=10, height=10, border_radius=5, bgcolor=gcol(pkey(p))),
++                                     ft.Text(snd.upper(), size=11, weight=ft.FontWeight.W_800, color=C["green"] if snd == "exact" else C["amber"], italic=snd == "near")], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER),
++                                     padding=po(8, 6, 8, 6), border=ft.Border(bottom=ft.BorderSide(1, C["border"]))))
++        if pairs:
++            foot = []
++            if len(pairs) > 24:
++                foot.append(ft.Row([ft.Text((I18N.tr("Showing all") + f" {len(pairs)} " + I18N.tr("pairs")) if all_on else (I18N.tr("Showing") + f" 24 / {len(pairs)} " + I18N.tr("pairs") + ". " + I18N.tr("All of them are in the evidence.")), size=10, color=C["text3"], expand=True),
++                                    ft.TextButton(I18N.tr("Show fewer") if all_on else I18N.tr("Show all"), on_click=lambda e: sr_toggle_all())], vertical_alignment=ft.CrossAxisAlignment.CENTER))
++            if capped:                                                        # the Rhyme Map's own cap: never say "only these exist" about a list that is itself cut
++                foot.append(ft.Text(f"{detected} " + I18N.tr("pairs were detected, but only the first 40 of a section are kept in the evidence, so this list is not complete. A word that is not listed may still be in a pair."), size=10, color=C["amber"]))
++            elif len(pairs) <= 24 or all_on:
++                foot.append(ft.Text(I18N.tr("Only the pairs above exist in the evidence. Words that share a colour or a letter but are not listed are not a pair."), size=10, color=C["text3"]))
++            out.append(sr_card(*prow, *foot))
++        reps = [p for s in evid.get("sections", []) for p in s.get("repetitions", [])]
++        if reps:
++            out.append(sr_card(ft.Text(I18N.tr("Repetition (not counted as rhyme)"), size=11, weight=ft.FontWeight.W_700, color=C["text2"]),
++                               ft.Text(" · ".join(f"L{p['a']['line']}↔L{p['b']['line']} {p['a']['word']}" for p in reps[:8]), size=11, color=C["text2"])))
++        lim = evid.get("limitations") or []
++        if lim or evid.get("facts"):
++            out.append(_rep_tile("sr:rhyme_flow:limits", I18N.tr("What the Python analysis cannot show"), [ft.Text("• " + x, size=11, color=C["text2"], selectable=True) for x in (lim + evid.get("facts", []))]))
++        return out
++
++    LD_COL_SR = {"live": "#34D399", "dead": "#FB923C", "unsure": "#94A3B8"}
++
++    def sr_vocal_evidence(evid: dict, stale: bool):
++        """Vocal Flow: the program's numbers: the live / dead tokens of the lines worth a look, the totals, the density meter per section."""
++        out = []
++        tot = evid.get("totals", {})
++        total = max(1, tot.get("live", 0) + tot.get("dead", 0) + tot.get("unsure", 0))
++        lines = evid.get("lines", [])
++        pick = sorted((x for x in lines if x["syls"]), key=lambda x: (-(x["dead"] + (x["syllables"] > 10)), -x["syllables"]))[:3]
++        out.append(sr_title(I18N.tr("Syllables of the lines worth a look"), I18N.tr("Counted by the program")))
++        cards = []
++        for x in sorted(pick, key=lambda y: y["line"]):
++            toks = [ft.Container(ft.Text(t, size=12, weight=ft.FontWeight.W_600, color=C["text1"]), padding=po(7, 2, 7, 2), border_radius=6, bgcolor=ft.Colors.with_opacity(0.30, LD_COL_SR.get(c, C["text3"]))) for t, c in x["syls"]]
++            cards.append(ft.Column([ft.Row([sr_ref(x["line"], x["line"], stale), ft.Text(f"{x['syllables']}{'~' if x['estimated'] else ''} " + I18N.tr("syllables") + f" · {I18N.tr('dead')} {x['dead']}/{x['live'] + x['dead'] + x['unsure']}", size=10, color=C["text3"])], spacing=8),
++                                    ft.Row(toks, spacing=4, run_spacing=4, wrap=True)], spacing=4, tight=True))
++        if not cards:
++            cards = [ft.Text(I18N.tr("No Thai syllables could be classified."), size=12, color=C["text2"])]
++        live_w, dead_w = int(100 * tot.get("live", 0) / total), int(100 * tot.get("dead", 0) / total)
++        bar = ft.Row([ft.Container(expand=max(1, live_w), height=8, bgcolor=LD_COL_SR["live"], border_radius=4), ft.Container(expand=max(1, dead_w), height=8, bgcolor=LD_COL_SR["dead"], border_radius=4)], spacing=2)
++        legend = ft.Row([sr_chip(I18N.tr("Live syllable") + f" {tot.get('live', 0)}", LD_COL_SR["live"]), sr_chip(I18N.tr("Dead syllable") + f" {tot.get('dead', 0)}", LD_COL_SR["dead"]),
++                         sr_chip(I18N.tr("Not sure") + f" {tot.get('unsure', 0)}"), sr_chip(I18N.tr("A dead syllable is information, not a defect"))], spacing=6, wrap=True, run_spacing=4)
++        out.append(sr_card(*cards, ft.Divider(height=1, color=C["border"]), bar, legend))
++        dens = evid.get("density", {})
++        secs = evid.get("sections", [])
++        if secs:
++            lvl = {"comfortable": ("Comfortable", 0.35), "moderate": ("Moderate", 0.6), "dense": ("Dense", 0.8), "very_dense": ("Very dense", 1.0), "unknown": ("Not judged", 0.15)}
++            rows = []
++            for s in secs:
++                name, frac = lvl.get(s.get("level", "unknown"), lvl["unknown"])
++                rows.append(ft.Column([ft.Row([ft.Text(s["name"], size=12, color=C["text1"], expand=True), ft.Text(I18N.tr(name) + ("*" if not dens.get("known") else ""), size=10, color=C["text3"])]),
++                                       ft.ProgressBar(value=frac, color=C["accent"], bgcolor=C["field"], height=6, border_radius=3)], spacing=3, tight=True))
++            note = (I18N.tr("Density is an estimate for") + f" {dens.get('bpm')} BPM · {dens.get('duration')} s. " + I18N.tr("Not a measurement; no melody was heard.")) if dens.get("known") else (I18N.tr("Density was not judged:") + " " + (dens.get("why") or ""))
++            out.append(sr_title(I18N.tr("Phrase density by section"), I18N.tr("Estimate")))
++            out.append(sr_card(*rows, ft.Text(note, size=10, color=C["text3"])))
++        return out
++
++    def sr_critic_ribbon(sr_data: dict, evid: dict, stale: bool = False):
++        """Song Critic: one bar per section with the specialist's one-line reading of it. An interpretation from the words, not a diagram of the melody."""
++        secs = sr_data.get("sections") or []
++        if not secs:
++            return []
++        # a vertical timeline: one row per section, a coloured rail on the left (a one-sided border, no radius: Flutter refuses both together), the name and its lines, then the whole reading
++        n = len(secs)
++        rows = []
++        arc_all = (S.song.id, S.song.book.active_id) in sr["arc"]
++        for i, sc in enumerate(secs if arc_all else secs[:12]):
++            col_ = C["accent"] if i < max(1, n - 1) else C["green"]
++            head = ft.Row([ft.Text(sc["name"], size=12, weight=ft.FontWeight.BOLD, color=C["text1"], expand=True), sr_ref(sc["first"], sc["last"], stale) if sc.get("first") else ft.Container()],
++                          spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER)
++            rows.append(ft.Container(ft.Column([head, ft.Text(sc["reading"], size=11, color=C["text2"], selectable=True)], spacing=3, tight=True),
++                                     padding=po(10, 2, 0, 6), border=ft.Border(left=ft.BorderSide(3, col_)), margin=po(4, 0, 0, 4)))
++        more = [ft.Row([ft.Text((I18N.tr("Showing all") + f" {n} " + I18N.tr("sections")) if arc_all else (I18N.tr("Showing") + f" 12 / {n} " + I18N.tr("sections")), size=10, color=C["text3"], expand=True),
++                        ft.TextButton(I18N.tr("Show fewer") if arc_all else I18N.tr("Show all"), on_click=lambda e: sr_toggle_arc())], vertical_alignment=ft.CrossAxisAlignment.CENTER)] if n > 12 else []
++        return [sr_title(I18N.tr("Story arc"), I18N.tr("Section by section")), sr_card(*rows, *more, ft.Text(I18N.tr("This is a reading of the words, not a plan of the song."), size=10, color=C["text3"]))]
++
++    def sr_header(r, state: str, rep):
++        label, col = SR_STATE.get(state, SR_STATE["not_analyzed"])
++        busy = state == "running"
++        btn = ft.OutlinedButton(I18N.tr("Analyze again") if rep is not None else I18N.tr("Analyze"), icon=ft.Icons.REFRESH_ROUNDED if rep is not None else ft.Icons.AUTO_AWESOME_ROUNDED, disabled=busy, height=34,
++                                on_click=lambda e, s=r.spec: sr_start(s), style=ft.ButtonStyle(padding=po(10, 0, 10, 0)))
++        sub = I18N.tr("Specialist Report") + " · " + I18N.tr("Read-only") + ((" · " + str(rep.ts)[:16]) if rep is not None and rep.ts else "")
++        # two rows: the title (an expanding column, so NOT a wrapping Row: Flutter's Wrap refuses an expanded child) and the status + button (a wrapping Row that stacks in a narrow panel)
++        return ft.Column([ft.Row([ft.Icon(getattr(ft.Icons, r.icon), size=22, color=C["accent"]), ft.Column([ft.Text(r.title, size=15, weight=ft.FontWeight.BOLD, color=C["text1"]), ft.Text(sub, size=10, color=C["text3"])], spacing=0, tight=True, expand=True)],
++                                 spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER),
++                          ft.Row([ft.ProgressRing(width=12, height=12, stroke_width=2, visible=busy), sr_chip(I18N.tr(label), C[col]), btn], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER, wrap=True, run_spacing=4)], spacing=6)
++
++    def sr_verdict(r, sr_data: dict, evid_chips: list):
++        out = [ft.Text(r.kicker, size=10, weight=ft.FontWeight.W_800, color=C["accent"]), ft.Text(sr_data["headline"], size=18, weight=ft.FontWeight.W_800, color=C["text1"], selectable=True)]
++        if sr_data.get("reading"):
++            out.append(ft.Text(sr_data["reading"], size=12, color=C["text2"], selectable=True))
++        out.append(ft.Row(evid_chips, spacing=6, wrap=True, run_spacing=4))
++        return out
++
++    def sr_diag_tile(spec: str, rep, state: str):
++        rows = [ft.Text(f"{I18N.tr('Backend')}: {rep.backend or '-'} · {I18N.tr('Model')}: {rep.model or '-'} · {rep.ts}", size=10, color=C["text3"], selectable=True),
++                ft.Text(f"{I18N.tr('Prompt')}: {rep.prompt_hash or '-'} · {I18N.tr('Lyrics')}: {rep.lyrics_hash or '-'} · {I18N.tr('Evidence')}: {(rep.data or {}).get('evidence_fp', '-')}", size=10, color=C["text3"], selectable=True)]
++        rows += [ft.Text("• " + str(d), size=10, color=C["amber"], selectable=True) for d in (rep.diagnostics or [])]
++        return _rep_tile(f"sr:{spec}:diag", I18N.tr("Technical diagnostics"), rows, f"{len(rep.diagnostics or [])} " + I18N.tr("notes") if rep.diagnostics else "")
++
++    def sr_empty(r):
++        out = [ft.Text(r.kicker, size=10, weight=ft.FontWeight.W_800, color=C["accent"]), ft.Text(I18N.tr(r.question), size=16, weight=ft.FontWeight.W_700, color=C["text1"]),
++               ft.Text(I18N.tr("Nothing was analyzed yet. Opening this page asks nothing; press Analyze to make this report from the current lyrics."), size=12, color=C["text2"])]
++        return out
++
++    def sr_render():
++        """Draw the open report page from the saved report. No request is made here."""
++        spec = sr["spec"]
++        r = REPORT_OF[spec]
++        if not S.song:
++            sr_col.controls = [ft.Text(I18N.tr("Open or create a song first."), size=12, color=C["text3"])]
++            safe_update(sr_col); return
++        rep, state = sr_get(spec), sr_state(spec)
++        sr["sig"] = (spec, state, sr["running"], S.song.id, S.song.book.active_id)
++        ctl = [sr_header(r, state, rep)]
++        err = sr["err"].get(sr_key(spec))
++        if err:
++            ctl.append(ft.Container(ft.Text(I18N.tr("This report could not be made:") + " " + err[:300], size=11, color=C["red"], selectable=True), padding=po(10, 6, 10, 6), border_radius=8, bgcolor=ft.Colors.with_opacity(0.10, C["red"])))
++        if state == "running":
++            ctl.append(ft.Row([ft.ProgressRing(width=14, height=14, stroke_width=2), ft.Text(I18N.tr("The specialist is reading the lyrics…"), size=11, color=C["text3"])], spacing=8))
++        data = (rep.data or {}) if rep is not None else {}
++        srd = data.get("sr") if rep is not None and rep.status == "ok" else None
++        if srd is None:
++            ctl += sr_empty(r) if rep is None else [ft.Text(I18N.tr("The last answer of this specialist could not be read. Press Analyze again."), size=12, color=C["amber"])]
++            if rep is not None:
++                ctl.append(sr_diag_tile(spec, rep, state))
++            if spec == "rhyme_flow" and S.song and LA.sung_lines(lyr()):                    # the Python evidence needs no AI: shown even before the first analysis
++                try:
++                    _t, ev_now = SR.evidence_rhyme(lyr(), song_lang())
++                    ctl += sr_rhyme_lines({}, ev_now, lyr(), False)
++                except Exception as ex:
++                    dbg_once("sr rhyme preview", ex)
++            elif spec == "vocal_flow" and S.song and LA.sung_lines(lyr()):
++                try:
++                    _t, ev_now = SR.evidence_vocal(lyr(), song_lang(), SH.settings_to_dict(S.song.settings), li_corrections())
++                    ctl += sr_vocal_evidence(ev_now, False)
++                except Exception as ex:
++                    dbg_once("sr vocal preview", ex)
++            sr_col.controls = ctl
++            safe_update(sr_col); return
++        stale = state == "outdated" or bool(SR.outdated_why(rep, LA.text_hash(lyr()), sr_input_fp(spec)))      # link safety does not depend on the status chip: a running re-analysis keeps the old links disabled
++        lyrics_then = data.get("lyrics") or lyr()
++        if stale:
++            ctl.append(ft.Container(ft.Text(I18N.tr(SR_WHY_TEXT.get(SR.outdated_why(rep, LA.text_hash(lyr()), sr_input_fp(spec)) or "lyrics", SR_WHY_TEXT["lyrics"])), size=11, color=C["amber"]),
++                                    padding=po(10, 6, 10, 6), border_radius=8, bgcolor=ft.Colors.with_opacity(0.10, C["amber"])))
++        if state == "partial":
++            ctl.append(ft.Container(ft.Text(I18N.tr("Part of the answer was left out because it was not a valid part of the report (see the technical diagnostics below)."), size=11, color=C["amber"]),
++                                    padding=po(10, 6, 10, 6), border_radius=8, bgcolor=ft.Colors.with_opacity(0.10, C["amber"])))
++        evid = data.get("evidence") or {}
++        n_lines = len([x for x in lyrics_then.split("\n") if x.strip() and not SE.TAG_LINE.match(x)])
++        chips = {"song_critic": [sr_chip(f"{I18N.tr('Lyrics')} · {n_lines} {I18N.tr('sung lines')}"), sr_chip(I18N.tr("Read from the text only"))],
++                 "rhyme_flow": [sr_chip(I18N.tr("Python rhyme evidence")), sr_chip(I18N.tr("Exact / Near per pair")), sr_chip(f"{sum(len(s.get('pairs', [])) for s in evid.get('sections', []))} {I18N.tr('pairs')}")],
++                 "vocal_flow": [sr_chip(I18N.tr("Live / dead syllables from Python")), sr_chip(I18N.tr("Text only: no melody heard"))],
++                 "lyric_language": [sr_chip(I18N.tr("Original lyric lines")), sr_chip(I18N.tr("Alternatives are for you to consider"))]}[spec]
++        ctl += sr_verdict(r, srd, chips)
++        if spec == "song_critic":
++            ctl += sr_critic_ribbon(srd, evid, stale)
++            ctl += sr_findings(srd, spec, lyrics_then, stale, (("concern",), ("strength",), ("keep",)), {"concern": "Issues worth a look", "strength": "Strengths", "keep": "Keep"})
++        elif spec == "rhyme_flow":
++            ctl += sr_rhyme_lines(srd, evid, lyrics_then, stale)
++            ctl += sr_findings(srd, spec, lyrics_then, stale, (("strength",), ("concern",), ("keep",)), {"strength": "Strengths", "concern": "Quality points to check", "keep": "Keep"})
++        elif spec == "vocal_flow":
++            ctl += sr_vocal_evidence(evid, stale)
++            ctl += sr_findings(srd, spec, lyrics_then, stale, (("concern",), ("strength", "keep")), {"concern": "Passages worth a singing test", "strength": "Worth keeping", "keep": "Worth keeping"})
++        else:
++            ctl += sr_findings(srd, spec, lyrics_then, stale, (("change",), ("keep",)), {"change": "Language check", "keep": "Keep the original"})
++        tile = sr_sections_tile(spec, srd, stale=stale, title={"song_critic": I18N.tr("Section by section"), "rhyme_flow": I18N.tr("Section by section"), "vocal_flow": I18N.tr("Section by section"), "lyric_language": I18N.tr("Language by section")}[spec])
++        if tile is not None:
++            ctl.append(tile)
++        if srd.get("notes"):
++            ctl.append(sr_card(ft.Text(I18N.tr("What the specialist could not judge"), size=11, weight=ft.FontWeight.W_700, color=C["text2"]), *[ft.Text("• " + x, size=11, color=C["text2"], selectable=True) for x in srd["notes"]]))
++        ctl.append(sr_diag_tile(spec, rep, state))
++        sr_col.controls = ctl
++        safe_update(sr_col)
++
++    def sr_start(spec: str):
++        """The Analyze button of a report page: ONE request for THIS report only. The song, the sheet and the lyrics are captured now."""
++        if not S.song:
++            toast("Open or create a song first.", C["amber"]); return
++        if sr["running"] or rep_busy() or S.chat_busy_song or S.an_busy:
++            toast("The AI is still busy. Try again in a moment.", C["amber"]); return
++        if not S.backend:
++            toast("No AI backend: put an LLM workflow in comfy_apis/llm or set a Grok key in Prompt Lab", C["amber"]); return
++        if not LA.sung_lines(lyr()):
++            toast("Write some lyrics first (there are only [tags] or empty lines).", C["amber"]); return
++        p = SP.load(spec)
++        if not p.ok:
++            toast(f"The prompt of {SP.name_of(spec)} is not valid, so nothing was sent: " + " ".join(p.errors)[:250], C["amber"]); return
++        snap = dict(spec_snapshot(), style={"genre": S.song.settings.genre, "mood": S.song.settings.mood, "energy": S.song.settings.energy, "vocal": S.song.settings.vocal, "language": S.song.settings.language},
++                    settings=SH.settings_to_dict(S.song.settings))
++        snap["language"] = song_lang()                                       # the lyrics language ("" while Auto), the same value the evidence preview and the fingerprint use
++        snap["reply_lang"] = "Thai" if I18N.lang() == "th" else "English"          # captured NOW: the request is built with it, and the fingerprint stored with the report is the one of this value
++        snap["input_fp"] = sr_input_fp(spec)
++        sr["running"], sr["spec"] = spec, spec
++        S.an_busy, S.an_kind, S.an_progress = snap["song_id"], "spec", f"{SP.name_of(spec)}…"
++        sr["err"].pop(sr_key(spec), None)
++        sr_render()
++        page.run_task(sr_run, spec, snap)
++
++    async def sr_run(spec: str, snap: dict):
++        loop = asyncio.get_running_loop()
++        key = (snap["song_id"], snap["sheet_id"], spec)
++        reply_lang = snap.get("reply_lang") or ("Thai" if I18N.lang() == "th" else "English")
++        rep_obj, err = None, ""
++        try:
++            ev_text, ev_data = await loop.run_in_executor(None, lambda: SR.evidence_for(spec, snap["lyrics"], snap.get("language") or "", snap.get("settings"), snap.get("corrections")))
++            system, _p = SP.effective_system(spec)
++            user = SR.build_user(spec, snap, ev_text, reply_lang)
++            raw, parsed = "", {"ok": False, "sr": {}, "diagnostics": [], "incomplete": False}
++            for attempt in (1, 2):
++                raw = await loop.run_in_executor(None, lambda: spec_llm(system, (RPT.RETRY_INCOMPLETE if attempt == 2 else "") + user, snap["backend"], S.host, 0.4))
++                parsed = SR.parse_answer(raw, spec, snap["lyrics"], system)
++                if parsed["ok"] or not parsed.get("incomplete") or attempt == 2:
++                    break
++            ev_data = dict(ev_data, lyrics=snap["lyrics"]) if parsed["ok"] else ev_data
++            try:
++                model = an_identity(snap["backend"])[0]
++            except Exception:
++                model = ""
++            rep_obj = SR.make_report(spec, snap, parsed, ev_data, raw, model)
++            if parsed["ok"]:
++                rep_obj.data["lyrics"] = snap["lyrics"]                   # the lyrics this report is about: its quotes and line numbers stay right when the lyrics change
++            else:
++                err = rep_obj.error + " " + " ".join(parsed.get("diagnostics", []))[:200]
++        except Exception as ex:
++            log.warning("specialist report %s failed: %r", spec, ex)
++            err = str(ex)
++        finally:
++            sr["running"] = None
++            S.an_busy, S.an_kind, S.an_progress = "", "", ""
++        if rep_obj is not None and rep_obj.status == "ok":
++            old = sr["cache"].get(key) or None
++            now_hash = LA.text_hash(lyr()) if (S.song and (S.song.id, S.song.book.active_id) == key[:2]) else ""
++            if old is not None and old.status == "ok" and now_hash and old.lyrics_hash == now_hash and rep_obj.lyrics_hash != now_hash:
++                log.info("report %s of older lyrics was not kept: a newer report of the current lyrics exists", spec)      # a slow answer never replaces the report of newer lyrics
++            else:
++                try:
++                    ses = SE.load_session(*key)
++                    SE.add_report(ses, rep_obj)
++                    SE.save_session(ses)
++                except Exception as ex:
++                    dbg_once("sr save", ex)
++                sr["cache"][key] = rep_obj
++        elif err:
++            sr["err"][key] = err
++        if S.song and rp["tab"] in SR.TABS:
++            sr_render()
++        if err:
++            toast(f"{SP.name_of(spec)}: {err[:160]}", C["red"])
++
++    REPORT_OF = SR.REPORTS
++
++    RP_TABS = [("tools", "Lyrics Tools"), ("sr_critic", "Song Critic"), ("sr_rhyme", "Rhyme & Flow"), ("sr_vocal", "Vocal Flow"), ("sr_lang", "Lyric Language"), ("rep_lyrics", "Lyric Analysis"), ("rep_vocal", "Vocal Analysis"), ("cc_rhyme", "Rhyme & Syllables"), ("cc_rhythm", "Rhythm & Duration"), ("gen", "Generate"), ("settings", "Song Settings"), ("results", "Results")]                  # Repaint is a center tab beside Lyrics, not a sidebar page
+     RP_MODES = {"basic": ("Basic", "Choose chips; the caption is built from them (no AI)", ft.Icons.TUNE_ROUNDED),
+                 "advanced": ("Advanced", "Write and control the music caption yourself", ft.Icons.EDIT_NOTE_ROUNDED),
+                 "ai": ("AI Music Director", "Suggest style, BPM and key from the lyrics", ft.Icons.AUTO_AWESOME_ROUNDED)}
+@@ -12432,7 +13116,7 @@ def main(page: ft.Page):
+     side_hooks.append(_rp_on_side)
+ 
+     cc_page = ft.Container(cc_panel, left=0, top=0, right=0, bottom=0, visible=False)                 # Rhyme & Syllables / Rhythm & Duration (the same panel; the tab picks the view)
+-    style_box = ft.Container(ft.Stack([tools_page, report_page, an_page, cc_page, gen_page, settings_page, results_page], expand=True), expand=True)
++    style_box = ft.Container(ft.Stack([tools_page, report_page, sr_page, an_page, cc_page, gen_page, settings_page, results_page], expand=True), expand=True)
+     rp_title = ft.Text("", size=15, weight=ft.FontWeight.BOLD, color=C["text1"], expand=True)
+     rp_back_btn = ibtn(ft.Icons.ARROW_BACK_ROUNDED, "Back", lambda e: rp_back(), 18)
+     rp_back_btn.visible = False
+@@ -12459,9 +13143,13 @@ def main(page: ft.Page):
+         tools_page.visible, report_page.visible, an_page.visible, gen_page.visible = k == "tools", k in ("rep_lyrics", "rep_vocal"), k == "an", k == "gen"
+         settings_page.visible, results_page.visible = k == "settings", k == "results"
+         cc_page.visible = k in ("cc_rhyme", "cc_rhythm")
+-        safe_update(tools_page, report_page, an_page, cc_page, gen_page, settings_page, results_page)
++        sr_page.visible = k in SR.TABS
++        safe_update(tools_page, report_page, sr_page, an_page, cc_page, gen_page, settings_page, results_page)
+         rp_refresh_header()
+         cc_sync()
++        if k in SR.TABS:                                                       # a report page: the SAVED report is drawn, nothing is asked
++            sr["spec"] = SR.BY_TAB[k].spec
++            sr_render()
+         if k in ("rep_lyrics", "rep_vocal"):
+             report_pick(report_view["k"])
+         elif k == "an":
+@@ -12516,7 +13204,9 @@ def main(page: ft.Page):
+             inner_.bgcolor, inner_.border, inner_.padding = "#00000000", None, 0
+     for inner_ in (review_box, output_panel):
+         inner_.bgcolor, inner_.border, inner_.padding = "#00000000", None, 0
+-    RP_ICONS = {"settings": (ft.Icons.TUNE_ROUNDED, "Song Settings"), "tools": (ft.Icons.EDIT_NOTE_ROUNDED, "Lyrics Tools"), "rep_lyrics": (ft.Icons.ARTICLE_OUTLINED, "Lyric Analysis: the Songwriter AI reads the lyrics and writes its report, with the rhyme report"),
++    RP_ICONS = {"settings": (ft.Icons.TUNE_ROUNDED, "Song Settings"), "tools": (ft.Icons.EDIT_NOTE_ROUNDED, "Lyrics Tools"),
++                **{r_.tab: (getattr(ft.Icons, r_.icon), r_.tip) for r_ in SR.REPORTS.values()},
++                "rep_lyrics": (ft.Icons.ARTICLE_OUTLINED, "Lyric Analysis: the Songwriter AI reads the lyrics and writes its report, with the rhyme report"),
+                 "rep_vocal": (ft.Icons.RECORD_VOICE_OVER_OUTLINED, "Vocal Analysis: the Music Producer AI reads the song and writes its report on the structure, cues, hook, arrangement and delivery"),
+                 "cc_rhyme": (ft.Icons.FORMAT_COLOR_TEXT_ROUNDED, "Rhyme & Syllables: the lyrics with the rhyme colours (the Python rhyme analysis: sound rules on the spelling) and the syllable counts (counted by the program)"),
+                 "cc_rhythm": (ft.Icons.TIMELAPSE_ROUNDED, "Rhythm & Duration: how dense the lines and sections are for the BPM and the length (an estimate counted by the program, no AI)"),
+@@ -12538,6 +13228,10 @@ def main(page: ft.Page):
+ 
+     def rp_strip_refresh():
+         changed = []
++        old_sw = bool(S.song and sessions.get(S.song.id) is not None and sessions[S.song.id].specreports.get("songwriter") is not None)      # the Songwriter's older report: its icon is shown only when this song has one
++        if strip_btns["rep_lyrics"].visible != old_sw:
++            strip_btns["rep_lyrics"].visible = old_sw
++            changed.append(strip_btns["rep_lyrics"])
+         for k_, b_ in strip_btns.items():
+             on = bool((layout["side"] or layout["drawer"]) and rp["tab"] == k_)
+             if _strip_on.get(k_) is on:
+diff --git a/music_studio/specialists.py b/music_studio/specialists.py
+index a263029..94d7f47 100644
+--- a/music_studio/specialists.py
++++ b/music_studio/specialists.py
+@@ -54,7 +54,14 @@ SPECIALISTS = (
+     # Analyze Rhymes (rhyme-map-v6): a structured analysis of its own. Its editable prompt holds the craft; the OUTPUT FORMAT and the validation stay in rhyme_v6.py. One stateless request per window:
+     # no chat, no session, no history, and never shown in the chat list.
+     Specialist("rhyme_analyzer", "Rhyme Analyzer", "The whole-song rhyme map of Analyze Rhymes: pairs, positions, schemes and a short reading", "rhyme_analyzer.md", analyzes=False),
++    # The four SPECIALIST REPORTS (spec_reports.py): each one reads the lyrics (and the program's own Python evidence) for its own question and writes one read-only report. One stateless request per report, started by
++    # the report's own Analyze button, never by Analyze Song and never by opening a tab. Not chat specialists (the Songwriter AI is the chat); their prompts are editable like the others.
++    Specialist("song_critic", "Song Critic AI", "What the song is trying to communicate and whether the text succeeds: meaning, story, emotion and hook", "song_critic.md", analyzes=False),
++    Specialist("rhyme_flow", "Rhyme & Flow AI", "Whether the actual rhymes serve the meaning and sound natural (reads the Python rhyme evidence)", "rhyme_flow.md", analyzes=False),
++    Specialist("vocal_flow", "Vocal Flow AI", "Which passages deserve a singing test: syllables, phrases, live / dead syllables", "vocal_flow.md", analyzes=False),
++    Specialist("lyric_language", "Lyric Language AI", "Whether each phrase keeps its meaning and sounds like natural language: idiom, word choice, alternatives", "lyric_language.md", analyzes=False),
+ )
++REPORT_IDS = ("song_critic", "rhyme_flow", "vocal_flow", "lyric_language")          # the specialists of the four report tabs (spec_reports.py)
+ PRODUCER = "music_producer"
+ ANALYSIS_ID = "music_producer_analysis"             # the Music Producer's ANALYSIS session: its own live conversation and its own session file, never mixed with the chat session
+ # The Music Producer AI replaced the Song Architect (and took over the sound side of the Music Director's work in the chat). The Song Architect's saved chats, reports and prompt file stay as they are (an archive,
+diff --git a/music_studio/python_rhyme_evidence.py b/music_studio/python_rhyme_evidence.py
+index f18db3e..f5bb00e 100644
+--- a/music_studio/python_rhyme_evidence.py
++++ b/music_studio/python_rhyme_evidence.py
+@@ -60,6 +60,10 @@ def build(lyrics: str, language: str = "", ins=None) -> "dict | None":
+     ins = ins if ins is not None and ins.language == language else LI.analyze(lyrics, None, 0, language)
+     m = LI.rhyme_map(lyrics, None, language, ins=ins)                # result=None: only the Python links, whatever AI result may be saved
+     info = {x.line_number: x for x in ins.lines}
++    comp_of: dict = {}                     # the Real-time colour group (connected component, numbered by position) of every word: the SAME ids as rhyme_color
++    for gi_, g_ in enumerate(RM.groups(m.links)):
++        for w_ in g_:
++            comp_of[w_.span] = gi_
+     sec_of = {x.file_line: x.section for x in sung}
+     by_sec: dict = {}
+     for ln in sung:
+@@ -100,7 +104,7 @@ def build(lyrics: str, language: str = "", ins=None) -> "dict | None":
+             why = (why + " · " if why else "") + "the lines are in sections that are not next to each other: weak as a heard rhyme"
+         elif conf == "medium" and sa != sb:
+             why = (why + " · " if why else "") + "across neighbouring sections"
+-        row = {"a": a, "b": b, "kind": "vowel", "placement": placement, "sound": k.sound, "verification": SOURCE, "confidence": conf, "why": why, "sound_type": "vowel_rhyme", "group": k.group}
++        row = {"a": a, "b": b, "kind": "vowel", "placement": placement, "sound": k.sound, "verification": SOURCE, "confidence": conf, "why": why, "sound_type": "vowel_rhyme", "group": k.group, "comp": comp_of.get(k.a.span, -1)}
+         if k.colourable and k.verification == "verified":
+             bucket["pairs"].append(row)
+             if k.placement == "end" and la != lb:
+@@ -197,7 +201,7 @@ def build(lyrics: str, language: str = "", ins=None) -> "dict | None":
+                           "pos": end_pos.get(x.file_line), "repeat": x.file_line in rep_lines})
+         pattern = "".join((y["label"] or "-") for y in lines) if any(y["label"] for y in lines) else ""
+         out.append({"name": lns[0].section_name or "", "first": min(files), "last": max(files), "pattern": pattern, "scheme_name": "", "scheme_unverified": False, "lines": lines,
+-                    "pairs": bucket["pairs"][:RF.MAX_PAIRS], "repetitions": bucket["repetitions"][:RF.MAX_PAIRS], "not_confirmed": bucket["not_confirmed"][:RF.MAX_PAIRS], "rejected": [], "misplaced": [],
++                    "pairs": bucket["pairs"][:RF.MAX_PAIRS], "pairs_total": len(bucket["pairs"]), "repetitions": bucket["repetitions"][:RF.MAX_PAIRS], "not_confirmed": bucket["not_confirmed"][:RF.MAX_PAIRS], "rejected": [], "misplaced": [],
+                     "reported": True, "letters_from": SOURCE, "inconsistent": False, "inconsistencies": [], "group_conflicts": 0, "unlettered": [], "uncertain": unread[:6]})
+     limits = list(LIMITATIONS)
+     n_unread = sum(len(s["uncertain"]) for s in out)
+diff --git a/music_studio/locales/th.json b/music_studio/locales/th.json
+index 019fe38..8a8421b 100644
+--- a/music_studio/locales/th.json
++++ b/music_studio/locales/th.json
+@@ -4,6 +4,113 @@
+     "note": "UI texts only; lyrics, captions and AI prompts are never translated"
+   },
+   "strings": {
++    "Song Critic": "นักวิจารณ์เพลง",
++    "Vocal Flow": "การไหลของเสียงร้อง",
++    "Lyric Language": "ภาษาของเนื้อเพลง",
++    "Not analyzed": "ยังไม่ได้วิเคราะห์",
++    "Running": "กำลังวิเคราะห์",
++    "Current": "เป็นปัจจุบัน",
++    "Analyze": "วิเคราะห์",
++    "Analyze again": "วิเคราะห์ใหม่",
++    "Specialist Report": "รายงานผู้เชี่ยวชาญ",
++    "Read-only": "อ่านอย่างเดียว",
++    "Worth a look": "ควรพิจารณา",
++    "Keep": "คงไว้",
++    "Language issue": "ประเด็นด้านภาษา",
++    "High priority": "สำคัญมาก",
++    "Medium priority": "สำคัญปานกลาง",
++    "Low priority": "สำคัญน้อย",
++    "ORIGINAL": "ต้นฉบับ",
++    "ALTERNATIVE · for you to consider": "ทางเลือก · ให้คุณพิจารณา",
++    "What the text shows": "สิ่งที่เห็นในข้อความ",
++    "The specialist's reading": "การอ่านของผู้เชี่ยวชาญ",
++    "Try": "ลอง",
++    "Keep because": "คงไว้เพราะ",
++    "Meaning impact": "ผลต่อความหมาย",
++    "Rhyme impact": "ผลต่อสัมผัส",
++    "Syllable / flow impact": "ผลต่อพยางค์ / การไหล",
++    "Comparison only: it is not applied to the lyrics.": "เปรียบเทียบเท่านั้น: ไม่ได้นำไปแก้เนื้อเพลง",
++    "Most important first": "เรียงตามความสำคัญ",
++    "Open for the section by section reading": "เปิดดูการอ่านทีละท่อน",
++    "Lyrics with the evidence": "คำร้องพร้อมหลักฐาน",
++    "Python rhyme analysis": "การวิเคราะห์สัมผัสด้วย Python",
++    "Python listed no rhyme pair for these lyrics. That is not proof that there is no rhyme.": "Python ไม่พบคู่สัมผัสในเนื้อเพลงนี้ แต่ไม่ได้แปลว่าไม่มีสัมผัส",
++    "— Exact: same sound": "— Exact: เสียงเดียวกัน",
++    "~ Near: a similar sound": "~ Near: เสียงใกล้เคียง",
++    "A word that is not marked = no pair in the evidence": "คำที่ไม่ได้ทำเครื่องหมาย = ไม่มีคู่ในหลักฐาน",
++    "A shared colour helps you see the relation but never creates a pair.": "สีเดียวกันช่วยให้เห็นความสัมพันธ์ แต่ไม่ได้สร้างคู่สัมผัสขึ้นใหม่",
++    "Pairs found": "คู่สัมผัสที่ตรวจพบ",
++    "pairs": "คู่",
++    "confidence": "ความมั่นใจ",
++    "Only the pairs above exist in the evidence. Words that share a colour or a letter but are not listed are not a pair.": "ในหลักฐานมีเฉพาะคู่ข้างบนเท่านั้น คำที่ใช้สีหรืออักษรเดียวกันแต่ไม่ได้ลงรายการไม่ใช่คู่สัมผัส",
++    "Repetition (not counted as rhyme)": "คำซ้ำ (ไม่นับเป็นสัมผัส)",
++    "What the Python analysis cannot show": "สิ่งที่การวิเคราะห์ด้วย Python บอกไม่ได้",
++    "Syllables of the lines worth a look": "พยางค์ของบรรทัดที่ควรดู",
++    "Counted by the program": "นับโดยโปรแกรม",
++    "syllables": "พยางค์",
++    "A dead syllable is information, not a defect": "คำตายเป็นข้อมูล ไม่ใช่ข้อบกพร่อง",
++    "Not judged": "ยังไม่ประเมิน",
++    "Density is an estimate for": "ความแน่นเป็นการประมาณสำหรับ",
++    "Not a measurement; no melody was heard.": "ไม่ใช่การวัด ไม่ได้ฟังทำนอง",
++    "Density was not judged:": "ไม่ได้ประเมินความแน่น:",
++    "Phrase density by section": "ความแน่นของวลีแต่ละท่อน",
++    "No Thai syllables could be classified.": "ไม่พบพยางค์ไทยที่จำแนกได้",
++    "Story arc": "การเดินทางของเรื่อง",
++    "Section by section": "ทีละท่อน",
++    "This is a reading of the words, not a plan of the song.": "นี่คือการอ่านจากคำร้อง ไม่ใช่แผนผังของเพลง",
++    "Backend": "Backend",
++    "Prompt": "Prompt",
++    "Evidence": "หลักฐาน",
++    "Technical diagnostics": "รายละเอียดทางเทคนิค",
++    "notes": "หมายเหตุ",
++    "Nothing was analyzed yet. Opening this page asks nothing; press Analyze to make this report from the current lyrics.": "ยังไม่ได้วิเคราะห์ การเปิดหน้านี้ไม่ได้เรียก AI กดวิเคราะห์เพื่อสร้างรายงานจากเนื้อเพลงปัจจุบัน",
++    "The last answer of this specialist could not be read. Press Analyze again.": "อ่านคำตอบล่าสุดของผู้เชี่ยวชาญไม่ได้ กดวิเคราะห์ใหม่",
++    "This report could not be made:": "สร้างรายงานนี้ไม่ได้:",
++    "The specialist is reading the lyrics…": "ผู้เชี่ยวชาญกำลังอ่านเนื้อเพลง…",
++    "The lyrics changed after this report. It is still readable, but its line numbers and its findings may no longer match. Press Analyze again to update it.": "เนื้อเพลงเปลี่ยนหลังสร้างรายงานนี้ ยังอ่านได้ แต่เลขแถวและข้อสรุปอาจไม่ตรงแล้ว กดวิเคราะห์ใหม่เพื่ออัปเดต",
++    "Part of the answer was left out because it was not a valid part of the report (see the technical diagnostics below).": "ส่วนหนึ่งของคำตอบถูกตัดออกเพราะไม่ใช่ส่วนที่ถูกต้องของรายงาน (ดูรายละเอียดทางเทคนิคด้านล่าง)",
++    "sung lines": "บรรทัดที่ร้อง",
++    "Read from the text only": "อ่านจากข้อความเท่านั้น",
++    "Exact / Near per pair": "Exact / Near แยกตามคู่",
++    "Python rhyme evidence": "หลักฐานสัมผัสจาก Python",
++    "Live / dead syllables from Python": "คำเป็น–คำตายจาก Python",
++    "Text only: no melody heard": "จากข้อความเท่านั้น: ไม่ได้ฟังทำนอง",
++    "Original lyric lines": "บรรทัดเนื้อเพลงต้นฉบับ",
++    "Alternatives are for you to consider": "ทางเลือกให้คุณพิจารณา",
++    "What the specialist could not judge": "สิ่งที่ผู้เชี่ยวชาญตัดสินไม่ได้",
++    "Language by section": "ภาษาทีละท่อน",
++    "Issues worth a look": "ประเด็นที่ควรดู",
++    "Strengths": "จุดแข็ง",
++    "Quality points to check": "จุดตรวจคุณภาพ",
++    "Passages worth a singing test": "จุดที่ควรลองร้องจริง",
++    "Worth keeping": "จุดที่ควรคงไว้",
++    "Language check": "ตรวจภาษา",
++    "Keep the original": "คงต้นฉบับไว้",
++    "What is the song trying to communicate, and does the text succeed on its own terms?": "เพลงกำลังสื่ออะไร และเนื้อเพลงทำได้สำเร็จตามเจตนาของตัวเองหรือไม่",
++    "Do the actual rhymes serve the meaning and sound natural?": "สัมผัสที่มีอยู่จริงรับใช้ความหมายและฟังเป็นธรรมชาติหรือไม่",
++    "Which lyric passages deserve a singing test, and why?": "ท่อนไหนของเนื้อเพลงควรลองร้องจริง และเพราะอะไร",
++    "Does each phrase keep the intended meaning and sound like natural language?": "แต่ละวลียังรักษาความหมายที่ตั้งใจและฟังเป็นภาษาธรรมชาติหรือไม่",
++    "Song Critic: what the song is trying to say and whether the text succeeds (meaning, story, emotion, hook). Read-only": "นักวิจารณ์เพลง: เพลงต้องการสื่ออะไรและเนื้อเพลงทำได้หรือไม่ (ความหมาย เรื่อง อารมณ์ Hook) อ่านอย่างเดียว",
++    "Rhyme & Flow: the rhymes the program found, and whether they serve the meaning and sound natural. Read-only": "สัมผัสและการไหล: สัมผัสที่โปรแกรมตรวจพบ และสัมผัสรับใช้ความหมายและฟังเป็นธรรมชาติหรือไม่ อ่านอย่างเดียว",
++    "Vocal Flow: syllables, phrases and live / dead syllables, and the passages worth a singing test. Read-only": "การไหลของเสียงร้อง: พยางค์ วลี คำเป็น–คำตาย และท่อนที่ควรลองร้อง อ่านอย่างเดียว",
++    "Lyric Language: idiom and word choice, an alternative only when it is better, or keep the original. Read-only": "ภาษาของเนื้อเพลง: สำนวนและการเลือกคำ เสนอทางเลือกเมื่อดีกว่าจริงหรือคงต้นฉบับ อ่านอย่างเดียว",
++    "The Songwriter AI is the chat now. The lyric reports are the four icons in the strip: Song Critic, Rhyme & Flow, Vocal Flow, Lyric Language.": "ผู้ช่วยแต่งเนื้อเพลงเป็นแชตแล้ว รายงานเนื้อเพลงอยู่ที่ไอคอน 4 ปุ่มในแถบด้านขวา: นักวิจารณ์เพลง, สัมผัสและการไหล, การไหลของเสียงร้อง, ภาษาของเนื้อเพลง",
++    "The song settings, the language or the syllable corrections changed after this report, so its numbers may no longer match. It is still readable. Press Analyze again to update it.": "การตั้งค่าเพลง ภาษา หรือการแก้พยางค์เปลี่ยนหลังสร้างรายงานนี้ ตัวเลขอาจไม่ตรงแล้ว ยังอ่านได้ กดวิเคราะห์ใหม่เพื่ออัปเดต",
++    "The prompt of this specialist changed after this report. It is still readable. Press Analyze again to update it.": "Prompt ของผู้เชี่ยวชาญนี้เปลี่ยนหลังสร้างรายงานนี้ ยังอ่านได้ กดวิเคราะห์ใหม่เพื่ออัปเดต",
++    "The lyrics changed after this report: this line number is from the old lyrics, so it does not open the editor.": "เนื้อเพลงเปลี่ยนหลังสร้างรายงานนี้: เลขบรรทัดนี้มาจากเนื้อเพลงเก่า จึงไม่เปิดตัวแก้ไข",
++    "Unverified: the quotation the AI gave does not match these lines, so the lines above are the program's own. Read the comments below with care.": "ยังไม่ยืนยัน: ข้อความที่ AI อ้างไม่ตรงกับบรรทัดเหล่านี้ บรรทัดด้านบนจึงเป็นของโปรแกรมเอง อ่านความเห็นด้านล่างอย่างระวัง",
++    "Bold underline = Exact: same sound": "ขีดเส้นใต้หนา = Exact: เสียงเดียวกัน",
++    "Italic wavy underline = Near: a similar sound": "ตัวเอียงขีดเส้นหยัก = Near: เสียงใกล้เคียง",
++    "Colour = rhyme group (the same sound family)": "สี = กลุ่มสัมผัส (ตระกูลเสียงเดียวกัน)",
++    "Show all": "แสดงทั้งหมด",
++    "Show fewer": "แสดงน้อยลง",
++    "Showing": "แสดง",
++    "Showing all": "แสดงทั้งหมด",
++    "marked lines": "บรรทัดที่มีเครื่องหมาย",
++    "All of them are in the evidence.": "ทุกคู่อยู่ในหลักฐานแล้ว",
++    "detected": "ตรวจพบ",
++    "sections": "ท่อน",
++    "pairs were detected, but only the first 40 of a section are kept in the evidence, so this list is not complete. A word that is not listed may still be in a pair.": "คู่ที่ตรวจพบ แต่หลักฐานเก็บไว้เพียง 40 คู่แรกของแต่ละท่อน รายการนี้จึงไม่ครบ คำที่ไม่อยู่ในรายการอาจยังอยู่ในคู่สัมผัสได้",
+     "Live / Dead": "คำเป็น–คำตาย",
+     "Live syllable": "คำเป็น",
+     "Dead syllable": "คำตาย",

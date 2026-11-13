@@ -1,0 +1,242 @@
+[
+ {
+  "case": "S1: no Rhyme Analyzer LLM request in Analyze Song",
+  "pass": true,
+  "detail": "32 requests"
+ },
+ {
+  "case": "S1: Songwriter request holds the complete lyrics",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S1: Songwriter request holds the Python evidence header",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S1: all 6 limitation statements are sent",
+  "pass": true,
+  "detail": "[]"
+ },
+ {
+  "case": "S1: pairs only in the old Rhyme-LLM cache do not appear in the Songwriter request",
+  "pass": true,
+  "detail": "[]"
+ },
+ {
+  "case": "S1: evidence is marked source=python",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S1: Rhyme Map ignores a saved Rhyme-LLM result (same colours with and without it)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S1: Songwriter evidence pairs == Rhyme Map links (one source)",
+  "pass": true,
+  "detail": "[]"
+ },
+ {
+  "case": "S1: lyrics unchanged by Analyze Song",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S1: stale detection still marks the report outdated after an edit",
+  "pass": true,
+  "detail": "('outdated', '')"
+ },
+ {
+  "case": "S1: evidence is rebuilt from the edited lyrics (new line is in it)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S1: pairs across sections that are not next to each other carry confidence 'low' and say why",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S1: no repeated word is listed as a rhyme pair",
+  "pass": true,
+  "detail": "0 repetition(s) listed apart"
+ },
+ {
+  "case": "S1: no pair is claimed 'verified' by an AI (verification field is python)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S1: report page says Python Rhyme Analysis (not the AI's own reading)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S1: report page shows no 'Re-check this section' (no AI answer to re-check)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S2: no Rhyme Analyzer LLM request in Analyze Song",
+  "pass": true,
+  "detail": "24 requests"
+ },
+ {
+  "case": "S2: Songwriter request holds the complete lyrics",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S2: Songwriter request holds the Python evidence header",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S2: all 6 limitation statements are sent",
+  "pass": true,
+  "detail": "[]"
+ },
+ {
+  "case": "S2: pairs only in the old Rhyme-LLM cache do not appear in the Songwriter request",
+  "pass": true,
+  "detail": "[]"
+ },
+ {
+  "case": "S2: evidence is marked source=python",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S2: Rhyme Map ignores a saved Rhyme-LLM result (same colours with and without it)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S2: Songwriter evidence pairs == Rhyme Map links (one source)",
+  "pass": true,
+  "detail": "[]"
+ },
+ {
+  "case": "S2: lyrics unchanged by Analyze Song",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S2: stale detection still marks the report outdated after an edit",
+  "pass": true,
+  "detail": "('outdated', '')"
+ },
+ {
+  "case": "S2: evidence is rebuilt from the edited lyrics (new line is in it)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S2: pairs across sections that are not next to each other carry confidence 'low' and say why",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S2: no repeated word is listed as a rhyme pair",
+  "pass": true,
+  "detail": "2 repetition(s) listed apart"
+ },
+ {
+  "case": "S2: no pair is claimed 'verified' by an AI (verification field is python)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S2: report page says Python Rhyme Analysis (not the AI's own reading)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S2: report page shows no 'Re-check this section' (no AI answer to re-check)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S3: no Rhyme Analyzer LLM request in Analyze Song",
+  "pass": true,
+  "detail": "24 requests"
+ },
+ {
+  "case": "S3: Songwriter request holds the complete lyrics",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S3: Songwriter request holds the Python evidence header",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S3: all 6 limitation statements are sent",
+  "pass": true,
+  "detail": "[]"
+ },
+ {
+  "case": "S3: pairs only in the old Rhyme-LLM cache do not appear in the Songwriter request",
+  "pass": true,
+  "detail": "[]"
+ },
+ {
+  "case": "S3: evidence is marked source=python",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S3: Rhyme Map ignores a saved Rhyme-LLM result (same colours with and without it)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S3: Songwriter evidence pairs == Rhyme Map links (one source)",
+  "pass": true,
+  "detail": "[]"
+ },
+ {
+  "case": "S3: lyrics unchanged by Analyze Song",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S3: stale detection still marks the report outdated after an edit",
+  "pass": true,
+  "detail": "('outdated', '')"
+ },
+ {
+  "case": "S3: evidence is rebuilt from the edited lyrics (new line is in it)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S3: pairs across sections that are not next to each other carry confidence 'low' and say why",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S3: no repeated word is listed as a rhyme pair",
+  "pass": true,
+  "detail": "5 repetition(s) listed apart"
+ },
+ {
+  "case": "S3: no pair is claimed 'verified' by an AI (verification field is python)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S3: report page says Python Rhyme Analysis (not the AI's own reading)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "S3: report page shows no 'Re-check this section' (no AI answer to re-check)",
+  "pass": true,
+  "detail": ""
+ }
+]

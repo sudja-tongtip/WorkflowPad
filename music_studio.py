@@ -30,7 +30,10 @@ from music_studio import vocal_cues as VC
 from music_studio import rhyme_flow as RF
 from music_studio import python_rhyme_evidence as PRE
 from music_studio import live_dead as LD
+from music_studio import audio_export as AX
 from music_studio import spec_reports as SR
+from music_studio import external_consult as XC
+from music_studio import songcraft_academy as AKB       # the editable songcraft lessons under the eight aspects of the Song Critic page (no LLM)
 from music_studio import report_steps as RPT              # the Songwriter / Music Producer report asked step by step (summary, one section at a time, suggestions)
 from music_studio import rhyme_steps as RS               # the Rhyme Analyzer asked step by step (overview, then one section at a time, shown as it arrives)
 from music_studio import rhyme_color as RC
@@ -49,6 +52,7 @@ from music_studio import sheets as SH
 from music_studio import take_snapshot as TS
 from music_studio import template_arrange as TA
 from music_studio import ai_music_director as AD
+from music_studio import arrangement_plan as AP
 from music_studio import basic_caption as BC
 from music_studio import caption_builder as CB
 from music_studio import basic_builder_ui as BBU
@@ -81,7 +85,7 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
 
 APP_ID = "music_studio"
 APP_NAME = "WorkflowPad - Music Studio"
-APP_VERSION = "0.3.5"
+APP_VERSION = "0.3.6"
 APP_ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
 AUDIO_API_DIR = APP_ROOT / "comfy_apis" / "audio"
 LLM_DIR = APP_ROOT / "comfy_apis" / "llm"
@@ -400,6 +404,11 @@ def main(page: ft.Page):
     TRC.ENABLED = bool(_load_cfg().get("spec_trace", True)) if "_load_cfg" in globals() else True
     for note in SP.ensure_user_copies():                        # every specialist has an editable prompt copy; a copy the user edited is never overwritten
         log.info("specialist prompts: %s", note)
+    try:
+        for note in AKB.ensure_user_copies():                    # the songcraft lessons: an editable copy of each; a copy the user edited is never overwritten
+            log.info("songcraft lessons: %s", note)
+    except Exception as ex:
+        log.info("songcraft lessons: not installed (%s)", ex)
     page.title = f"{APP_NAME} {APP_VERSION}"
     page.bgcolor = C["bg"]
     page.padding = 0
@@ -2435,6 +2444,7 @@ def main(page: ft.Page):
                                 expanded=bool(cfg.get("gen_adv_open", False)), on_change=lambda e: _adv_changed(e),
                                 expanded_cross_axis_alignment=ft.CrossAxisAlignment.START, maintain_state=True, text_color=C["text2"])
     seed_field_ref = {"c": None}
+    dur_field_ref = {"c": None}                                  # the Duration box of Music Info: the Director shows its Pending status under it
 
     def sset(attr, cast=str, lo=None, hi=None):
         def h(e):
@@ -2600,7 +2610,16 @@ def main(page: ft.Page):
     # that song, sheet, lyrics and settings are still the ones that were analyzed. The lyrics are never touched.
     DR_BG, DR_CARD, DR_SEL = "#0B1530", "#101E3D", "#16294F"
     ai_box = ft.Column(spacing=8, visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-    dr = {"snap": None, "prop": None, "sel": 0, "fields": set(), "busy": False, "error": None, "undo": None, "cap_open": set(), "multi": []}
+    dr = {"snap": None, "prop": None, "sel": 0, "fields": set(), "busy": False, "error": None, "undo": None, "cap_open": set(), "plan_open": set(), "own_cues": set(), "multi": [],
+          "style_from": None, "duration_from": None, "cues_from": None, "prompt_note": "",
+          "mode": "arrangement", "result_mode": "classic", "result_hash": ""}
+
+    def dr_mode_hash(mode: str) -> str:
+        """The version hash of the prompt this mode sends ('' when the prompt is not valid)."""
+        try:
+            return AD.candidate_system()[1] if mode == "arrangement" else AD.prompt_version()
+        except AD.DirectorError:
+            return ""
     dr_stale_txt = ft.Text("", size=11, color=C["amber"], visible=False, weight=ft.FontWeight.W_600)
     # The AI reads the lyrics (and this optional request) only. Its Basic / Advanced style settings are NOT sent unless the box below is ticked.
     dr_instr = ft.TextField(label="Your request to the AI (optional)", hint_text="e.g. sparse and acoustic, slower, more intimate", multiline=True, min_lines=1, max_lines=3,
@@ -2609,7 +2628,15 @@ def main(page: ft.Page):
                          tooltip="Off: the AI decides the style from the lyrics alone. On: it also sees your genre, mood, vocal, energy, extra tags and Music Style Prompt as a starting point.")
 
     dr_singer = dd("Who sings", [(k, label) for k, label, _v, _t in AD.SINGERS], "auto", None)
-    singer_hook = {"fn": None}                                 # build_settings puts the real handler here; the dropdown gets its handler NOW, when it is created (a handler added after the control is shown is not delivered)
+    DR_MODES = (("classic", "Classic (Production)"), ("arrangement", "Arrangement V3.2 (Beta)"))
+
+    def dr_mode_pick(e):
+        if not dr["busy"]:                                    # the mode of a running analysis cannot change
+            dr["mode"] = "arrangement" if dr_mode_dd.value == "arrangement" else "classic"
+            dr_render()
+    dr_mode_dd = dd("Director Mode", list(DR_MODES), "classic", dr_mode_pick)
+    dr_mode_dd.tooltip = "Classic: the production prompt, style only. Arrangement V3.2 (Beta): also proposes a bar plan, so the Director can recommend a song duration. Analyze sends the mode shown here."
+    singer_hook = {"fn": None}                               # build_settings puts the real handler here; the dropdown gets its handler NOW, when it is created (a handler added after the control is shown is not delivered)
     dr_singer.on_select = synced(lambda e: singer_hook["fn"](e) if singer_hook["fn"] else None)
     dr_singer.tooltip = "Choose the singer(s) you want. The AI then writes all three directions for them and the Vocal setting follows. 'The AI decides' leaves it to the AI."
 
@@ -2627,14 +2654,14 @@ def main(page: ft.Page):
     def dr_file(song_id: str) -> Path:
         return ST.song_dir(song_id) / "music_director.json"
 
-    def dr_store(snap, prop):
+    def dr_store(snap, prop, mode: str = "classic", prompt_hash: str = ""):
         """The last analysis of THIS sheet: the snapshot it was made from and the AI's raw answer (parsed again when it is loaded). Replaced only by the next analysis."""
         try:
             f = dr_file(snap.song_id)
             d = json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
             sd = asdict(snap)
             sd["settings"], sd["sections"] = [list(x) for x in snap.settings], list(snap.sections)
-            d[snap.sheet_id] = {"snap": sd, "raw": prop.raw}
+            d[snap.sheet_id] = {"snap": sd, "raw": prop.raw, "prompt": prompt_hash or dr_mode_hash(mode), "mode": mode}
             tmp = f.with_suffix(".tmp")
             tmp.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
             tmp.replace(f)
@@ -2650,7 +2677,8 @@ def main(page: ft.Page):
             sd = dict(e["snap"])
             sd["settings"], sd["sections"] = tuple(tuple(x) for x in sd["settings"]), tuple(sd["sections"])
             snap = AD.Snapshot(**{k: v for k, v in sd.items() if k in AD.Snapshot.__dataclass_fields__})
-            return snap, AD.finish(e["raw"], snap)
+            mode = "arrangement" if e.get("mode") == "arrangement" else "classic"       # an older saved direction has no mode: it came from Classic
+            return snap, AD.finish(e["raw"], snap), str(e.get("prompt") or ""), mode
         except Exception as ex:
             log.warning("the saved AI Music Director result could not be read: %r", ex)
             return None
@@ -2664,10 +2692,12 @@ def main(page: ft.Page):
             return
         got = dr_load(*key)
         if got is None:
-            dr.update(snap=None, prop=None, sel=0, fields=set(), error=None, undo=None, multi=[])
+            dr.update(snap=None, prop=None, sel=0, fields=set(), error=None, undo=None, multi=[], style_from=None, duration_from=None, cues_from=None, prompt_note="", result_mode="classic", result_hash="")
         else:
-            snap, prop = got
-            dr.update(snap=snap, prop=prop, sel=0, error=None, undo=None, multi=[], fields=AD.default_selection(snap, prop, prop.directions[0]))
+            snap, prop, saved_prompt, saved_mode = got
+            dr.update(snap=snap, prop=prop, sel=0, error=None, undo=None, multi=[], own_cues=set(), style_from=None, duration_from=None, cues_from=None,
+                      fields=AD.default_selection(snap, prop, prop.directions[0]), result_mode=saved_mode, result_hash=saved_prompt,
+                      prompt_note=AP.prompt_stale_note(saved_prompt, dr_mode_hash(saved_mode)))
             dr_instr.value, dr_ref.value, dr_singer.value = snap.instructions, bool(snap.reference), snap.singer or "auto"       # what the analysis was asked with
 
     def dr_stale() -> str:
@@ -2684,14 +2714,23 @@ def main(page: ft.Page):
             return "No song is open — Reanalyze." if dr["snap"] is not None else ""
         return AD.wrong_target_reason(dr["snap"], S.song.id, S.song.book.active_id)
 
+    def dr_tempo_key() -> str:
+        if not S.song:
+            return ""
+        st = dr_current()[3]
+        return f"{st.get('bpm')}|{st.get('timesignature')}|{st.get('duration')}"
+
     def dr_tick():
-        """Called whenever the song changes: the cards are drawn again (locked, with 'Lyrics changed — Reanalyze') as soon as the draft is out of date."""
+        """Called whenever the song changes: the cards are drawn again (locked, with 'Lyrics changed — Reanalyze') as soon as the draft is out of date.
+        A BPM, meter or duration edit also redraws the plan check. It does not call the Director again and it does not write the duration."""
         if style_tab["v"] != "ai":
             return
         dr_sync_target()
         if dr["prop"] is None:
             return
-        if dr_stale() != dr_stale_txt.value:
+        tempo = dr_tempo_key()
+        if dr_stale() != dr_stale_txt.value or tempo != dr.get("tempo_key"):
+            dr["tempo_key"] = tempo
             dr_render()
     dr_hooks.append(dr_tick)
 
@@ -2723,9 +2762,9 @@ def main(page: ft.Page):
             toast("Write some lyrics first: the AI Music Director reads them.", C["amber"]); return
         sid, sh, ly, st = dr_current()
         snap = AD.make_snapshot(sid, sh, SH.active_sheet(S.song).name, S.song.title, ly, st, instructions=dr_instr.value or "", reference=bool(dr_ref.value), singer=dr_singer.value or "")
-        page.run_task(dr_run, snap, S.backend, S.host)
+        page.run_task(dr_run, snap, S.backend, S.host, dr["mode"])        # the mode is fixed for this one analysis
 
-    async def dr_run(snap, backend: str, host: str):
+    async def dr_run(snap, backend: str, host: str, mode: str = "classic"):
         loop = asyncio.get_running_loop()
         dr["run"] = token = dr.get("run", 0) + 1
         dr.update(busy=True, error=None, t0=time.time())
@@ -2734,7 +2773,7 @@ def main(page: ft.Page):
         page.run_task(dr_clock, token)
         prop, err = None, None
         try:
-            prop = await loop.run_in_executor(None, lambda: (LC.set_call_tag("director"), AD.analyze(dr_ask_fn(backend, host), snap, "Thai" if I18N.lang() == "th" else "English", trace=lambda e: TRC.log_event("recommend", backend=backend, **e)))[1])     # one question, no automatic retry
+            prop = await loop.run_in_executor(None, lambda: (LC.set_call_tag("director"), AD.analyze(dr_ask_fn(backend, host), snap, "Thai" if I18N.lang() == "th" else "English", trace=lambda e: TRC.log_event("recommend", backend=backend, mode=mode, **e), variant="candidate" if mode == "arrangement" else "production"))[1])     # one question, no automatic retry
         except AD.DirectorError as ex:
             err = ex
             log.debug("AI Music Director refused the answer: %s\nRAW:\n%s", ex.problems, ex.raw)
@@ -2753,26 +2792,36 @@ def main(page: ft.Page):
         if err is not None:
             dr["error"] = err                                   # the previous draft (if any) stays; the failed raw answer is kept for the debug view
         else:
-            dr.update(snap=snap, prop=prop, sel=0, error=None, multi=[], fields=AD.default_selection(snap, prop, prop.directions[0]))
+            used_hash = dr_mode_hash(mode)
+            dr.update(snap=snap, prop=prop, sel=0, error=None, multi=[], style_from=None, duration_from=None, cues_from=None, prompt_note="", own_cues=set(),
+                      result_mode=mode, result_hash=used_hash, fields=AD.default_selection(snap, prop, prop.directions[0]))
             try:
-                dr_store(snap, prop)
+                dr_store(snap, prop, mode, used_hash)
             except Exception as ex:                             # saving must never keep the panel waiting
                 log.warning("the AI Music Director result could not be stored: %r", ex)
         dr_render()
 
-    def dr_use(i: int):
-        """A click on a direction card chooses it: its caption and the settings the AI gave (except the ones the user has chosen otherwise) are written to the song at once. Nothing is
-        generated and the lyrics are not touched; Restore Previous Settings (beside Generate) undoes it."""
+    def dr_use(i: int, style_only: bool = False):
+        """A click writes one complete music direction: caption, supported settings, and the Python length when the bar plan is complete.
+        A card with no bar plan writes the style only and leaves the duration. An incomplete plan writes nothing until Style only is pressed.
+        Nothing is generated and the lyrics and cues are not touched."""
         if dr["prop"] is None or dr["busy"] or not S.song:
             return
         if dr_wrong_target():
             dr_tick(); return
+        d = dr["prop"].directions[i]
+        plan = getattr(d, "plan", None)
+        if not style_only and plan is not None and not plan.duration_ok:
+            toast("This arrangement plan is incomplete, so the music info was not changed. Use Style only for the caption and the supported settings.", C["amber"])
+            return
         dr["sel"] = i
-        dr["fields"] = AD.default_selection(dr_snap_now(), dr["prop"], dr["prop"].directions[i])
+        dr["apply_mode"] = "style" if style_only else "full"
+        dr["fields"] = set()
         if dr["multi"]:
             dr["multi"] = []                                     # a plain click goes back to "use one style"
             update_generate_button()
-        dr_apply()
+        if dr_apply():
+            dr_render()
 
     def ctrl_down() -> bool:
         """Is Ctrl held right now? Asked from Windows itself at the moment of the click (a Flet click event does not carry the modifier keys)."""
@@ -2783,7 +2832,7 @@ def main(page: ft.Page):
             return False
 
     def dr_click(i: int):
-        dr_toggle_multi(i) if ctrl_down() else dr_use(i)
+        dr_toggle_multi(i)                                       # a click picks (or drops) the direction; Generate uses every picked one
 
     def dr_toggle_multi(i: int):
         """Ctrl+click: pick (or drop) a card for the queue. Nothing is written to the song: Generate then queues one song per picked card, each with that card's own settings."""
@@ -2805,13 +2854,49 @@ def main(page: ft.Page):
         update_generate_button()
 
     def dr_card_settings(i: int) -> dict:
-        """The settings one card puts on ITS song: the caption and every value the AI gave for the card (BPM, key, time signature, genre, mood, vocal, energy, duration). The song's Language stays as
-        the user has it. Raises AD.ApplyError (a sentence for the user)."""
+        """The settings one card puts on ITS song. A complete bar plan includes the Python length. Language and seed stay. An incomplete plan is not queued as a partial set.
+        Raises AD.ApplyError (a sentence for the user)."""
         d = dr["prop"].directions[i]
-        sug = AD.suggested(dr["prop"], d)
         sid, sh, ly, st = dr_current()
-        fields = {n for n in sug if n != "language"}
-        return AD.plan_apply(dr["snap"], dr["prop"], d, fields, sid, sh, ly, st).changes
+        try:
+            return AD.music_direction_plan(dr["snap"], dr["prop"], d, sid, sh, ly, st, mode="full").changes
+        except AD.ApplyError:
+            plan = getattr(d, "plan", None)
+            if plan is not None and not plan.duration_ok:         # an incomplete bar plan: the style, tempo and key are still used; the song keeps its own length
+                return AD.music_direction_plan(dr["snap"], dr["prop"], d, sid, sh, ly, st, mode="style").changes
+            raise
+
+    def dr_card_overlay(i: int, changes: dict) -> dict:
+        """What one card adds to the lyrics SENT to ACE-Step (the editor is never changed): its proposed instrumental sections and every cue it suggested, matched by section name on the lyrics as they are NOW.
+        A cue whose section is gone is skipped (and counted); everything else is applied. The length is recalculated from the bars at the card's own tempo when the plan is complete.
+        Returns {"lyrics": text or "", "duration": seconds or None, "skipped": n}."""
+        d = dr["prop"].directions[i]
+        ly = lyr() or ""
+        try:
+            bpm = float(changes.get("bpm") or dr_current()[3].get("bpm") or 0)
+        except (TypeError, ValueError):
+            bpm = 0.0
+        sig = str(changes.get("timesignature") or dr_current()[3].get("timesignature") or "")
+        lang = str(dr_current()[3].get("language") or "")
+        bars, cue_lines = getattr(d, "bar_lines", None) or [], getattr(d, "cue_lines", None) or []
+        if not bars or bpm <= 0:
+            return {"lyrics": "", "duration": None, "skipped": 0}
+        plan0 = AP.build_plan(ly, bars, cue_lines, bpm, sig, 0, lang)
+        text = ly
+        if plan0.proposed:
+            got = AP.apply_sections(text, plan0, {r.insert_id for r in plan0.rows if r.proposed and r.insert_id})
+            if got.ok and got.applied:
+                text = got.text
+        plan1 = AP.build_plan(text, bars, cue_lines, bpm, sig, 0, lang)           # the proposed sections are real sections now: cues on them match too
+        picks = {c.id for c in plan1.cues if c.selectable} if d.index not in dr["own_cues"] else set()      # "Use my own cues": the lyrics' own cues are sent as they are
+        skipped = sum(1 for c in plan1.cues if not c.selectable and c.action in ("add", "replace") and c.status == "rejected") if picks else 0
+        if picks:
+            text = AP.apply_cues(text, plan1.cues, picks).text
+        duration = None
+        if plan1.clock is not None and plan1.duration_ok:
+            n, why = AP.duration_value(plan1.clock.seconds)
+            duration = n if (n is not None and not why) else None
+        return {"lyrics": text if text != ly else "", "duration": duration, "skipped": skipped}
 
     def dr_multi_cards():
         """The picked cards as queue requests [{"name", "changes"}]; [] when none is picked; None when one cannot be used (the reason was shown)."""
@@ -2824,9 +2909,17 @@ def main(page: ft.Page):
             if i >= len(dr["prop"].directions):
                 continue
             try:
-                out.append({"name": dr["prop"].directions[i].name, "changes": dr_card_settings(i)})
+                changes = dr_card_settings(i)
             except AD.ApplyError as ex:
                 toast(f"Nothing was queued. {ex}", C["amber"]); return None
+            over = dr_card_overlay(i, changes)
+            if over["duration"] is not None and "duration" in changes:
+                changes = {**changes, "duration": over["duration"]}
+            out.append({"name": dr["prop"].directions[i].name, "changes": changes, "lyrics": over["lyrics"], "skipped": over["skipped"]})
+        moved = dr_lyrics_moved()
+        if moved or any(c["skipped"] for c in out):
+            toast("The lyrics changed since the analysis, so cues that no longer match a section were skipped. Everything else was sent to ACE-Step." if moved
+                  else "Some cues did not match a section and were skipped. Everything else was sent to ACE-Step.", C["amber"])
         return out
 
     def dr_customize(i: int):
@@ -2889,7 +2982,11 @@ def main(page: ft.Page):
         d = dr["prop"].directions[dr["sel"]]
         sid, sh, ly, st = dr_current()
         try:
-            plan = AD.plan_apply(dr["snap"], dr["prop"], d, set(dr["fields"]), sid, sh, ly, st)
+            mode = dr.pop("apply_mode", None)
+            if mode:
+                plan = AD.music_direction_plan(dr_snap_now(), dr["prop"], d, sid, sh, ly, st, mode=mode)
+            else:
+                plan = AD.plan_apply(dr["snap"], dr["prop"], d, set(dr["fields"]), sid, sh, ly, st)
         except AD.ApplyError as ex:
             toast(f"Nothing was applied. {ex}", C["amber"]); dr_tick(); return False
         try:
@@ -2897,10 +2994,20 @@ def main(page: ft.Page):
         except SH.SheetError as ex:
             toast(str(ex), C["amber"]); return False
         dr["undo"] = {"song": sid, "sheet": sh, "previous": plan.previous, "applied": dict(plan.changes), "name": d.name, "index": dr["sel"]}
+        dr["style_from"] = d.index
+        if "duration" in plan.changes:
+            dr["duration_from"] = d.index
         dr_rebase(sid, sh, ly)                                   # the draft stays usable: it now describes the sheet as applied
         dr["fields"] = AD.default_selection(dr["snap"], dr["prop"], d)
         mark_dirty(); build_settings()
-        toast(f"Applied “{d.name}”: Style mode is now Advanced. Generate uses this caption. Restore Previous Settings (beside Generate) undoes it.", C["green"])
+        pending_note = ""
+        live_plan = getattr(d, "plan", None)
+        if live_plan is not None and AP.pending_names(live_plan, ly):
+            pending_note = " Proposed sections stay out of the lyric until you preview them."
+        if "duration" in plan.changes:
+            toast(f"Applied “{d.name}”: caption, music info, and the checked duration. Language and seed stayed. Cues were not written.{pending_note}", C["green"])
+        else:
+            toast(f"Applied “{d.name}”: the style and the supported settings. Duration was not changed. Cues were not written.{pending_note}", C["green"])
         return True
 
     def dr_restore(e=None):
@@ -2947,26 +3054,341 @@ def main(page: ft.Page):
         rebuild_saved()
         toast(f"Saved “{d.name}”. Find it in Advanced → Saved Styles." if new else f"“{d.name}” was already saved: updated.", C["green"])
 
+    def dr_remember(changes: dict, name: str):
+        """Add a confirmed setting to the restore point. A value the user changed after the last Apply is the one Restore puts back."""
+        sid, sh, _ly, st = dr_current()
+        u = dr.get("undo")
+        if not u or u.get("song") != sid or u.get("sheet") != sh:
+            dr["undo"] = {"song": sid, "sheet": sh, "previous": {k: st.get(k) for k in changes}, "applied": dict(changes), "name": name, "index": dr["sel"]}
+            return
+        prev, applied = dict(u["previous"]), dict(u.get("applied") or {})
+        for k, v in changes.items():
+            if k not in prev or st.get(k) != applied.get(k):
+                prev[k] = st.get(k)
+            applied[k] = v
+        u["previous"], u["applied"], u["name"] = prev, applied, name
+
+    def dr_lyrics_moved() -> bool:
+        return dr["snap"] is None or AC.text_hash(lyr() or "") != dr["snap"].lyrics_hash
+
+    def dr_fresh_plan(d):
+        """The same bar rows, timed at the song's current tempo. None when the lyric text is no longer the one that was analyzed."""
+        if dr_lyrics_moved():
+            return None
+        _sid, _sh, ly, st = dr_current()
+        try:
+            bpm = float(st.get("bpm") or 0)
+            target = float(st.get("duration") or 0)
+        except (TypeError, ValueError):
+            return None
+        return AP.build_plan(ly, getattr(d, "bar_lines", None) or [], [], bpm, str(st.get("timesignature") or ""), target, str(st.get("language") or ""))
+
+    def dr_use_duration(pos: int):
+        """Confirm the planned length. Writes the duration field only. Does not generate, and does not change the lyric, the tempo, or the cues."""
+        if dr["prop"] is None or not S.song or dr["busy"] or pos >= len(dr["prop"].directions):
+            return
+        if dr_wrong_target():
+            dr_tick(); return
+        if dr_lyrics_moved():
+            toast("The lyrics changed. Reanalyze before using this length.", C["amber"]); return
+        d = dr["prop"].directions[pos]
+        live = dr_fresh_plan(d)
+        if live is None or not live.duration_ok or live.clock is None:
+            toast((live.duration_block if live else "This length cannot be used.") or "This length cannot be used.", C["amber"]); return
+        n, why = AP.duration_value(live.clock.seconds)
+        if why or n is None:
+            toast(f"Nothing was changed. The planned length is {why}.", C["amber"]); return
+        lines = [ft.Text(f"{live.clock.bars} bars · {live.clock.bpm:g} BPM · {live.clock.label}", size=12, color=C["text2"]),
+                 ft.Text(live.clock.clock, size=22, weight=ft.FontWeight.W_700, color=C["text1"]),
+                 ft.Text(f"Stores {n} seconds. Nothing else is written.", size=11, color=C["text3"])]
+        own = getattr(d, "plan", None)
+        if own and own.clock and (abs(live.clock.bpm - own.bpm) > 0.01 or live.timesig != own.timesig):
+            lines.append(ft.Text(f"At this direction's tempo the plan was {own.clock.clock}. Confirm uses the song's current tempo.", size=11, color=C["amber"]))
+        if live.clock.diff_clock:
+            lines.append(ft.Text(f"Difference from the target: {live.clock.diff_clock}.", size=11, color=C["text2"]))
+        lines += [ft.Text(s, size=11, color=C["text2"]) for s in live.advice[:4]]
+        note = AP.mix_note(dr.get("style_from"), d.index, dr.get("cues_from"))
+        if note:
+            lines.append(ft.Text(note, size=11, color=C["amber"]))
+        busy = {"on": False}
+
+        def go(e):
+            if busy["on"]:
+                return
+            busy["on"] = True
+            if dr_lyrics_moved() or dr_wrong_target():
+                toast("The song changed. Nothing was written.", C["amber"]); return
+            again = dr_fresh_plan(d)
+            if again is None or again.clock is None:
+                toast("This length cannot be used.", C["amber"]); return
+            stored, bad = AP.duration_value(again.clock.seconds)
+            if bad or stored is None:
+                toast(f"Nothing was changed. The planned length is {bad}.", C["amber"]); return
+            try:
+                SH.apply_settings(S.song, dr_current()[1], {"duration": stored})
+            except SH.SheetError as ex:
+                toast(str(ex), C["amber"]); return
+            dr["sel"] = pos
+            dr_remember({"duration": stored}, d.name)
+            dr["duration_from"] = d.index
+            dr_rebase(*dr_current()[:3])
+            mark_dirty(); build_settings()
+            page.pop_dialog()
+            toast(f"Duration is now {stored} seconds. The lyrics, the tempo, and the cues were not changed.", C["green"])
+            dr_render()
+        page.show_dialog(ft.AlertDialog(modal=True, bgcolor=C["panel"], title=ft.Text(f"Use this duration — {d.name}", size=16, weight=ft.FontWeight.BOLD),
+                                        content=ft.Container(ft.Column(lines, spacing=6, tight=True, scroll=ft.ScrollMode.AUTO), width=460, height=280),
+                                        actions=[ft.TextButton("Cancel", on_click=lambda e: page.pop_dialog()),
+                                                 ft.FilledButton("Use this duration", on_click=go, style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF"))]))
+
+    def dr_preview_cues(pos: int):
+        """Preview the cue rows of one direction. Apply writes only the section lines the user leaves ticked."""
+        if dr["prop"] is None or not S.song or dr["busy"] or pos >= len(dr["prop"].directions):
+            return
+        if dr_wrong_target():
+            dr_tick(); return
+        if dr_lyrics_moved():
+            toast("The lyrics changed. Reanalyze before changing cues.", C["amber"]); return
+        d = dr["prop"].directions[pos]
+        plan = getattr(d, "plan", None)
+        if plan is None or not plan.cues:
+            toast("This direction has no cue suggestions.", C["amber"]); return
+        picks = {c.id for c in plan.cues if c.checked}
+
+        def tick(e, cid):
+            picks.add(cid) if e.control.value else picks.discard(cid)
+        rows = []
+        for cue in plan.cues:
+            head = f"{cue.section}: {cue.action} {cue.phrase}".strip()
+            box = ft.Checkbox(value=cue.id in picks, on_change=lambda e, cid=cue.id: tick(e, cid)) if cue.selectable else ft.Text("·", width=24, size=12, color=C["text3"])
+            detail = [ft.Text(head, size=12, weight=ft.FontWeight.W_600, color=C["text1"]),
+                      ft.Text(cue.original or "—", size=11, color=C["text3"]),
+                      ft.Text(cue.proposed or "—", size=11, color=C["accent"])]
+            if cue.note:
+                detail.append(ft.Text(cue.note, size=10, color=C["amber"]))
+            if cue.reason:
+                detail.append(ft.Text(cue.reason, size=10, color=C["text2"]))
+            rows.append(ft.Row([box, ft.Column(detail, spacing=1, expand=True)], spacing=6, vertical_alignment=ft.CrossAxisAlignment.START))
+        mix = AP.mix_note(dr.get("style_from"), dr.get("duration_from"), d.index)
+        if mix:
+            rows.append(ft.Text(mix, size=11, color=C["amber"]))
+
+        def go(e):
+            if dr_lyrics_moved() or dr_wrong_target():
+                toast("The song changed. Nothing was written.", C["amber"]); return
+            got = AP.apply_cues(lyr(), plan.cues, set(picks))
+            if not got.applied:
+                toast("Nothing was written.", C["amber"]); return
+            set_lyrics(got.text, None, refocus=False)
+            dr["cues_from"] = d.index
+            page.pop_dialog()
+            toast("Applied the cues you picked. Undo restores the previous lyrics.", C["green"])
+            dr_render()
+        page.show_dialog(ft.AlertDialog(modal=True, bgcolor=C["panel"], title=ft.Text(f"Preview cue changes — {d.name}", size=16, weight=ft.FontWeight.BOLD),
+                                        content=ft.Container(ft.Column(rows, spacing=8, tight=True, scroll=ft.ScrollMode.AUTO), width=480, height=360),
+                                        actions=[ft.TextButton("Cancel", on_click=lambda e: page.pop_dialog()),
+                                                 ft.FilledButton("Apply cues", on_click=go, style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF"))]))
+
+    def dr_preview_sections(pos: int):
+        """Preview the proposed instrumental tags of one direction. Apply inserts only the ones left ticked, through the editor's undo."""
+        if dr["prop"] is None or not S.song or dr["busy"] or pos >= len(dr["prop"].directions):
+            return
+        if dr_wrong_target():
+            dr_tick(); return
+        if dr_lyrics_moved():
+            toast("The lyrics changed. Reanalyze before adding sections.", C["amber"]); return
+        d = dr["prop"].directions[pos]
+        plan = getattr(d, "plan", None)
+        if plan is None or not plan.proposed:
+            toast("This direction has no proposed sections.", C["amber"]); return
+        pending = set(AP.pending_names(plan, lyr()))
+        picks = {r.insert_id for r in plan.rows if r.proposed and r.insert_id and r.name in pending}
+        body = ft.Text("", size=11, color=C["text2"], selectable=True)
+
+        def refresh():
+            got = AP.apply_sections(lyr(), plan, set(picks), dr["snap"].lyrics_hash if dr.get("snap") is not None else "")
+            shown = got.text if got.ok else lyr()
+            body.value = "ORIGINAL\n" + (lyr() or "") + "\n\nPROPOSED\n" + shown
+            if not got.ok and got.note:
+                body.value = got.note
+            safe_update(body)
+
+        def tick(e, sid):
+            picks.add(sid) if e.control.value else picks.discard(sid)
+            refresh()
+
+        rows = []
+        for row in plan.rows:
+            if not row.proposed:
+                continue
+            waiting = row.name in pending
+            box = ft.Checkbox(value=row.insert_id in picks, on_change=lambda e, sid=row.insert_id: tick(e, sid)) if waiting else ft.Text("·", width=24, size=12, color=C["text3"])
+            rows.append(ft.Row([box, ft.Text(f"{row.name} · {row.bars} bars · after line {row.after_line or 'start'}", size=12, color=C["text1"])], spacing=6))
+        rows.append(body)
+
+        def go(e):
+            if dr_lyrics_moved() or dr_wrong_target():
+                toast("The song changed. Nothing was written.", C["amber"]); return
+            got = AP.apply_sections(lyr(), plan, set(picks), dr["snap"].lyrics_hash if dr.get("snap") is not None else "")
+            if not got.ok or not got.applied:
+                toast(got.note or "Nothing was written.", C["amber"]); return
+            set_lyrics(got.text, None, refocus=False)
+            page.pop_dialog()
+            toast("Added the sections you picked. Undo restores the previous lyrics.", C["green"])
+            dr_render()
+        refresh()
+        page.show_dialog(ft.AlertDialog(modal=True, bgcolor=C["panel"], title=ft.Text(f"Preview arrangement — {d.name}", size=16, weight=ft.FontWeight.BOLD),
+                                        content=ft.Container(ft.Column(rows, spacing=8, tight=True, scroll=ft.ScrollMode.AUTO), width=520, height=420),
+                                        actions=[ft.TextButton("Cancel", on_click=lambda e: page.pop_dialog()),
+                                                 ft.FilledButton("Apply sections", on_click=go, style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF"))]))
+
+    def dr_plan_blocks(d, plan, locked: bool, pos: int) -> list:
+        out = [ft.Text("RECOMMENDED DURATION", size=11, weight=ft.FontWeight.BOLD, color=C["text3"])]
+        if plan.clock:
+            cur = 0.0
+            if S.song:
+                try:
+                    cur = float(dr_current()[3].get("duration") or 0)
+                except (TypeError, ValueError):
+                    cur = 0.0
+            out.append(ft.Text(f"Recommended Duration: {plan.clock.clock}   ({plan.clock.bars} total bars · {plan.bpm:g} BPM · {plan.sig_label})", size=12, weight=ft.FontWeight.W_700, color=C["text1"]))
+            if cur > 0:
+                diff = plan.clock.seconds - cur
+                out.append(ft.Text(f"Current Duration: {AP.format_clock(cur)} · Difference: {'+' if diff >= 0 else '-'}{AP.format_clock(abs(diff))}", size=10, color=C["text2"]))
+            n_exist = sum(1 for r_ in plan.rows if not r_.proposed)
+            n_prop = sum(1 for r_ in plan.rows if r_.proposed)
+            state = "Pending Arrangement" if (n_prop and AP.pending_names(plan, lyr() if S.song else "")) else "Ready"
+            out.append(ft.Text(f"{n_exist} existing sections, {n_prop} proposed instrumental sections · Status: {state}", size=10, color=C["amber"] if state != "Ready" else C["text2"]))
+            if n_prop:
+                out.append(ft.Text("Planned duration includes sections not yet added to lyrics.", size=10, color=C["amber"]))
+        if plan.clock:
+            if plan.feasible_known:
+                out.append(ft.Text(f"Lyric estimate {AP.format_clock(plan.feasible_low)} to {AP.format_clock(plan.feasible_high)}", size=10, color=C["text3"]))
+            else:
+                out.append(ft.Text("No lyric-time range for this plan. Only the planned length is shown.", size=10, color=C["text3"]))
+        head_out, out = out, []                                  # the calculation details go into a collapsible panel
+        for row in plan.rows:
+            mark = " · proposed" if row.proposed else ""
+            out.append(ft.Text(f"{row.name} · {row.bars} bars · {row.clock}{mark}", size=10, color=C["amber"] if row.proposed else C["text2"]))
+            detail = " · ".join(bit for bit in (row.role, row.energy, row.reason) if bit)
+            if detail:
+                out.append(ft.Text(detail, size=10, color=C["text3"]))
+        if plan.proposed:
+            out.append(ft.Text("Proposed sections are not in the lyric yet. They were not added.", size=10, color=C["amber"]))
+            now_bars = AP.structure_bars(plan)
+            now_seconds = AP.bar_seconds(now_bars, plan.bpm, plan.timesig) if now_bars and plan.bpm and plan.timesig else 0
+            out.append(ft.Text(f"Current structure {AP.format_clock(now_seconds)} · {now_bars} bars.", size=10, color=C["text2"]))
+            pending = AP.pending_names(plan, lyr() if S.song else "")
+            if pending:
+                out.append(ft.Text("The lyric does not contain this plan yet.", size=10, color=C["amber"]))
+                out.append(ft.Text("Pending arrangement: " + ", ".join(pending), size=10, color=C["amber"]))
+            else:
+                out.append(ft.Text("The proposed sections are in the lyric.", size=10, color=C["text3"]))
+        for note in list(plan.rejected)[:3]:
+            out.append(ft.Text(note, size=10, color=C["amber"]))
+        if plan.missing:
+            out.append(ft.Text("Not in the plan: " + ", ".join(plan.missing), size=10, color=C["amber"]))
+        if S.song and plan.clock:
+            st_now = dr_current()[3]
+            try:
+                bpm_now = float(st_now.get("bpm") or 0)
+                stored = float(st_now.get("duration") or 0)
+            except (TypeError, ValueError):
+                bpm_now, stored = 0, 0
+            sig_now = AP.sig_code(st_now.get("timesignature")) or plan.timesig
+            live = AP.reclock(plan, bpm_now, sig_now, stored) if bpm_now else None
+            differs = bool(live and live.clock and (abs(bpm_now - plan.bpm) > 0.01 or sig_now != plan.timesig or abs(live.clock.seconds - stored) > 1))
+            if differs:
+                out.append(ft.Text(f"At the current tempo these bars run {live.clock.clock}. The duration field stays {int(stored) if stored else 'as it is'}. Nothing was rewritten.", size=10, color=C["amber"]))
+                out.append(ft.Text("At the current tempo these bars are only a check. The duration field was not overwritten.", size=10, color=C["text3"]))
+        for sentence in (plan.risks or [])[:3]:
+            out.append(ft.Text(sentence, size=10, color=C["text3"]))
+        if getattr(d, "duration_reasoning", ""):
+            out.append(ft.Text(d.duration_reasoning, size=10, color=C["text2"]))
+        if getattr(d, "vision", ""):
+            out.append(ft.Text(d.vision, size=10, color=C["text2"]))
+        for key, label in (("strength", "Strength"), ("concern", "Concern"), ("recommendation", "Recommendation"), ("tradeoff", "Trade-off")):
+            text = (getattr(d, "coaching", None) or {}).get(key)
+            if text:
+                out.append(ft.Text(f"{label}: {text}", size=10, color=C["text2"]))
+        if getattr(d, "tradeoff", "") and d.tradeoff != (d.coaching or {}).get("tradeoff"):
+            out.append(ft.Text(d.tradeoff, size=10, color=C["text2"]))
+        for cue in plan.cues[:6]:
+            out.append(ft.Text(f"{cue.section} · {cue.action} · {cue.phrase} · {cue.status}", size=10, color=C["text2"]))
+        open_ = d.index in dr["plan_open"]
+        det, out = out, head_out
+        if det:
+            out.append(ft.TextButton("Hide calculation details" if open_ else "Show calculation details", icon=ft.Icons.EXPAND_LESS_ROUNDED if open_ else ft.Icons.EXPAND_MORE_ROUNDED,
+                                     on_click=lambda e, n=d.index: dr_toggle_plan(n), style=ft.ButtonStyle(padding=po(0, 0, 0, 0)), height=24))
+            if open_:
+                out.append(ft.Container(ft.Column(det, spacing=3), padding=po(8, 6, 8, 6), border_radius=8, bgcolor=C["field"]))
+        buttons = []
+        if not plan.duration_ok and plan.duration_block and plan.rows:
+            out.append(ft.Text(plan.duration_block, size=10, color=C["text3"]))
+        if plan.proposed:
+            buttons.append(ft.OutlinedButton("Preview arrangement", height=32, disabled=locked, on_click=lambda e, p=pos: dr_preview_sections(p)))
+        if plan.cues:
+            buttons.append(ft.OutlinedButton("Preview cue changes", height=32, disabled=locked, on_click=lambda e, p=pos: dr_preview_cues(p)))
+        if buttons:
+            out.append(ft.Row(buttons, wrap=True, spacing=6))
+        return out
+
     def dr_head(t: str):
         return ft.Text(t, size=11, weight=ft.FontWeight.BOLD, color=C["text3"])
 
     def dr_chip(label: str, value: str):
         return ft.Container(ft.Text(f"{label}: {value}", size=10, color=C["text1"], no_wrap=True, overflow=ft.TextOverflow.ELLIPSIS), padding=po(8, 3, 8, 3), border_radius=11, bgcolor=C["field"])
 
+    def dr_set_own_cues(n: int, own: bool):
+        dr["own_cues"] = (dr["own_cues"] | {n}) if own else (dr["own_cues"] - {n})
+        dr_render()
+
+    def dr_toggle_plan(n: int):
+        dr["plan_open"] ^= {n}
+        dr_render()
+
     def dr_toggle_caption(n: int):
         dr["cap_open"] ^= {n}
         dr_render()
 
-    def dr_card(d, locked: bool):
-        i = d.index - 1
+    def dr_card(d, locked: bool, pos: int):
+        i = pos
         sug = AD.suggested(dr["prop"], d)
         u = dr["undo"]
         applied = bool(u and S.song and u["song"] == S.song.id and u["name"] == d.name and u.get("index", i) == i) and not dr["multi"]      # while picking for the queue only the picked cards are marked: the count starts fresh
         picked = i in dr["multi"]
         chips = [dr_chip(lbl, dr_show(n, sug[n])) for n, lbl in (("genre", "Style"), ("mood", "Mood"), ("vocal", "Vocal"), ("energy", "Energy"), ("bpm", "BPM"), ("keyscale", "Start key"), ("timesignature", "Time sig.")) if sug.get(n) not in (None, "")]
         cap_open = d.index in dr["cap_open"]
-        notes = [ft.Text(f"⚠ {AD.LABELS.get(f, f)}: the AI wrote “{str(raw)[:40]}” ({why_}); it is not applied.", size=10, color=C["amber"]) for f, raw, why_ in AD.problems_of(dr["prop"], d) if f not in AD.STYLE_WORD_FIELDS][:2]       # Genre / Mood / Energy / Vocal words are all in the caption that is applied (AD.full_caption), so nothing is "not applied" and nothing is said; the caption remarks (BPM mentioned, cue vs caption) are not shown on the card
-        hint = "Picked for the queue (Ctrl+click again to drop it)" if picked else ("Applied. Undo is beside Generate." if applied else "Click to use this style")
+        # Mood, energy and vocal words that miss the lists stay in the caption. A genre that misses the list is shown, because that setting is not written and the user's genre is left as it is.
+        notes = [ft.Text(f"⚠ {AD.LABELS.get(f, f)}: the AI wrote “{str(raw)[:40]}” ({why_}); it is not applied.", size=10, color=C["amber"]) for f, raw, why_ in AD.problems_of(dr["prop"], d) if f not in AD.STYLE_WORD_FIELDS or f == "genre"][:3]
+        for note in list(getattr(d, "notes", None) or [])[:2]:
+            notes.append(ft.Text(note, size=10, color=C["text3"]))
+        if picked:
+            hint = "Picked: Generate uses this direction (click again to drop it)"
+        elif applied:
+            hint = "Applied. Undo is beside Generate."
+        elif getattr(d, "plan", None) is not None and not d.plan.duration_ok:
+            hint = "Click to pick this direction. Its plan is incomplete, so the song keeps its own length. Generate uses the style, tempo and key."
+        elif getattr(d, "plan", None) is not None:
+            hint = "Click to pick this direction. Generate sends its style, tempo, key, length and cues to ACE-Step; the editor is not changed."
+        else:
+            hint = "Click to pick this style. Generate uses it; the duration stays as it is."
+        no_plan = []
+        if getattr(d, "plan", None) is None:                   # Classic (or an older saved answer): no duration was computed, and it says so
+            cur_ = 0.0
+            if S.song:
+                try:
+                    cur_ = float(dr_current()[3].get("duration") or 0)
+                except (TypeError, ValueError):
+                    cur_ = 0.0
+            no_plan = [ft.Text(f"Current Duration: {AP.format_clock(cur_) if cur_ > 0 else 'Not set'}", size=10, color=C["text2"]),
+                       ft.Text("Recommended Duration: Not available (Classic mode did not compute one)", size=10, color=C["text3"]),
+                       ft.Text("Arrangement Plan: Not available", size=10, color=C["text3"])]
+        cue_choice = []
+        if getattr(d, "plan", None) is not None and d.plan.cues:
+            cue_choice = [ft.RadioGroup(ft.Row([ft.Radio(value="card", label="Use this direction's cues", label_style=ft.TextStyle(size=11, color=C["text2"])),
+                                                ft.Radio(value="own", label="Use my own cues", label_style=ft.TextStyle(size=11, color=C["text2"]))], spacing=10, wrap=True),
+                                        value="own" if d.index in dr["own_cues"] else "card", on_change=lambda e, n=d.index: dr_set_own_cues(n, e.control.value == "own"))]
         foot = ft.Row([ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED if (applied or picked) else ft.Icons.TOUCH_APP_OUTLINED, size=14, color=C["green"] if (applied or picked) else C["text3"]),
                        ft.Text(hint, size=10, color=C["green"] if (applied or picked) else C["text3"], expand=True),
                        ibtn(ft.Icons.BOOKMARK_ADD_OUTLINED, "Save this style (its caption and settings) to Saved Styles: open it later in Advanced mode, in any song", lambda e, i=i: dr_save(i), 18, w=34),
@@ -2980,7 +3402,10 @@ def main(page: ft.Page):
             *([ft.Text(d.characteristics, size=11, color=C["text3"], italic=True)] if d.characteristics else []),
             ft.Text(d.caption, size=11 if cap_open else 10, color=C["text2"] if cap_open else C["text3"], max_lines=None if cap_open else 3, overflow=ft.TextOverflow.VISIBLE if cap_open else ft.TextOverflow.ELLIPSIS, selectable=cap_open),
             ft.TextButton("Hide full caption" if cap_open else "Show full caption", on_click=lambda e, n=d.index: dr_toggle_caption(n), style=ft.ButtonStyle(padding=po(0, 0, 0, 0)), height=22),
-            ft.Row(chips, wrap=True, spacing=6, run_spacing=4), *notes, foot], spacing=4),
+            ft.Row(chips, wrap=True, spacing=6, run_spacing=4), *notes,
+            *(dr_plan_blocks(d, d.plan, locked, i) if getattr(d, "plan", None) is not None else no_plan),
+            *cue_choice,
+            foot], spacing=4),
             padding=10, border_radius=10, ink=not locked, bgcolor=DR_SEL if (applied or picked) else DR_CARD, border=ft.Border.all(2 if picked else 1, C["green"] if (applied or picked) else C["border"]), opacity=0.6 if locked else 1,
             on_click=None if locked else (lambda e, i=i: dr_click(i)),
             tooltip="Click to use this style: its caption and settings are put into the song. Nothing is generated and the lyrics are not changed; Undo is beside Generate. Ctrl+click picks several styles: Generate then adds one song per picked style to the queue.")
@@ -3024,14 +3449,35 @@ def main(page: ft.Page):
                 b.style = ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF")
                 safe_update(b)
 
+    def dr_pending_note() -> str:
+        """Under the Duration box: the written duration came from a plan whose instrumental sections are not in the lyric yet."""
+        try:
+            prop = dr["prop"]
+            if prop is None or dr.get("duration_from") is None or not S.song:
+                return ""
+            d_ = next((x for x in prop.directions if x.index == dr["duration_from"]), None)
+            plan = getattr(d_, "plan", None)
+            if plan is not None and AP.pending_names(plan, lyr()):
+                return "Pending Arrangement: this duration includes instrumental sections not yet added to the lyrics"
+        except Exception:
+            pass
+        return ""
+
     def dr_render():
         dr_sync_target()
+        tf_ = dur_field_ref["c"]
+        if tf_ is not None:
+            note_ = dr_pending_note()
+            if (tf_.helper or "") != note_:
+                tf_.helper = note_ or None
+                safe_update(tf_)
         ctl = [ft.Row([ft.Text("✨ AI Music Director", size=14, weight=ft.FontWeight.W_700, color=C["text1"], expand=True),
                        ft.ProgressRing(width=16, height=16, stroke_width=2, visible=dr["busy"])], vertical_alignment=ft.CrossAxisAlignment.CENTER)]
-        ctl.append(ft.Text("Reads your lyrics like a producer and suggests three music directions of its own. It does not see your Basic or Advanced style settings unless you tick the box. Your lyrics and cues are never changed.",
+        ctl.append(ft.Text("Reads your lyrics like a producer and suggests three music directions. It does not see your Basic or Advanced style settings unless you tick the box. Analyze does not change lyrics, cues, tempo, or duration. Choosing a complete direction writes the caption, the supported music info, and the checked length. Language and seed stay. Cues wait for a preview.",
                            size=11, color=C["text3"]))
-        dr_instr.disabled = dr_ref.disabled = dr_singer.disabled = dr["busy"]
-        ctl += [dr_instr, dr_singer, dr_ref]
+        dr_instr.disabled = dr_ref.disabled = dr_singer.disabled = dr_mode_dd.disabled = dr["busy"]
+        dr_mode_dd.value = dr["mode"]
+        ctl += [dr_instr, dr_singer, dr_ref]                    # no Director Mode picker: Analyze always uses Arrangement V3.2 (dr["mode"]); Classic stays only for reading older saved results
         dr_btn["b"] = ft.FilledButton("Analyzing…" if dr["busy"] else "Analyze Lyrics", icon=ft.Icons.AUTO_AWESOME_ROUNDED, disabled=dr["busy"], on_click=dr_start, height=38,
                                       style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF"))
         ctl.append(ft.Row([ft.Container(dr_btn["b"], expand=True)] + ([ft.OutlinedButton("Cancel", height=38, on_click=dr_cancel)] if dr["busy"] else []), spacing=6))
@@ -3063,8 +3509,17 @@ def main(page: ft.Page):
                                                           ft.Text(v, size=12.5, color=C["text1"], selectable=True)], spacing=3) for k, v in prop.analysis.items()], spacing=12),
                                     padding=po(14, 12, 14, 12), border_radius=10, bgcolor=DR_BG, border=ft.Border.all(1, C["border"])))
         ctl.append(dr_head("AI DIRECTIONS  (click a style to use it; Ctrl+click picks several)"))
+        ctl.append(ft.Text(f"Mode: {dict(DR_MODES)[dr['result_mode']]}" + (f" · prompt {dr['result_hash'][:8]}" if dr.get("result_hash") else ""), size=10, color=C["text3"]))
+        mix = AP.mix_note(dr.get("style_from"), dr.get("duration_from"), dr.get("cues_from"))
+        if mix:
+            ctl.append(ft.Text(mix, size=11, color=C["amber"]))
+        if dr.get("prompt_note"):
+            ctl.append(ft.Text(dr["prompt_note"], size=11, color=C["amber"]))
+        for note in prop.warnings:
+            if str(note).startswith("Direction "):
+                ctl.append(ft.Text(note, size=11, color=C["amber"]))
         locked = bool(dr_wrong_target()) or dr["busy"]
-        ctl += [dr_card(x, locked) for x in prop.directions]
+        ctl += [dr_card(x, locked, pos) for pos, x in enumerate(prop.directions)]
         if dr["multi"]:
             ctl.append(ft.Container(ft.Row([ft.Icon(ft.Icons.PLAYLIST_ADD_CHECK_ROUNDED, size=18, color=C["green"]),
                                             ft.Text(f"{len(dr['multi'])} styles picked: Generate adds one song per style to the queue, each with its own BPM, key and time signature. The song's own settings are not changed.",
@@ -3291,6 +3746,7 @@ def main(page: ft.Page):
         bpm_tf.expand = True
         dur_tf = tfield("Duration (sec)", s.duration, sset("duration", int, *DURATION_RANGE), None, number=True, height=44)
         dur_tf.expand = True
+        dur_field_ref["c"] = dur_tf
         extra_tf = tfield("Extra style tags", s.extra_tags, sset("extra_tags"), None, height=44)
         extra_tf.hint_text = "Add extra style tags (e.g. dreamy, lo-fi, cinematic)"
 
@@ -3625,7 +4081,7 @@ def main(page: ft.Page):
                  ft.PopupMenuItem(content=ft.Text("Open as Editable Sheet"), on_click=lambda e: open_take_as_sheet(song_id, t))]
         if FF.ENABLE_REPAINT:
             items.append(ft.PopupMenuItem(content=ft.Text("Repaint"), on_click=lambda e: open_repaint_from(song_id, t)))
-        items.append(ft.PopupMenuItem(content=ft.Text("Export Audio"), on_click=lambda e: export_take(title, t)))
+        items.append(ft.PopupMenuItem(content=ft.Text("Export Audio…"), on_click=lambda e: open_audio_export(title, t)))
         items.append(ft.PopupMenuItem(content=ft.Text("Export to Video…"), on_click=lambda e: open_video_export(title, t)))
         if allow_delete:
             items.append(ft.PopupMenuItem(content=ft.Text("Delete take…"), on_click=lambda e: delete_take_confirm(song_id, t, on_changed)))
@@ -3640,7 +4096,7 @@ def main(page: ft.Page):
         if FF.ENABLE_REPAINT:
             actions.append(repaint_btn)
         if wide_enough:
-            actions.append(ibtn(ft.Icons.FILE_DOWNLOAD_OUTLINED, "Export Audio", lambda e: export_take(title, t), 16 if compact else 18, w=26 if compact else 30))
+            actions.append(ibtn(ft.Icons.FILE_DOWNLOAD_OUTLINED, "Export Audio (the whole take or a part of it)", lambda e: open_audio_export(title, t), 16 if compact else 18, w=26 if compact else 30))
         actions.append(menu)
         if compact:                                                            # one small line per take: more of the list is visible at once
             return ft.Container(padding=po(left=4, right=0, top=1, bottom=1), border_radius=8, bgcolor=C["accent_soft"] if playing else "#00000000",
@@ -3779,6 +4235,217 @@ def main(page: ft.Page):
             except Exception: pass
         except Exception as ex:
             toast(f"Export failed: {ex}", C["red"])
+
+    # ═══ EXPORT AUDIO: the whole take (a plain copy) or a PART of it, chosen on the waveform like the part of the take in Export to Video (cut by ffmpeg without re-encoding: audio_export.py) ═════════════
+    def open_audio_export(title: str, t: M.Take):
+        audio = ST.take_path(t)
+        if audio is None:
+            toast("The audio file of this take is missing.", C["red"]); return
+        song_id, label = t.song_id, f"Take {t.number:02d}"
+        vs = VX.load_settings()
+        W = 548
+        st = {"start": 0.0, "end": 0.0, "dur": 0.0, "wave": None, "whole": True, "busy": False, "drag": None, "anchor": 0.0, "png_n": 0}
+        tmp = Path(tempfile.gettempdir()) / "workflowpad_audio_export"
+        tmp.mkdir(parents=True, exist_ok=True)
+        wave_img = ft.Image(src="", width=W, height=72, fit=ft.BoxFit.FILL, visible=False)
+        wave_msg = ft.Text("Drawing the waveform…", size=11, color=C["text3"])
+        sel_box = ft.Container(left=0, top=0, width=0, height=72, bgcolor="#2E2B73FF", border=ft.Border.all(1, "#662B73FF"), visible=False)
+        h_a = ft.Container(left=0, top=0, width=4, height=72, bgcolor=C["accent"], border_radius=2, visible=False)
+        h_b = ft.Container(left=0, top=0, width=4, height=72, bgcolor=C["accent"], border_radius=2, visible=False)
+        stack = ft.Stack([ft.Container(width=W, height=72, bgcolor=C["field"], border_radius=8), wave_img, sel_box, h_a, h_b], width=W, height=72)
+        start_tf = tfield("Start", "0:00.00", None, 120)
+        end_tf = tfield("End", "0:00.00", None, 120)
+        len_txt = ft.Text("", size=12, weight=ft.FontWeight.W_600, color=C["text2"])
+        result = ft.Text("", size=11, color=C["green"], selectable=True, visible=False)
+        ring = ft.ProgressRing(width=16, height=16, stroke_width=2, visible=False)
+        btn_export = ft.FilledButton("Export", icon=ft.Icons.FILE_DOWNLOAD_OUTLINED, style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF"))
+        btn_close = ft.TextButton("Close", on_click=lambda e: page.pop_dialog())
+
+        def is_whole() -> bool:
+            d = st["dur"]
+            return st["whole"] or d <= 0 or (st["start"] <= 0.05 and st["end"] >= d - 0.05)
+
+        def place():
+            d = st["dur"]
+            if d <= 0:
+                return
+            left, wid = WF.selection_rect(W, 0, d, st["start"], st["end"])
+            sel_box.left, sel_box.width = left, wid
+            h_a.left, h_b.left = max(0, left - 2), min(W - 4, left + wid - 2)
+            sel_box.visible = h_a.visible = h_b.visible = not st["whole"]
+            safe_update(sel_box, h_a, h_b)
+
+        def write_times(fields: bool = True):
+            if fields:
+                start_tf.value, end_tf.value = VX.fmt_time(st["start"]), VX.fmt_time(st["end"])
+                start_tf.error_text = end_tf.error_text = None
+            d, a, b = st["dur"], st["start"], st["end"]
+            len_txt.value = (f"Whole take · {VX.fmt_time(d)}" if is_whole() else f"Part · {VX.fmt_time(a)} → {VX.fmt_time(b)} · {b - a:.1f} s") if d > 0 else ""
+            btn_export.disabled = st["busy"] or (d > 0 and not is_whole() and b - a < 0.2)
+            safe_update(start_tf, end_tf, len_txt, btn_export)
+
+        def whole(_e=None):
+            st.update(start=0.0, end=st["dur"], whole=True)
+            write_times(); place()
+
+        def _bound():
+            d = st["dur"]
+            a = min(max(0.0, st["start"]), d)
+            b = min(max(a + 0.2, st["end"]), d)
+            st["start"], st["end"] = min(a, max(0.0, b - 0.2)), b
+
+        def time_typed(which: str):
+            def h(e):
+                tf = e.control
+                try:
+                    v = VX.parse_time(tf.value)
+                except ValueError:
+                    tf.error_text = "m:ss or seconds"
+                    safe_update(tf); return
+                st[which] = v
+                if st["dur"] > 0 and not (0 <= st["start"] < st["end"] <= st["dur"] + 0.01):
+                    tf.error_text = "Inside the take, start before end"
+                    safe_update(tf); return
+                st["whole"] = False
+                tf.error_text = None
+                _bound(); write_times(fields=False); place()
+                safe_update(tf)
+            return h
+        start_tf.on_change, end_tf.on_change = time_typed("start"), time_typed("end")
+
+        def _x(e) -> float:
+            pos = getattr(e, "local_position", None)
+            return float(pos.x if pos is not None else 0)
+
+        def pan_start(e):
+            d = st["dur"]
+            if d <= 0:
+                return
+            x, a, b = _x(e), st["start"] / d * W, st["end"] / d * W
+            da, db = abs(x - a), abs(x - b)
+            if min(da, db) <= 12 and not st["whole"]:
+                st["drag"] = "start" if da <= db else "end"
+            else:
+                st["drag"] = "new"
+                st["anchor"] = WF.x_to_time(x, W, 0, d)
+                st["start"] = st["end"] = st["anchor"]
+            st["whole"] = False
+
+        def pan_update(e):
+            d, drag = st["dur"], st["drag"]
+            if d <= 0 or drag is None:
+                return
+            tt = WF.x_to_time(_x(e), W, 0, d)
+            if drag == "start":
+                st["start"] = min(tt, st["end"] - 0.2)
+            elif drag == "end":
+                st["end"] = max(tt, st["start"] + 0.2)
+            else:
+                a, b = sorted((st["anchor"], tt))
+                st["start"], st["end"] = a, b
+            st["start"] = max(0.0, st["start"])
+            st["end"] = min(d, max(st["end"], st["start"]))
+            write_times(); place()
+
+        def pan_end(_e=None):
+            st["drag"] = None
+            if st["dur"] > 0:
+                _bound(); write_times(); place()
+        gd = ft.GestureDetector(content=stack, drag_interval=16, on_pan_start=pan_start, on_pan_update=pan_update, on_pan_end=pan_end, on_pan_cancel=pan_end, mouse_cursor=ft.MouseCursor.CLICK)
+
+        async def load_wave():
+            loop = asyncio.get_running_loop()
+            wave, dur = None, 0.0
+            try:
+                wave = await loop.run_in_executor(None, lambda: WF.load_peaks(str(audio), cache_dir=WF.default_cache_dir()))
+                dur = float(wave.duration)
+            except Exception as ex:
+                dbg_once("audio export wave", ex)
+            if dur <= 0:
+                try:
+                    ms = await loop.run_in_executor(None, PlayerService.probe_length_ms, str(audio))
+                    dur = (ms / 1000.0) if ms else 0.0
+                except Exception:
+                    dur = 0.0
+            st["wave"], st["dur"] = wave, dur
+            st["start"], st["end"] = 0.0, dur
+            if dur <= 0:
+                wave_msg.value, wave_msg.color = "The length of this take could not be read. The whole take will be exported.", C["amber"]
+                safe_update(wave_msg); write_times(); return
+            if wave is not None:
+                mins, maxs = WF.visible_peaks(wave, 0, dur, W)
+                st["png_n"] += 1
+                dest = tmp / f"wave_{st['png_n']}.png"
+                try:
+                    await loop.run_in_executor(None, lambda: WF.render_png(mins, maxs, dest, W, 72))
+                    wave_img.src, wave_img.visible, wave_msg.visible = str(dest), True, False
+                except Exception as ex:
+                    dbg_once("audio export wave png", ex)
+                    wave_msg.value = "The waveform could not be drawn. You can still type the start and the end."
+            else:
+                wave_msg.value = "The waveform could not be drawn. You can still type the start and the end."
+            safe_update(wave_img, wave_msg)
+            write_times(); place()
+
+        def listen(_e=None):
+            a, b = st["start"], st["end"]
+            if st["dur"] <= 0 or b <= a:
+                toast("Choose a part of the take first.", C["amber"]); return
+            item = QItem(song_id, t.id, title, label, str(audio))
+            if not player.is_current(t.id):
+                player.play_take(item, [item])
+            err = player.seek_ms(int(a * 1000), song_id, t.id)
+            if err:
+                toast(err, C["red"]); return
+            if player.state != "playing":
+                player.toggle()
+            _repaint_play["until"] = (song_id, t.id, int(b * 1000))
+
+        async def go():
+            if st["busy"]:
+                return
+            st["busy"] = True
+            btn_export.disabled, ring.visible, result.visible = True, True, False
+            safe_update(btn_export, ring, result)
+            loop = asyncio.get_running_loop()
+            try:
+                if is_whole():
+                    p = await loop.run_in_executor(None, lambda: ST.export_take(t, title))              # the whole take: the plain copy, no ffmpeg
+                else:
+                    a, b = st["start"], st["end"]
+                    base = f"{ST.safe_name(title)} - Take {t.number:02d} ({AX.range_tag(a, b)})"
+                    dest = AX.unique_dest(ST.exports_dir(), base, Path(audio).suffix)
+                    p = await loop.run_in_executor(None, lambda: AX.trim_audio(audio, dest, a, b, vs.ffmpeg))
+                result.value, result.color, result.visible = f"Exported: {p}", C["green"], True
+                toast(f"Exported: {p}", C["green"])
+                try:
+                    os.startfile(str(Path(p).parent))
+                except Exception:
+                    pass
+            except Exception as ex:
+                result.value, result.color, result.visible = f"Export failed: {ex}", C["red"], True
+            finally:
+                st["busy"], ring.visible = False, False
+                write_times(fields=False)
+                safe_update(ring, result)
+        btn_export.on_click = lambda e: page.run_task(go)
+
+        btn_whole = ft.TextButton("Whole take", icon=ft.Icons.SELECT_ALL_ROUNDED, on_click=whole)
+        btn_listen = ft.OutlinedButton("Listen to the part", icon=ft.Icons.HEADPHONES_ROUNDED, on_click=listen)
+        body = ft.Column([
+            ft.Text("Drag on the waveform to choose a part, or drag the edges of the part to adjust it. Nothing chosen = the whole take.", size=12, color=C["text3"]),
+            ft.Stack([gd, ft.Container(wave_msg, left=10, top=26, ignore_interactions=True)], width=W, height=72),
+            ft.Row([start_tf, end_tf, ft.Container(expand=True), btn_whole, btn_listen], spacing=10, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            ft.Row([len_txt, ring], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            result,
+        ], spacing=12, width=W + 32, tight=True)
+        page.show_dialog(ft.AlertDialog(modal=True, bgcolor=C["panel"], inset_padding=po(16, 16, 16, 16),
+                                        title=ft.Row([ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, size=22, color=C["accent"]),
+                                                      ft.Column([ft.Text("Export Audio", size=18, weight=ft.FontWeight.BOLD), ft.Text(f"{title} · {label}", size=11, color=C["text3"])], spacing=0, tight=True)], spacing=10),
+                                        content=ft.Container(body, width=W + 32), actions=[btn_close, btn_export], actions_padding=po(16, 4, 16, 14), actions_alignment=ft.MainAxisAlignment.END))
+        write_times()
+        page.run_task(load_wave)
+
 
     # ═══ EXPORT TO VIDEO: a picture + the take's audio + an animated waveform, made by ffmpeg (music_studio/video_export.py builds and runs the command) ═══════════════════════════════
     def open_video_export(title: str, t: M.Take):
@@ -4465,7 +5132,8 @@ def main(page: ft.Page):
         if card:                                                  # one picked style: the song's settings with THIS card's values on top (BPM, key, time signature, mood, vocal, energy, caption...)
             s = SH.settings_from_dict({**SH.settings_to_dict(song.settings), **card["changes"]})
             CB.follow_legacy(s, card["changes"])
-        comp = K.compile_lyrics(song.lyrics)
+        sent_lyrics = (card.get("lyrics") if card else "") or song.lyrics          # a picked direction may add cues and instrumental sections to what is SENT; the editor keeps the song's own lyrics
+        comp = K.compile_lyrics(sent_lyrics)
         tags = style_tags(s)
         instrumental = comp.ace.strip().lower() == "[instrumental]"                  # an instrumental song: the lyrics field is just the [Instrumental] tag (as the tutorial describes)
         if not comp.ace.strip() or (not instrumental and not any(k in ("text", "hold") for k, _ in comp.lines)):
@@ -4490,6 +5158,7 @@ def main(page: ft.Page):
         snap = M.song_from_dict(M.song_to_dict(song))             # the snapshot of THIS song: nothing after this point reads the editor
         if card:
             snap.settings = SH.settings_from_dict(SH.settings_to_dict(s))
+            snap.lyrics = sent_lyrics                             # the take keeps exactly the lyrics that were sent
         sheet = SH.active_sheet(song)
         before = SH.settings_to_dict(s)               # the options exactly as the user had them (seed -1, language "auto"), before they are resolved
         song_id, title = snap.id, snap.title
@@ -4527,7 +5196,7 @@ def main(page: ft.Page):
             except Exception as ex:
                 toast(f"Cannot prepare the workflow: {ex}", C["red"]); return
         resolved_lang = used.get("language") if cover_on else snap.settings.language
-        gen_snapshot = TS.snapshot_extra(sheet.id, sheet.name, song.lyrics, before, resolved_lang)
+        gen_snapshot = TS.snapshot_extra(sheet.id, sheet.name, sent_lyrics, before, resolved_lang)
         if not card and s.style_mode == "advanced" and S.song is not None and S.song.id == song_id and M.add_prompt_history(s, tags):      # the prompt that is really sent is remembered (no duplicates)
             mark_dirty(); rebuild_history()
         if S.song is not None and S.song.id == song_id:
@@ -4755,7 +5424,12 @@ def main(page: ft.Page):
                                h2_text_style=ft.TextStyle(size=15, color=C["text1"], weight=ft.FontWeight.W_600),
                                h3_text_style=ft.TextStyle(size=14, color=C["text1"], weight=ft.FontWeight.W_600),
                                table_head_text_style=ft.TextStyle(size=12, color=C["text1"], weight=ft.FontWeight.W_600),
-                               table_body_text_style=ft.TextStyle(size=12, color=C["text1"])))
+                               table_body_text_style=ft.TextStyle(size=12, color=C["text1"]),
+                               # a code block (a fenced ``` block, or lines indented too deep under a bullet) was drawn on the default LIGHT grey with light text: a big empty grey box. It is drawn dark and readable now.
+                               code_text_style=ft.TextStyle(size=12, color=C["text1"], font_family="Consolas"),
+                               codeblock_decoration=ft.BoxDecoration(bgcolor=C["panel2"], border_radius=ft.BorderRadius.all(6)),
+                               codeblock_padding=po(8, 6, 8, 6)),
+                           code_theme=ft.MarkdownCustomCodeTheme(root=ft.TextStyle(color=C["text1"], bgcolor=C["panel2"])))
 
     def bubble(i: int, m: M.ChatMessage):
         c = _bubble(i, m)
@@ -5419,11 +6093,13 @@ def main(page: ft.Page):
             return LC.ask_grok(g["key"], g["model"], prep.system, prep.user, temperature=temperature, history=prep.history)
         return LC.ask_local(host, LLM_DIR / backend.split(":", 1)[1], prep.system, prep.user, temperature=temperature, session=prep.node)
 
-    def spec_ask(spec: str, temperature: "float | None" = None, task: str = ""):
+    def spec_ask(spec: str, temperature: "float | None" = None, task: str = "", song_id: str = "", sheet_id: str = "", lyrics_hash: str = "", backend: str = "", host: str = ""):
         """An `ask(system, user)` for the engines: the engine's own prompt becomes the TASK of this specialist, and the request goes out as one request of its session. Everything it needs from the
-        UI is captured NOW (song, sheet, backend, chat), so the call can run in a worker thread. One request at a time goes into one session."""
-        song_id, sheet_id = S.song.id, S.song.book.active_id
-        backend, host, chat, h = S.backend, S.host, (list(S.chat) if task in ("", "analyze") else []), LA.text_hash(lyr())
+        UI is captured NOW (song, sheet, backend, chat), so the call can run in a worker thread. One request at a time goes into one session. An analysis names the song, sheet and lyrics it was started for, so switching later does not retarget that job."""
+        if not (song_id and sheet_id):
+            song_id, sheet_id = S.song.id, S.song.book.active_id
+        backend, host = backend or S.backend, host or S.host
+        chat, h = (list(S.chat) if task in ("", "analyze") else []), (lyrics_hash or LA.text_hash(lyr()))
         try:
             model, _p = an_identity(backend)
         except Exception:
@@ -5621,15 +6297,31 @@ def main(page: ft.Page):
                 avail = sr_handoff_avail(backend, user_msg, live_now)
                 budget = min(3500, avail)
                 ho_text, ho_info = sr_handoff_text(ho, text, budget) if budget > 0 else (None, {"refused": True, "budget": budget, "tokens": 0})
+                is_lesson = ho.get("kind") == "lesson"
+                ho_what = ("lesson:" + str(ho.get("topic")) + (":" + str(ho.get("technique")) if ho.get("technique") else "")) if is_lesson else (ho.get("finding_id") or "(whole report)")
                 if ho_text is None:                                                    # the smallest useful hand-off does not fit: NOTHING is sent to the model, and the user is told why
-                    TRC.log_event("handoff", specialist="songwriter", song_id=song.id, sheet_id=sheet0, finding=ho.get("finding_id") or "(whole report)", backend=backend, n_ctx=n_ctx, budget=budget, info=ho_info, text="(refused: no room)")
-                    append_chat(song.id, M.ChatMessage("note", I18N.tr("The Song Critic report was NOT sent, and nothing was sent to the model: this conversation has no room for it. Start a new session (New session) and press Discuss again."),
-                                                       specialist="songwriter", sheet_id=sheet0))
+                    TRC.log_event("handoff", specialist="songwriter", song_id=song.id, sheet_id=sheet0, finding=ho_what, backend=backend, n_ctx=n_ctx, budget=budget, info=ho_info, text="(refused: no room)")
+                    if ho_info.get("reason") == "song":
+                        refuse_msg = I18N.tr("Nothing was sent to the model: the song or sheet changed before the message went out, so the lesson or report was not attached. Press Discuss again.")
+                    elif is_lesson:
+                        refuse_msg = I18N.tr("The songwriting lesson was NOT sent, and nothing was sent to the model: this conversation has no room for it. Start a new session (New session) and press Discuss again.")
+                    elif (getattr(ho.get("rep"), "spec", "") or ho.get("spec")) == "rhyme_flow":
+                        refuse_msg = I18N.tr("The Rhyme & Flow report was NOT sent, and nothing was sent to the model: this conversation has no room for it. Start a new session (New session) and press Discuss again.")
+                    elif (getattr(ho.get("rep"), "spec", "") or ho.get("spec")) == "vocal_flow":
+                        refuse_msg = I18N.tr("The Vocal Flow report was NOT sent, and nothing was sent to the model: this conversation has no room for it. Start a new session (New session) and press Discuss again.")
+                    elif (getattr(ho.get("rep"), "spec", "") or ho.get("spec")) == "lyric_language":
+                        refuse_msg = I18N.tr("The Lyric Language report was NOT sent, and nothing was sent to the model: this conversation has no room for it. Start a new session (New session) and press Discuss again.")
+                    else:
+                        refuse_msg = I18N.tr("The Song Critic report was NOT sent, and nothing was sent to the model: this conversation has no room for it. Start a new session (New session) and press Discuss again.")
+                    append_chat(song.id, M.ChatMessage("note", refuse_msg, specialist="songwriter", sheet_id=sheet0))
                     return
                 user_msg = ho_text + chr(10) * 2 + user_msg
-                TRC.log_event("handoff", specialist="songwriter", song_id=song.id, sheet_id=sheet0, finding=ho.get("finding_id") or "(whole report)", backend=backend, n_ctx=n_ctx, budget=budget, info=ho_info, text=ho_text)
+                TRC.log_event("handoff", specialist="songwriter", song_id=song.id, sheet_id=sheet0, finding=ho_what, backend=backend, n_ctx=n_ctx, budget=budget, info=ho_info, text=ho_text)
                 cut_note = (" Shortened: " + ", ".join(ho_info["shortened"]) + "." if ho_info["shortened"] else "") + (" Left out: " + ", ".join(ho_info["left_out"]) + "." if ho_info["left_out"] else "")
-                append_chat(song.id, M.ChatMessage("note", f"Sent with this message: the Song Critic report ({'one finding' if ho.get('finding_id') else 'the whole report'}), about {ho_info['tokens']} tokens of a {budget}-token budget." + cut_note,
+                _rspec = getattr(ho.get("rep"), "spec", "") or ho.get("spec") or "song_critic"
+                _rlabel = {"rhyme_flow": "Rhyme & Flow", "vocal_flow": "Vocal Flow", "lyric_language": "Lyric Language"}.get(_rspec, "Song Critic")
+                what_sent = ("the songwriting lesson (" + ("one technique" if ho.get("technique") else f"the whole lesson, {len(ho_info.get('techniques') or [])} techniques") + ")") if is_lesson else f"the {_rlabel} report ({'one finding' if ho.get('finding_id') else 'the whole report'})"
+                append_chat(song.id, M.ChatMessage("note", f"Sent with this message: {what_sent}, about {ho_info['tokens']} tokens of a {budget}-token budget." + cut_note,
                                                    specialist="songwriter", sheet_id=sheet0))
             except Exception as ex:
                 dbg_once("handoff", ex)
@@ -8031,11 +8723,12 @@ def main(page: ft.Page):
                                 ft.TextButton("Ignore", on_click=lambda e, i=item: rv_ignore(i))], spacing=6, wrap=True))
         return ft.Container(ft.Column(body, spacing=5), bgcolor=C["panel"], border_radius=8, padding=po(10, 8, 10, 8))
 
-    # ═══ SONG ANALYSIS REPORT: Analyze Song asks two specialists (Songwriter AI, Song Architect) and puts their reports together as ONE report. ══════════════════
-    # Each specialist works in its own session with the same snapshot of the song and answers with a structured report (specialist_engine.parse_report): the Songwriter AI one report on the language, the
-    # meaning and the sound of the lyrics (it does not run the syllable / rhyme / rhythm engines; those stay tools of their own, and their results are shown in its section when they are current).
-    # The reports of the former specialists stay readable in an archive section. A specialist that fails does not remove the other, and can be retried alone. Python only orders, merges and checks places: it judges nothing about the writing. The report is only made when the user asks; typing never calls an AI.
-    rep = {"running": False, "step": "", "spec": ""}
+    # ═══ SONG ANALYSIS REPORT ════════════════════════════════════════════════════════════════════════════════════════════════════
+    # One Analyze action is one specialist. The Analyze Song menu only opens the list; the model runs after the user picks one report.
+    # Music Producer Analysis is this page. Song Critic, Rhyme & Flow, Vocal Flow and Lyric Language are their own pages and their own buttons.
+    # An older Songwriter report stays readable. A failed run keeps that specialist's last good report and does not clear any other specialist.
+    rep = {"running": False, "step": "", "spec": "", "job": None}
+    report_err = {}                                                  # (song id, sheet id, specialist) -> the latest failed run; the saved report is separate
     rep_open = {"ov": True, "sw": False, "archive": False, "hk": False, "pi": True, "syl_all": False, "rh_pairs": False, "rt_len": False}
     REP_PARTS = tuple((sp_id, SP.name_of(sp_id)) for sp_id in SP.ANALYZE_ORDER)
     report_view = {"k": "songwriter"}                                     # the report of the Report tab that is shown (and run by its button): songwriter | music_producer
@@ -8069,7 +8762,9 @@ def main(page: ft.Page):
     def rep_state(sess, spec: str) -> tuple:
         """(state, message) of one specialist's part of the report: ok | running | error | outdated | missing."""
         cur = LA.text_hash(lyr()) if S.song else ""
-        if rep["running"] and rep["spec"] == spec:
+        job = rep.get("job")
+        same_sheet = not isinstance(job, tuple) or (S.song is not None and job[:2] == (S.song.id, S.song.book.active_id))
+        if rep["running"] and rep["spec"] == spec and same_sheet:
             return "running", ""
         r = sess.specreports.get(spec)
         if r is None:
@@ -8371,6 +9066,8 @@ def main(page: ft.Page):
             btns.append(ft.OutlinedButton("Go to line", on_click=lambda e, g=f: goto_finding(g)))
         if status == "open" and has_sug:
             btns.append(ft.FilledButton("Apply", on_click=lambda e, g=f: open_review_diff(_fd_key(g)), disabled=not can, style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF")))
+        if f.spec == "music_producer":
+            btns.append(ext_btn("music_producer", f.id))
         btns.append(ft.PopupMenuButton(icon=ft.Icons.MORE_HORIZ_ROUNDED, icon_color=C["text2"], icon_size=18, tooltip="More", items=more))
         body.append(ft.Row(btns, spacing=6, wrap=True, vertical_alignment=ft.CrossAxisAlignment.CENTER))
         return ft.Column(body, spacing=5)
@@ -8746,7 +9443,7 @@ def main(page: ft.Page):
         if spec in SP.CHAT_IDS:
             row.append(ft.IconButton(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, icon_size=16, width=28, height=28, padding=0, icon_color=C["accent"], tooltip=f"Continue in chat with {SP.name_of(spec)}", on_click=lambda e, s=spec: continue_chat(s)))
         if st in ("error", "outdated", "missing") and not rep_busy() and not S.an_busy:
-            row.append(ft.TextButton("Retry", on_click=lambda e, p=spec: page.run_task(rep_retry, p, spec_snapshot()), style=ft.ButtonStyle(color=C["accent"], padding=po(4, 0, 4, 0))))
+            row.append(ft.TextButton("Retry", on_click=lambda e, p=spec: begin_retry(p), style=ft.ButtonStyle(color=C["accent"], padding=po(4, 0, 4, 0))))
         out = [ft.Row(row, spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER, wrap=True)]
         if st == "error" and msg:
             out.append(ft.Text(_friendly(msg), size=10, color=C["red"], selectable=True))
@@ -8942,6 +9639,9 @@ def main(page: ft.Page):
             head.append(ft.Text(f"Written {r.ts}", size=10, color=C["text3"]))
         if st == "error" and msg:
             head.append(ft.Text(_friendly(msg), size=11, color=C["red"], selectable=True))
+        late = report_err.get((sess.song.id, sess.song.book.active_id, spec), "")
+        if late and st not in ("running", "error"):
+            head.append(ft.Text(I18N.tr("The latest run failed. The earlier report is still here.") + " " + _friendly(late), size=11, color=C["red"], selectable=True))
         if st == "outdated":
             head.append(ft.Text("The lyrics changed after this report. Each suggestion is checked against the current lyrics before it can be applied.", size=11, color=C["amber"]))
         if r is not None and r.status == "ok" and r.summary:
@@ -8949,8 +9649,10 @@ def main(page: ft.Page):
         actions = []
         if r is not None and r.status == "ok" and spec in SP.CHAT_IDS and not (r.data or {}).get("live"):       # the chat button appears when the report is finished
             actions.append(_chat_icon(spec))
+        if spec == "music_producer" and r is not None and r.status == "ok" and not (r.data or {}).get("live"):
+            actions.append(ext_btn("music_producer"))
         if st in ("error", "outdated", "missing") and not rep_busy() and not S.an_busy:
-            actions.append(ft.TextButton("Write again", icon=ft.Icons.REFRESH_ROUNDED, on_click=lambda e, p=spec: page.run_task(rep_retry, p, spec_snapshot()),
+            actions.append(ft.TextButton("Write again", icon=ft.Icons.REFRESH_ROUNDED, on_click=lambda e, p=spec: begin_retry(p),
                                          style=ft.ButtonStyle(color=C["accent"], padding=po(4, 0, 4, 0))))
         if actions:
             head.append(ft.Row(actions, spacing=6, wrap=True))
@@ -9007,7 +9709,7 @@ def main(page: ft.Page):
         if not show:
             review_title.value, review_ring.visible, review_again.disabled = "Song Analysis Report", False, True
             review_warn.visible = review_err.visible = review_summary.visible = False
-            review_list.controls = [ft.Text("Press “Write the report” above: the report of this assistant appears here, one suggestion at a time. The Songwriter AI hands in the rhyme report too.", size=12, color=C["text3"])]
+            review_list.controls = [ft.Text("Press Analyze on this page. Only this assistant runs. Song Critic, Rhyme & Flow, Vocal Flow and Lyric Language each have their own page.", size=12, color=C["text3"])]
             safe_update(review_box, review_ring, review_title, review_again, review_warn, review_err, review_summary, review_list)
             return
         res, busy, err = rv.get("result") if rv else None, bool(rv and rv.get("busy")), (rv or {}).get("error", "")
@@ -9078,32 +9780,55 @@ def main(page: ft.Page):
                 sess.archive[sp_id] = r
         sess.report_on = bool(sess.specreports) or bool(sess.archive) or sess.report_on          # a song that only has the reports of the former specialists shows them (read-only) too
 
-    def start_report(only: "str | None" = None):
-        """The button of a report panel (`only` = that specialist) or AI Actions → Analyze Song (both, one after the other). The song, sheet and lyrics are captured now; each step re-checks them before it starts."""
+    def _analyze_req_id(spec: str, song_id: str) -> str:
+        return hashlib.sha1(f"{time.time_ns()}|{spec}|{song_id}".encode()).hexdigest()[:12]
+
+    def start_report(only: "str | None" = None, trigger: str = "report_button"):
+        """A report button names its specialist. No specialist means no model call and no report is cleared."""
+        if not only:
+            log.info("start_report refused: no specialist")
+            TRC.log_analyze(phase="refused", request_id="", trigger=trigger, specialist="", reason="no_specialist")
+            toast("Choose one report. Nothing was sent.", C["amber"])
+            return
+        if only == "songwriter":
+            toast("The Songwriter AI is the chat now. The lyric reports are the four icons in the strip: Song Critic, Rhyme & Flow, Vocal Flow, Lyric Language.", C["amber"])
+            return
+        if only in SR.REPORTS:
+            rp_show_tab(SR.REPORTS[only].tab)
+            sr_start(only, trigger)
+            return
+        if only != "music_producer":
+            toast("Choose one report. Nothing was sent.", C["amber"])
+            return
         if not S.song:
             toast("Open or create a song first.", C["amber"]); return
-        if only == "songwriter":
-            toast("The Songwriter AI is the chat now. The lyric reports are the four icons in the strip: Song Critic, Rhyme & Flow, Vocal Flow, Lyric Language.", C["amber"]); return
-        if rep_busy() or S.chat_busy_song or S.an_busy:
+        if rep["running"] or sr["running"] or S.chat_busy_song or S.an_busy:
             toast("The AI is still busy. Try again in a moment.", C["amber"]); return
         if not S.backend:
             toast("No AI backend: put an LLM workflow in comfy_apis/llm or set a Grok key in Prompt Lab", C["amber"]); return
         text = lyr()
         if not LA.sung_lines(text):
             toast("Write some lyrics first (there are only [tags] or empty lines).", C["amber"]); return
-        bad = [f"{SP.name_of(i)}: {' '.join(p.errors)}" for i, p in SP.reload_all().items() if i in SP.ANALYZE_ORDER and (only is None or i == only) and not p.ok]
+        bad = [f"{SP.name_of(i)}: {' '.join(p.errors)}" for i, p in SP.reload_all().items() if i == only and not p.ok]
         if bad:
             toast("A specialist prompt is not valid, so nothing was sent: " + " | ".join(bad)[:300], C["amber"]); return
         sess = sessions.get(S.song.id)
         sess.report_on, sess.report_hash = True, LA.text_hash(text)
-        report_view["k"] = only or report_view["k"]                             # the report that runs is the one shown
-        rp_show_tab("report")
-        page.run_task(run_report, S.song.id, text, S.song.book.active_id, spec_snapshot(), only)
+        report_view["k"] = "music_producer"
+        snap = spec_snapshot()
+        snap["request_id"] = _analyze_req_id("music_producer", snap["song_id"])
+        snap["trigger"] = trigger
+        rep["running"], rep["spec"] = True, "music_producer"
+        rep["job"] = (snap["song_id"], snap["sheet_id"], "music_producer")
+        S.an_busy, S.an_kind, S.an_progress = snap["song_id"], "spec", f"{SP.name_of('music_producer')}…"
+        report_err.pop(rep["job"], None)
+        rp_show_tab("rep_vocal")
+        page.run_task(run_report, snap["song_id"], text, snap["sheet_id"], snap, "music_producer")
 
     def spec_snapshot() -> dict:
         s = S.song
         return {"song_id": s.id, "sheet_id": s.book.active_id, "title": s.title, "lyrics": lyr(), "lyrics_hash": LA.text_hash(lyr()), "genre": s.settings.genre, "mood": s.settings.mood,
-                "energy": s.settings.energy, "vocal": s.settings.vocal, "bpm": s.settings.bpm, "language": s.settings.language, "backend": S.backend,
+                "energy": s.settings.energy, "vocal": s.settings.vocal, "bpm": s.settings.bpm, "language": s.settings.language, "backend": S.backend, "host": S.host,
                 "timesignature": s.settings.timesignature, "duration": s.settings.duration, "live": {},
                 "caption": (s.settings.style_prompt if s.settings.style_mode == "advanced" else ""),          # only a caption the user wrote is known before Generate (Basic writes it at Generate)
                 "corrections": li_corrections()}
@@ -9158,7 +9883,7 @@ def main(page: ft.Page):
             snap = dict(snap, sound=SE.sound_evidence(snap["lyrics"]))      # the Thai line-end sounds, worked out by the program
             ev = await rhyme_evidence_for(snap)                             # the Rhyme Analyzer (only when there is no saved result for these exact lyrics) and the program's checks
             snap = dict(snap, rhyme_data=ev, rhyme_evidence=(PRE.evidence_text(ev) if (ev or {}).get("source") == PRE.SOURCE else RF.evidence_text(ev)))
-        ask = spec_ask(spec, 0.4, "analyze")
+        ask = spec_ask(spec, 0.4, "analyze", song_id=snap["song_id"], sheet_id=snap["sheet_id"], lyrics_hash=snap.get("lyrics_hash") or "", backend=snap.get("backend") or "", host=snap.get("host") or "")
         S.an_busy, S.an_kind, S.an_progress = snap["song_id"], "spec", f"{SP.name_of(spec)}…"
         render_review()
         try:
@@ -9166,14 +9891,20 @@ def main(page: ft.Page):
         except Exception:
             model = ""
         rep_obj = None
+        stepper = None
         live_prior = {"set": False, "rep": None}                            # the report that was on screen before this run (the half-written one is never kept)
+        rid = snap.get("request_id") or _analyze_req_id(spec, snap["song_id"])
+        try:
+            ph = SP.load(spec).hash
+        except Exception:
+            ph = ""
+        TRC.log_analyze(phase="start", request_id=rid, trigger=snap.get("trigger") or "report_button", specialist=spec, song_id=snap["song_id"], sheet_id=snap["sheet_id"], lyrics_hash=snap.get("lyrics_hash", ""), backend=snap.get("backend", ""), model=model, prompt_hash=ph, attempt=0, parse_status="")
         try:
             task_user = SE.analyze_user(snap, reply_lang)
             if SP.is_producer(spec):
                 note = CL.repair_notes(snap["lyrics"])
                 if note:
                     task_user += "\n\n" + note
-            stepper = None
             if RPT.ENABLED:                                                  # step by step: the data, the summary, one section at a time, the suggestions; each part is shown as soon as it is read
                 SE.drop_live(snap["song_id"], snap["sheet_id"], SP.analysis_id(spec))         # a fresh conversation for this report (the old one would only fill the context)
                 _sp = sessions.get(snap["song_id"])
@@ -9244,6 +9975,8 @@ def main(page: ft.Page):
         TRC.log_event("report", specialist=spec, song_id=snap["song_id"], sheet_id=snap["sheet_id"], backend=snap["backend"], model=model, lyrics_hash=snap["lyrics_hash"], lyrics=snap["lyrics"],
                       status=rep_obj.status, error=rep_obj.error, summary=rep_obj.summary[:400], findings=len(rep_obj.findings), applicable=sum(1 for f in rep_obj.findings if f.suggestion),
                       notes=rep_obj.uncertain[:12], diagnostics=rep_obj.diagnostics[:20], raw_answer=rep_obj.raw)
+        n_req = stepper.requests if stepper is not None else (1 if rep_obj.raw else 0)
+        TRC.log_analyze(phase="end", request_id=rid, trigger=snap.get("trigger") or "report_button", specialist=spec, song_id=snap["song_id"], sheet_id=snap["sheet_id"], lyrics_hash=snap.get("lyrics_hash", ""), backend=snap.get("backend", ""), model=model, prompt_hash=rep_obj.prompt_hash or ph, attempt=n_req, parse_status=rep_obj.status, save_target=(f"{snap['song_id']}|{snap['sheet_id']}|{SP.analysis_id(spec)}" if rep_obj.status == "ok" else ""), error=(rep_obj.error or "")[:300])
         store_spec_report(snap, rep_obj)
 
     def _apply_report_part(snap: dict, part):
@@ -9255,26 +9988,32 @@ def main(page: ft.Page):
         render_review()
 
     def store_spec_report(snap: dict, rep_obj):
-        """Keep a finished report: in the specialist's session file (a successful one) and, when the sheet it was made for is still the open one, on screen. An old result never replaces the report of other lyrics."""
+        """Keep a finished report under this specialist only. A failed run leaves the last good report in place and records the error beside it. An older-lyrics answer never replaces the report of the lyrics that are open now."""
+        key = (snap["song_id"], snap["sheet_id"], rep_obj.spec)
         if rep_obj.status == "ok":
             s_obj = get_spec_session(snap["song_id"], snap["sheet_id"], SP.analysis_id(rep_obj.spec))
             SE.add_report(s_obj, rep_obj)
             SE.save_session(s_obj)
+            report_err.pop(key, None)
         sess_ui = sessions.get(snap["song_id"])
         if sess_ui is not None and sess_ui.song.book.active_id == snap["sheet_id"]:
             old = sess_ui.specreports.get(rep_obj.spec)
             if rep_obj.status != "ok" and old is not None and old.status == "ok":
-                toast(f"{SP.name_of(rep_obj.spec)} failed: {rep_obj.error[:200]}. The earlier report is kept.", C["amber"])       # a failed answer never damages a report that was good
+                report_err[key] = rep_obj.error or "the latest run failed"
+                toast(f"{SP.name_of(rep_obj.spec)} failed: {(rep_obj.error or '')[:200]}. The earlier report is kept.", C["amber"])
             elif old is not None and old.status == "ok" and old.lyrics_hash != rep_obj.lyrics_hash and S.song and S.song.id == snap["song_id"] and old.lyrics_hash == LA.text_hash(lyr()):
-                pass                                            # this answer was made for older lyrics: it never replaces the report of the lyrics that are open now
+                log.info("report %s of older lyrics was not kept: a newer report of the current lyrics exists", rep_obj.spec)
             else:
                 sess_ui.specreports[rep_obj.spec] = rep_obj
-                sess_ui.fd_status ={k: v for k, v in sess_ui.fd_status.items() if not k.startswith(rep_obj.spec + ":")}
+                sess_ui.fd_status = {k: v for k, v in sess_ui.fd_status.items() if not k.startswith(rep_obj.spec + ":")}
+                if rep_obj.status != "ok":
+                    report_err.pop(key, None)
+        elif rep_obj.status != "ok":
+            report_err[key] = rep_obj.error or "the latest run failed"
         render_review()
 
     def clear_reports_on_screen(song_id: str, specs: list):
-        """Pressing "Write the report" starts from an empty page: the earlier report of these assistants is taken off the screen at once, so an old and a new report are never mixed. (The saved
-        copy in the session file is not touched; it is replaced only when the new report is finished.)"""
+        """Take these reports off the open sheet. A run does not call this: a failed analysis has to leave the last good report on the page. The session file is never touched here."""
         sess_ui = sessions.get(song_id)
         if sess_ui is None:
             return
@@ -9283,39 +10022,54 @@ def main(page: ft.Page):
             sess_ui.fd_status = {k: v for k, v in sess_ui.fd_status.items() if not k.startswith(sp + ":")}
 
     async def run_report(song_id: str, text0: str, sheet0: str, snap: "dict | None" = None, only: "str | None" = None):
-        rep["running"] = True
-        clear_reports_on_screen(song_id, [only] if only else list(SP.ANALYZE_ORDER))
+        """One specialist, named by `only`. A call with no specialist does nothing: it does not pick one and it does not clear any report."""
+        if only not in ("music_producer", "songwriter"):
+            log.info("run_report refused: specialist=%r", only)
+            TRC.log_analyze(phase="refused", request_id=(snap or {}).get("request_id", ""), trigger=(snap or {}).get("trigger", "run_report"), specialist=only or "", song_id=song_id, sheet_id=sheet0, lyrics_hash=(snap or {}).get("lyrics_hash", ""), reason="no_specialist")
+            return
+        snap = snap or spec_snapshot()
+        rep["running"], rep["spec"] = True, only
+        rep["job"] = (song_id, sheet0, only)
+        rep["step"] = SP.name_of(only)
         render_review(); refresh_actions_ui()
         try:
-            snap = snap or spec_snapshot()                                     # taken synchronously at the click: the whole job works on THIS song, sheet and lyrics
-            specs = [only] if only else [SP.PRODUCER]                  # Analyze Song asks the Music Producer; the lyric reports have their own buttons (spec_reports)
-            for i, spec in enumerate(specs, 1):
-                if not (S.song and S.song.id == song_id and S.song.book.active_id == sheet0 and lyr() == text0):
-                    break                                              # the song, sheet or lyrics changed: nothing more is started; what finished stays (tied to its snapshot)
-                rep["step"], rep["spec"] = f"{i}/{len(specs)} {SP.name_of(spec)}", spec
-                render_review()
-                try:
-                    await run_spec_report(spec, snap)
-                except Exception as ex:
-                    log.warning("report step %s failed: %r", spec, ex)
+            try:
+                await run_spec_report(only, snap)
+            except Exception as ex:
+                log.warning("report step %s failed: %r", only, ex)
         finally:
             rep["running"], rep["step"], rep["spec"] = False, "", ""
+            rep["job"] = None
+            S.an_busy, S.an_kind, S.an_progress = "", "", ""
             render_review(); refresh_actions_ui()
 
-    async def rep_retry(spec: str, snap: "dict | None" = None):
-        """Retry ONE specialist (no other specialist is asked again), on the snapshot taken when the button was pressed."""
-        if not S.song or rep_busy() or S.an_busy or S.chat_busy_song:
+    def begin_retry(spec: str):
+        """Retry sets the busy flag before the task starts, so the click cannot schedule a second job. The snapshot is this song, sheet and lyrics."""
+        if not S.song or rep["running"] or sr["running"] or S.an_busy or S.chat_busy_song:
             toast("The AI is still busy. Try again in a moment.", C["amber"]); return
-        snap = snap or spec_snapshot()
+        if spec not in ("music_producer", "songwriter"):
+            toast("Choose one report. Nothing was sent.", C["amber"]); return
+        snap = spec_snapshot()
+        snap["request_id"] = _analyze_req_id(spec, snap["song_id"])
+        snap["trigger"] = "retry"
         rep["running"], rep["step"], rep["spec"] = True, SP.name_of(spec), spec
-        clear_reports_on_screen(snap["song_id"], [spec])
+        rep["job"] = (snap["song_id"], snap["sheet_id"], spec)
+        S.an_busy, S.an_kind, S.an_progress = snap["song_id"], "spec", f"{SP.name_of(spec)}…"
+        report_err.pop(rep["job"], None)
         render_review()
+        page.run_task(rep_retry, spec, snap)
+
+    async def rep_retry(spec: str, snap: "dict | None" = None):
+        """Retry ONE specialist (no other specialist is asked again), on the snapshot taken when the button was pressed. The previous report stays until this run finishes."""
+        snap = snap or spec_snapshot()
         try:
             await run_spec_report(spec, snap)
         except Exception as ex:
             log.warning("report retry %s failed: %r", spec, ex)
         finally:
             rep["running"], rep["step"], rep["spec"] = False, "", ""
+            rep["job"] = None
+            S.an_busy, S.an_kind, S.an_progress = "", "", ""
             render_review(); refresh_actions_ui()
 
     def open_alternatives():
@@ -9690,7 +10444,33 @@ def main(page: ft.Page):
     lyric_format_btn = tpop(ft.Icons.AUTO_FIX_HIGH_ROUNDED, "Lyric Formatter: pick a mode. The program formats these lyrics by rules and replaces them immediately; no word is changed. Undo brings the previous lyrics back.",
                             [ft.PopupMenuItem(content=ft.Text(LF.mode_label(mode_id)), on_click=lambda e, m=mode_id: start_lyric_format(m)) for mode_id in LF.MODE_IDS], ai=True, caret=True)
     fmt_ui["btn"] = lyric_format_btn
-    analyze_btn = tbtn(ft.Icons.INSIGHTS_ROUNDED, "Analyze Song: syllables, rhymes, rhythm and songwriting quality in one report, with suggestions you can apply", lambda e: start_report(), ai=True)
+    ANALYZE_CHOICES = (
+        ("song_critic", "Song Critic", "Meaning, story, emotion, opening, hook, imagery, development, ending, and the eight Songwriting Academy topics."),
+        ("rhyme_flow", "Rhyme & Flow", "Whether the rhymes serve the words, and where they sound forced."),
+        ("vocal_flow", "Vocal Flow", "Phrase length, syllables and singing risk, from the text only."),
+        ("lyric_language", "Lyric Language", "Word choice, voice, and real language errors. A formal word is not an error by itself."),
+        ("music_producer", "Music Producer Analysis", "Structure, arrangement, dynamics, vocal delivery and the caption."),
+    )
+
+    def choose_analysis(spec: str):
+        """One menu row: open that report and run only that specialist. Opening the menu itself sends nothing."""
+        if spec in SR.REPORTS:
+            rp_show_tab(SR.REPORTS[spec].tab)
+            sr_start(spec, "analyze_menu")
+            return
+        if spec == "music_producer":
+            rp_show_tab("rep_vocal")
+            start_report("music_producer", "analyze_menu")
+            return
+        toast("Choose one report. Nothing was sent.", C["amber"])
+
+    def _analyze_item(spec: str, title: str, sub: str):
+        return ft.PopupMenuItem(content=ft.Column([ft.Text(title, size=12, weight=ft.FontWeight.W_600, color=C["text1"]),
+                                                   ft.Text(sub, size=10, color=C["text3"], width=280)], spacing=1, tight=True),
+                                on_click=lambda e, s=spec: choose_analysis(s))
+
+    analyze_btn = tpop(ft.Icons.INSIGHTS_ROUNDED, "Analyze Song: choose one report. Nothing is sent until you pick a specialist.",
+                       [_analyze_item(*row) for row in ANALYZE_CHOICES], ai=True, caret=True)
     review_pop = tpop(ft.Icons.RATE_REVIEW_OUTLINED, "More AI options",
                       [ft.PopupMenuItem(content=ft.Text("Review the selection / section (suggestions only)"), on_click=lambda e: start_review()),
                        ft.PopupMenuItem(content=ft.Text("Review the whole song"), on_click=lambda e: start_review("all")),
@@ -10362,7 +11142,7 @@ def main(page: ft.Page):
             await asyncio.sleep(0.4)
 
     lyrics_header = ft.Row([ft.Row([ft.Text("Lyrics", size=18, weight=ft.FontWeight.BOLD, color=C["text1"]), title_tf, dirty_txt], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER),
-                            ft.Row([format_ring, tgroup(lyric_format_btn, struct_btn, ai=True), tsep(),
+                            ft.Row([format_ring, tgroup(lyric_format_btn, analyze_btn, struct_btn, ai=True), tsep(),
                                     tgroup(btn_tools, tbtn(ft.Icons.LABEL_OUTLINED, "Section Options… for the [tag] at the cursor (Ctrl+Shift+E)", open_section_options)), tsep(),
                                     tgroup(btn_undo, btn_redo), tsep(), tgroup(copy_menu, save_btn)], spacing=0, vertical_alignment=ft.CrossAxisAlignment.CENTER)],
                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN, wrap=True, run_spacing=2, vertical_alignment=ft.CrossAxisAlignment.CENTER)
@@ -11796,9 +12576,9 @@ def main(page: ft.Page):
     # page slides in from the right (← Back). The Generate button, the caption and the status stay under both, so Generate is one tap away. Opening a page starts nothing.
     RP_ANIM = ft.Animation(220, ft.AnimationCurve.EASE_OUT_CUBIC)
     # ═══ SPECIALIST REPORTS: Song Critic · Rhyme & Flow · Vocal Flow · Lyric Language (spec_reports.py) ══════════════════════════════════════════════════════════════════════════
-    # Four pages of the right panel, one icon each in the vertical strip. Opening a page shows the saved report (nothing is asked); ITS button analyzes that one report with one stateless request. A report
-    # is kept in the specialist's session file of the song and the sheet (specialist_engine), so it comes back after a restart; changed lyrics only make it "Outdated" (the old report stays readable).
-    # Reports are read-only: an alternative wording is a comparison, never applied.
+    # Four pages of the right panel, one icon each in the vertical strip. Opening a page shows the saved report and does not build evidence or ask a model. Its own Analyze button runs that one report.
+    # Music Producer Analysis is the separate Vocal Analysis page. A report is kept in the specialist's session file of the song and the sheet, so it comes back after a restart; changed lyrics only make it
+    # "Outdated" (the old report stays readable). Reports are read-only: an alternative wording is a comparison, never applied.
     sr = {"spec": "song_critic", "running": None, "err": {}, "cache": {}, "sig": None, "rall": set(), "arc": set()}
     sr_col = ft.Column([], spacing=10, scroll=ft.ScrollMode.AUTO, expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
     sr_page = ft.Container(sr_col, left=0, top=0, right=0, bottom=0, visible=False)
@@ -11831,8 +12611,105 @@ def main(page: ft.Page):
         st = S.song.settings
         return SR.input_fp(spec, lyr(), song_lang(), SH.settings_to_dict(st), li_corrections(), {"genre": st.genre, "mood": st.mood, "energy": st.energy, "vocal": st.vocal, "language": st.language}, S.song.title, "Thai" if I18N.lang() == "th" else "English")
 
+    def ext_btn(spec: str, finding_id: str = ""):
+        """Copy for an outside AI. The click only opens a preview. Nothing is sent and the lyrics stay."""
+        label = "Ask an external AI about this finding" if finding_id else "Ask an external AI"
+        return ft.OutlinedButton(I18N.tr(label), icon=ft.Icons.CONTENT_COPY_ROUNDED, tooltip=I18N.tr("Copy this report so you can paste it into another AI. Nothing is sent and the lyrics stay as they are."),
+                                 on_click=lambda ev, s=spec, i=finding_id: open_external_ai(s, i))
+
+    def _consult_source(spec: str):
+        """The stored report and the lyric text it was written about. No evidence is rebuilt and no model is asked."""
+        if not S.song:
+            return None
+        st = S.song.settings
+        style = {"genre": st.genre, "mood": st.mood, "energy": st.energy, "vocal": st.vocal, "language": st.language}
+        settings = {k: v for k, v in SH.settings_to_dict(st).items() if k in ("bpm", "timesignature", "duration", "keyscale")}
+        now = lyr()
+        if spec == "music_producer":
+            sess, _rv = review_state()
+            rep = sess.specreports.get("music_producer") if sess is not None else None
+            if rep is None or rep.status != "ok":
+                return None
+            changed = bool(rep.lyrics_hash and rep.lyrics_hash != LA.text_hash(now))
+            stored = (rep.data or {}).get("lyrics") or ""
+            snap = stored or ("" if changed else now)
+            findings = [asdict(f) for f in (rep.findings or [])]
+            return {"spec": spec, "title": S.song.title or "", "lyrics_snapshot": snap, "lyrics_now": now, "language": song_lang(), "style": style, "settings": settings,
+                    "state": "outdated" if changed else "current", "why": "lyrics" if changed else "", "sr": None, "evidence": {},
+                    "producer": {"summary": rep.summary, "strengths": list(rep.strengths or []), "findings": findings, "uncertain": list(rep.uncertain or [])},
+                    "lyrics_changed": changed or bool(stored and stored != now)}
+        rep = sr_get(spec)
+        if rep is None or rep.status != "ok" or not (rep.data or {}).get("sr"):
+            return None
+        why = SR.outdated_why(rep, LA.text_hash(now), sr_input_fp(spec))
+        state = SR.state_of(rep, LA.text_hash(now), running=False, current_input_fp=sr_input_fp(spec))
+        stored = (rep.data or {}).get("lyrics") or ""
+        changed = bool(stored and stored != now) or why == "lyrics"
+        snap = stored or ("" if changed else now)
+        return {"spec": spec, "title": S.song.title or "", "lyrics_snapshot": snap, "lyrics_now": now, "language": song_lang(), "style": style, "settings": settings,
+                "state": state, "why": why, "sr": rep.data["sr"], "evidence": (rep.data or {}).get("evidence") or {}, "producer": None, "lyrics_changed": changed}
+
+    def open_external_ai(spec: str, finding_id: str = ""):
+        """Preview the outside-AI text, then copy it only when the user presses the button. No model, no network, no new session."""
+        if not S.song:
+            toast("Open or create a song first.", C["amber"]); return
+        src = _consult_source(spec)
+        if src is None:
+            toast(I18N.tr("There is no readable report to copy yet. Press Analyze first."), C["amber"]); return
+        flags = {"lyrics": True, "evidence": True, "critique": True, "one": bool(finding_id)}
+
+        def pack_now():
+            return XC.build_pack(spec=src["spec"], title=src["title"], lyrics_snapshot=src["lyrics_snapshot"], lyrics_now=src["lyrics_now"], language=src["language"],
+                                 style=src["style"], settings=src["settings"], state=src["state"], why=src["why"], sr=src["sr"], evidence=src["evidence"], producer=src["producer"],
+                                 finding_id=finding_id if flags["one"] else "", include_lyrics=flags["lyrics"], include_evidence=flags["evidence"], include_critique=flags["critique"],
+                                 has_audio=False, lyrics_changed=src["lyrics_changed"])
+
+        preview = ft.Text("", size=12, color=C["text1"], selectable=True, data="external-preview")
+        size_lbl = ft.Text("", size=11, color=C["text3"], data="external-size")
+        notice = ft.Text("", size=11, color=C["amber"], data="external-notice")
+
+        def redraw(*_a):
+            got = pack_now()
+            preview.value = got.text
+            size_lbl.value = f"{got.chars} " + I18N.tr("characters")
+            notice.value = " ".join(I18N.tr(x) for x in got.notices)
+            safe_update(preview, size_lbl, notice)
+
+        def toggle(key):
+            def go(e):
+                flags[key] = bool(e.control.value)
+                redraw()
+            return go
+
+        checks = [ft.Checkbox(label=I18N.tr("Full lyrics"), value=True, on_change=toggle("lyrics")),
+                  ft.Checkbox(label=I18N.tr("Technical evidence"), value=True, on_change=toggle("evidence")),
+                  ft.Checkbox(label=I18N.tr("The in-app analysis"), value=True, on_change=toggle("critique"))]
+        if finding_id:
+            checks.append(ft.Checkbox(label=I18N.tr("This finding only"), value=True, on_change=toggle("one")))
+        redraw()
+
+        async def do_set(text):
+            try:
+                await clip.set(text)
+                toast(I18N.tr("Copied for an external AI."))
+                page.pop_dialog()
+            except Exception:
+                toast("Could not copy.", C["red"])
+
+        def copy_click(_e):
+            page.run_task(do_set, preview.value or "")
+
+        page.show_dialog(ft.AlertDialog(modal=True, bgcolor=C["panel"], title=ft.Text(I18N.tr("Ask an external AI"), size=16, weight=ft.FontWeight.BOLD),
+                                        content=ft.Container(ft.Column(checks + [notice, size_lbl, ft.Text(I18N.tr("Text to copy"), size=10, weight=ft.FontWeight.W_700, color=C["text3"]),
+                                                                                  ft.Container(ft.Column([preview], scroll=ft.ScrollMode.AUTO), height=280, padding=8, border_radius=8, bgcolor=C["field"], border=ft.Border.all(1, C["border"]))],
+                                                                       spacing=8, scroll=ft.ScrollMode.AUTO), width=560),
+                                        actions=[ft.TextButton(I18N.tr("Cancel"), on_click=lambda e: page.pop_dialog()),
+                                                 ft.FilledButton(I18N.tr("Copy for an external AI"), icon=ft.Icons.CONTENT_COPY_ROUNDED, on_click=copy_click)]))
+
     def sr_state(spec: str) -> str:
-        return SR.state_of(sr_get(spec), LA.text_hash(lyr()) if S.song else "", running=bool(sr["running"] == spec), current_input_fp=sr_input_fp(spec))
+        job = sr["running"]
+        running = bool(S.song and isinstance(job, tuple) and job == (S.song.id, S.song.book.active_id, spec))
+        return SR.state_of(sr_get(spec), LA.text_hash(lyr()) if S.song else "", running=running, current_input_fp=sr_input_fp(spec))
 
     def sr_sync(*_a):
         """Called on every edit: the open report page is redrawn only when its state or its lyrics changed (Current -> Outdated)."""
@@ -11849,14 +12726,40 @@ def main(page: ft.Page):
 
     def sr_handoff_text(ho: dict, lyrics_now: str, budget: int) -> tuple:
         """The context of one 'Discuss with Songwriter' (pure builder in spec_reports): the report as it is stored, its status NOW and what changed since it was made."""
+        if ho.get("song_id") and (ho.get("song_id") != S.song.id or ho.get("sheet_id") != S.song.book.active_id):            # another song or sheet is open now: nothing of this one may be attached
+            return None, {"refused": True, "reason": "song", "tokens": 0, "budget": budget, "shortened": [], "left_out": []}
+        st = S.song.settings
+        if ho.get("kind") == "lesson":                                             # a songwriting lesson (and one technique): the report's finding for THIS aspect travels only when it exists
+            les = AKB.load(ho["topic"], ac_lang())
+            rep0 = ho.get("rep")
+            d0 = (rep0.data or {}) if rep0 is not None and rep0.status == "ok" else {}
+            srd0 = d0.get("sr") or {}
+            finding, report_line, state0, why0, lyrics_then0 = None, "", "", "", lyrics_now
+            if rep0 is not None and srd0.get("format") == SR.FORMAT_SONGCRAFT:
+                state0 = SR.state_of(rep0, LA.text_hash(lyrics_now), running=False, current_input_fp=sr_input_fp("song_critic"))
+                why0 = SR.outdated_why(rep0, LA.text_hash(lyrics_now), sr_input_fp("song_critic"))
+                report_line = f"made {str(rep0.ts or '-')[:16]} · {rep0.backend or '-'} {rep0.model or ''}".strip()
+                finding = next((x for x in (srd0.get("aspects") or []) if x.get("aspect") == ho["topic"]), None)
+                if finding is not None:
+                    lyrics_then0 = d0.get("lyrics") or lyrics_now
+                else:
+                    report_line += " (this report did not review this aspect; there is no AI opinion on it)"
+            elif srd0:
+                report_line = "an older-format Song Critic report exists for this song; it has no finding for this aspect (nothing is invented)"
+            return AKB.handoff_text(lesson=les, technique_id=ho.get("technique") or "", title=S.song.title or "", song_id=S.song.id, sheet_id=S.song.book.active_id,
+                                   style={"genre": st.genre, "mood": st.mood, "energy": st.energy, "vocal": st.vocal, "language": st.language},
+                                   settings={k: v for k, v in SH.settings_to_dict(st).items() if k in ("bpm", "timesignature", "duration", "keyscale")}, finding=finding, report_line=report_line,
+                                   state=state0, why=why0, lyrics_then=lyrics_then0, lyrics_now=lyrics_now, budget_tokens=budget)
         rep = ho["rep"]
         d = rep.data or {}
-        st = S.song.settings
-        state = SR.state_of(rep, LA.text_hash(lyrics_now), running=False, current_input_fp=sr_input_fp("song_critic"))
-        why = SR.outdated_why(rep, LA.text_hash(lyrics_now), sr_input_fp("song_critic"))
+        spec0 = getattr(rep, "spec", None) or ho.get("spec") or "song_critic"
+        state = SR.state_of(rep, LA.text_hash(lyrics_now), running=False, current_input_fp=sr_input_fp(spec0))
+        why = SR.outdated_why(rep, LA.text_hash(lyrics_now), sr_input_fp(spec0))
         return SR.handoff_text(title=S.song.title or "", song_id=S.song.id, sheet_id=S.song.book.active_id, style={"genre": st.genre, "mood": st.mood, "energy": st.energy, "vocal": st.vocal, "language": st.language},
                                settings={k: v for k, v in SH.settings_to_dict(st).items() if k in ("bpm", "timesignature", "duration", "keyscale")}, sr_data=d.get("sr") or {}, rep_ts=str(rep.ts or ""),
-                               backend=rep.backend or "", model=rep.model or "", state=state, why=why, lyrics_then=d.get("lyrics") or lyrics_now, lyrics_now=lyrics_now, finding_id=ho.get("finding_id") or "", budget_tokens=budget)
+                               backend=rep.backend or "", model=rep.model or "", state=state, why=why, lyrics_then=d.get("lyrics") or lyrics_now, lyrics_now=lyrics_now, finding_id=ho.get("finding_id") or "", action_id=ho.get("action_id") or "", budget_tokens=budget,
+                               report_name={"rhyme_flow": "Rhyme & Flow", "vocal_flow": "Vocal Flow", "lyric_language": "Lyric Language"}.get(spec0, "Song Critic"),
+                               evidence=(d.get("evidence") if spec0 == "vocal_flow" else None))
 
     def sr_handoff_avail(backend: str, user_msg: str, live=None) -> int:
         """Tokens the hand-off may use: what the conversation can still hold (the engine's own limit) minus the system prompt, the conversation so far (earlier hand-offs stay in it), this message and a margin.
@@ -11872,29 +12775,61 @@ def main(page: ft.Page):
         cap = int(SE.LIMIT_RATIO * n_ctx) - SE.OUT_RESERVE
         return cap - sys_est - int(getattr(live, "tokens", 0) or 0) - LC.estimate_tokens(user_msg) - 300
 
-    def sr_discuss(finding_id: str = ""):
+    def sr_discuss(finding_id: str = "", action_id: str = "", spec: str = "song_critic"):
         """'Discuss with Songwriter': the Songwriter chat of this song and sheet gets a message of the user's, and the report (or the finding) goes with it as data. The Songwriter's session is kept (nothing is
-        reset), the Song Critic is not asked again, and nothing in the lyrics changes."""
+        reset). The report specialist is not asked again, and nothing in the lyrics changes. `spec` defaults to the Song Critic, so the existing buttons stay the same."""
+        if spec not in ("song_critic", "rhyme_flow", "vocal_flow", "lyric_language"):
+            toast("Choose one report. Nothing was sent.", C["amber"]); return
         if not S.song:
             toast("Open or create a song first.", C["amber"]); return
-        rep = sr_get("song_critic")
+        rep = sr_get(spec)
         if rep is None or rep.status != "ok" or not (rep.data or {}).get("sr"):
-            toast("There is no readable Song Critic report to discuss yet. Press Analyze first.", C["amber"]); return
+            if spec == "rhyme_flow":
+                toast("There is no readable Rhyme & Flow report to discuss yet. Press Analyze first.", C["amber"])
+            elif spec == "vocal_flow":
+                toast("There is no readable Vocal Flow report to discuss yet. Press Analyze first.", C["amber"])
+            elif spec == "lyric_language":
+                toast("There is no readable Lyric Language report to discuss yet. Press Analyze first.", C["amber"])
+            else:
+                toast("There is no readable Song Critic report to discuss yet. Press Analyze first.", C["amber"])
+            return
         if S.chat_busy_song or S.an_busy or sr["running"]:
             toast("The AI is still busy. Try again in a moment.", C["amber"]); return
         if not S.backend:
             toast("No AI backend: put an LLM workflow in comfy_apis/llm or set a Grok key in Prompt Lab", C["amber"]); return
-        f = next((x for x in (rep.data["sr"].get("findings") or []) if x.get("id") == finding_id), None) if finding_id else None
+        if spec != "song_critic":
+            action_id = ""
+        act = next((x for x in (rep.data["sr"].get("actions") or []) if x.get("id") == action_id), None) if action_id else None
+        if action_id and act is None:
+            toast("That action is not in the report any more.", C["amber"]); return
+        if act is not None and not finding_id:
+            finding_id = ""                                                   # the whole report travels, with this action marked
+        f = next((x for x in SR.items_of(rep.data["sr"]) if x.get("id") == finding_id), None) if finding_id else None
         if finding_id and f is None:
             toast("That finding is not in the report any more.", C["amber"]); return
-        if f is not None:
+        if act is not None:
+            label = I18N.tr("Let's discuss this action of the Song Critic report") + ": " + (act.get("title") or act["action"])[:100]
+        elif f is not None:
             refs = sr_refs_of(f)
             where = SR.refs_label(refs) if refs else I18N.tr("the whole song")
-            label = I18N.tr("Let's discuss this Song Critic finding") + f" ({where}): " + (f.get("observation") or f.get("interpretation") or "")[:90]
+            if spec == "rhyme_flow":
+                label = I18N.tr("Let's discuss this Rhyme & Flow finding") + f" ({where}): " + (f.get("observation") or f.get("interpretation") or "")[:90]
+            elif spec == "vocal_flow":
+                label = I18N.tr("Let's discuss this Vocal Flow finding") + f" ({where}): " + (f.get("observation") or f.get("interpretation") or "")[:90]
+            elif spec == "lyric_language":
+                label = I18N.tr("Let's discuss this Lyric Language finding") + f" ({where}): " + (f.get("observation") or f.get("interpretation") or "")[:90]
+            else:
+                label = I18N.tr("Let's discuss this Song Critic finding") + f" ({where}): " + (f.get("observation") or f.get("interpretation") or "")[:90]
+        elif spec == "rhyme_flow":
+            label = I18N.tr("Let's discuss the Rhyme & Flow report") + ": " + (rep.data["sr"].get("headline") or "")[:110]
+        elif spec == "vocal_flow":
+            label = I18N.tr("Let's discuss the Vocal Flow report") + ": " + (rep.data["sr"].get("headline") or "")[:110]
+        elif spec == "lyric_language":
+            label = I18N.tr("Let's discuss the Lyric Language report") + ": " + (rep.data["sr"].get("headline") or "")[:110]
         else:
             label = I18N.tr("Let's discuss the Song Critic report") + ": " + (rep.data["sr"].get("headline") or "")[:110]
         sheet0 = S.song.book.active_id
-        ho_try = {"label": label, "finding_id": finding_id, "rep": rep, "t": time.time()}
+        ho_try = {"label": label, "finding_id": finding_id, "action_id": action_id, "rep": rep, "spec": spec, "t": time.time(), "song_id": S.song.id, "sheet_id": sheet0}
         room = min(3500, sr_handoff_avail(S.backend, lyr() + chr(10) * 3 + label))
         if room <= 0 or sr_handoff_text(ho_try, lyr(), room)[0] is None:               # checked BEFORE anything is sent or written to the chat
             toast("This conversation has no room for the report. Start a new session (New session), then press Discuss again. Nothing was sent.", C["amber"]); return
@@ -11904,8 +12839,8 @@ def main(page: ft.Page):
         append_chat(S.song.id, M.ChatMessage("user", label, specialist="songwriter", sheet_id=sheet0))
         page.run_task(ask_ai, label)
 
-    def sr_ensure_proposal(f: dict, rep):
-        """(chat message, edit) that holds the Song Critic's proposed wording of ONE finding in the Songwriter chat, so Preview, Apply and Undo are the existing ones. Made once per finding of a report."""
+    def sr_ensure_proposal(f: dict, rep, note: str = "A proposed wording from the Song Critic report, to preview and apply here. Nothing changes until you apply it."):
+        """(chat message, edit) that holds one report's proposed wording of ONE finding in the Songwriter chat, so Preview, Apply and Undo are the existing ones. Made once per finding of a report."""
         key = f"critic:{rep.ts}:{f['id']}"
         sheet0 = S.song.book.active_id
         for m in S.chat:
@@ -11918,11 +12853,11 @@ def main(page: ft.Page):
         start = sum(len(r) + 1 for r in rows[:a - 1])
         e = {"id": "crit_" + hashlib.sha1(key.encode("utf-8")).hexdigest()[:8], "kind": "change_lyric", "first": a, "last": b, "original": original, "replacement": f["proposal"], "reason": (f.get("recommendation") or f.get("observation") or "")[:300],
              "status": "open", "label": "", "start": start, "end": start + len(original), "target": "", "section": "", "snap_hash": SE.text_hash_of(lyr()), "song_id": S.song.id, "sheet_id": sheet0, "critic_key": key}
-        m = M.ChatMessage("assistant", I18N.tr("A proposed wording from the Song Critic report, to preview and apply here. Nothing changes until you apply it."), specialist="songwriter", sheet_id=sheet0, edits=[e])
+        m = M.ChatMessage("assistant", I18N.tr(note), specialist="songwriter", sheet_id=sheet0, edits=[e])
         append_chat(S.song.id, m)
         return m, e
 
-    def sr_proposal_ui(f: dict, rep, stale: bool) -> list:
+    def sr_proposal_ui(f: dict, rep, stale: bool, preview_label: str = "Preview", note: str = "A proposed wording from the Song Critic report, to preview and apply here. Nothing changes until you apply it.") -> list:
         """Original vs proposed for a finding that carries a real wording. Preview / Apply are the chat's own (apply_chat_edit, rv_preview, Undo of the editor); a conceptual finding has none of it."""
         refs = sr_refs_of(f)
         if not f.get("proposal") or len(refs) != 1:
@@ -11947,16 +12882,236 @@ def main(page: ft.Page):
             out.append(ft.Text(I18N.tr("The lines changed since the report, so this proposal cannot be applied. Analyze again, or discuss it with the Songwriter."), size=11, color=C["amber"]))
         else:
             def go(apply_now: bool):
-                m, e = sr_ensure_proposal(f, rep)
+                m, e = sr_ensure_proposal(f, rep, note)
                 if apply_now:
                     apply_chat_edit(m.id, e["id"])
                     sr_render()
                 else:
                     item = RV.Item(e["id"], "edit", e["first"], e["last"], e["original"], e["replacement"], e.get("reason", ""))
                     rv_preview(item, lambda: (apply_chat_edit(m.id, e["id"]), sr_render()))
-            out.append(ft.Row([ft.OutlinedButton(I18N.tr("Preview"), tooltip=I18N.tr("See the lines before and after; nothing changes"), on_click=lambda ev: go(False)),
+            out.append(ft.Row([ft.OutlinedButton(I18N.tr(preview_label), tooltip=I18N.tr("See the lines before and after; nothing changes"), on_click=lambda ev: go(False)),
                                ft.FilledButton(I18N.tr("Apply"), tooltip=I18N.tr("Put the proposed wording in the lyrics (Undo brings the old back)"), on_click=lambda ev: go(True),
                                                style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF"))], spacing=6, wrap=True))
+        return out
+
+    GROUP_STYLE = {"good": ("Done well", "green"), "improve": ("Could be improved", "amber"), "major": ("Major issue", "red"), "na": ("Not relevant to this song", "text3"),
+                   "unknown": ("Not analyzed / not enough information", "text3")}                    # the five states of a card (SR.status_group): a colour and a word, never a score
+    OPENING_LABEL = {"scene": "Scene Opening", "declaration": "Emotional Declaration", "question": "Question Opening", "in_medias_res": "In Medias Res", "dialogue": "Dialogue Opening",
+                     "contradiction": "Surprise / Contradiction", "hook_first": "Hook / Thesis First", "atmospheric": "Atmospheric / Symbolic Opening"}
+
+    def sr_status_chip(status: str, priority: str = ""):
+        label, col = GROUP_STYLE[SR.status_group(status, priority)]
+        return sr_chip(I18N.tr(label), C[col])
+
+    # ── Songwriting Academy: the lessons of songcraft_knowledge (no LLM, no song needed). Text is read from the Markdown files; nothing of a lesson is written in this file. ──────────────────────────────────────
+    def ac_lang() -> str:
+        return I18N.lang() if I18N.lang() in AKB.LANGS else AKB.DEFAULT_LANG
+
+    def ac_lines(text: str) -> list:
+        out = []
+        for ln in (text or "").split("\n"):
+            s = ln.strip()
+            if s:
+                out.append(ft.Text(("\u2022 " + s[2:]) if s.startswith("- ") else s, size=12, color=C["text1"], selectable=True))
+        return out
+
+    def ac_section(label: str, text: str, color: "str | None" = None):
+        return ft.Column([ft.Text(I18N.tr(label), size=11, weight=ft.FontWeight.W_700, color=color or C["accent"]), *ac_lines(text)], spacing=3, tight=True)
+
+    def ac_technique_tile(topic: str, t):
+        tkey = f"ac:{topic}:{t.id}"
+
+        def changed(e):
+            try:
+                rep_open[tkey] = bool(e.control.expanded)
+            except Exception:
+                pass
+        body = ac_lines(t.text) + [ft.Row([ft.TextButton(I18N.tr("Discuss this technique with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this technique; nothing changes in the lyrics"),
+                                                         on_click=lambda ev, a=topic, b=t.id: ac_discuss_close(a, b))], spacing=6, wrap=True)]
+        return ft.Container(ft.ExpansionTile(title=ft.Text(t.title, size=12, weight=ft.FontWeight.W_600, color=C["text1"]), controls=body, expanded=rep_open.get(tkey, False), on_change=changed,
+                                             tile_padding=po(8, 0, 8, 0), controls_padding=po(8, 2, 8, 8), maintain_state=True, expanded_cross_axis_alignment=ft.CrossAxisAlignment.START),
+                            border_radius=8, bgcolor=C["field"], border=ft.Border.all(1, C["border"]))
+
+    def ac_content(topic: str) -> list:
+        """The lesson of one aspect as controls: what it is, why it works, how to use (with the techniques), examples, pitfalls, an exercise, the references, and the Discuss button."""
+        les = AKB.load(topic, ac_lang())
+        if not les.ok:
+            return [ft.Text(I18N.tr("This lesson is not available.") + " " + "; ".join(les.errors)[:300], size=11, color=C["amber"], selectable=True)]
+        out = [ft.Text(n, size=10, color=C["amber"], selectable=True) for n in les.notices]
+        out.append(ft.Text(I18N.tr("Lessons are reference knowledge, not the AI's opinion about your song. The techniques are options for the writer, not rules: a song that does not use them is not wrong. [R1] marks a statement that a cited reference page makes; text with no tag is this program's own synthesis, not an endorsed theory; the examples were written for teaching."),
+                           size=10, color=C["text3"], italic=True))
+        out.append(ac_section("What It Is", les.sections["What It Is"]))
+        out.append(ac_section("Why It Works", les.sections["Why It Works"]))
+        out.append(ac_section("How to Use", les.intro))
+        if les.techniques:
+            out.append(ft.Text(I18N.tr("Techniques"), size=11, weight=ft.FontWeight.W_700, color=C["accent"]))
+            out += [ac_technique_tile(topic, t) for t in les.techniques]
+        out.append(ac_section("Examples", les.sections["Examples"], C["green"]))
+        out.append(ac_section("Common Pitfalls", les.sections["Common Pitfalls"], C["amber"]))
+        out.append(ac_section("Try It Yourself", les.sections["Try It Yourself"]))
+        refs = [ft.Text(I18N.tr("References"), size=11, weight=ft.FontWeight.W_700, color=C["accent"])]
+        for r in les.references:
+            refs.append(ft.Text(f"{r.id} \u00b7 {r.title} \u2014 {r.by}", size=11, color=C["text1"], selectable=True))
+            refs.append(ft.Text((I18N.tr("Reference page checked (confirms only what is stated)") if r.status == "verified" else I18N.tr("General knowledge, not a citation")) + ": " + r.supports, size=10, color=C["text3"], selectable=True))
+            link = AKB.safe_url(r.url)
+            if link:                                                              # only a plain http(s) address is opened (the browser does the rest)
+                refs.append(ft.Row([ft.TextButton(I18N.tr("Open source page"), icon=ft.Icons.OPEN_IN_NEW, url=link, tooltip=link, style=ft.ButtonStyle(padding=po(4, 0, 4, 0)))], spacing=0, wrap=True))
+        out.append(ft.Column(refs, spacing=3, tight=True))
+        out.append(ft.Row([ft.FilledButton(I18N.tr("Discuss this lesson with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this lesson and your current lyrics; nothing changes in the lyrics"),
+                                           on_click=lambda ev, a=topic: ac_discuss_close(a, ""), style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF"))], spacing=6, wrap=True))
+        out.append(ft.Text(f"{I18N.tr('Lesson version')} {les.version} \u00b7 {les.origin}", size=9, color=C["text3"]))
+        return out
+
+    def ac_close_dialog(_e=None):
+        try:
+            page.pop_dialog()
+        except Exception:
+            pass
+
+    def ac_discuss_close(topic: str, tid: str = ""):
+        ac_close_dialog()                                                       # the dialog is closed first, then the chat takes over
+        ac_discuss(topic, tid)
+
+    def ac_open_lesson(topic: str):
+        """'Read the lesson': the lesson of one aspect in a dialog (title, principles, techniques, examples with the reason they differ, how to use it, references). Reference knowledge from the Markdown file:
+        no AI request is made to open it."""
+        les = AKB.load(topic, ac_lang())
+        title = les.title if les.ok else I18N.tr(SR.ASPECT_TITLE.get(topic, topic))
+        page.show_dialog(ft.AlertDialog(modal=False, bgcolor=C["panel"], title=ft.Row([ft.Text(title, size=15, weight=ft.FontWeight.BOLD, color=C["text1"], expand=True), ibtn(ft.Icons.CLOSE_ROUNDED, "Close", ac_close_dialog)],
+                                                                                      vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                                        content=ft.Container(ft.Column(ac_content(topic), spacing=10, scroll=ft.ScrollMode.AUTO), width=520, height=520),
+                                        actions=[ft.TextButton(I18N.tr("Close"), on_click=ac_close_dialog)]))
+
+    def ac_discuss(topic: str, tid: str = ""):
+        """'Discuss this lesson with Songwriter': the Songwriter chat of this song and sheet gets a message of the user's; ONE lesson (and technique), the exercise, the Song Critic's finding for this aspect when a Songcraft report
+        has one, and the current lyrics go with it as data. Same session, hard token budget and Outdated labels as the report hand-off; no Song Critic call; nothing in the lyrics changes."""
+        if not S.song:
+            toast("Open or create a song first.", C["amber"]); return
+        if S.chat_busy_song or S.an_busy or sr["running"]:
+            toast("The AI is still busy. Try again in a moment.", C["amber"]); return
+        if not S.backend:
+            toast("No AI backend: put an LLM workflow in comfy_apis/llm or set a Grok key in Prompt Lab", C["amber"]); return
+        les = AKB.load(topic, ac_lang())
+        if not les.ok:
+            toast("This lesson is not available.", C["amber"]); return
+        tech = les.technique(tid) if tid else None
+        if tid and tech is None:
+            toast("That technique is not in the lesson any more.", C["amber"]); return
+        label = I18N.tr("Let's discuss this songwriting lesson") + ": " + les.title + ((" / " + tech.title) if tech else "")
+        sheet0 = S.song.book.active_id
+        ho_try = {"kind": "lesson", "label": label, "topic": topic, "technique": tid, "finding_id": "", "action_id": "", "rep": sr_get("song_critic"), "t": time.time(), "song_id": S.song.id, "sheet_id": sheet0}
+        room = min(3500, sr_handoff_avail(S.backend, lyr() + chr(10) * 3 + label))
+        if room <= 0 or sr_handoff_text(ho_try, lyr(), room)[0] is None:                # checked BEFORE anything is sent or written to the chat
+            toast("This conversation has no room for the lesson. Start a new session (New session), then press Discuss again. Nothing was sent.", C["amber"]); return
+        handoff_pending[(S.song.id, sheet0)] = ho_try
+        set_spec("songwriter")
+        pick_ai_tab("chat")
+        append_chat(S.song.id, M.ChatMessage("user", label, specialist="songwriter", sheet_id=sheet0))
+        page.run_task(ask_ai, label)
+
+    def sr_card_summary(a: "dict | None", mode: str) -> str:
+        """The one or two lines of a collapsed card: the AI's own `summary` (or, when it wrote none, the start of its own observation, clipped). With no critique it says so; the program writes no critique."""
+        if a is not None:
+            s = (a.get("summary") or a.get("observation") or a.get("interpretation") or "").strip()
+            if s and not a.get("summary") and len(s) > 150:
+                s = s[:149].rstrip() + "\u2026"
+            if s:
+                return s
+            return I18N.tr("Nothing more was said about this aspect.")
+        return {"none": I18N.tr("No critique yet: press Analyze. The lesson can be read now."), "legacy": I18N.tr("An older report has no critique for this aspect: press Analyze again."),
+                "missing": I18N.tr("The Song Critic did not review this aspect in this report.")}.get(mode, "")
+
+    def sr_aspect_card(key: str, a: "dict | None", srd: "dict | None", evid: dict, stale: bool, lyrics: str, default_open: bool = False, mode: str = "report"):
+        """One of the eight aspects as a critique card. Collapsed: the number and name, the state (done well / could be improved / major issue / not relevant / not analyzed), the AI's short summary.
+        Expanded: the AI's critique with its evidence, what to try and what it could cost, the proposed wording (Preview / Apply / Undo are the existing ones, only when the AI gave a real wording), and the actions:
+        Read the lesson (a dialog), Discuss with the Songwriter. The lesson text is never inside the card."""
+        num = SR.ASPECTS.index(key) + 1
+        tkey = f"sr:aspect:{key}"
+
+        def changed(e):
+            try:
+                rep_open[tkey] = bool(e.control.expanded)
+            except Exception:
+                pass
+        status = a["status"] if a is not None else "missing"
+        where = SR.refs_label([(int(x), int(y)) for x, y in sr_refs_of(a)]) if a is not None and sr_refs_of(a) else ""
+        summ = sr_card_summary(a, mode if a is None else "report")
+        sub_row = ft.Column([ft.Row(([ft.Text(where, size=10, color=C["text3"])] if where else []) + [sr_status_chip(status, (a or {}).get("priority", ""))], spacing=8, wrap=True, run_spacing=2,
+                                    vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                             ft.Text(summ, size=11, color=C["text2"], max_lines=2, overflow=ft.TextOverflow.ELLIPSIS)], spacing=3, tight=True)
+        body: list = []
+        if a is None:
+            body.append(ft.Text(summ, size=11, color=C["text3"]))
+        else:
+            if key == "opening" and a.get("patterns"):
+                body.append(ft.Row([sr_chip(I18N.tr(OPENING_LABEL[x])) for x in a["patterns"]], spacing=6, wrap=True, run_spacing=4))
+                body.append(ft.Text(I18N.tr("Opening patterns are tools for reading the opening, not rules the song has to follow."), size=10, color=C["text3"], italic=True))
+            if a["status"] in ("no_issue", "not_applicable", "insufficient", "unrated") and not (a.get("observation") or a.get("interpretation") or a.get("keep") or a.get("recommendation")):
+                body.append(ft.Text(I18N.tr("Nothing more was said about this aspect."), size=11, color=C["text3"]))
+            else:
+                body.append(sr_finding(a, "song_critic", lyrics, stale, bare=True, discuss=False, preview_label="View proposed change"))
+            if key == "sections" and srd is not None:
+                arc = sr_critic_ribbon(srd, evid, stale)
+                body += arc[1:] if arc else []
+        acts = [ft.OutlinedButton(I18N.tr("Read the lesson"), icon=ft.Icons.MENU_BOOK_OUTLINED, tooltip=I18N.tr("Open the lesson on this aspect (reference knowledge, not part of the critique)"), on_click=lambda ev, k=key: ac_open_lesson(k))]
+        if a is not None:
+            acts.append(ft.FilledButton(I18N.tr("Discuss with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this critique and its evidence; nothing changes in the lyrics"),
+                                        on_click=lambda ev, i=a["id"]: sr_discuss(i), style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF")))
+            acts.append(ext_btn("song_critic", a["id"]))
+        body.append(ft.Row(acts, spacing=6, wrap=True, run_spacing=4))
+        return ft.Container(ft.ExpansionTile(title=ft.Text(f"{num:02d} \u00b7 {I18N.tr(SR.ASPECT_TITLE[key])}", size=13, weight=ft.FontWeight.BOLD, color=C["text1"]), subtitle=sub_row, controls=body,
+                                             expanded=rep_open.get(tkey, default_open), on_change=changed, tile_padding=po(10, 2, 10, 2), controls_padding=po(10, 4, 10, 10), maintain_state=True,
+                                             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START),
+                            border_radius=10, bgcolor=C["panel2"], border=ft.Border.all(1, C["border"]))
+
+    def ac_cards(mode: str) -> list:
+        """The eight cards of a page with no Songcraft report (none yet, an older-format report): no critique is made up, every card says so, and the lessons can be read."""
+        out = [sr_title(I18N.tr("Songwriting Academy"), I18N.tr("AI critique · 8 aspects")),
+               ft.Text(I18N.tr("The critique of your lyrics appears here after Analyze. The lessons are reference knowledge and can be read at any time; no AI is asked to show them."), size=11, color=C["text3"])]
+        for key in SR.ASPECTS:
+            out.append(sr_aspect_card(key, None, None, {}, False, lyr() if S.song else "", mode=mode))
+        return out
+
+    def sr_open_aspect(key: str):
+        rep_open[f"sr:aspect:{key}"] = True
+        sr_render()
+
+    def sr_action_card(act: dict, n: int, stale: bool, rank_label: bool = True):
+        refs = [(int(x), int(y)) for x, y in (act.get("refs") or [])]
+        head = ft.Text((f"{I18N.tr('Priority')} {n} — " if rank_label else "") + (act.get("title") or ""), size=13, weight=ft.FontWeight.BOLD, color=C["text1"])
+        body = [head, ft.Text(act["action"], size=12, color=C["text1"], selectable=True)]
+        chips = [sr_ref(a, b, stale) for a, b in refs]
+        if act.get("lines_invalid"):
+            chips.append(sr_chip(I18N.tr("Lines not readable:") + " " + act["lines_invalid"][:24], C["amber"]))
+        if chips:
+            body.append(ft.Row(chips, spacing=6, wrap=True, run_spacing=4))
+        if act.get("tradeoff"):
+            body.append(ft.Text(I18N.tr("Trade-off") + ": " + act["tradeoff"], size=11, color=C["text2"], selectable=True))
+        btns = []
+        if act.get("aspect"):
+            btns.append(ft.OutlinedButton(I18N.tr("View topic"), tooltip=I18N.tr("Open the aspect this action comes from"), on_click=lambda ev, k=act["aspect"]: sr_open_aspect(k)))
+        btns.append(ft.FilledButton(I18N.tr("Discuss with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this action and the report; nothing changes in the lyrics"),
+                                    on_click=lambda ev, i=act["id"]: sr_discuss("", i), style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF")))
+        btns.append(ext_btn("song_critic", act["id"]))
+        body.append(ft.Row(btns, spacing=6, wrap=True, run_spacing=4))
+        return sr_card(*body)
+
+    def sr_songcraft(srd: dict, evid: dict, stale: bool, lyrics: str, rep) -> list:
+        """The Songwriting Academy: (the verdict is drawn by the caller) the eight critique cards in the fixed order; an Action Plan only when the AI wrote one."""
+        out = []
+        acts = srd.get("actions") or []
+        got = {a["aspect"]: a for a in (srd.get("aspects") or [])}
+        if acts:
+            out.append(sr_card(ft.Text(I18N.tr("Start here"), size=10, weight=ft.FontWeight.W_700, color=C["accent"]), ft.Text(acts[0].get("title") or acts[0]["action"][:80], size=13, weight=ft.FontWeight.BOLD, color=C["text1"]),
+                               ft.Text(acts[0]["action"], size=12, color=C["text2"], max_lines=3, overflow=ft.TextOverflow.ELLIPSIS), tint=ft.Colors.with_opacity(0.45, C["accent"])))
+        first_key = acts[0].get("aspect") if acts else ""
+        out.append(sr_title(I18N.tr("Songwriting Academy"), I18N.tr("AI critique \u00b7 8 aspects")))
+        for key in SR.ASPECTS:
+            out.append(sr_aspect_card(key, got.get(key), srd, evid, stale, lyrics, default_open=(key == first_key and bool(first_key)), mode="missing"))
+        if acts:
+            out.append(sr_title(I18N.tr("Action Plan"), I18N.tr("What to consider next")))
+            for i, act in enumerate(acts, 1):
+                out.append(sr_action_card(act, i, stale))
         return out
 
     def sr_toggle_arc():
@@ -12012,11 +13167,25 @@ def main(page: ft.Page):
         return ft.Column([ft.Text(label, size=10, weight=ft.FontWeight.W_700, color=color or C["text3"]), ft.Text(text, size=size, color=C["text1"], selectable=True)], spacing=1, tight=True)
 
     KIND_STYLE = {"strength": ("Strength", "green", ft.Icons.CHECK_ROUNDED), "concern": ("Worth a look", "amber", ft.Icons.DIAMOND_OUTLINED), "keep": ("Keep", "green", ft.Icons.CHECK_ROUNDED),
-                  "change": ("Language issue", "amber", ft.Icons.DIAMOND_OUTLINED)}
+                  "change": ("Language issue", "amber", ft.Icons.DIAMOND_OUTLINED), "observation": ("Unverified observation", "amber", ft.Icons.INFO_OUTLINE)}
 
-    def sr_finding(f: dict, spec: str, lyrics: str, stale: bool):
+    def sr_finding(f: dict, spec: str, lyrics: str, stale: bool, bare: bool = False, discuss: bool = True, preview_label: str = "Preview"):
         """One finding: its lines and the lyric text, what can be seen (observation), the AI's reading (interpretation, said as a reading), what to try or why to keep, and the trade-offs of an alternative."""
         label, col, icon = KIND_STYLE.get(f["kind"], ("Note", "text3", ft.Icons.INFO_OUTLINE))
+        if spec == "vocal_flow" and f.get("kind") == "observation":
+            label, col, icon = "Observation", "text3", ft.Icons.INFO_OUTLINE
+        if spec == "lyric_language":
+            it = (f.get("issue_type") or "").strip()
+            if f.get("needs_review"):
+                label, col, icon = "Needs another look", "amber", ft.Icons.HELP_OUTLINE
+            elif it == "error":
+                label, col, icon = "Language error", "red", ft.Icons.WARNING_AMBER_ROUNDED
+            elif it == "stylistic":
+                label, col, icon = "Stylistic concern", "amber", ft.Icons.DIAMOND_OUTLINED
+            elif it == "artistic":
+                label, col, icon = "Artistic strength", "green", ft.Icons.CHECK_ROUNDED
+            elif f.get("kind") == "observation":
+                label, col, icon = "Observation", "text3", ft.Icons.INFO_OUTLINE
         head = ft.Row([ft.Icon(icon, size=14, color=C[col]), ft.Text(I18N.tr(label), size=11, weight=ft.FontWeight.W_700, color=C[col]), ft.Container(expand=True),
                        ft.Text(I18N.tr({"high": "High priority", "medium": "Medium priority", "low": "Low priority"}.get(f.get("priority"), "")), size=10, color=C["text3"])], spacing=6)
         body = [head, sr_quote(f.get("quote", ""), f, stale)]
@@ -12028,28 +13197,132 @@ def main(page: ft.Page):
             body.append(ft.Row([ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, size=13, color=C["amber"]),
                                 ft.Text(I18N.tr("Unverified: the quotation the AI gave does not match these lines, so the lines above are the program's own. Read the comments below with care."), size=10, color=C["amber"], expand=True)],
                                spacing=4, vertical_alignment=ft.CrossAxisAlignment.START))
-        if spec == "lyric_language" and f.get("alternative"):
+        if spec == "lyric_language" and f.get("alternative") and not f.get("proposal"):
             body += [ft.Row([ft.Container(ft.Column([ft.Text(I18N.tr("ORIGINAL"), size=9, weight=ft.FontWeight.W_700, color=C["text3"]), ft.Text(f["quote"], size=12, color=C["text1"], selectable=True)], spacing=2),
                                           padding=po(10, 7, 10, 7), border_radius=8, bgcolor=C["field"], border=ft.Border.all(1, C["border"]), expand=True)]),
                      ft.Row([ft.Container(ft.Column([ft.Text(I18N.tr("ALTERNATIVE · for you to consider"), size=9, weight=ft.FontWeight.W_700, color=C["green"]), ft.Text(f["alternative"], size=12, color=C["text1"], selectable=True)], spacing=2),
                                           padding=po(10, 7, 10, 7), border_radius=8, bgcolor=ft.Colors.with_opacity(0.10, C["green"]), border=ft.Border.all(1, ft.Colors.with_opacity(0.35, C["green"])), expand=True)])]
-        crit = spec == "song_critic"
-        keep_lab = ("Trade-off" if f["kind"] == "concern" else "Keep the original because") if crit else "Keep because"
-        for lab, key, colr in (("What was found" if crit else "What the text shows", "observation", None), ("Why it matters" if crit else "The specialist's reading", "interpretation", None),
-                               ("Suggested action" if crit else "Try", "recommendation", C["accent"]), (keep_lab, "keep", C["green"])):
-            x = sr_kv(I18N.tr(lab), f.get(key, ""), colr)
-            if x is not None:
-                body.append(x)
-        if crit:
-            body += sr_proposal_ui(f, sr_get("song_critic"), stale)
-            body.append(ft.Row([ft.OutlinedButton(I18N.tr("Discuss with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this finding and its evidence; nothing changes in the lyrics"),
-                                                  on_click=lambda ev, i=f["id"]: sr_discuss(i))], spacing=6, wrap=True))
-        if spec == "lyric_language" and f.get("alternative"):
+        if spec == "rhyme_flow":
+            for lab, key, colr in (("What was found", "observation", None), ("Why it matters", "interpretation", None),
+                                   ("Suggested action", "recommendation", C["accent"]), ("Options", "options", None),
+                                   ("Trade-off", "tradeoff", None), ("Keep because", "keep", C["green"])):
+                x = sr_kv(I18N.tr(lab), f.get(key, ""), colr)
+                if x is not None:
+                    body.append(x)
+            dec = {"keep": "Keep the original", "adjust": "Try a change", "either": "Either can work"}.get((f.get("decision") or "").strip())
+            if dec:
+                x = sr_kv(I18N.tr("Decision"), I18N.tr(dec), C["accent"])
+                if x is not None:
+                    body.append(x)
+            ev_rows = [e for e in (f.get("evidence") or []) if isinstance(e, dict) and e.get("id")]
+            if ev_rows:
+                body.append(ft.Text(I18N.tr("Confirmed by Python"), size=10, weight=ft.FontWeight.W_700, color=C["green"]))
+                body.append(ft.Row([sr_chip(f"{e['id']}  L{e['line_a']} {e['word_a']} ↔ L{e['line_b']} {e['word_b']} · {e.get('sound') or '-'} · {e.get('role') or ''}", C["green"]) for e in ev_rows], spacing=4, run_spacing=4, wrap=True))
+            if (f.get("unverified") or "").strip():
+                body.append(ft.Row([ft.Icon(ft.Icons.INFO_OUTLINE, size=13, color=C["amber"]),
+                                    ft.Text(I18N.tr("Unverified observation: the model noticed this. It is not Python evidence and it does not change the highlights."), size=10, color=C["amber"], expand=True)],
+                                   spacing=4, vertical_alignment=ft.CrossAxisAlignment.START))
+                x = sr_kv(I18N.tr("Unverified observation"), f.get("unverified", ""), C["amber"])
+                if x is not None:
+                    body.append(x)
+            if discuss:
+                body.append(ft.Row([ft.OutlinedButton(I18N.tr("Discuss this Rhyme & Flow finding"), icon=ft.Icons.FORUM_OUTLINED,
+                                                      tooltip=I18N.tr("Open the Songwriter chat with this finding and its Python evidence; nothing changes in the lyrics"),
+                                                      on_click=lambda ev, i=f["id"]: sr_discuss(i, "", "rhyme_flow")),
+                                    ext_btn("rhyme_flow", f.get("id") or "")], spacing=6, wrap=True))
+        elif spec == "vocal_flow":
+            for lab, key, colr in (("What was found", "observation", None), ("Why it matters", "interpretation", None),
+                                   ("Suggested action", "recommendation", C["accent"]), ("Options", "options", None),
+                                   ("Trade-off", "tradeoff", None), ("Keep because", "keep", C["green"])):
+                x = sr_kv(I18N.tr(lab), f.get(key, ""), colr)
+                if x is not None:
+                    body.append(x)
+            dec = {"keep": "Keep the original", "adjust": "Try a change", "either": "Either can work"}.get((f.get("decision") or "").strip())
+            if dec:
+                x = sr_kv(I18N.tr("Decision"), I18N.tr(dec), C["accent"])
+                if x is not None:
+                    body.append(x)
+            ver = {"text_based": "Checked from the text", "needs_melody": "Needs a melody", "needs_audio": "Needs audio"}.get((f.get("verification") or "").strip())
+            if ver:
+                x = sr_kv(I18N.tr("Verify"), I18N.tr(ver), C["amber"] if ver != "Checked from the text" else None)
+                if x is not None:
+                    body.append(x)
+            ev_rows = [e for e in (f.get("evidence") or []) if isinstance(e, dict) and e.get("id") and "syllables" in e]
+            if ev_rows:
+                body.append(ft.Text(I18N.tr("Python evidence"), size=10, weight=ft.FontWeight.W_700, color=C["green"]))
+                body.append(ft.Row([sr_chip(f"{e['id']}  L{e['line']} · {e['syllables']} " + I18N.tr("syllables") + (f" · {e['section']}" if e.get("section") else "") + (" ~" if e.get("estimated") else ""), C["green"]) for e in ev_rows], spacing=4, run_spacing=4, wrap=True))
+            if (f.get("options") or "").strip():
+                if "/" in f.get("options", ""):
+                    body.append(ft.Text(I18N.tr("A slash marks a phrase boundary for reading. It is not written into the lyrics."), size=10, color=C["text3"], italic=True))
+                body.append(ft.Text(I18N.tr("These choices stay on this card."), size=10, color=C["text3"], italic=True))
+            if discuss:
+                body.append(ft.Row([ft.OutlinedButton(I18N.tr("Discuss this Vocal Flow finding"), icon=ft.Icons.FORUM_OUTLINED,
+                                                      tooltip=I18N.tr("Open the chat with this finding and its Python counts. Nothing in the lyrics changes."),
+                                                      on_click=lambda ev, i=f["id"]: sr_discuss(i, "", "vocal_flow")),
+                                    ext_btn("vocal_flow", f.get("id") or "")], spacing=6, wrap=True))
+        elif spec == "lyric_language":
+            if f.get("needs_review"):
+                body.append(ft.Text(I18N.tr("This is not a confirmed language error. The model's label and decision disagree, so nothing here is applied."), size=10, color=C["amber"]))
+                said = "issue type " + (f.get("stated_issue") or f.get("issue_type") or "-") + "; decision " + (f.get("stated_decision") or f.get("decision") or "-")
+                x = sr_kv(I18N.tr("What the model wrote"), said, C["amber"])
+                if x is not None:
+                    body.append(x)
+            for lab, key, colr in (("What was found", "observation", None), ("Why it matters", "interpretation", None),
+                                   ("Suggested action", "recommendation", C["accent"]), ("Trade-off", "tradeoff", None), ("Keep because", "keep", C["green"])):
+                x = sr_kv(I18N.tr(lab), f.get(key, ""), colr)
+                if x is not None:
+                    body.append(x)
+            opt_lines = [p for p in (f.get("options") or "").split("\n") if p.strip()]
+            if opt_lines:
+                body.append(ft.Text(I18N.tr("Options"), size=10, weight=ft.FontWeight.W_700, color=C["text3"]))
+                plain = "".join((f.get("quote") or "").split()).casefold()
+                for i, opt in enumerate(opt_lines[:2]):
+                    same = bool(plain) and "".join(opt.split()).casefold() == plain
+                    role = "Keep the original" if same else "Try a change"
+                    x = sr_kv(f"{'A' if i == 0 else 'B'} — {I18N.tr(role)}", opt)
+                    if x is not None:
+                        body.append(x)
+            dec = {"keep": "Keep the original", "adjust": "Try a change", "either": "Either can work"}.get((f.get("decision") or "").strip())
+            if dec:
+                x = sr_kv(I18N.tr("Decision"), I18N.tr(dec), C["accent"])
+                if x is not None:
+                    body.append(x)
+            cf = {"high": "High priority", "medium": "Medium priority", "low": "Low priority"}.get((f.get("confidence") or "").strip())
+            if cf:
+                x = sr_kv(I18N.tr("Confidence"), I18N.tr(cf))
+                if x is not None:
+                    body.append(x)
             for lab, key in (("Meaning impact", "meaning"), ("Rhyme impact", "rhyme"), ("Syllable / flow impact", "syllables")):
                 x = sr_kv(I18N.tr(lab), f.get(key, ""))
                 if x is not None:
                     body.append(x)
-            body.append(ft.Text(I18N.tr("Comparison only: it is not applied to the lyrics."), size=10, color=C["text3"], italic=True))
+            if f.get("proposal"):
+                body += sr_proposal_ui(f, sr_get("lyric_language"), stale, preview_label, "A proposed wording from the Lyric Language report, to preview and apply here. Nothing changes until you apply it.")
+            elif f.get("alternative"):
+                body.append(ft.Text(I18N.tr("Comparison only: it is not applied to the lyrics."), size=10, color=C["text3"], italic=True))
+            elif opt_lines:
+                body.append(ft.Text(I18N.tr("These choices stay on this card."), size=10, color=C["text3"], italic=True))
+            if discuss:
+                body.append(ft.Row([ft.OutlinedButton(I18N.tr("Discuss this Lyric Language finding"), icon=ft.Icons.FORUM_OUTLINED,
+                                                      tooltip=I18N.tr("Open the chat with this language finding. Nothing in the lyrics changes."),
+                                                      on_click=lambda ev, i=f["id"]: sr_discuss(i, "", "lyric_language")),
+                                    ext_btn(spec, f.get("id") or "")], spacing=6, wrap=True))
+        else:
+            crit = spec == "song_critic"
+            keep_lab = ("Trade-off" if f["kind"] == "concern" else "Keep the original because") if crit else "Keep because"
+            for lab, key, colr in (("What was found" if crit else "What the text shows", "observation", None), ("Why it matters" if crit else "The specialist's reading", "interpretation", None),
+                                   ("Suggested action" if crit else "Try", "recommendation", C["accent"]), (keep_lab, "keep", C["green"])):
+                x = sr_kv(I18N.tr(lab), f.get(key, ""), colr)
+                if x is not None:
+                    body.append(x)
+            if crit:
+                body += sr_proposal_ui(f, sr_get("song_critic"), stale, preview_label)
+                if discuss:
+                    body.append(ft.Row([ft.OutlinedButton(I18N.tr("Discuss with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this finding and its evidence; nothing changes in the lyrics"),
+                                                          on_click=lambda ev, i=f["id"]: sr_discuss(i)),
+                                        ext_btn(spec, f.get("id") or "")], spacing=6, wrap=True))
+        if bare:                                                                  # inside an aspect tile: the tile header already says the status
+            return ft.Column(body[1:], spacing=6, tight=True)
         return sr_card(*body, tint=ft.Colors.with_opacity(0.45, C[col]) if col != "text3" else None)
 
     def sr_findings(sr_data: dict, spec: str, lyrics: str, stale: bool, order: tuple, titles: dict):
@@ -12127,7 +13400,8 @@ def main(page: ft.Page):
         if len(mline) > 12:
             more_l = [ft.Row([ft.Text((I18N.tr("Showing all") + f" {len(mline)} " + I18N.tr("marked lines")) if all_on else (I18N.tr("Showing") + f" 12 / {len(mline)} " + I18N.tr("marked lines")), size=10, color=C["text3"], expand=True),
                               ft.TextButton(I18N.tr("Show fewer") if all_on else I18N.tr("Show all"), on_click=lambda e: sr_toggle_all())], vertical_alignment=ft.CrossAxisAlignment.CENTER)]
-        out.append(sr_card(ft.Text(I18N.tr("A shared colour helps you see the relation but never creates a pair."), size=10, color=C["text3"]), *shown, *more_l, legend))
+        out.append(sr_card(ft.Text(I18N.tr("A shared colour helps you see the relation but never creates a pair."), size=10, color=C["text3"]),
+                           ft.Text(I18N.tr("The colour is not a quality score."), size=10, color=C["text3"]), *shown, *more_l, legend))
         detected = sum(max(int(s_.get("pairs_total") or 0), len(s_.get("pairs", []))) for s_ in evid.get("sections", []))
         capped = detected > len(pairs)                                       # the Rhyme Map's own per-section cap (RF.MAX_PAIRS) cut pairs before this report saw them
         out.append(sr_title(I18N.tr("Pairs found"), f"{len(pairs)} " + I18N.tr("pairs") + (f" ({I18N.tr('detected')}: {detected})" if capped else "")))
@@ -12136,7 +13410,8 @@ def main(page: ft.Page):
             a, b = p["a"], p["b"]
             where = f"L{a['line']}" if a["line"] == b["line"] else f"L{a['line']} · L{b['line']}"
             snd = p["sound"]
-            prow.append(ft.Container(ft.Row([ft.Column([ft.Row([ft.Text(where, size=10, color=C["text3"]), ft.Text(a["word"], size=13, weight=ft.FontWeight.BOLD, color=C["text1"]), ft.Text("↔", size=12, color=C["text3"]),
+            eid = str(p.get("eid") or "")
+            prow.append(ft.Container(ft.Row([ft.Column([ft.Row(([ft.Text(eid, size=10, weight=ft.FontWeight.W_700, color=C["accent"])] if eid else []) + [ft.Text(where, size=10, color=C["text3"]), ft.Text(a["word"], size=13, weight=ft.FontWeight.BOLD, color=C["text1"]), ft.Text("↔", size=12, color=C["text3"]),
                                                           ft.Text(b["word"], size=13, weight=ft.FontWeight.BOLD, color=C["text1"])], spacing=6, wrap=True, run_spacing=2),
                                              ft.Text(f"{p.get('group') or ''} · {I18N.tr(p['placement'].replace('_', ' '))}" + (f" · {I18N.tr('confidence')}: {p['confidence']}" if p.get("confidence") else ""), size=10, color=C["text3"])], spacing=1, tight=True, expand=True),
                                      ft.Container(width=10, height=10, border_radius=5, bgcolor=gcol(pkey(p))),
@@ -12155,7 +13430,7 @@ def main(page: ft.Page):
         reps = [p for s in evid.get("sections", []) for p in s.get("repetitions", [])]
         if reps:
             out.append(sr_card(ft.Text(I18N.tr("Repetition (not counted as rhyme)"), size=11, weight=ft.FontWeight.W_700, color=C["text2"]),
-                               ft.Text(" · ".join(f"L{p['a']['line']}↔L{p['b']['line']} {p['a']['word']}" for p in reps[:8]), size=11, color=C["text2"])))
+                               ft.Text(" · ".join((f"{p['eid']} " if p.get("eid") else "") + f"L{p['a']['line']}↔L{p['b']['line']} {p['a']['word']}" for p in reps[:8]), size=11, color=C["text2"])))
         lim = evid.get("limitations") or []
         if lim or evid.get("facts"):
             out.append(_rep_tile("sr:rhyme_flow:limits", I18N.tr("What the Python analysis cannot show"), [ft.Text("• " + x, size=11, color=C["text2"], selectable=True) for x in (lim + evid.get("facts", []))]))
@@ -12163,18 +13438,27 @@ def main(page: ft.Page):
 
     LD_COL_SR = {"live": "#34D399", "dead": "#FB923C", "unsure": "#94A3B8"}
 
-    def sr_vocal_evidence(evid: dict, stale: bool):
-        """Vocal Flow: the program's numbers: the live / dead tokens of the lines worth a look, the totals, the density meter per section."""
+    def sr_vocal_evidence(evid: dict, stale: bool, cited: "set | None" = None):
+        """Vocal Flow: the program's numbers. Colour shows live / dead as a linguistic reading. Nothing here is a singing score, and a long line is not marked as an error."""
         out = []
         tot = evid.get("totals", {})
         total = max(1, tot.get("live", 0) + tot.get("dead", 0) + tot.get("unsure", 0))
-        lines = evid.get("lines", [])
-        pick = sorted((x for x in lines if x["syls"]), key=lambda x: (-(x["dead"] + (x["syllables"] > 10)), -x["syllables"]))[:3]
-        out.append(sr_title(I18N.tr("Syllables of the lines worth a look"), I18N.tr("Counted by the program")))
+        lines = [x for x in evid.get("lines", []) if isinstance(x, dict)]
+        ordered = sorted((x for x in lines if x.get("syls")), key=lambda y: y["line"])
+        wanted = {int(n) for n in (cited or set()) if int(n) > 0}
+        if wanted:
+            pick = [x for x in ordered if x["line"] in wanted]
+        else:
+            pick = []
+        if not pick:
+            pick = ordered[:8]
+        out.append(ft.Text(I18N.tr("Live and dead syllables are a linguistic reading, not a difficulty score."), size=10, color=C["text3"], italic=True))
+        out.append(sr_title(I18N.tr("Syllable breakdown"), I18N.tr("Counted by the program")))
         cards = []
-        for x in sorted(pick, key=lambda y: y["line"]):
+        for x in pick:
             toks = [ft.Container(ft.Text(t, size=12, weight=ft.FontWeight.W_600, color=C["text1"]), padding=po(7, 2, 7, 2), border_radius=6, bgcolor=ft.Colors.with_opacity(0.30, LD_COL_SR.get(c, C["text3"]))) for t, c in x["syls"]]
-            cards.append(ft.Column([ft.Row([sr_ref(x["line"], x["line"], stale), ft.Text(f"{x['syllables']}{'~' if x['estimated'] else ''} " + I18N.tr("syllables") + f" · {I18N.tr('dead')} {x['dead']}/{x['live'] + x['dead'] + x['unsure']}", size=10, color=C["text3"])], spacing=8),
+            eid = (str(x.get("id")) + "  ") if x.get("id") else ""
+            cards.append(ft.Column([ft.Row([sr_ref(x["line"], x["line"], stale), ft.Text(f"{eid}{x['syllables']}{'~' if x['estimated'] else ''} " + I18N.tr("syllables") + f" · {I18N.tr('dead')} {x['dead']}/{x['live'] + x['dead'] + x['unsure']}", size=10, color=C["text3"])], spacing=8),
                                     ft.Row(toks, spacing=4, run_spacing=4, wrap=True)], spacing=4, tight=True))
         if not cards:
             cards = [ft.Text(I18N.tr("No Thai syllables could be classified."), size=12, color=C["text2"])]
@@ -12250,7 +13534,7 @@ def main(page: ft.Page):
         spec = sr["spec"]
         r = REPORT_OF[spec]
         if not S.song:
-            sr_col.controls = [ft.Text(I18N.tr("Open or create a song first."), size=12, color=C["text3"])]
+            sr_col.controls = [ft.Text(I18N.tr("Open or create a song first."), size=12, color=C["text3"])] + (ac_cards("none") if spec == "song_critic" else [])
             safe_update(sr_col); return
         rep, state = sr_get(spec), sr_state(spec)
         sr["sig"] = (spec, state, sr["running"], S.song.id, S.song.book.active_id)
@@ -12266,18 +13550,8 @@ def main(page: ft.Page):
             ctl += sr_empty(r) if rep is None else [ft.Text(I18N.tr("The last answer of this specialist could not be read. Press Analyze again."), size=12, color=C["amber"])]
             if rep is not None:
                 ctl.append(sr_diag_tile(spec, rep, state))
-            if spec == "rhyme_flow" and S.song and LA.sung_lines(lyr()):                    # the Python evidence needs no AI: shown even before the first analysis
-                try:
-                    _t, ev_now = SR.evidence_rhyme(lyr(), song_lang())
-                    ctl += sr_rhyme_lines({}, ev_now, lyr(), False)
-                except Exception as ex:
-                    dbg_once("sr rhyme preview", ex)
-            elif spec == "vocal_flow" and S.song and LA.sung_lines(lyr()):
-                try:
-                    _t, ev_now = SR.evidence_vocal(lyr(), song_lang(), SH.settings_to_dict(S.song.settings), li_corrections())
-                    ctl += sr_vocal_evidence(ev_now, False)
-                except Exception as ex:
-                    dbg_once("sr vocal preview", ex)
+            if spec == "song_critic":
+                ctl += ac_cards("none")                                                   # no report (or an unreadable answer): the eight cards say so and the lessons can still be read
             sr_col.controls = ctl
             safe_update(sr_col); return
         stale = state == "outdated" or bool(SR.outdated_why(rep, LA.text_hash(lyr()), sr_input_fp(spec)))      # link safety does not depend on the status chip: a running re-analysis keeps the old links disabled
@@ -12291,35 +13565,99 @@ def main(page: ft.Page):
         evid = data.get("evidence") or {}
         n_lines = len([x for x in lyrics_then.split("\n") if x.strip() and not SE.TAG_LINE.match(x)])
         chips = {"song_critic": [sr_chip(f"{I18N.tr('Lyrics')} · {n_lines} {I18N.tr('sung lines')}"), sr_chip(I18N.tr("Read from the text only"))],
-                 "rhyme_flow": [sr_chip(I18N.tr("Python rhyme evidence")), sr_chip(I18N.tr("Exact / Near per pair")), sr_chip(f"{sum(len(s.get('pairs', [])) for s in evid.get('sections', []))} {I18N.tr('pairs')}")],
-                 "vocal_flow": [sr_chip(I18N.tr("Live / dead syllables from Python")), sr_chip(I18N.tr("Text only: no melody heard"))],
+                 "rhyme_flow": [sr_chip(I18N.tr("Python rhyme evidence")), sr_chip(I18N.tr("Exact / Near per pair")), sr_chip(I18N.tr("A rhyme count is not a quality score"))],
+                 "vocal_flow": [sr_chip(I18N.tr("Text only: no melody heard"))],
                  "lyric_language": [sr_chip(I18N.tr("Original lyric lines")), sr_chip(I18N.tr("Alternatives are for you to consider"))]}[spec]
         ctl += sr_verdict(r, srd, chips)
         if spec == "song_critic":
             ctl.append(ft.Row([ft.OutlinedButton(I18N.tr("Discuss the whole report with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this report; nothing changes in the lyrics"),
-                                                 on_click=lambda ev: sr_discuss(""))], spacing=6, wrap=True))
-        if spec == "song_critic":
+                                                 on_click=lambda ev: sr_discuss("")),
+                               ext_btn("song_critic")], spacing=6, wrap=True))
+        songcraft = spec == "song_critic" and srd.get("format") == SR.FORMAT_SONGCRAFT
+        if songcraft:
+            ctl += sr_songcraft(srd, evid, stale, lyrics_then, rep)
+        elif spec == "song_critic":
             ctl += sr_critic_ribbon(srd, evid, stale)
             ctl += sr_findings(srd, spec, lyrics_then, stale, (("concern",), ("strength",), ("keep",)), {"concern": "Issues worth a look", "strength": "Strengths", "keep": "Keep"})
         elif spec == "rhyme_flow":
+            ctl.append(ft.Row([ft.OutlinedButton(I18N.tr("Discuss the Rhyme & Flow report"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this report; nothing changes in the lyrics"),
+                                                 on_click=lambda ev: sr_discuss("", "", "rhyme_flow")),
+                               ext_btn("rhyme_flow")], spacing=6, wrap=True))
+            ctl += sr_findings(srd, spec, lyrics_then, stale, (("strength",), ("concern",), ("observation",), ("keep",)),
+                               {"strength": "Strengths to keep", "concern": "Concerns to consider", "observation": "Unverified observations", "keep": "Keep"})
             ctl += sr_rhyme_lines(srd, evid, lyrics_then, stale)
-            ctl += sr_findings(srd, spec, lyrics_then, stale, (("strength",), ("concern",), ("keep",)), {"strength": "Strengths", "concern": "Quality points to check", "keep": "Keep"})
         elif spec == "vocal_flow":
-            ctl += sr_vocal_evidence(evid, stale)
-            ctl += sr_findings(srd, spec, lyrics_then, stale, (("concern",), ("strength", "keep")), {"concern": "Passages worth a singing test", "strength": "Worth keeping", "keep": "Worth keeping"})
+            v_findings = srd.get("findings") or []
+            n_keep = sum(1 for f in v_findings if f.get("kind") in ("strength", "keep"))
+            n_check = sum(1 for f in v_findings if f.get("kind") == "concern")
+            n_hear = sum(1 for f in v_findings if (f.get("verification") or "") in ("needs_melody", "needs_audio"))
+            ctl.append(ft.Text(I18N.tr("This report reads the text only. No melody and no audio were heard, so nothing here is a confirmed singing problem."), size=11, color=C["text2"]))
+            ctl.append(ft.Row([sr_chip(I18N.tr("Points to keep") + f"  {n_keep}"), sr_chip(I18N.tr("Points to check") + f"  {n_check}"),
+                               sr_chip(I18N.tr("Needs a melody or audio") + f"  {n_hear}")], spacing=6, wrap=True, run_spacing=4))
+            ctl.append(ft.Row([ft.OutlinedButton(I18N.tr("Discuss the Vocal Flow report"), icon=ft.Icons.FORUM_OUTLINED,
+                                                 tooltip=I18N.tr("Open the chat with this finding and its Python counts. Nothing in the lyrics changes."),
+                                                 on_click=lambda ev: sr_discuss("", "", "vocal_flow")),
+                               ext_btn("vocal_flow")], spacing=6, wrap=True))
+            ctl += sr_findings(srd, spec, lyrics_then, stale, (("strength", "keep"), ("concern",), ("observation",)),
+                               {"strength": "Points to keep", "concern": "Points to check", "observation": "Observations", "keep": "Points to keep"})
+            cited = set()
+            for f in v_findings:
+                for pair in (f.get("refs") or []):
+                    a, b = int(pair[0]), int(pair[1])
+                    if a:
+                        cited.update(range(a, b + 1))
+            ctl.append(_rep_tile("sr:vocal_flow:evidence", I18N.tr("Python vocal evidence"), sr_vocal_evidence(evid, stale, cited), I18N.tr("Counts to weigh, not a singing score.")))
         else:
-            ctl += sr_findings(srd, spec, lyrics_then, stale, (("change",), ("keep",)), {"change": "Language check", "keep": "Keep the original"})
+            lang_findings = srd.get("findings") or []
+
+            def _lang_bucket(f):
+                it = (f.get("issue_type") or "").strip()
+                if f.get("needs_review"):
+                    return "review"
+                if it == "error":
+                    return "error"
+                if it == "artistic":
+                    return "artistic"
+                if it == "stylistic":
+                    return "stylistic"
+                if f.get("kind") in ("strength", "keep"):
+                    return "keep"
+                return "change"
+
+            n_style = sum(1 for f in lang_findings if _lang_bucket(f) == "stylistic")
+            n_err = sum(1 for f in lang_findings if _lang_bucket(f) == "error")
+            n_art = sum(1 for f in lang_findings if _lang_bucket(f) == "artistic")
+            n_review = sum(1 for f in lang_findings if _lang_bucket(f) == "review")
+            ctl.append(ft.Text(I18N.tr("A formal word or a character's voice is not an error by itself."), size=11, color=C["text2"]))
+            ctl.append(ft.Row([sr_chip(I18N.tr("Stylistic concern") + f"  {n_style}"), sr_chip(I18N.tr("Language error") + f"  {n_err}"),
+                               sr_chip(I18N.tr("Artistic strength") + f"  {n_art}"), sr_chip(I18N.tr("Needs another look") + f"  {n_review}")], spacing=6, wrap=True, run_spacing=4))
+            ctl.append(ft.Row([ft.OutlinedButton(I18N.tr("Discuss the Lyric Language report"), icon=ft.Icons.FORUM_OUTLINED,
+                                                 tooltip=I18N.tr("Open the chat with this language finding. Nothing in the lyrics changes."),
+                                                 on_click=lambda ev: sr_discuss("", "", "lyric_language")),
+                               ext_btn("lyric_language")], spacing=6, wrap=True))
+            lang_titles = {"review": "Needs another look", "stylistic": "Word choice", "error": "Language errors", "artistic": "Artistic strengths", "change": "Language check", "keep": "Keep the original"}
+            for key in ("review", "stylistic", "error", "artistic", "change", "keep"):
+                items = [f for f in lang_findings if _lang_bucket(f) == key]
+                if not items:
+                    continue
+                items.sort(key=lambda f: {"high": 0, "medium": 1, "low": 2}.get(f.get("priority"), 3))
+                ctl.append(sr_title(I18N.tr(lang_titles[key]), I18N.tr("Most important first") if len(items) > 1 else ""))
+                ctl += [sr_finding(f, spec, lyrics_then, stale) for f in items]
         tile = sr_sections_tile(spec, srd, stale=stale, title={"song_critic": I18N.tr("Section by section"), "rhyme_flow": I18N.tr("Section by section"), "vocal_flow": I18N.tr("Section by section"), "lyric_language": I18N.tr("Language by section")}[spec])
-        if tile is not None:
+        if tile is not None and not songcraft:                                    # the sections are the Song Journey inside the Section Purpose tile of a Songcraft Review
             ctl.append(tile)
         if srd.get("notes"):
             ctl.append(sr_card(ft.Text(I18N.tr("What the specialist could not judge"), size=11, weight=ft.FontWeight.W_700, color=C["text2"]), *[ft.Text("• " + x, size=11, color=C["text2"], selectable=True) for x in srd["notes"]]))
+        if spec == "song_critic" and not songcraft:
+            ctl += ac_cards("legacy")                                                     # an older-format report has no critique cards: the eight cards say so and the lessons can still be read
         ctl.append(sr_diag_tile(spec, rep, state))
         sr_col.controls = ctl
         safe_update(sr_col)
 
-    def sr_start(spec: str):
+    def sr_start(spec: str, trigger: str = "report_button"):
         """The Analyze button of a report page: ONE request for THIS report only. The song, the sheet and the lyrics are captured now."""
+        if spec not in SR.REPORTS:
+            toast("Choose one report. Nothing was sent.", C["amber"]); return
         if not S.song:
             toast("Open or create a song first.", C["amber"]); return
         if sr["running"] or rep_busy() or S.chat_busy_song or S.an_busy:
@@ -12333,61 +13671,88 @@ def main(page: ft.Page):
             toast(f"The prompt of {SP.name_of(spec)} is not valid, so nothing was sent: " + " ".join(p.errors)[:250], C["amber"]); return
         snap = dict(spec_snapshot(), style={"genre": S.song.settings.genre, "mood": S.song.settings.mood, "energy": S.song.settings.energy, "vocal": S.song.settings.vocal, "language": S.song.settings.language},
                     settings=SH.settings_to_dict(S.song.settings))
-        snap["language"] = song_lang()                                       # the lyrics language ("" while Auto), the same value the evidence preview and the fingerprint use
+        snap["language"] = song_lang()                                       # the lyrics language ("" while Auto), the same value the fingerprint uses
         snap["reply_lang"] = "Thai" if I18N.lang() == "th" else "English"          # captured NOW: the request is built with it, and the fingerprint stored with the report is the one of this value
         snap["input_fp"] = sr_input_fp(spec)
-        sr["running"], sr["spec"] = spec, spec
+        snap["request_id"] = _analyze_req_id(spec, snap["song_id"])
+        snap["trigger"] = trigger
+        sr["running"] = (snap["song_id"], snap["sheet_id"], spec)
+        sr["spec"] = spec
         S.an_busy, S.an_kind, S.an_progress = snap["song_id"], "spec", f"{SP.name_of(spec)}…"
-        sr["err"].pop(sr_key(spec), None)
+        sr["err"].pop((snap["song_id"], snap["sheet_id"], spec), None)
         sr_render()
         page.run_task(sr_run, spec, snap)
 
     async def sr_run(spec: str, snap: dict):
+        """One specialist, one job. Evidence is built from the snapshot, then one request (a second only when the first answer has no [DONE]). The save happens before the busy flag drops."""
         loop = asyncio.get_running_loop()
         key = (snap["song_id"], snap["sheet_id"], spec)
         reply_lang = snap.get("reply_lang") or ("Thai" if I18N.lang() == "th" else "English")
-        rep_obj, err = None, ""
+        rid = snap.get("request_id") or ""
+        trigger = snap.get("trigger") or "report_button"
+        host = snap.get("host") or S.host
+        backend = snap.get("backend") or S.backend
+        try:
+            ph = SP.load(spec).hash
+        except Exception:
+            ph = ""
+        TRC.log_analyze(phase="start", request_id=rid, trigger=trigger, specialist=spec, song_id=snap["song_id"], sheet_id=snap["sheet_id"], lyrics_hash=snap.get("lyrics_hash", ""), backend=backend, prompt_hash=ph, attempt=0, parse_status="")
+        rep_obj, err, parse_status, save_target, attempts_used = None, "", "", "", 0
         try:
             ev_text, ev_data = await loop.run_in_executor(None, lambda: SR.evidence_for(spec, snap["lyrics"], snap.get("language") or "", snap.get("settings"), snap.get("corrections")))
             system, _p = SP.effective_system(spec)
             user = SR.build_user(spec, snap, ev_text, reply_lang)
             raw, parsed = "", {"ok": False, "sr": {}, "diagnostics": [], "incomplete": False}
             for attempt in (1, 2):
-                raw = await loop.run_in_executor(None, lambda: spec_llm(system, (RPT.RETRY_INCOMPLETE if attempt == 2 else "") + user, snap["backend"], S.host, 0.4))
+                attempts_used = attempt
+                raw = await loop.run_in_executor(None, lambda a=attempt: spec_llm(system, (RPT.RETRY_INCOMPLETE if a == 2 else "") + user, backend, host, 0.4))
                 parsed = SR.parse_answer(raw, spec, snap["lyrics"], system)
+                TRC.log_analyze(phase="llm", request_id=rid, trigger=trigger, specialist=spec, song_id=snap["song_id"], sheet_id=snap["sheet_id"], lyrics_hash=snap.get("lyrics_hash", ""), backend=backend, prompt_hash=ph, attempt=attempt, parse_status=("ok" if parsed["ok"] else ("incomplete" if parsed.get("incomplete") else "unreadable")), retry_reason=("incomplete" if attempt == 2 else ""))
                 if parsed["ok"] or not parsed.get("incomplete") or attempt == 2:
                     break
+            if spec == "rhyme_flow" and parsed.get("ok"):
+                extra = SR.bind_rhyme_evidence(parsed["sr"], ev_data)          # the snapshot from the start of this job, not a rebuild after the lyrics move
+                if extra:
+                    parsed["diagnostics"] = list(parsed.get("diagnostics") or []) + extra
+            if spec == "vocal_flow" and parsed.get("ok"):
+                extra = SR.bind_vocal_evidence(parsed["sr"], ev_data)          # the same snapshot; options stay on the card and are not applied
+                if extra:
+                    parsed["diagnostics"] = list(parsed.get("diagnostics") or []) + extra
             ev_data = dict(ev_data, lyrics=snap["lyrics"]) if parsed["ok"] else ev_data
             try:
-                model = an_identity(snap["backend"])[0]
+                model = an_identity(backend)[0]
             except Exception:
                 model = ""
             rep_obj = SR.make_report(spec, snap, parsed, ev_data, raw, model)
             if parsed["ok"]:
                 rep_obj.data["lyrics"] = snap["lyrics"]                   # the lyrics this report is about: its quotes and line numbers stay right when the lyrics change
-            else:
-                err = rep_obj.error + " " + " ".join(parsed.get("diagnostics", []))[:200]
-        except Exception as ex:
-            log.warning("specialist report %s failed: %r", spec, ex)
-            err = str(ex)
-        finally:
-            sr["running"] = None
-            S.an_busy, S.an_kind, S.an_progress = "", "", ""
-        if rep_obj is not None and rep_obj.status == "ok":
-            old = sr["cache"].get(key) or None
-            now_hash = LA.text_hash(lyr()) if (S.song and (S.song.id, S.song.book.active_id) == key[:2]) else ""
-            if old is not None and old.status == "ok" and now_hash and old.lyrics_hash == now_hash and rep_obj.lyrics_hash != now_hash:
-                log.info("report %s of older lyrics was not kept: a newer report of the current lyrics exists", spec)      # a slow answer never replaces the report of newer lyrics
-            else:
-                try:
+                old = sr["cache"].get(key) or None
+                now_hash = LA.text_hash(lyr()) if (S.song and (S.song.id, S.song.book.active_id) == key[:2]) else ""
+                if old is not None and old.status == "ok" and now_hash and old.lyrics_hash == now_hash and rep_obj.lyrics_hash != now_hash:
+                    parse_status = "kept_newer"
+                    log.info("report %s of older lyrics was not kept: a newer report of the current lyrics exists", spec)
+                else:
                     ses = SE.load_session(*key)
                     SE.add_report(ses, rep_obj)
                     SE.save_session(ses)
-                except Exception as ex:
-                    dbg_once("sr save", ex)
-                sr["cache"][key] = rep_obj
-        elif err:
+                    sr["cache"][key] = rep_obj
+                    sr["err"].pop(key, None)
+                    parse_status = "ok"
+                    save_target = f"{snap['song_id']}|{snap['sheet_id']}|{spec}"
+            else:
+                err = rep_obj.error + " " + " ".join(parsed.get("diagnostics", []))[:200]
+                parse_status = "error"
+                sr["err"][key] = err
+        except Exception as ex:
+            log.warning("specialist report %s failed: %r", spec, ex)
+            err = str(ex)
+            parse_status = "error"
             sr["err"][key] = err
+        finally:
+            sr["running"] = None
+            if S.an_busy == snap["song_id"] and S.an_kind == "spec":
+                S.an_busy, S.an_kind, S.an_progress = "", "", ""
+            TRC.log_analyze(phase="end", request_id=rid, trigger=trigger, specialist=spec, song_id=snap["song_id"], sheet_id=snap["sheet_id"], lyrics_hash=snap.get("lyrics_hash", ""), backend=backend, model=(rep_obj.model if rep_obj is not None else ""), prompt_hash=(rep_obj.prompt_hash if rep_obj is not None else ph), attempt=attempts_used, parse_status=parse_status, save_target=save_target, error=err[:300])
         if S.song and rp["tab"] in SR.TABS:
             sr_render()
         if err:
@@ -12426,15 +13791,15 @@ def main(page: ft.Page):
                                  left=0, top=0, right=0, bottom=0, visible=False)
     tools_page = ft.Container(panel(ft.Column([tools_view], spacing=0, expand=True), padding=10), left=0, top=0, right=0, bottom=0)
     an_page = ft.Container(panel(analysis_view, padding=12, expand=True), left=0, top=0, right=0, bottom=0, visible=False)
-    # The Report page: one panel per assistant (the Songwriter AI, which hands in the rhyme report with its own, and the Music Producer AI). Each has its own button and runs on its own, one at a time.
+    # Lyric Analysis shows an older Songwriter report, read-only. Vocal Analysis is Music Producer Analysis: its button runs only that specialist.
     report_run_btn = ft.FilledButton("", icon=ft.Icons.INSIGHTS_ROUNDED, height=36, on_click=lambda e: start_report(report_view["k"]),
                                      style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF", shape=ft.RoundedRectangleBorder(radius=8)))
-    REPORT_TIP = {"songwriter": "The Songwriter AI reads the whole song (lyrics, meaning, flow) and hands in the rhyme report with its own report. Suggestions you can apply",
-                  "music_producer": "The Music Producer AI reads the whole song (structure, cues, hook, arrangement, delivery) and writes its own report. Suggestions you can apply"}
+    REPORT_TIP = {"songwriter": "The Songwriter report is no longer written here. This page only shows an older report. The lyric reports are Song Critic, Rhyme & Flow, Vocal Flow and Lyric Language.",
+                  "music_producer": "Analyze Music Producer: only the Music Producer runs. Nothing else is asked."}
 
     def report_pick(k: str):
         report_view["k"] = k
-        report_run_btn.content = "Write the report"
+        report_run_btn.content = "Analyze Music Producer" if k == "music_producer" else "Write the report"
         report_run_btn.tooltip = REPORT_TIP.get(k, "")
         rh_view.visible = True
         safe_update(report_run_btn)
@@ -13151,8 +14516,8 @@ def main(page: ft.Page):
         inner_.bgcolor, inner_.border, inner_.padding = "#00000000", None, 0
     RP_ICONS = {"settings": (ft.Icons.TUNE_ROUNDED, "Song Settings"), "tools": (ft.Icons.EDIT_NOTE_ROUNDED, "Lyrics Tools"),
                 **{r_.tab: (getattr(ft.Icons, r_.icon), r_.tip) for r_ in SR.REPORTS.values()},
-                "rep_lyrics": (ft.Icons.ARTICLE_OUTLINED, "Lyric Analysis: the Songwriter AI reads the lyrics and writes its report, with the rhyme report"),
-                "rep_vocal": (ft.Icons.RECORD_VOICE_OVER_OUTLINED, "Vocal Analysis: the Music Producer AI reads the song and writes its report on the structure, cues, hook, arrangement and delivery"),
+                "rep_lyrics": (ft.Icons.ARTICLE_OUTLINED, "Lyric Analysis: an older Songwriter report, shown only when this song has one. New lyric reports are Song Critic, Rhyme & Flow, Vocal Flow and Lyric Language."),
+                "rep_vocal": (ft.Icons.RECORD_VOICE_OVER_OUTLINED, "Music Producer Analysis: structure, arrangement, dynamics, vocal delivery and the caption. Analyze runs only this specialist."),
                 "cc_rhyme": (ft.Icons.FORMAT_COLOR_TEXT_ROUNDED, "Rhyme & Syllables: the lyrics with the rhyme colours (the Python rhyme analysis: sound rules on the spelling) and the syllable counts (counted by the program)"),
                 "cc_rhythm": (ft.Icons.TIMELAPSE_ROUNDED, "Rhythm & Duration: how dense the lines and sections are for the BPM and the length (an estimate counted by the program, no AI)"),
                 "gen": (ft.Icons.AUTO_AWESOME_ROUNDED, "Generate"), "results": (ft.Icons.LIBRARY_MUSIC_ROUNDED, "Results")}

@@ -1,0 +1,21 @@
+{
+ "request_no": 8,
+ "arm": "B two-pass",
+ "pass": 2,
+ "song": "Test Song 03",
+ "backend": "gemma",
+ "temperature": 0.4,
+ "system_prompt": "You are an experienced songwriting critic.\n\nEvaluate lyrics with independent artistic judgment.\nUnderstand what the song is trying to achieve and assess\nhow effectively it achieves it.\n\nBe thoughtful, candid, and specific.\nSupport important judgments with evidence from the lyrics.\n\nYou are free to praise, criticize, question, or recommend\nkeeping the song unchanged.\n\nThere is no required number of strengths, weaknesses,\nor recommendations.",
+ "user_message": "Reconsider your critique in light of the complete lyrics.\n\nKeep conclusions that remain convincing.\nRevise or withdraw any conclusions that do not hold up.\n\nYou do not need to change your opinion.\n\nGive your final assessment and the most useful guidance\nfor the songwriter, if any.",
+ "system_tokens_est": 142,
+ "user_tokens_est": 91,
+ "history": "server-side session (ComfyUI LLMSessionChatNode): the node keeps the lyrics (Pass 1) and the Pass 1 answer; max_turns 200, no summarizing",
+ "model": "gemma4_llm.json",
+ "session_id": "music_8e36be93",
+ "session_log": [
+  "session 1 opened"
+ ],
+ "session_used_est_after": 3845,
+ "seconds": 9.4,
+ "output_tokens_est": 1252
+}

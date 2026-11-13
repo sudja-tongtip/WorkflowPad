@@ -1,0 +1,45 @@
+CB.USER_PRESETS_FILE = C:\Users\sudja\AppData\Local\Temp\claude\a8ec2d1fb949c4ce\598f14ad-3a4d-49e5-991b-a890ecf81c62\scratchpad\smoke_home\AppData\WorkflowPad\music_studio_basic_presets.json
+OK   a song is open
+OK   Basic page has the builder (Preset, 3 cards, quick presets, notes, ONE preview)
+OK   exactly ONE 'Caption sent to ACE-Step' box on the Basic page
+OK   the old 'Effective Caption' card is hidden in Basic
+OK   12 categories are drawn
+OK   a legacy default song shows its genre as a selected chip and the Preview
+UI language: th
+OK   click a chip: selection stored in the song
+OK   click a chip: Preview updated (Alternative Rock + Trap) and equals what Generate sends
+OK   click a chip: the page was not rebuilt (same Row / chips containers)
+OK   click a chip: song marked unsaved
+OK   click again: deselected
+OK   mixed vocal roles (Male Rap + Female Lead + Female Background) all kept
+OK   no conflict warning for that normal mix
+OK   Male Lead + Female Lead shows a short warning and keeps the chips
+OK   search filters only that category (Trap, Late Night Trap, Melodic Trap + selected + toggles)
+OK   Enter adds a custom phrase
+OK   clear one category only
+OK   Notes
+OK   Additional Notes appended to the caption
+OK   choose a builtin preset: all categories load, Preview updated, no LLM
+OK   preset status is not Modified right after loading
+OK   editing chips after a preset shows Modified, the builtin preset is unchanged
+OK   Save as creates a user preset (stable ids), selected, stored in its own file
+OK   ... and the preset file is under the sandbox, not the real user folder
+OK   editing after Save as -> Modified, saved preset unchanged
+OK   Update stores the new chips in the user preset
+OK   Rename
+OK   presets file on disk has the renamed preset with ids
+OK   second song opens with its own (default) selection
+OK   switch back to song 1: its chips and caption come back
+OK   switch to song 2: its own caption
+OK   save project / reopen: the selection, notes and preset id are kept
+OK   Generate (Basic) reached the workflow with the Preview caption, unchanged
+OK   ... the same text is in the ACE-Step node `tags`, BPM / Key / Duration come from the song settings, not from the caption
+OK   ... no LLM was called
+OK   a caption over the hard limit is refused with a message, not cut
+OK   Advanced still sends its own prompt; Basic edits did not touch it
+lang en genre title: Genre / Style | a chip: ['Pop']
+OK   UI language en: the English caption does not change
+lang th genre title: แนวเพลง | a chip: ['ป๊อป']
+OK   UI language th: the English caption does not change
+
+ALL True 47 / 47

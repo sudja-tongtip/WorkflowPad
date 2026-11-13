@@ -1,0 +1,170 @@
+[
+ {
+  "a": [
+   1,
+   "เมล์"
+  ],
+  "b": [
+   3,
+   "เคย"
+  ],
+  "model_said": "different",
+  "python_verdict": "rejected",
+  "python_note": "Not a rhyme (เมล์ เอ+กา · เคย เออ+เกย).",
+  "model_confidence": "high"
+ },
+ {
+  "a": [
+   3,
+   "เคย"
+  ],
+  "b": [
+   4,
+   "แก้ว"
+  ],
+  "model_said": "different",
+  "python_verdict": "rejected",
+  "python_note": "Not a rhyme (เคย เออ+เกย · แก้ว แอ+เกอว).",
+  "model_confidence": "high"
+ },
+ {
+  "a": [
+   2,
+   "วัน"
+  ],
+  "b": [
+   4,
+   "อะไร"
+  ],
+  "model_said": "different",
+  "python_verdict": "rejected",
+  "python_note": "Not a rhyme (วัน อะ+กน · ไร ไอ+กา).",
+  "model_confidence": "high"
+ },
+ {
+  "a": [
+   5,
+   "เงียบ"
+  ],
+  "b": [
+   5,
+   "ตัวเอง"
+  ],
+  "model_said": "different",
+  "python_verdict": "rejected",
+  "python_note": "Not a rhyme (เงียบ เอีย+กบ · เอง เอ+กง).",
+  "model_confidence": "high"
+ },
+ {
+  "a": [
+   7,
+   "เงียบ"
+  ],
+  "b": [
+   7,
+   "ตัวเอง"
+  ],
+  "model_said": "different",
+  "python_verdict": "rejected",
+  "python_note": "Not a rhyme (เงียบ เอีย+กบ · เอง เอ+กง).",
+  "model_confidence": "high"
+ },
+ {
+  "a": [
+   5,
+   "ได้ยิน"
+  ],
+  "b": [
+   5,
+   "ตัวเอง"
+  ],
+  "model_said": "different",
+  "python_verdict": "rejected",
+  "python_note": "Not a rhyme (ยิน อิ+กน · เอง เอ+กง).",
+  "model_confidence": "high"
+ },
+ {
+  "a": [
+   8,
+   "ไหม"
+  ],
+  "b": [
+   9,
+   "ปกติ"
+  ],
+  "model_said": "different",
+  "python_verdict": "rejected",
+  "python_note": "Not a rhyme (ไหม ไอ+กา · ติ อิ+กา).",
+  "model_confidence": "high"
+ },
+ {
+  "a": [
+   10,
+   "แชต"
+  ],
+  "b": [
+   11,
+   "รอบ"
+  ],
+  "model_said": "different",
+  "python_verdict": "rejected",
+  "python_note": "Not a rhyme (แชต แอ+กด · รอบ ออ+กบ).",
+  "model_confidence": "high"
+ },
+ {
+  "a": [
+   8,
+   "ไหม"
+  ],
+  "b": [
+   11,
+   "รอบ"
+  ],
+  "model_said": "different",
+  "python_verdict": "rejected",
+  "python_note": "Not a rhyme (ไหม ไอ+กา · รอบ ออ+กบ).",
+  "model_confidence": "high"
+ },
+ {
+  "a": [
+   9,
+   "ปกติ"
+  ],
+  "b": [
+   10,
+   "แชต"
+  ],
+  "model_said": "different",
+  "python_verdict": "rejected",
+  "python_note": "Not a rhyme (ติ อิ+กา · แชต แอ+กด).",
+  "model_confidence": "high"
+ },
+ {
+  "a": [
+   10,
+   "ระหว่าง"
+  ],
+  "b": [
+   10,
+   "แชต"
+  ],
+  "model_said": "different",
+  "python_verdict": "rejected",
+  "python_note": "Not a rhyme (หว่าง อา+กง · แชต แอ+กด).",
+  "model_confidence": "medium"
+ },
+ {
+  "a": [
+   1,
+   "เมล์"
+  ],
+  "b": [
+   2,
+   "เหมือน"
+  ],
+  "model_said": "exact",
+  "python_verdict": "ai_assessed",
+  "python_note": "The AI's assessment of the consonant sounds: nothing independent verified it.",
+  "model_confidence": "high"
+ }
+]

@@ -59,7 +59,7 @@ SPECIALISTS = (
     Specialist("song_critic", "Song Critic AI", "What the song is trying to communicate and whether the text succeeds: meaning, story, emotion and hook", "song_critic.md", analyzes=False),
     Specialist("rhyme_flow", "Rhyme & Flow AI", "Whether the actual rhymes serve the meaning and sound natural (reads the Python rhyme evidence)", "rhyme_flow.md", analyzes=False),
     Specialist("vocal_flow", "Vocal Flow AI", "Which passages deserve a singing test: syllables, phrases, live / dead syllables", "vocal_flow.md", analyzes=False),
-    Specialist("lyric_language", "Lyric Language AI", "Whether each phrase keeps its meaning and sounds like natural language: idiom, word choice, alternatives", "lyric_language.md", analyzes=False),
+    Specialist("lyric_language", "Lyric Language AI", "Word choice, idiom, and the speaker's voice: a real error, a stylistic choice, or a strength to keep", "lyric_language.md", analyzes=False),
 )
 REPORT_IDS = ("song_critic", "rhyme_flow", "vocal_flow", "lyric_language")          # the specialists of the four report tabs (spec_reports.py)
 PRODUCER = "music_producer"

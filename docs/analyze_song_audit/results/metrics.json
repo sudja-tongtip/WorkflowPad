@@ -1,0 +1,2898 @@
+{
+ "grok|S1|0": {
+  "metrics": {
+   "seconds": 105.2,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 6,
+    "wrong": 2,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ให้ฝนเป็นพยาน ว่าฉันรักเ",
+      9,
+      8,
+      "estimated"
+     ],
+     [
+      "บางเรื่องไม่ต้องอธิบาย",
+      7,
+      6,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 3,
+    "true_total": 3,
+    "false_claimed": 0,
+    "false_total": 4,
+    "pairs_total": 4
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 0,
+     "strengths": 5,
+     "refs_ok": 45,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 3,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 3255
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 8,
+     "strengths": 3,
+     "refs_ok": 3,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 2,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1270
+    }
+   }
+  },
+  "flags": {
+   "good_hook_not_attacked": {
+    "ok": true,
+    "evidence": ""
+   },
+   "good_hook_recognised": {
+    "ok": true,
+    "evidence": "งกันและกัน เริ่มจากภาพพบกันหน้าบ้าน (L2-L5) ไปจนถึงคำสัญญาในคอรัส (L12-L15) และจบด้วยบริดจ์ที่ไม่ต้องอธิบาย (L30-L31) เพลงทำได้ดีด้วยรายละเอียดที่เป็นรูปธรรมและไหลต่อเนื่อง แต่จุดอ่อนที่สุดคือคอรัสซ้ำทุกบรรทัด"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Pre-Chorus', 'Chorus', 'Verse 2', 'Chorus', 'Bridge'] vs reference ['Verse 1', 'Pre-Chorus', 'Chorus', 'Verse 2', 'Chorus', 'Bridge']"
+   }
+  }
+ },
+ "grok|S1|1": {
+  "metrics": {
+   "seconds": 90.2,
+   "requests": 8,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 6,
+    "wrong": 2,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ให้ฝนเป็นพยาน ว่าฉันรักเ",
+      9,
+      8,
+      "estimated"
+     ],
+     [
+      "บางเรื่องไม่ต้องอธิบาย",
+      7,
+      6,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 3,
+    "true_total": 3,
+    "false_claimed": 1,
+    "false_total": 4,
+    "pairs_total": 6
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 1,
+     "findings": 0,
+     "strengths": 4,
+     "refs_ok": 26,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 13,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 3149
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 10,
+     "strengths": 4,
+     "refs_ok": 3,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 4,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1634
+    }
+   }
+  },
+  "flags": {
+   "good_hook_not_attacked": {
+    "ok": true,
+    "evidence": ""
+   },
+   "good_hook_recognised": {
+    "ok": true,
+    "evidence": "ินมาเบา ๆ ได้อย่างเป็นธรรมชาติ ช่วยตั้งบรรยากาศได้ดี L12-15 คอรัสมีภาพฝนเป็นพยานและคำสัญญา \"จนฟ้าใส\" ที่จดจำง่ายและเข้ากับอารมณ์เพลง L18-21 เวอร์ส 2 ขยายความรู้สึกด้วยรายละเอียดเสื้อเปียกและมื"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Pre-Chorus', 'Chorus', 'Verse 2', 'Chorus', 'Bridge'] vs reference ['Verse 1', 'Pre-Chorus', 'Chorus', 'Verse 2', 'Chorus', 'Bridge']"
+   }
+  }
+ },
+ "grok|S1|2": {
+  "metrics": {
+   "seconds": 113.3,
+   "requests": 8,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 6,
+    "wrong": 2,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ให้ฝนเป็นพยาน ว่าฉันรักเ",
+      9,
+      8,
+      "estimated"
+     ],
+     [
+      "บางเรื่องไม่ต้องอธิบาย",
+      7,
+      6,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 3,
+    "true_total": 3,
+    "false_claimed": 0,
+    "false_total": 4,
+    "pairs_total": 4
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 0,
+     "strengths": 5,
+     "refs_ok": 33,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 5,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 3071
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 1,
+     "findings": 11,
+     "strengths": 3,
+     "refs_ok": 3,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 5,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1561
+    }
+   }
+  },
+  "flags": {
+   "good_hook_not_attacked": {
+    "ok": true,
+    "evidence": ""
+   },
+   "good_hook_recognised": {
+    "ok": true,
+    "evidence": "บเธอ เริ่มจากภาพใน Verse 1 (L2-5) แล้วพัฒนาไปสู่การประกาศใน Chorus (L12-15) และทำได้ดีในการรักษาอารมณ์ต่อเนื่อง แม้ Bridge (L30-31) จะสั้นและซ้ำความรู้สึกเดิมโดยไม่เพ"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Pre-Chorus', 'Chorus', 'Verse 2', 'Chorus', 'Bridge'] vs reference ['Verse 1', 'Pre-Chorus', 'Chorus', 'Verse 2', 'Chorus', 'Bridge']"
+   }
+  }
+ },
+ "grok|S2|1": {
+  "metrics": {
+   "seconds": 102.8,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 3,
+    "wrong": 1,
+    "wrong_but_marked_verified": 1,
+    "detail": [
+     [
+      "ฉันตอบว่าก็ดีตามปกติ",
+      9,
+      8,
+      "verified"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 3,
+    "pairs_total": 0
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 0,
+     "strengths": 3,
+     "refs_ok": 29,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 1,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 2528
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 6,
+     "strengths": 3,
+     "refs_ok": 3,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 2,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1254
+    }
+   }
+  },
+  "flags": {
+   "irregular_rhyme_not_a_fault": {
+    "ok": true,
+    "evidence": ""
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "grok|S2|2": {
+  "metrics": {
+   "seconds": 95.3,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 3,
+    "wrong": 1,
+    "wrong_but_marked_verified": 1,
+    "detail": [
+     [
+      "ฉันตอบว่าก็ดีตามปกติ",
+      9,
+      8,
+      "verified"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 3,
+    "pairs_total": 0
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 0,
+     "strengths": 4,
+     "refs_ok": 25,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 3,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 2338
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 4,
+     "strengths": 3,
+     "refs_ok": 1,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 1,
+     "bad_quotes": [
+      "เสียงตัวเองในเมือง"
+     ],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1107
+    }
+   }
+  },
+  "flags": {
+   "irregular_rhyme_not_a_fault": {
+    "ok": true,
+    "evidence": ""
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "grok|S3|1": {
+  "metrics": {
+   "seconds": 88.3,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 2,
+    "wrong": 2,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ฉันรักเธอ ตลอดไป",
+      6,
+      5,
+      "estimated"
+     ],
+     [
+      "ตู้ไปรษณีย์สีแดงยังเปื้อ",
+      13,
+      11,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 1,
+    "pairs_total": 1
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 0,
+     "strengths": 4,
+     "refs_ok": 24,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 2426
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 8,
+     "strengths": 3,
+     "refs_ok": 3,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 4,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1495
+    }
+   }
+  },
+  "flags": {
+   "weak_hook_named": {
+    "ok": true,
+    "evidence": "L2-L5) และ Verse 2 (L14-L17) เพื่อสร้างบรรยากาศย้อนหลัง แต่ Chorus (L8-L11, L20-L23) ซ้ำเดิมโดยไม่พัฒนาความรู้สึกเพิ่มเติม ทำให้เพลงถึงเป้าหมายด้านบรรยากาศแต่ยังขาดการพัฒนาในส่วนอารมณ์หลัก ภาพร้านซักรีดและรายละเอียดเฉพาะเจาะจงใน Verse 1 ชัดเจนแ"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "grok|S3|2": {
+  "metrics": {
+   "seconds": 93.1,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 2,
+    "wrong": 2,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ฉันรักเธอ ตลอดไป",
+      6,
+      5,
+      "estimated"
+     ],
+     [
+      "ตู้ไปรษณีย์สีแดงยังเปื้อ",
+      13,
+      11,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 1,
+    "pairs_total": 1
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 0,
+     "strengths": 4,
+     "refs_ok": 26,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 2,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 2226
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 8,
+     "strengths": 3,
+     "refs_ok": 2,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 4,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1371
+    }
+   }
+  },
+  "flags": {
+   "weak_hook_named": {
+    "ok": true,
+    "evidence": "4-L15 ขยายเรื่องราวด้วยรายละเอียดที่เฉพาะเจาะจงโดยไม่ซ้ำซาก คอรัสที่ซ้ำคำว่า \"คิดถึงเธอ\" และ \"ฉันรักเธอ\" ใน L8-L11 ช่วยย้ำอารมณ์หลักได้ชัดเจนและติดหู ไ"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "grok|S4|1": {
+  "metrics": {
+   "seconds": 94.9,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 4,
+    "wrong": 0,
+    "wrong_but_marked_verified": 0,
+    "detail": []
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 1,
+    "true_total": 2,
+    "false_claimed": 0,
+    "false_total": 1,
+    "pairs_total": 2
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 0,
+     "strengths": 5,
+     "refs_ok": 24,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 4,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 2598
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 6,
+     "strengths": 2,
+     "refs_ok": 2,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 2,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1056
+    }
+   }
+  },
+  "flags": {
+   "good_hook_not_attacked": {
+    "ok": true,
+    "evidence": ""
+   },
+   "good_hook_recognised": {
+    "ok": true,
+    "evidence": "ความยืดหยุ่นในการเต้นต่อไปแม้ชีวิตจะมีอุปสรรคเล็กน้อย โดยใช้คอรัสติดหูเป็นแกนหลัก สามารถทำได้ดีผ่านบรรทัด 8-11 และ 20-23 ที่สร้างบรรยากาศ energetic ได้ชัดเจน คอรัสมี hook ง่าย"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "grok|S4|2": {
+  "metrics": {
+   "seconds": 136.6,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 4,
+    "wrong": 0,
+    "wrong_but_marked_verified": 0,
+    "detail": []
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 2,
+    "true_total": 2,
+    "false_claimed": 0,
+    "false_total": 1,
+    "pairs_total": 5
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 0,
+     "strengths": 4,
+     "refs_ok": 16,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 3,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 2718
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 6,
+     "strengths": 3,
+     "refs_ok": 3,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 2,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1075
+    }
+   }
+  },
+  "flags": {
+   "good_hook_not_attacked": {
+    "ok": true,
+    "evidence": ""
+   },
+   "good_hook_recognised": {
+    "ok": true,
+    "evidence": "ุ่นในการเต้นต่อไปแม้เจออุปสรรคเล็กน้อยในชีวิตประจำวัน โดยใช้คอรัสติดหูและภาพที่เป็นรูปธรรมในบทกลอนเพื่อสร้างบรรยากาศ energetic ได้ดี หลักฐานจากคอรัสบรรทัด 8-11 และ 20-23 ที่ซ้ำคำเชิญชวนชัดเจน และกลอน 1 บรรทัด 2-5"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "grok|S5|1": {
+  "metrics": {
+   "seconds": 74.9,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 1,
+    "wrong": 0,
+    "wrong_but_marked_verified": 0,
+    "detail": []
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 0,
+    "pairs_total": 0
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 0,
+     "strengths": 3,
+     "refs_ok": 20,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 1,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 2298
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 6,
+     "strengths": 2,
+     "refs_ok": 2,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 3,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 955
+    }
+   }
+  },
+  "flags": {
+   "contradiction_named": {
+    "ok": true,
+    "evidence": "ลาสถานีรถไฟด้วยอารมณ์เศร้าโศก โดยใช้บทเวิร์สและคอรัสแสดงความขัดแย้งระหว่างการจากไปกับการรอที่ไม่มีวันสิ้นสุด แต่เรื่องราวยังวนเวียนอยู่กับความรู้สึ"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2'] vs reference ['Verse 1', 'Chorus', 'Verse 2']"
+   }
+  }
+ },
+ "grok|S5|2": {
+  "metrics": {
+   "seconds": 120.7,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 1,
+    "wrong": 0,
+    "wrong_but_marked_verified": 0,
+    "detail": []
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 0,
+    "pairs_total": 0
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 1,
+     "strengths": 3,
+     "refs_ok": 13,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 2047
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 5,
+     "strengths": 3,
+     "refs_ok": 3,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 2,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1132
+    }
+   }
+  },
+  "flags": {
+   "contradiction_named": {
+    "ok": true,
+    "evidence": "ณ์เศร้า แต่ Verse 1 (บรรทัด 2-5) กับ Verse 2 (บรรทัด 14-17) ขัดแย้งกันในมุมมองผู้เล่า ทำให้เรื่องไม่ต่อเนื่องและผู้ฟังอาจสับสน จุดอ่อนที่สุดคือความ"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2'] vs reference ['Verse 1', 'Chorus', 'Verse 2']"
+   }
+  }
+ },
+ "grok|S6|1": {
+  "metrics": {
+   "seconds": 86.6,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 0,
+    "wrong": 1,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ฉันเดินผ่านตลาดเช้าตรู่ท",
+      21,
+      19,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 0,
+    "pairs_total": 0
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 0,
+     "strengths": 4,
+     "refs_ok": 12,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1946
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 6,
+     "strengths": 2,
+     "refs_ok": 2,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 3,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1048
+    }
+   }
+  },
+  "flags": {
+   "density_named": {
+    "ok": true,
+    "evidence": "พิ่มมิติความทรงจำ ไม่สามารถตัดสินเรื่องจังหวะการหายใจและความหนาแน่นของพยางค์ได้เพราะไม่มีทำนองจริง Ask the Music Producer AI: ความเสี่ยงจากจำนวนพยา"
+   },
+   "no_audio_prediction": {
+    "ok": true,
+    "evidence": ""
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2'] vs reference ['Verse 1', 'Chorus', 'Verse 2']"
+   }
+  }
+ },
+ "grok|S6|2": {
+  "metrics": {
+   "seconds": 93.9,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 0,
+    "wrong": 1,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ฉันเดินผ่านตลาดเช้าตรู่ท",
+      21,
+      19,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 0,
+    "pairs_total": 0
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 0,
+     "strengths": 5,
+     "refs_ok": 15,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 1,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 2081
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 6,
+     "strengths": 3,
+     "refs_ok": 3,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 3,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1013
+    }
+   }
+  },
+  "flags": {
+   "density_named": {
+    "ok": true,
+    "evidence": "ดีในแง่ภาพและเรื่องราวจาก L2-L5 และ L8-L11 แต่จุดอ่อนคือความหนาแน่นของพยางค์สูงในหลายบรรทัดที่อาจกระทบการร้องที่ BPM 70 L2-L5 ใช้ภาพตลาดเช้าที่ละเอ"
+   },
+   "no_audio_prediction": {
+    "ok": true,
+    "evidence": ""
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2'] vs reference ['Verse 1', 'Chorus', 'Verse 2']"
+   }
+  }
+ },
+ "grok|S7|1": {
+  "metrics": {
+   "seconds": 78.3,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 3,
+    "wrong": 0,
+    "wrong_but_marked_verified": 0,
+    "detail": []
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 4,
+    "true_total": 4,
+    "false_claimed": 1,
+    "false_total": 1,
+    "pairs_total": 10
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 0,
+     "strengths": 3,
+     "refs_ok": 15,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 6,
+     "quotes_bad": 1,
+     "bad_quotes": [
+      "So call me when the lights go down / I"
+     ],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 1,
+     "audio_claims": [],
+     "chars": 2356
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 4,
+     "strengths": 3,
+     "refs_ok": 3,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 870
+    }
+   }
+  },
+  "flags": {
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "grok|S7|2": {
+  "metrics": {
+   "seconds": 141.2,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 3,
+    "wrong": 0,
+    "wrong_but_marked_verified": 0,
+    "detail": []
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 4,
+    "true_total": 4,
+    "false_claimed": 1,
+    "false_total": 1,
+    "pairs_total": 10
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 1,
+     "strengths": 3,
+     "refs_ok": 18,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 2,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 1,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 2811
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 4,
+     "strengths": 2,
+     "refs_ok": 2,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 788
+    }
+   }
+  },
+  "flags": {
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "grok|S8|1": {
+  "metrics": {
+   "seconds": 90.9,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 0,
+    "wrong": 1,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ไฟถนนกระพริบเหมือนมันกำล",
+      11,
+      10,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 0,
+    "pairs_total": 0
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 0,
+     "strengths": 5,
+     "refs_ok": 17,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 7,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 2595
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 5,
+     "strengths": 3,
+     "refs_ok": 6,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1016
+    }
+   }
+  },
+  "flags": {
+   "songwriter_leaves_cue_tags": {
+    "ok": true,
+    "evidence": "[]"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Intro', 'Verse 1', 'Chorus', 'Bridge', 'Outro'] vs reference ['Intro', 'Verse 1', 'Chorus', 'Bridge', 'Outro']"
+   }
+  }
+ },
+ "grok|S8|2": {
+  "metrics": {
+   "seconds": 103.9,
+   "requests": 7,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 0,
+    "wrong": 1,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ไฟถนนกระพริบเหมือนมันกำล",
+      11,
+      10,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 0,
+    "pairs_total": 1
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 0,
+     "strengths": 4,
+     "refs_ok": 14,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 2693
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 5,
+     "strengths": 4,
+     "refs_ok": 4,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1021
+    }
+   }
+  },
+  "flags": {
+   "songwriter_leaves_cue_tags": {
+    "ok": true,
+    "evidence": "[]"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Intro', 'Verse 1', 'Chorus', 'Bridge', 'Outro'] vs reference ['Intro', 'Verse 1', 'Chorus', 'Bridge', 'Outro']"
+   }
+  }
+ },
+ "local|S1|1": {
+  "metrics": {
+   "seconds": 142.4,
+   "requests": 24,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 6,
+    "wrong": 2,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ให้ฝนเป็นพยาน ว่าฉันรักเ",
+      9,
+      8,
+      "estimated"
+     ],
+     [
+      "บางเรื่องไม่ต้องอธิบาย",
+      7,
+      6,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 3,
+    "true_total": 3,
+    "false_claimed": 2,
+    "false_total": 4,
+    "pairs_total": 16
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 5,
+     "strengths": 1,
+     "refs_ok": 101,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 23,
+     "quotes_bad": 2,
+     "bad_quotes": [
+      "คันเดิม",
+      "ขอแค่เธอยังอยู่ตรงนี้"
+     ],
+     "finding_evidence_ok": 5,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 11509
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 3,
+     "findings": 14,
+     "strengths": 1,
+     "refs_ok": 0,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 6,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 4290
+    }
+   }
+  },
+  "flags": {
+   "good_hook_not_attacked": {
+    "ok": false,
+    "evidence": "medium 13-13: การใช้ \"เธอรักฉัน\" นั้นตรงไปตรงมา แต่ขาดการระบุถึง \"ตัวตน\" ข"
+   },
+   "good_hook_recognised": {
+    "ok": true,
+    "evidence": "tion) ซึ่งอาจไม่เข้ากับความมั่นคงของ Chorus มากนัก ในขณะที่ Chorus ประกาศความรักอย่างหนักแน่น การขอให้เธอ \"ยัง\" อยู่ตรงนี้ อาจทำให้ผู้ฟังรู้สึกว่าความรักนี้ยังไม่มั่นคง 100%"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Pre-Chorus', 'Chorus', 'Verse 2', 'Chorus', 'Bridge'] vs reference ['Verse 1', 'Pre-Chorus', 'Chorus', 'Verse 2', 'Chorus', 'Bridge']"
+   }
+  }
+ },
+ "local|S1|2": {
+  "metrics": {
+   "seconds": 132.1,
+   "requests": 24,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 6,
+    "wrong": 2,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ให้ฝนเป็นพยาน ว่าฉันรักเ",
+      9,
+      8,
+      "estimated"
+     ],
+     [
+      "บางเรื่องไม่ต้องอธิบาย",
+      7,
+      6,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 3,
+    "true_total": 3,
+    "false_claimed": 2,
+    "false_total": 4,
+    "pairs_total": 9
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 5,
+     "strengths": 1,
+     "refs_ok": 91,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 27,
+     "quotes_bad": 5,
+     "bad_quotes": [
+      "เธอเดินมาอย่างเบา",
+      "ให้ฝนเป็นพยาน ว่าใจเธอมีฉัน",
+      "ฝนจะพรำอีกกี่วันก็ไม่หวั่น",
+      "ให้ฝนเป็นพยาน ว่าใจเธอมีฉัน",
+      "เรื่องราวในใจไม่ต้องอธิบาย"
+     ],
+     "finding_evidence_ok": 5,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 10152
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 1,
+     "findings": 13,
+     "strengths": 3,
+     "refs_ok": 6,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 2,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 3,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 4255
+    }
+   }
+  },
+  "flags": {
+   "good_hook_not_attacked": {
+    "ok": false,
+    "evidence": "medium 13-13: การใช้ \"เธอรักฉัน\" เป็นการประกาศความรักแบบสมมาตรกับ L12 (\"ว่"
+   },
+   "good_hook_recognised": {
+    "ok": true,
+    "evidence": "เปลี่ยนจาก \"เธอรักฉัน\" เป็นการเน้นที่สภาวะของหัวใจเธอ ทำให้ Chorus ไม่รู้สึกซ้ำซากจนเกินไป และเสริมความรู้สึกของการเป็น \"พยาน\" ที่หนักแน่นขึ้น wording ok; meaning ok; story ok; imagery ok; hook -; flow ok; line endings"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Pre-Chorus', 'Chorus', 'Verse 2', 'Chorus', 'Bridge'] vs reference ['Verse 1', 'Pre-Chorus', 'Chorus', 'Verse 2', 'Chorus', 'Bridge']"
+   }
+  }
+ },
+ "local|S2|1": {
+  "metrics": {
+   "seconds": 114.2,
+   "requests": 19,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 3,
+    "wrong": 1,
+    "wrong_but_marked_verified": 1,
+    "detail": [
+     [
+      "ฉันตอบว่าก็ดีตามปกติ",
+      9,
+      8,
+      "verified"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 3,
+    "false_total": 3,
+    "pairs_total": 11
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 2,
+     "findings": 1,
+     "strengths": 1,
+     "refs_ok": 58,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 19,
+     "quotes_bad": 2,
+     "bad_quotes": [
+      "ลุงขายกาแฟยิ้มให้ฉันแบบนั้น",
+      "ฉันตอบว่าก็ดีตามที่เขาถาม"
+     ],
+     "finding_evidence_ok": 1,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [
+      "ฟังแล้ว"
+     ],
+     "chars": 6803
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 3,
+     "findings": 4,
+     "strengths": 1,
+     "refs_ok": 1,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 0,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 1431
+    }
+   }
+  },
+  "flags": {
+   "irregular_rhyme_not_a_fault": {
+    "ok": true,
+    "evidence": ""
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "local|S2|2": {
+  "metrics": {
+   "seconds": 114.0,
+   "requests": 18,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 3,
+    "wrong": 1,
+    "wrong_but_marked_verified": 1,
+    "detail": [
+     [
+      "ฉันตอบว่าก็ดีตามปกติ",
+      9,
+      8,
+      "verified"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 2,
+    "false_total": 3,
+    "pairs_total": 5
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 4,
+     "findings": 0,
+     "strengths": 1,
+     "refs_ok": 73,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 27,
+     "quotes_bad": 3,
+     "bad_quotes": [
+      "แต่ฉันยังได้ยินเสียงตัวเอง",
+      "ฉันตอบไปว่าก็ดีตามนั้น",
+      "ในเสียงที่ดังเกินใคร"
+     ],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 6840
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 2,
+     "findings": 10,
+     "strengths": 3,
+     "refs_ok": 0,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 6,
+     "quotes_bad": 1,
+     "bad_quotes": [
+      "เมืองไม่เงียบ"
+     ],
+     "finding_evidence_ok": 3,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 3492
+    }
+   }
+  },
+  "flags": {
+   "irregular_rhyme_not_a_fault": {
+    "ok": true,
+    "evidence": ""
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "local|S3|1": {
+  "metrics": {
+   "seconds": 105.7,
+   "requests": 18,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 2,
+    "wrong": 2,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ฉันรักเธอ ตลอดไป",
+      6,
+      5,
+      "estimated"
+     ],
+     [
+      "ตู้ไปรษณีย์สีแดงยังเปื้อ",
+      13,
+      11,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 1,
+    "false_total": 1,
+    "pairs_total": 14
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 4,
+     "strengths": 1,
+     "refs_ok": 87,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 22,
+     "quotes_bad": 2,
+     "bad_quotes": [
+      "สถานะไม่เปลี่ยน",
+      "เอาไปไม่ได้คืน"
+     ],
+     "finding_evidence_ok": 4,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 1,
+     "syl_vs_program_bad": 1,
+     "audio_claims": [],
+     "chars": 9065
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 2,
+     "findings": 10,
+     "strengths": 3,
+     "refs_ok": 5,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 2,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 4,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 4231
+    }
+   }
+  },
+  "flags": {
+   "weak_hook_named": {
+    "ok": false,
+    "evidence": ""
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "local|S3|2": {
+  "metrics": {
+   "seconds": 107.7,
+   "requests": 18,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 2,
+    "wrong": 2,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ฉันรักเธอ ตลอดไป",
+      6,
+      5,
+      "estimated"
+     ],
+     [
+      "ตู้ไปรษณีย์สีแดงยังเปื้อ",
+      13,
+      11,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 1,
+    "pairs_total": 4
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 4,
+     "strengths": 1,
+     "refs_ok": 54,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 17,
+     "quotes_bad": 3,
+     "bad_quotes": [
+      "ร้านซักรีดหลังนั้น",
+      "กลิ่นผงซักฟอกบนแขนเสื้อที่เธอ**เคย**ยืม",
+      "ป้ายราคา**เก่า**ที่เธอเคยแอบเปลี่ยนให้ฉันยังติดอยู"
+     ],
+     "finding_evidence_ok": 4,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 2,
+     "audio_claims": [],
+     "chars": 7473
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 1,
+     "findings": 10,
+     "strengths": 3,
+     "refs_ok": 0,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 6,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 5,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 4004
+    }
+   }
+  },
+  "flags": {
+   "weak_hook_named": {
+    "ok": false,
+    "evidence": ""
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "local|S4|1": {
+  "metrics": {
+   "seconds": 104.6,
+   "requests": 19,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 4,
+    "wrong": 0,
+    "wrong_but_marked_verified": 0,
+    "detail": []
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 2,
+    "true_total": 2,
+    "false_claimed": 0,
+    "false_total": 1,
+    "pairs_total": 8
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 1,
+     "strengths": 1,
+     "refs_ok": 59,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 24,
+     "quotes_bad": 6,
+     "bad_quotes": [
+      "เหมือนมันรู้ว่าฉันรออยู่ตรงนี้",
+      "เสียงเบสจะพาฉันไปถึงฝัน",
+      "เสียงเบสจะพาฉันไปให้ถึง",
+      "เพราะเขาก็คงเต้นเพลงนี้อยู่เหมือนกัน",
+      "การเต้น"
+     ],
+     "finding_evidence_ok": 1,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 6843
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 2,
+     "findings": 10,
+     "strengths": 3,
+     "refs_ok": 0,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 1,
+     "quotes_bad": 2,
+     "bad_quotes": [
+      "เร่งเร้า",
+      "การเต้น"
+     ],
+     "finding_evidence_ok": 2,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 3812
+    }
+   }
+  },
+  "flags": {
+   "good_hook_not_attacked": {
+    "ok": true,
+    "evidence": ""
+   },
+   "good_hook_recognised": {
+    "ok": true,
+    "evidence": "ี่ยน L011 จาก \"ไกล\" เป็น \"ถึง\" (ตามที่แนะนำใน [RHYME.1] ของ Chorus) จะทำให้รู้สึกถึงการบรรลุ (Arrival) ได้ดีกว่าการบอกว่า \"ไกล\" (Distance) หรือไม่ เพราะมันขึ้นอยู่กับน้ำหนักของเสียงที่ใช้ใ"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "local|S4|2": {
+  "metrics": {
+   "seconds": 105.6,
+   "requests": 19,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 4,
+    "wrong": 0,
+    "wrong_but_marked_verified": 0,
+    "detail": []
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 2,
+    "true_total": 2,
+    "false_claimed": 0,
+    "false_total": 1,
+    "pairs_total": 7
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 1,
+     "strengths": 1,
+     "refs_ok": 79,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 15,
+     "quotes_bad": 3,
+     "bad_quotes": [
+      "เหมือนมันรู้ว่าวันนี้ฉันอยากจะเต้น",
+      "เต้นต่อไป",
+      "ข้างห้องเคาะผนังฉันยิ้มให้มัน"
+     ],
+     "finding_evidence_ok": 1,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 7575
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 4,
+     "findings": 8,
+     "strengths": 3,
+     "refs_ok": 6,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 5,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 1,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 3802
+    }
+   }
+  },
+  "flags": {
+   "good_hook_not_attacked": {
+    "ok": true,
+    "evidence": ""
+   },
+   "good_hook_recognised": {
+    "ok": true,
+    "evidence": "ป็นการบอกว่า \"ฉันจะไป\" เพิ่มความหนักแน่นทางอารมณ์ให้กับท่อน Chorus ทำให้มันรู้สึกว่ามีการต่อสู้เล็กๆ ในการเต้นนั้นอยู่ ไม่ใช่แค่การเต้นไปตามแรงกระตุ้น L8 มีความไม่แน่นอนในการออกเสียง (uncertain) แต่การซ้ำคำทำให้ความไม่แน่นอ"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "local|S5|1": {
+  "metrics": {
+   "seconds": 95.6,
+   "requests": 15,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 1,
+    "wrong": 0,
+    "wrong_but_marked_verified": 0,
+    "detail": []
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 0,
+    "pairs_total": 8
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 1,
+     "strengths": 4,
+     "refs_ok": 64,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 22,
+     "quotes_bad": 3,
+     "bad_quotes": [
+      "เธอเดิน",
+      "การขึ้นรถไฟ",
+      "การได้นอนหลับ"
+     ],
+     "finding_evidence_ok": 1,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 6272
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 1,
+     "findings": 8,
+     "strengths": 3,
+     "refs_ok": 3,
+     "refs_bad": 1,
+     "bad_refs": [
+      "L12 is empty"
+     ],
+     "quotes_ok": 3,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 1,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 3316
+    }
+   }
+  },
+  "flags": {
+   "contradiction_named": {
+    "ok": true,
+    "evidence": "อใครเลยในชีวิตนี้\" เป็นประโยคที่ทรงพลังและเป็นแกนหลักของความขัดแย้ง (การไม่เคยรอ แต่กลับรอ) การเชื่อมโยงความรู้สึกกับสถานที่: L10 \"ฉันไม่เคยรอใครเล"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2'] vs reference ['Verse 1', 'Chorus', 'Verse 2']"
+   }
+  }
+ },
+ "local|S5|2": {
+  "metrics": {
+   "seconds": 110.1,
+   "requests": 15,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 1,
+    "wrong": 0,
+    "wrong_but_marked_verified": 0,
+    "detail": []
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 0,
+    "pairs_total": 10
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 3,
+     "strengths": 1,
+     "refs_ok": 63,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 20,
+     "quotes_bad": 5,
+     "bad_quotes": [
+      "การหลับเต็มตา",
+      "เธอไม่เคยมาแต่ฉันยังเฝ้ารอเธอ",
+      "เธอไม่เคยมาแต่ฉันยังเฝ้ารอเธอ",
+      "พรุ่งนี้ฉันจะกลับมาที่นี่...ท่ามกลางสายฝน",
+      "เพราะฉันยังอยู่ตรงนี้ ไม่เคยไปจากเมือง"
+     ],
+     "finding_evidence_ok": 3,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 7497
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 1,
+     "findings": 7,
+     "strengths": 5,
+     "refs_ok": 0,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 4,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 1,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 4126
+    }
+   }
+  },
+  "flags": {
+   "contradiction_named": {
+    "ok": true,
+    "evidence": "จะเน้นไปที่การกระทำนั้นๆ โดยตรงว่า \"ฉันยังทำสิ่งนี้อยู่\" เธอไม่เคยมาแต่ฉันยังรอเธอ ความหมายหลักยังคงเดิม คือการรอคอยแม้จะรู้ว่าเธอไม่มา ยังคงสัมผัสสระ "
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2'] vs reference ['Verse 1', 'Chorus', 'Verse 2']"
+   }
+  }
+ },
+ "local|S6|1": {
+  "metrics": {
+   "seconds": 83.0,
+   "requests": 15,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 0,
+    "wrong": 1,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ฉันเดินผ่านตลาดเช้าตรู่ท",
+      21,
+      19,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 0,
+    "pairs_total": 3
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 1,
+     "strengths": 1,
+     "refs_ok": 33,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 10,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 1,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 4346
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 1,
+     "findings": 8,
+     "strengths": 3,
+     "refs_ok": 1,
+     "refs_bad": 1,
+     "bad_refs": [
+      "L16 is empty"
+     ],
+     "quotes_ok": 3,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 4,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 3339
+    }
+   }
+  },
+  "flags": {
+   "density_named": {
+    "ok": true,
+    "evidence": "\" หรือ \"สรุป\" มากพอที่จะต้องการส่วนเชื่อมต่อพิเศษ แต่จากความหนาแน่นของคำแล้ว การเพิ่ม Pre-Chorus อาจเป็นทางเลือกที่ดีเพื่อสร้างแรงส่ง (Build-up) เข"
+   },
+   "no_audio_prediction": {
+    "ok": true,
+    "evidence": ""
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2'] vs reference ['Verse 1', 'Chorus', 'Verse 2']"
+   }
+  }
+ },
+ "local|S6|2": {
+  "metrics": {
+   "seconds": 90.8,
+   "requests": 16,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 0,
+    "wrong": 1,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ฉันเดินผ่านตลาดเช้าตรู่ท",
+      21,
+      19,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 0,
+    "pairs_total": 4
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 3,
+     "findings": 0,
+     "strengths": 4,
+     "refs_ok": 75,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 17,
+     "quotes_bad": 3,
+     "bad_quotes": [
+      "ฉันเดินไปตามเสียงเรียกของคนที่มองเห็นฉัน",
+      "จำชื่อไม่ได้",
+      "มองเห็น"
+     ],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 5626
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 1,
+     "findings": 8,
+     "strengths": 2,
+     "refs_ok": 0,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 1,
+     "quotes_bad": 1,
+     "bad_quotes": [
+      "เก่าแก่"
+     ],
+     "finding_evidence_ok": 5,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 3606
+    }
+   }
+  },
+  "flags": {
+   "density_named": {
+    "ok": true,
+    "evidence": "ด้ดีและสร้างภาพที่น่าจดจำ (L008, L010) แม้ว่าบางท่อนจะมีความหนาแน่นของคำมากเกินไปจนอาจทำให้การร้องติดขัด แต่โดยรวมแล้วเนื้อหามีความชัดเจนและมีรายละ"
+   },
+   "no_audio_prediction": {
+    "ok": true,
+    "evidence": ""
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2'] vs reference ['Verse 1', 'Chorus', 'Verse 2']"
+   }
+  }
+ },
+ "local|S7|1": {
+  "metrics": {
+   "seconds": 97.6,
+   "requests": 18,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 3,
+    "wrong": 0,
+    "wrong_but_marked_verified": 0,
+    "detail": []
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 4,
+    "true_total": 4,
+    "false_claimed": 1,
+    "false_total": 1,
+    "pairs_total": 9
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 3,
+     "findings": 0,
+     "strengths": 1,
+     "refs_ok": 47,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 14,
+     "quotes_bad": 5,
+     "bad_quotes": [
+      "But all I found was a cold, dead fridge",
+      "ll be the one still *moving* in this town",
+      "ll be the one still moving in this town",
+      "And call me when the lights go down",
+      "And call me when the lights go down"
+     ],
+     "finding_evidence_ok": 0,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 6145
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 1,
+     "findings": 8,
+     "strengths": 4,
+     "refs_ok": 0,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 2,
+     "quotes_bad": 1,
+     "bad_quotes": [
+      "So call me when the lights go down / I"
+     ],
+     "finding_evidence_ok": 3,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 4207
+    }
+   }
+  },
+  "flags": {
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "local|S7|2": {
+  "metrics": {
+   "seconds": 122.5,
+   "requests": 18,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 3,
+    "wrong": 0,
+    "wrong_but_marked_verified": 0,
+    "detail": []
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 4,
+    "true_total": 4,
+    "false_claimed": 1,
+    "false_total": 1,
+    "pairs_total": 14
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 4,
+     "strengths": 1,
+     "refs_ok": 48,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 11,
+     "quotes_bad": 2,
+     "bad_quotes": [
+      "when the lights go down *slow*",
+      "ll be the one *waiting* in this town"
+     ],
+     "finding_evidence_ok": 4,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 7558
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 2,
+     "findings": 12,
+     "strengths": 5,
+     "refs_ok": 0,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 6,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 4,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 5048
+    }
+   }
+  },
+  "flags": {
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Verse 1', 'Chorus', 'Verse 2', 'Chorus'] vs reference ['Verse 1', 'Chorus', 'Verse 2', 'Chorus']"
+   }
+  }
+ },
+ "local|S8|1": {
+  "metrics": {
+   "seconds": 101.7,
+   "requests": 22,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 0,
+    "wrong": 1,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ไฟถนนกระพริบเหมือนมันกำล",
+      11,
+      10,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 0,
+    "pairs_total": 7
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 0,
+     "findings": 4,
+     "strengths": 1,
+     "refs_ok": 52,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 13,
+     "quotes_bad": 4,
+     "bad_quotes": [
+      "ส่องมาที่ฉัน / ให้ฉันเห็นทาง",
+      "เดินทาง",
+      "ถ้าทั่วทั้งเมืองหลับใหลไป",
+      "ไฟดวงสุดท้ายค่อย ๆ มอดลงตอนตีสี่"
+     ],
+     "finding_evidence_ok": 4,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 8412
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 1,
+     "findings": 11,
+     "strengths": 2,
+     "refs_ok": 0,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 4,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 3,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 4100
+    }
+   }
+  },
+  "flags": {
+   "songwriter_leaves_cue_tags": {
+    "ok": true,
+    "evidence": "[]"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Intro', 'Verse 1', 'Chorus', 'Bridge', 'Outro'] vs reference ['Intro', 'Verse 1', 'Chorus', 'Bridge', 'Outro']"
+   }
+  }
+ },
+ "local|S8|2": {
+  "metrics": {
+   "seconds": 110.5,
+   "requests": 22,
+   "error": "",
+   "lyrics_unchanged": true,
+   "program_syllables": {
+    "right": 0,
+    "wrong": 1,
+    "wrong_but_marked_verified": 0,
+    "detail": [
+     [
+      "ไฟถนนกระพริบเหมือนมันกำล",
+      11,
+      10,
+      "estimated"
+     ]
+    ]
+   },
+   "rhyme_evidence": {
+    "found": true,
+    "true_found": 0,
+    "true_total": 0,
+    "false_claimed": 0,
+    "false_total": 0,
+    "pairs_total": 9
+   },
+   "reports": {
+    "songwriter": {
+     "status": "ok",
+     "diagnostics": 5,
+     "findings": 2,
+     "strengths": 0,
+     "refs_ok": 60,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 25,
+     "quotes_bad": 4,
+     "bad_quotes": [
+      "เมืองนี้เงียบหลังเที่ยงคืนเลย",
+      "ถ้าเมืองทั้งหลับไปแล้ว",
+      "เมืองทั้ง",
+      "ไฟดวงสุดท้าย...เงียบไปตอนตีสี่"
+     ],
+     "finding_evidence_ok": 2,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 7793
+    },
+    "music_producer": {
+     "status": "ok",
+     "diagnostics": 2,
+     "findings": 10,
+     "strengths": 5,
+     "refs_ok": 1,
+     "refs_bad": 0,
+     "bad_refs": [],
+     "quotes_ok": 2,
+     "quotes_bad": 0,
+     "bad_quotes": [],
+     "finding_evidence_ok": 3,
+     "finding_evidence_bad": 0,
+     "bad_finding_evidence": [],
+     "syl_claims_ok": 0,
+     "syl_claims_bad": 0,
+     "syl_detail": [],
+     "syl_vs_program_ok": 0,
+     "syl_vs_program_bad": 0,
+     "audio_claims": [],
+     "chars": 4556
+    }
+   }
+  },
+  "flags": {
+   "songwriter_leaves_cue_tags": {
+    "ok": true,
+    "evidence": "[]"
+   },
+   "sections_match_reference": {
+    "ok": true,
+    "evidence": "reported ['Intro', 'Verse 1', 'Chorus', 'Bridge', 'Outro'] vs reference ['Intro', 'Verse 1', 'Chorus', 'Bridge', 'Outro']"
+   }
+  }
+ }
+}

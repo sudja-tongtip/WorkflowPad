@@ -1,490 +1,696 @@
-# AI Coder Brief — Unified Numbered Clear Tags Migration
+# BRIEF — Vocal Flow: Critic & Coach V2
+## Singability, Phrasing & Vocal Delivery
 
 **Project:** WorkflowPad Music Studio  
-**Scope:** All LLM Output Contracts  
-**Priority:** P0 — Format Reliability / Parser Stability / UI Safety  
-**Execution:** Audit → Implement → Test → Report
+**Priority:** P1 — Quality & Coaching Upgrade  
+**Mode:** Audit → Implement Candidate → Test → Compare → Promote if Passed
 
-## 1. เป้าหมาย
+## 1. Goal
 
-ปรับระบบ WorkflowPad Music Studio ให้ **LLM ทุกตัวใช้ Numbered Clear Tags เป็นมาตรฐานเดียวกันสำหรับข้อความตอบกลับที่โปรแกรมต้องอ่าน**
+พัฒนารายงาน Vocal Flow จากระบบที่เน้นแสดงจำนวนพยางค์ คำเป็น–คำตาย และความหนาแน่นของเนื้อเพลง ให้เป็น **นักวิจารณ์และโค้ชด้านการเขียนคำร้องสำหรับการร้องเพลง**
 
-ตัวอย่าง:
+ต้องสามารถตอบได้ว่า:
 
-```text
-[REPLY.1]
-เนื้อเพลงท่อนนี้มีปัญหาเรื่องคำลงท้าย
-ที่ฟังเหมือนเติมมาเพื่อให้สัมผัสกัน
+1. วลีไหนมีความเป็นธรรมชาติ และควรรักษาไว้
+2. วลีไหนอาจมีปัญหาเรื่องการแบ่งคำหรือการหายใจ
+3. การเลือกคำและการออกเสียงส่งผลต่อความลื่นไหลอย่างไร
+4. มีความเสี่ยงจากจำนวนพยางค์ จังหวะ หรือพื้นที่เวลาหรือไม่
+5. หากปรับวลี จะส่งผลต่อความหมายและอารมณ์อย่างไร
+6. อะไรเป็นเพียงข้อสงสัยที่ต้องตรวจสอบกับทำนองหรือ Audio จริง
 
-[FINDING.1]
-L028|wording|important
-คำว่า "พวกนี้ที" อาจฟังไม่เป็นธรรมชาติ
+**หลักสำคัญ: Singability ≠ Syllable Count**
 
-[DONE]
-```
+จำนวนพยางค์มากไม่ได้แปลว่าร้องยาก และจำนวนพยางค์น้อยไม่ได้แปลว่าร้องง่าย
 
-ต้องแก้ปัญหา:
-
-- LLM ส่ง JSON หรือ XML ผิด Format
-- Parser อ่านไม่ได้จนข้อมูลทั้งชุดเสีย
-- ข้อมูลซ้ำหรือขัดกันเอง
-- UI แสดง Technical Errors ยาว ๆ
-- Output ยาวเกินจำเป็นและเปลือง Token
-- Format ของแต่ละ Specialist ไม่เหมือนกัน
-
-**เป้าหมายหลักคือ Format Reliability ไม่ใช่ปรับความสามารถในการคิดของ LLM**
-
-ห้ามใช้การย้าย Format ครั้งนี้เป็นเหตุผลไปเปลี่ยน Logic วิเคราะห์สัมผัส การแต่งเพลง หรือ Music Generation
+เป้าหมายไม่ใช่การทำให้ทุกบรรทัดสั้นลง แต่เป็นการช่วยผู้แต่งตัดสินใจว่าคำร้องถ่ายทอดเป็นเสียงได้ดีเพียงใด และควรพัฒนาจุดไหน
 
 ---
 
-## 2. Audit ทุก LLM Call Site ก่อนแก้
+## 2. Technical Audit ก่อนแก้
 
-ตรวจจากโค้ด Production จริงทั้งหมด ไม่ใช่ตรวจเฉพาะชื่อ Specialist
+ตรวจ Implementation ปัจจุบันของ:
 
-ต้องครอบคลุมอย่างน้อย:
+- `vocal_flow` Specialist
+- `spec_reports.py`
+- Python Vocal Evidence / Syllable Counter
+- Live Lyrics Insights
+- Specialist Report UI ใน `music_studio.py`
+- Numbered Clear Tags Parser
+- Report Snapshot / Cache / Stale Detection
+- Discuss with Songwriter
+- Preview / Apply / Undo
+- โครงสร้าง Critic & Coach จาก Rhyme & Flow V2
 
-| ระบบ | สิ่งที่ต้องตรวจ |
+ตรวจ Data Flow:
+
+Lyrics + BPM + Duration + Vocal Delivery → Python Evidence → Vocal Flow LLM → Parser → Coach Report → Discuss with Songwriter
+
+ต้อง Reuse ระบบที่มีอยู่ก่อน
+
+ห้ามสร้าง Parser, Coach Card, Session หรือ Apply Pipeline ชุดใหม่โดยไม่จำเป็น
+
+---
+
+## 3. หน้าที่ Python — Evidence Provider
+
+รักษาเครื่องมือ Python ปัจจุบันไว้ก่อน
+
+Python ให้ข้อมูลเกี่ยวกับ:
+
+- จำนวนพยางค์รายบรรทัด
+- การแบ่งพยางค์
+- คำเป็น / คำตาย / ไม่แน่ใจ
+- Section และ Line IDs
+- จำนวนพยางค์ต่อ Section
+- Vocal Density Estimates
+- BPM
+- Target Duration
+- Vocal Delivery หากมีการตั้งค่า
+- ข้อจำกัดและความไม่แน่นอนของการประมาณ
+
+### ข้อกำหนดใหม่
+
+ให้ข้อมูล Vocal Evidence แต่ละรายการมี ID สำหรับอ้างอิง เช่น `V001`, `V002` โดยใช้ Adapter คล้าย Rhyme & Flow V2
+
+ตัวอย่างโครงสร้าง:
+
+    [VOCAL_EVIDENCE]
+    V001 | L20 | syllables:12 | section:Chorus
+    V002 | L42 | syllables:12 | section:Chorus
+    V003 | L45 | syllables:14 | section:Bridge
+    [/VOCAL_EVIDENCE]
+
+ตัวเลขนี้เป็นตัวอย่างจากภาพ UI เดิม ต้องใช้ผลคำนวณจริงใน Runtime
+
+Evidence ID ต้องผูกกับ Analysis Snapshot และตรวจสอบได้ว่าอ้างอิง Line ไหน
+
+### Python ไม่ควรตัดสินแทน LLM ว่า
+
+- บรรทัดนี้ร้องยากแน่นอน
+- ผู้ร้องต้องหายใจตรงนี้
+- คำตายเป็นคำที่ไม่เหมาะกับการร้อง
+- วลีนี้ออกเสียงผิด
+- บรรทัดนี้ต้องลดจำนวนคำ
+
+ให้ Python ส่งข้อมูลและระดับความไม่แน่นอน ส่วน LLM ตีความโดยใช้บริบทเพลง
+
+### ข้อควรระวัง
+
+- คำเป็น–คำตายเป็นข้อมูลทางภาษาศาสตร์ ไม่ใช่คะแนนความยาก
+- ห้ามใช้จำนวนพยางค์ต่อบรรทัดเป็นเกณฑ์ตายตัว
+- ความหนาแน่นเป็นการประมาณจาก BPM, Duration, Delivery และสมมติฐานการจัดเวลา ไม่ใช่การวัดจังหวะร้องจริง
+- หากไม่มี Melody, Audio หรือ Note Timing ต้องระบุข้อจำกัดให้ชัด
+- ไม่แก้ Syllable Algorithm ในงานนี้ เว้นแต่พบ Bug ที่ยืนยันได้
+
+---
+
+## 4. Vocal Flow Critic — ห้ามิติ
+
+ใช้ห้ามิตินี้เป็นกรอบคิด ไม่ใช่หัวข้อที่ LLM ต้องสร้าง Finding ให้ครบทุกครั้ง
+
+### A. Phrase Flow
+
+วิเคราะห์:
+
+- การแบ่งกลุ่มความหมาย
+- ความต่อเนื่องระหว่างคำ
+- การใช้คำเชื่อม
+- การเรียงประโยค
+- ตำแหน่งที่สามารถแบ่งวลีโดยไม่ทำลายความหมาย
+
+Coach ควรเสนอการแบ่งวลีหรือการจัดคำใหม่เมื่อมีประโยชน์จริง
+
+### B. Breath & Space
+
+วิเคราะห์:
+
+- วลียาวที่อาจต้องใช้พื้นที่ร้องมาก
+- จุดพักตามความหมาย
+- การเรียงประโยคที่อาจทำให้แบ่งลมหายใจไม่สะดวก
+- ความต่อเนื่องของอารมณ์เมื่อมีการหยุด
+
+ห้ามยืนยันว่าผู้ร้องหายใจไม่ทันจากจำนวนพยางค์อย่างเดียว
+
+ต้องแยก:
+
+**Potential Breath Concern** กับ **Confirmed Singing Problem**
+
+หากไม่มี Audio จะไม่มีสิทธิ์ใช้สถานะ Confirmed Singing Problem
+
+### C. Articulation & Diction
+
+วิเคราะห์:
+
+- คำที่อาจออกเสียงติดขัดเมื่อร้องต่อเนื่อง
+- พยัญชนะต้นและเสียงปิดท้าย
+- เสียงสระและความต่อเนื่องระหว่างคำ
+- คำหลายพยางค์
+- การวางคำที่อาจทำให้เสียงไม่ชัด
+- ความสัมพันธ์ระหว่างการออกเสียงและความหมาย
+
+คำเป็น–คำตายใช้เป็นข้อมูลช่วยอธิบายได้ แต่ห้ามมองว่าคำตายเป็นข้อบกพร่องโดยตัวมันเอง
+
+### D. Rhythm & Density
+
+วิเคราะห์:
+
+- ความหนาแน่นของพยางค์
+- BPM / Duration / Delivery
+- ความแตกต่างระหว่าง Section
+- บรรทัดที่มีความเสี่ยงจากพื้นที่เวลาที่ประมาณได้
+- คำร้องที่ตั้งใจใช้ Fast Delivery / Rhythmic Phrasing / Rap
+
+แยกคำเตือนสองประเภท:
+
+1. **Phrasing Concern** — ปัญหาที่อาจเกี่ยวกับการวางวลีและภาษา
+2. **AI Generation Risk** — ความเสี่ยงที่โมเดลสร้างเสียงอาจจัดคำลงเวลาไม่ครบหรือไม่ชัด
+
+ห้ามสรุปว่าสองปัญหานี้เป็นเรื่องเดียวกัน
+
+### E. Expressive Singability
+
+วิเคราะห์:
+
+- การเน้นคำสำคัญ
+- ความเป็นธรรมชาติในการถ่ายทอดอารมณ์
+- การจัดวลีที่สนับสนุนเจตนาของเพลง
+- การใช้คำซ้ำหรือประโยคยาวเพื่อสร้างอารมณ์
+- จุดที่ไม่ควรแก้เพราะเป็นเอกลักษณ์
+
+ต้องสามารถแนะนำให้คงต้นฉบับได้ พร้อมอธิบายเหตุผล
+
+---
+
+## 5. Critic & Coach Output Contract
+
+ใช้แนวคิดจาก Rhyme & Flow V2
+
+แต่ละ Finding รองรับ:
+
+| Field | Purpose |
 |---|---|
-| Songwriter AI | Chat, วิเคราะห์เพลง, Edit Proposal, Counting |
-| Music Producer AI | Chat, วิเคราะห์เพลง, Arrangement, Cues |
-| Rhyme Analyzer | End Groups, Internal Rhyme, Repetition |
-| AI Recommend | Style, BPM, Music Settings |
-| Caption Generation | Music Caption สำหรับ ACE-Step |
-| AI Actions | Rewrite, Continue, Improve, Arrange |
-| Preview | การเสนอ Section Cues และคำแนะนำ |
-| Internal LLM Tasks | งานที่เรียกโมเดลเบื้องหลังทั้งหมด |
-| Local / Grok | ความแตกต่างของ Response Handling |
+| `kind` | strength / concern / observation |
+| `evidence_ids` | Python Evidence IDs |
+| `lines` | บรรทัดที่เกี่ยวข้อง |
+| `observation` | สิ่งที่ตรวจพบ |
+| `interpretation` | ผลต่อการร้องและความหมาย |
+| `recommendation` | ข้อเสนอจาก Coach |
+| `decision` | keep / adjust / either |
+| `options` | ทางเลือกไม่เกิน 2 แบบ |
+| `tradeoff` | สิ่งที่ได้และอาจเสีย |
+| `verification` | text_based / needs_melody / needs_audio |
 
-ค้นหาจริงจากจุดเรียก LLM, Prompt Builder, Response Parser, Adapter และ Consumers
+ให้คง Numbered Clear Tags และ `[DONE]` ตาม Contract เดิม
 
-สำหรับแต่ละงาน ให้บันทึก:
+ปรับ Parser เท่าที่จำเป็น โดยใช้แนวทางที่พิสูจน์แล้วจาก Rhyme & Flow V2
 
-- Call Site และฟังก์ชันที่เกี่ยวข้อง
-- Backend ที่รองรับ
-- Output Format ปัจจุบัน
-- Parser ที่ใช้งาน
-- UI หรือระบบที่รับผล
-- มี Side Effect หรือ Apply Action หรือไม่
-- ความเสี่ยงของการ Migration
+### การตรวจ Output
 
-**Deliverable:** `LLM_FORMAT_AUDIT.md`
+- Evidence ID ต้องมีจริง
+- Line IDs ต้องตรง Snapshot
+- จำนวนพยางค์ที่อ้างจาก Python ต้องตรง Evidence
+- ข้อเสนอแก้คำต้องแยกจากต้นฉบับ
+- ห้ามสร้างข้อมูล Audio ที่ไม่มีอยู่
+- ไม่ให้ข้อเสนอแก้เนื้อเพลงกลายเป็น Apply Card อัตโนมัติ
+- Finding ที่ข้อมูลผิดต้องไม่ทำให้ Finding อื่นเสียไปด้วย
 
-ห้ามถือว่าทุก JSON ในโปรเจกต์เป็น LLM Output
-
-JSON สำหรับ ComfyUI API, Grok API, Project Storage, Cache, Settings และไฟล์ระบบภายในต้องคงเดิม เว้นแต่เป็นส่วนของ LLM Response Contract โดยตรง
-
----
-
-## 3. ออกแบบ Unified Numbered Clear Tags
-
-สร้างมาตรฐานกลางหนึ่งชุด
-
-### ตัวอย่าง Tag Registry
-
-| Tag | หน้าที่ |
-|---|---|
-| `[REPLY.n]` | คำตอบ Chat |
-| `[FINDING.n]` | ข้อสังเกต |
-| `[REVIEW.n]` | ผลวิเคราะห์ |
-| `[EDIT.n]` | ข้อเสนอแก้เนื้อเพลง |
-| `[SECTION.n]` | ข้อมูล Section |
-| `[END.n]` | กลุ่มสัมผัสท้าย |
-| `[LINK.n]` | สัมผัสประเภทอื่น |
-| `[REPEAT.n]` | คำซ้ำ |
-| `[STYLE.n]` | Style Settings |
-| `[SETTING.n]` | ค่าตั้งต่าง ๆ |
-| `[CAPTION.n]` | Music Caption |
-| `[DONE]` | จบคำตอบ |
-
-รายการนี้เป็นจุดเริ่มต้น ให้ Audit ก่อนสรุป Tag Registry ฉบับจริง
-
-### กฎกลาง
-
-1. รูปแบบ Tag คือ `[TYPE.n]`
-2. ใช้ชื่อ Tag ที่ Registry รองรับเท่านั้น
-3. หมายเลขต้องไม่ซ้ำภายในประเภทเดียวกันของคำตอบหนึ่งชุด
-4. Payload รองรับหลายบรรทัด
-5. ต้องกำหนดกฎ Escape สำหรับข้อความที่มีหน้าตาเหมือน Tag
-6. ต้องรักษาเนื้อเพลงต้นฉบับตรงทุกตัวอักษร
-7. ไม่มี Markdown Fence หรือคำอธิบายนอก Contract สำหรับงาน Structured Output
-8. ไม่บังคับให้ทุกงานส่งทุก Tag
-9. ไม่สร้างข้อมูลหรือ Tag เปล่าเพื่อให้ครบตัวอย่าง
-10. ห้ามรายงานข้อมูลเดียวกันหลายชุดโดยไม่จำเป็น
-
-**สำคัญ:** Parser ต้องแยก Tag ที่เป็นคำสั่งออกจาก `[Verse]`, `[Chorus]`, `[Hold]` และข้อความในเนื้อเพลงได้ โดยไม่มีการแก้เนื้อเพลงของผู้ใช้
+ความเห็นเชิงภาษาและอารมณ์ให้ LLM รับผิดชอบ ไม่สร้าง Python Heuristic ขึ้นมาตัดสินศิลปะแทน
 
 ---
 
-## 4. Shared Clear Tag Parser
+# 6. TEXT-BASED UI MOCKUP
 
-สร้าง Parser กลางที่ทุก Specialist เรียกใช้ร่วมกัน
+ตัวอย่างด้านล่างเป็นเป้าหมายการออกแบบรายงาน ไม่ใช่ผลวิเคราะห์จริงที่ผ่านการยืนยันจาก LLM
 
-แนะนำแยกเป็น:
+ใช้ข้อความจากภาพ Vocal Flow ปัจจุบันเป็นตัวอย่าง และให้ AI Coder ปรับ UI จริงตามโครงสร้างนี้ โดยไม่จำเป็นต้องใช้กล่อง ASCII ตามตัวอักษร
 
-- Core Tag Parser — อ่าน Syntax
-- Tag Registry — ระบุชนิด Tag
-- Task Schema — ตรวจฟิลด์ของแต่ละงาน
-- Task Adapter — แปลงเข้าสู่ Data Model เดิม
-- Diagnostics — บันทึกข้อผิดพลาด
+## 6.1 Main Report — Overview
 
-ไม่สร้าง Regex Parser คนละชุดในแต่ละ Specialist
+    ┌─────────────────────────────────────────────────────────────┐
+    │  🎙 VOCAL FLOW — SINGABILITY & PHRASING                    │
+    │                                                             │
+    │  สถานะ: เป็นปัจจุบัน                 [ วิเคราะห์ใหม่ ]     │
+    │  รายงานจากข้อความเท่านั้น · ไม่มี Audio                     │
+    │                                                             │
+    │  OVERALL CRITIQUE                                           │
+    │                                                             │
+    │  คำร้องส่วนใหญ่มีการแบ่งความหมายที่ชัดเจน                  │
+    │  แต่มีบางวลีที่ควรตรวจตำแหน่งพักและการจัดคำ                  │
+    │  ให้เหมาะกับทำนอง                                           │
+    │                                                             │
+    │  เพลงใช้ประโยคสนทนาค่อนข้างมาก ซึ่งช่วยให้การถ่ายทอด       │
+    │  อารมณ์เป็นธรรมชาติ อย่างไรก็ตาม บางบรรทัดมีข้อความ        │
+    │  ต่อเนื่องยาวและอาจต้องตรวจพื้นที่จังหวะเพิ่มเติม           │
+    │                                                             │
+    │  จุดแข็ง                  2 Findings                       │
+    │  จุดควรตรวจ               2 Findings                       │
+    │  ต้องตรวจเมื่อมี Audio     1 Finding                        │
+    │                                                             │
+    │  [ คุยต่อกับ Songwriter ]                                   │
+    │  [ คุยกับ AI ภายนอก ]                                       │
+    └─────────────────────────────────────────────────────────────┘
 
-### Parser Requirements
+จำนวน Findings เป็นตัวอย่าง ไม่ต้องบังคับจำนวน
 
-ต้องรองรับ:
-
-- Multiline Payload
-- Thai / English / Unicode
-- Multiple Tags
-- Duplicate Tag Numbers
-- Unknown Tags
-- Missing Fields
-- Missing `[DONE]`
-- Incomplete Response
-- Extra Text
-- Literal Tag ใน Lyrics
-- Partial Recovery
-
-### Error Handling
-
-ถ้ารายการใดผิด ให้พยายามเก็บรายการอื่นที่ถูกต้อง
-
-แต่ต้องแยก **Syntax Valid**, **Schema Valid** และ **Safe to Use** ให้ชัดเจน
-
-ห้าม Parser:
-
-- เดาค่าที่ LLM ไม่ได้ส่ง
-- ตัดสินเสียงสัมผัสใหม่
-- สร้างข้อเสนอแก้เพลงแทนโมเดล
-- แก้ค่าดนตรีตามความคาดเดา
-- เปลี่ยนเนื้อเพลง
-- นำข้อมูลที่ตรวจไม่ผ่านไป Apply
-
-Chat Text สามารถกู้คืนได้ตามความเหมาะสม แต่ **Edit / Music Settings / Actions ที่มีผลต่อข้อมูลต้องผ่าน Schema และ Safety Validation ก่อนเสมอ**
+ห้ามแสดงคะแนนร้องง่าย 8/10 หรือคะแนนที่ไม่มี Ground Truth
 
 ---
 
-## 5. Migration — Rhyme Analyzer
+## 6.2 Finding — Strength / Keep
 
-เปลี่ยน Output Contract จาก JSON เป็น Numbered Clear Tags
+    ┌─────────────────────────────────────────────────────────────┐
+    │  ✓ จุดแข็ง — ควรรักษา                                      │
+    │                                                             │
+    │  L20 / L42                                                 │
+    │                                                             │
+    │  "ลูกขอเช็กอีกทีนะ แม่อย่าเพิ่งส่งถึงห้อง"                 │
+    │                                                             │
+    │  Python Evidence                                           │
+    │  V001, V002 | 12 พยางค์ต่อบรรทัด                            │
+    │                                                             │
+    │  สิ่งที่พบ                                                  │
+    │  ประโยคสามารถแบ่งเป็นสองกลุ่มความหมายได้                  │
+    │  และปรากฏซ้ำในตำแหน่งต่างกันของเพลง                         │
+    │                                                             │
+    │  ทำไมจึงสำคัญ                                               │
+    │  โครงสร้างแบบภาษาพูดช่วยให้ข้อความฟังเป็นธรรมชาติ            │
+    │  และการซ้ำข้อความอาจสร้างความคุ้นเคยแก่ผู้ฟัง               │
+    │                                                             │
+    │  COACH RECOMMENDATION                                      │
+    │  คงข้อความเดิมไว้ก่อน แล้วตรวจว่าทำนองที่ใช้                 │
+    │  มีพื้นที่เพียงพอสำหรับทั้งสองกลุ่มความหมายหรือไม่          │
+    │                                                             │
+    │  Decision: KEEP                                            │
+    │                                                             │
+    │  Trade-off                                                │
+    │  การลดคำอาจทำให้วลีสั้นลง แต่เสียความรู้สึก                 │
+    │  แบบบทสนทนาที่เป็นธรรมชาติ                                  │
+    │                                                             │
+    │  [ คุยต่อกับ Songwriter ]                                   │
+    └─────────────────────────────────────────────────────────────┘
+
+ข้อสำคัญ: L20 และ L42 ใช้ข้อความเหมือนกัน ไม่จำเป็นต้องสร้างคำวิจารณ์ซ้ำที่ไม่มีสาระเพิ่ม แต่ต้องแสดง Line IDs ทุกตำแหน่งที่เกี่ยวข้อง
+
+ห้ามสมมติว่าใช้ Melody เดียวกันเพียงเพราะเป็นประโยคซ้ำ
+
+---
+
+## 6.3 Finding — Concern / Coaching Options
+
+    ┌─────────────────────────────────────────────────────────────┐
+    │  ! ควรตรวจ — Potential Phrase Boundary                     │
+    │                                                             │
+    │  L20 / L42                                                 │
+    │                                                             │
+    │  ORIGINAL                                                   │
+    │  ลูกขอเช็กอีกทีนะ แม่อย่าเพิ่งส่งถึงห้อง                    │
+    │                                                             │
+    │  EVIDENCE                                                   │
+    │  12 พยางค์ตาม Python                                       │
+    │                                                             │
+    │  CRITIC — สิ่งที่พบ                                         │
+    │  ข้อความมีจุดแบ่งความหมายหลังคำว่า "นะ"                      │
+    │  แต่ยังไม่มีข้อมูลทำนองที่จะยืนยันว่า                         │
+    │  ควรหยุดร้องตรงนั้นจริงหรือไม่                               │
+    │                                                             │
+    │  COACH — ทางเลือก                                           │
+    │                                                             │
+    │  OPTION A — คงต้นฉบับ                                      │
+    │  ลูกขอเช็กอีกทีนะ แม่อย่าเพิ่งส่งถึงห้อง                    │
+    │                                                             │
+    │  เหมาะเมื่อทำนองรองรับการร้องต่อเนื่อง                      │
+    │  และต้องการอารมณ์เร่งรีบ                                   │
+    │                                                             │
+    │  OPTION B — ทดลองแบ่งวลี                                   │
+    │  ลูกขอเช็กอีกทีนะ / แม่อย่าเพิ่งส่งถึงห้อง                  │
+    │                                                             │
+    │  อาจช่วยให้ผู้ร้องเห็นจุดแบ่งความหมายชัดขึ้น                │
+    │  แต่การหยุดจริงต้องทดลองกับทำนอง                            │
+    │                                                             │
+    │  TRADE-OFF                                                 │
+    │  แบ่งวลีชัดขึ้น ↔ อาจเสียความต่อเนื่องของอารมณ์             │
+    │                                                             │
+    │  DECISION: EITHER                                          │
+    │  VERIFY: NEEDS MELODY                                      │
+    │                                                             │
+    │  [ คุยต่อกับ Songwriter ]                                   │
+    │  [ คุยกับ AI ภายนอก ]                                       │
+    └─────────────────────────────────────────────────────────────┘
+
+ตัวอย่างนี้ไม่ใช่คำสั่งให้เปลี่ยนเนื้อเพลง
+
+เครื่องหมาย `/` ใน Mockup เป็นเพียงสัญลักษณ์แบ่งวลีเพื่อสาธิต ห้าม Insert ลง Lyrics Editor โดยอัตโนมัติ
+
+หากผู้ใช้ต้องการแก้จริง ให้ดำเนินการผ่าน Songwriter และ Diff/Apply เดิม
+
+---
+
+## 6.4 Finding — Articulation / Diction
+
+    ┌─────────────────────────────────────────────────────────────┐
+    │  ! ควรตรวจ — Articulation                                  │
+    │                                                             │
+    │  Line: Lxx                                                 │
+    │                                                             │
+    │  ORIGINAL                                                  │
+    │  [เนื้อเพลงจริงจากบรรทัดที่วิเคราะห์]                       │
+    │                                                             │
+    │  CRITIC                                                    │
+    │  ระบุช่วงที่มีเสียงพยัญชนะหรือรอยต่อคำ                    │
+    │  ซึ่งอาจต้องใช้ความชัดในการออกเสียงเป็นพิเศษ                 │
+    │                                                             │
+    │  WHY IT MATTERS                                            │
+    │  อธิบายผลต่อความเข้าใจคำร้องและการถ่ายทอดอารมณ์             │
+    │  โดยไม่เหมารวมว่าคำตายร้องยาก                              │
+    │                                                             │
+    │  COACH OPTIONS                                             │
+    │  A. คงคำเดิมและทดลองวิธีออกเสียง                           │
+    │  B. ทดลองคำทางเลือกที่รักษาความหมาย                        │
+    │                                                             │
+    │  TRADE-OFF                                                 │
+    │  อธิบายผลต่อความหมาย จังหวะ และความชัดของเสียง              │
+    │                                                             │
+    │  VERIFY: NEEDS AUDIO / MELODY                              │
+    │                                                             │
+    │  [ คุยต่อกับ Songwriter ]                                   │
+    └─────────────────────────────────────────────────────────────┘
+
+การ์ดนี้เป็น Template ไม่ต้องสร้างขึ้นหาก LLM ไม่พบหลักฐานที่ควรวิจารณ์
+
+---
+
+## 6.5 Technical Evidence — เก็บของเดิมไว้
+
+    ┌─────────────────────────────────────────────────────────────┐
+    │  PYTHON VOCAL EVIDENCE                                     │
+    │  ข้อมูลประกอบการตัดสินใจ · ไม่ใช่คะแนนการร้อง              │
+    │                                                             │
+    │  SYLLABLE BREAKDOWN                                        │
+    │                                                             │
+    │  L20   12 พยางค์                                          │
+    │  [ลูก][ขอ][เช็ก][อีก][ที][นะ][แม่][อย่า]...               │
+    │                                                             │
+    │  L42   12 พยางค์                                          │
+    │  [ลูก][ขอ][เช็ก][อีก][ที][นะ][แม่][อย่า]...               │
+    │                                                             │
+    │  L45   14 พยางค์                                          │
+    │  [แสดงพยางค์จาก Evidence จริง]                              │
+    │                                                             │
+    │  คำเป็น: 249                                               │
+    │  คำตาย: 51                                                 │
+    │  ไม่แน่ใจ: 15                                              │
+    │                                                             │
+    │  หมายเหตุ: คำเป็น–คำตายเป็นการจำแนกทางภาษา                │
+    │  ไม่ใช่คะแนนความยากในการร้อง                                │
+    │                                                             │
+    │  SECTION DENSITY                                           │
+    │  Intro        [-----       ] ประมาณการ                     │
+    │  Verse 1      [---------   ] ประมาณการ                     │
+    │  Pre-Chorus   [---------   ] ประมาณการ                     │
+    │  Chorus       [---------   ] ประมาณการ                     │
+    │  Bridge       [----------  ] ประมาณการ                     │
+    │                                                             │
+    │  [ ดูหลักฐานแบบละเอียด ]                                   │
+    └─────────────────────────────────────────────────────────────┘
+
+ตัวเลขและแถบด้านบนยกมาเพื่อแสดงโครงสร้างหน้าตา ไม่ใช่การคำนวณใหม่
+
+### UI Design Rules
+
+- เก็บ Syllable Breakdown แบบสีเดิม
+- เก็บคำเป็น–คำตาย
+- เก็บ Density Chart
+- ใช้ Collapsible Section สำหรับ Technical Evidence
+- ย้าย Critic & Coach Report ขึ้นด้านบน
+- ลดข้อความซ้ำและพื้นที่ที่ไม่จำเป็น
+- ไม่เพิ่ม Gauge ที่ทำให้เข้าใจว่าเป็นคะแนนร้องง่าย
+- ใช้ป้ายความไม่แน่นอนเฉพาะที่จำเป็น ไม่ใส่ป้ายเตือนทุกบรรทัด
+
+---
+
+## 7. Discuss with Songwriter
+
+เพิ่ม Action ให้ Vocal Flow สามารถส่งบริบทไปยัง Songwriter ได้เหมือน Rhyme & Flow V2
+
+ส่ง:
+
+- Song ID / Sheet ID
+- Lyrics Snapshot / Revision
+- Section / Line IDs
+- Original Lyrics
+- Python Vocal Evidence IDs
+- Syllable Counts
+- Density Estimates
+- Critic Findings
+- Coaching Options
+- Trade-offs
+- Verification Requirements
+
+Songwriter ต้องได้รับข้อความว่าข้อมูลนี้เป็นรายงานประกอบการตัดสินใจ ไม่ใช่คำสั่งให้แก้ Lyrics
+
+รองรับการถามต่อ เช่น:
+
+- ช่วยแบ่งวลีโดยไม่ลดคำ
+- ลองลดคำแต่รักษาความหมาย
+- เปรียบเทียบสองวิธี
+- ตรงนี้ควรหายใจหรือร้องต่อเนื่อง
+- ถ้าคงเดิมจะมีผลเสียอะไร
+
+หากคำถามต้องใช้ Melody/Audio แต่ไม่มีข้อมูล ให้ Songwriter อธิบายข้อจำกัดแทนการยืนยัน
+
+### Apply Safety
 
 ใช้:
 
-```text
-[SECTION.1]
-[END.1]
-L12|ชัวร์
-L13|กลัว
+Discuss → Suggestion → Preview Diff → Apply → Undo/Redo
 
-[LINK.1]
-exact|internal
-L14|คำหนึ่ง
-L14|คำสอง
-
-[ENDSECTION.1]
-[DONE]
-```
-
-ตัวอย่าง LINK เป็นเพียงตัวอย่าง Syntax ไม่ใช่ผลตรวจเสียงจริง
-
-### รักษา Logic เดิม
-
-- การวิเคราะห์เสียงสามส่วน: สระ / สั้น-ยาว / ตัวสะกด
-- Exact / Near / Uncertain
-- Internal Rhyme
-- Repetition
-- กฎวงเล็บ `( ... )`
-- การจำกัดคู่ข้าม Section
-
-End Group เป็นแหล่งข้อมูลหลักของสัมผัสท้าย
-
-ไม่ส่ง Exact End-to-End Pair ซ้ำใน LINK
-
-Python ตั้งชื่อ A/B/C และกำหนดสีตามกลุ่มที่ LLM ส่งมาเท่านั้น
-
-**ห้ามใช้ Python ตรวจหรือแก้เสียงสัมผัสแทน LLM**
-
-บรรทัดที่ไม่ได้รับกลุ่มให้แสดง `—` สีเทา โดยไม่ตีความว่าไม่มีสัมผัสแน่นอน
+ไม่แก้ Lyrics อัตโนมัติ และไม่สร้าง Apply Card จากข้อความ Recommendation ทั่วไป
 
 ---
 
-## 6. Migration — Songwriter AI
+## 8. External AI Option
 
-เปลี่ยนทั้ง Chat Contract และ Structured Report Contract
+รองรับปุ่ม:
 
-ต้องรองรับ:
+**คุยกับ AI ภายนอก**
 
-- คำตอบธรรมชาติ
-- การวิเคราะห์โดยไม่แก้เนื้อเพลง
-- ข้อเสนอแก้เฉพาะบรรทัด
-- ข้อเสนอหลายทางเลือก
-- Short Confirmation เช่น “เอาแบบนั้น”
-- Cancel / Reject
-- No-op
-- Analyze Song Report
+ให้ Reuse Shared External AI Context Builder จากงาน External AI Consultation หากมีแล้ว
 
-ตัวอย่าง:
+ถ้ายังไม่มี ให้สร้างเฉพาะจุดเชื่อมสำหรับ Vocal Flow โดยไม่สร้างระบบซ้ำหรือแอบเชื่อม API ใหม่
 
-```text
-[REPLY.1]
-Hook นี้มีความหมายชัด แต่บรรทัดสุดท้าย
-ยังฟังเหมือนเติมคำเพื่อให้ลงสัมผัส
+ข้อมูลที่ส่งออกประกอบด้วย:
 
-[DONE]
-```
+- Lyrics พร้อม Line IDs
+- Genre / Style
+- BPM / Duration / Vocal Delivery
+- Vocal Flow Critique
+- Findings / Options / Trade-offs
+- Python Evidence
+- ข้อจำกัดของการวิเคราะห์จากข้อความ
 
-สำหรับ Edit Proposal ให้กำหนด Payload Contract ที่รองรับ Target, Original Text และ Proposed Text อย่างครบถ้วน รวมถึงข้อความหลายบรรทัด
+ใช้ User Prompt เปิดกว้าง ไม่ต้องส่ง System Prompt ของโปรแกรม
 
-**ห้ามแปลง Edit เป็นการเปลี่ยนเนื้อเพลงทันที**
+ตัวอย่าง Prompt:
 
-ต้องรักษา:
+"ช่วยวิจารณ์เนื้อเพลงนี้ในด้านความลื่นไหลของวลี การออกเสียง จังหวะภาษา และความเหมาะสมต่อการร้องเพลง
 
-- Preview
-- Apply
-- Reject
-- Undo / Redo
-- การแก้เฉพาะ Target
-- การไม่แก้ Lyrics ระหว่าง Analyze / Count / Critique
+นี่คือรายงานจากโปรแกรมที่ฉันใช้อยู่ คุณไม่จำเป็นต้องเห็นด้วยกับรายงานเดิม
 
-ห้ามลดความสามารถ Songwriter เพื่อให้ Format สั้นลง
+หากเข้าถึงแหล่งข้อมูลได้ ช่วยค้นคว้าหลักการร้อง การเขียนคำร้อง และภาษาศาสตร์ที่เกี่ยวข้อง แล้วช่วยวิเคราะห์อย่างอิสระ
+
+อยากให้คุณทำหน้าที่เป็นทั้งนักวิจารณ์และโค้ช เสนอทางเลือกพร้อมเหตุผล แต่ไม่ต้องแนะนำให้แก้หากต้นฉบับเหมาะสมอยู่แล้ว"
+
+ให้ผู้ใช้ Preview ก่อน Copy และไม่มี Network Request จากปุ่มนี้
 
 ---
 
-## 7. Migration — Music Producer AI และ Internal Actions
+## 9. Prompt Candidate
 
-ปรับ Structured Output ของ Music Producer และ AI Actions ให้เป็น Numbered Clear Tags
+ตรวจไฟล์ Production Prompt ของ `vocal_flow` ที่ใช้งานจริง
 
-ต้องรองรับข้อมูลเดิมทั้งหมด เช่น:
+สร้าง Candidate แยกออกมา
 
-- BPM
-- Style
-- Key
-- Duration
-- Vocal Cues
-- Section Arrangement
-- Music Caption
-- AI Recommended Settings
-- Music Structure Suggestions
+แนวทาง:
 
-แต่ละงานมี Task Schema เฉพาะ
+- เปลี่ยนจากการสรุปสถิติเป็นการประเมินคุณภาพวลี
+- ใช้ห้ามิติเป็นกรอบการคิด
+- ใช้ Python เป็น Evidence ไม่ใช่คำตัดสิน
+- อนุญาตให้แนะนำ Keep / Adjust / Either
+- เสนอ Options และ Trade-off เมื่อเหมาะสม
+- ไม่บังคับให้ทุก Finding มีข้อเสนอแก้
+- ไม่ต้องประเมินทุก Section หากไม่มีประเด็นสำคัญ
+- ไม่ยืนยันปัญหาการร้องจากข้อความอย่างเดียว
+- ไม่ใช้จำนวนคำตายเป็นคะแนน
+- ไม่ถือว่าบรรทัดยาวเป็นข้อผิดพลาดโดยอัตโนมัติ
 
-Parser ต้องตรวจชนิดข้อมูลและช่วงค่าตามกฎเดิมก่อนส่งเข้า UI
+ให้มี Few-shot ภาษาไทยแบบสั้นที่แสดง:
 
-รักษาพฤติกรรมการเสนอให้ผู้ใช้ Preview / Apply ก่อนเปลี่ยนค่าที่ต้องได้รับการยืนยัน
+1. บรรทัดยาวแต่ควร Keep
+2. บรรทัดที่ควรทดลองแบ่งวลี
+3. ประโยคที่คำออกเสียงต่อเนื่องอาจติดขัด
+4. การเสนอคำใหม่ที่รักษาความหมาย
+5. การยอมรับว่าไม่มีทำนองจึงยังสรุปไม่ได้
 
-ห้ามแก้ ACE-Step Workflow, Model Parameters, Song Duration Logic หรือการทำงานของ Backend เพียงเพราะเปลี่ยน Output Format
+ห้ามเพิ่มข้อห้ามซ้ำซ้อนจำนวนมาก
 
----
-
-## 8. Prompt Migration
-
-ตรวจ Prompt จริงที่โปรแกรมโหลดก่อนแก้
-
-### ข้อกำหนด
-
-- ใช้ Prompt .md ที่ผู้ใช้แก้ไขเองได้ต่อไป
-- ไม่เขียนทับ Custom Prompt ใน AppData
-- ไม่เพิ่ม Few-shot ยาวเกินจำเป็น
-- ให้ Format Contract อยู่ใน Task Template หรือส่วนกลางที่เหมาะสม
-- ไม่มีคำสั่ง JSON/XML เก่าขัดกับ Clear Tags
-- ไม่ทำให้ Chat กลายเป็นรายงานหุ่นยนต์
-- ไม่เปลี่ยนบุคลิกของ Songwriter หรือ Producer
-- ไม่แก้ Session / History Management
-
-ต้องแยก **System Role**, **Task Instructions** และ **Output Contract** ให้ชัดเจน
-
-โมเดลจะใช้ Local Gemma หรือ Grok ก็ต้องตอบด้วย Contract เดียวกันในงานประเภทเดียวกัน
+รักษา Numbered Clear Tags และ Parser Compatibility
 
 ---
 
-## 9. UI Error Handling
+## 10. Testing Plan
 
-แก้การแสดงผล Technical Errors ที่รบกวนหน้าจอ
+### A. Unit / Mock Tests
 
-จากเดิมที่แสดงข้อความยาว เช่น:
+ต้องทดสอบ:
 
-`it lists L12 ... but they are not in one end group`
+- Evidence IDs ถูกต้อง
+- Evidence IDs ไม่มีจริง
+- อ้างจำนวนพยางค์ผิด
+- อ้าง Line ID ผิด
+- Quotes ไม่ตรงต้นฉบับ
+- Options ซ้ำ
+- Options ไม่มีการเปลี่ยนแปลงจริง
+- Finding ที่ถูกและผิดอยู่ในรายงานเดียวกัน
+- Legacy Reports
+- Report Snapshot / Stale Detection
+- BPM / Duration / Delivery เปลี่ยน
+- ไม่ Auto Analyze
+- ไม่เรียก Specialist อื่น
+- Discuss Context Transfer
+- External AI Copy
+- ไม่มี Auto Apply
 
-ให้แสดงสถานะสั้น ๆ เช่น:
+ใช้ Test Profile / Temporary Directory แยกจาก AppData จริงตั้งแต่ก่อนเริ่มทดสอบ
 
-**ผลวิเคราะห์บางส่วน — มีข้อมูลบางรายการไม่สมบูรณ์**
+### B. Real Model Tests
 
-รายละเอียดทั้งหมดต้องอยู่ใน Diagnostic Log
+ทดสอบทั้ง:
 
-กฎ:
+- Grok
+- Local Gemma
 
-- ไม่แสดง Raw Parser Error เต็มหน้ารายงาน
-- ไม่ซ่อนว่าผลบางส่วนไม่สมบูรณ์
-- แสดงเฉพาะข้อมูลที่ผ่าน Validation
-- ไม่เติมข้อมูลที่โมเดลลืม
-- ข้อมูลที่ผิดต้องไม่ถูกส่งให้ Songwriter เหมือนเป็นหลักฐานที่ตรวจสอบแล้ว
+เริ่มเพลงเดียว โดยใช้ Snapshot เดียวกันกับ Production และ Candidate
 
-รักษา Layout, สี, Highlight, Rhyme Map และการ์ดรายงานเดิม
+ถ้าผ่านจึงทดสอบเพิ่มอีกไม่เกิน 2 เพลง
 
----
+เลือกกรณีให้แตกต่างกัน:
 
-## 10. Backward Compatibility
+**Case 1 — Long but Natural**
 
-สำคัญมาก: ไม่ใช่เปลี่ยน Parser แล้วทำให้ข้อมูลเก่าเปิดไม่ได้
+บรรทัดยาวที่แบ่งความหมายได้ดี
 
-ต้องรองรับ:
+ต้องไม่ตัดสินว่าร้องยากเพียงเพราะพยางค์มาก
 
-- JSON Rhyme Reports เดิม
-- XML Edit Proposals ที่ยังอยู่ในข้อมูลหรือ History
-- Cached Reports
-- ข้อมูล Song / Project เดิม
+**Case 2 — Short but Awkward**
 
-ให้มี Versioned Adapter สำหรับข้อมูลเดิม และไม่เขียนทับข้อมูลเก่าโดยไม่จำเป็น
+บรรทัดสั้นแต่มีการเรียงคำหรือรอยต่อเสียงที่อาจทำให้ร้องไม่เป็นธรรมชาติ
 
-สำหรับข้อมูลที่บันทึกใหม่ ใช้ Clear Tag Contract เวอร์ชันใหม่
+ต้องสามารถตรวจปัญหาที่ไม่เกี่ยวกับจำนวนพยางค์
 
----
+**Case 3 — Fast Intentional Delivery**
 
-## 11. Testing — ต้องทำจริงในรอบนี้
+เพลงที่ตั้งใจใช้คำหนาแน่นหรือร้องเร็ว
 
-### A. Mock / Unit Tests
+ต้องแยก Artistic Choice ออกจาก AI Generation Risk
 
-ทดสอบ Shared Parser ด้วย:
+ไม่จำเป็นต้องเรียก LLM จำนวนมาก ใช้ไม่เกิน 3 เพลงต่อรอบ และเปรียบเทียบ Production/Candidate อย่างเป็นธรรม
 
-- Valid Tags
-- Missing Tag
-- Duplicate Number
-- Unexpected Tag
-- Broken Payload
-- Missing DONE
-- Partial Recovery
-- Unicode / Thai Text
-- Multiple Sections
-- Literal Tags in Lyrics
-- Multiline Edit
-- Wrong Target
-- Duplicate Actions
-- Safe No-op
-
-### B. Specialist Regression
-
-ทดสอบทุกงานที่พบจาก Audit
-
-โดยเฉพาะ:
-
-- Songwriter Chat / Edit / Analyze
-- Music Producer Chat / Settings / Analyze
-- Rhyme Analyzer
-- AI Recommend
-- Caption
-- Arrange
-- Preview
-
-ต้องตรวจว่า Output ผ่าน Shared Parser แล้วทำงานต่อกับ Adapter / UI เดิมได้
-
-### C. Safety Regression
-
-ทดสอบให้แน่ใจว่า:
-
-- Analyze Only ไม่สร้าง Edit
-- Count Only ไม่แก้ Lyrics
-- Invalid Edit ไม่สามารถ Apply ได้
-- Reject ไม่เปลี่ยนข้อมูล
-- Undo / Redo ยังทำงาน
-- Missing Fields ไม่ถูกเติมค่าเองอย่างเงียบ ๆ
-- ไม่มี LLM Call ระหว่างพิมพ์ Lyrics
-- ไม่ส่ง AI Chat History ข้าม App Restart
-
-### D. Real LLM Smoke Tests
-
-หลัง Mock ผ่าน ให้ทดสอบกับ Backend จริงที่พร้อมใช้งาน
-
-ใช้จำนวนรอบเท่าที่จำเป็น ไม่ต้องทำ Deep Rhyme Accuracy Audit ใหม่
+### C. Evaluation
 
 วัด:
 
-- Format Pass
-- Parse Success
-- Partial Recovery
-- Output Size / Tokens
-- Latency
-- UI Compatibility
+| Metric | สิ่งที่ตรวจ |
+|---|---|
+| Evidence Fidelity | อ้าง Python ถูกต้อง |
+| Phrase Reasoning | แบ่งวลีมีเหตุผล |
+| Singability Judgment | ไม่ตัดสินจากพยางค์อย่างเดียว |
+| Coaching Value | คำแนะนำใช้ได้จริง |
+| Meaning Preservation | ไม่ทำลายความหมาย |
+| Uncertainty | ไม่อ้างว่าได้ยิน Audio |
+| Format Stability | Tags/Parser ผ่าน |
+| Workflow | Discuss/Copy/Apply Safety ถูกต้อง |
+| Cost | ไม่เพิ่ม Requests ที่ไม่จำเป็น |
 
-หาก Backend ใดไม่พร้อม ให้รายงานว่าไม่ได้ทดสอบจริง ห้ามอ้างว่าผ่าน
-
-**ห้าม Generate Audio เพื่อทดสอบ Format**
+ต้องตรวจ Output จริง ไม่ใช้ LLM Judge เป็นผู้ตัดสินเพียงอย่างเดียว
 
 ---
 
-## 12. Acceptance Criteria
+## 11. Promotion Gate
 
-ถือว่างานผ่านเมื่อ:
+**Gate 1 — Evidence Integrity**
 
-1. Audit ครบทุก LLM Call Site ที่พบ
-2. ทุก Application-facing LLM Output Contract ที่อยู่ใน Scope เปลี่ยนเป็น Numbered Clear Tags
-3. มี Shared Parser และ Task Adapters
-4. ไม่มี JSON/XML Output Instruction เก่าที่ขัดกันในเส้นทางที่ย้ายแล้ว
-5. Mock Tests ผ่าน
-6. Structured Actions ปลอดภัย
-7. Chat ยังตอบเป็นธรรมชาติ
-8. UI ไม่แสดง Raw Technical Errors
-9. Reports และ Projects เก่ายังใช้งานได้
-10. ไม่มี Regression ใน Preview / Apply / Undo
-11. มีผลทดสอบจริงและข้อจำกัดชัดเจน
+ข้อมูล Python ที่ LLM อ้างต้องตรวจสอบได้
 
-หากพบ Call Site ที่ย้ายไม่ได้อย่างปลอดภัย ให้เก็บ Compatibility Path ชั่วคราว ระบุไว้ในรายงาน และอย่าอ้างว่า Migration ครบ 100%
+**Gate 2 — Format Stability**
+
+Parser ไม่ทิ้ง Finding ดีเพราะ Format ที่ตีความได้ชัด และไม่ยอมรับหลักฐานผิดเป็นหลักฐานยืนยัน
+
+**Gate 3 — Critic Quality**
+
+วิจารณ์การร้องและวลีอย่างมีเหตุผล ไม่ใช้จำนวนพยางค์ตัดสินคุณภาพเพลง
+
+**Gate 4 — Coaching Quality**
+
+มีคำแนะนำเฉพาะจุด รู้ว่าเมื่อไรควร Keep และอธิบาย Trade-off ได้
+
+**Gate 5 — Workflow**
+
+UI, Discuss, External AI Copy และ Preview/Apply ทำงานปลอดภัย
+
+หาก Candidate ไม่ผ่าน ให้คง Production Prompt แต่สามารถใช้การปรับปรุง Evidence/Parser/UI ที่ผ่าน Regression แล้วได้
+
+---
+
+## 12. ขอบเขตและข้อห้าม
+
+- ไม่เปลี่ยน Model
+- ไม่ Patch ComfyUI
+- ไม่เพิ่ม Vocal Analyzer LLM
+- ไม่แก้ Python Syllable Algorithm โดยไม่มี Bug ยืนยัน
+- ไม่สร้างระบบ Chat หรือ Apply ใหม่
+- ไม่แก้ Lyrics อัตโนมัติ
+- ไม่เรียก LLM เมื่อเปิดแท็บ
+- ไม่รื้อ Live Lyrics Insights
+- ไม่เขียนทับ Prompt ที่ผู้ใช้แก้ไว้
+- ไม่ให้ Tests แตะ AppData จริง
+- ไม่ Commit โดยไม่ได้รับอนุญาต
+
+ต้องรักษา Existing Specialist Isolation, Report Cache และ Session Policy
 
 ---
 
 ## 13. Deliverables
 
-ส่งมอบ:
+สร้างรายงาน:
 
-**`LLM_FORMAT_AUDIT.md`**
-- รายชื่อ Call Sites
-- Format เดิม
-- Parser เดิม
-- ผลการ Migration
-- จุดที่ยังมีข้อจำกัด
+**VOCAL_FLOW_CRITIC_COACH_V2_REPORT.md**
 
-**`CLEAR_TAG_CONTRACT.md`**
-- Tag Grammar
-- Registry
-- Task Schemas
-- Escape Rules
-- ตัวอย่างของทุก Specialist
-- Versioning
+ประกอบด้วย:
 
-**`CLEAR_TAG_MIGRATION_REPORT.md`**
-- รายการไฟล์ที่แก้
-- ผล Unit / Mock / Integration Tests
-- ผล Real LLM Tests
-- Format Errors ที่พบ
-- Before / After Output Size
-- Regression / Known Limitations
+1. Audit โครงสร้างเดิม
+2. Root Cause ของข้อจำกัด
+3. ไฟล์ที่แก้
+4. Evidence Contract
+5. Output Schema
+6. UI Implementation เทียบกับ Mockup
+7. Prompt Candidate
+8. ผล Unit/Regression Tests
+9. Production vs Candidate
+10. Grok/Gemma Outputs
+11. Evidence Errors / Hallucinations
+12. Coaching Quality
+13. Promotion Gate Results
+14. ข้อจำกัดที่เหลือ
+15. คำตัดสิน Promote หรือ Keep Production
 
-เก็บ Raw LLM Responses ที่ใช้ทดสอบไว้ในโฟลเดอร์ Audit โดยไม่ปะปนกับข้อมูลเพลงจริง
+ให้ AI Coder Implement และทดสอบในขอบเขตนี้ให้ครบ ไม่หยุดเพียงส่งแผน
 
----
+หากมีจุดที่ต้องใช้ Melody/Audio เพื่อยืนยัน ให้เก็บเป็นข้อจำกัดที่แสดงต่อผู้ใช้อย่างถูกต้อง ไม่สร้างข้อสรุปเกินหลักฐาน
 
-## 14. Execution Rules
+## FINAL GOAL
 
-**ให้ดำเนินการ Audit → Implement → Test ต่อเนื่องได้เลย ไม่ต้องหยุดขออนุมัติระหว่างขั้นตอน**
+Vocal Flow ต้องสามารถบอกผู้แต่งได้ว่า:
 
-แต่ต้อง:
+**"คำร้องของคุณตรงไหนร้องต่อเนื่องได้อย่างเป็นธรรมชาติ ตรงไหนอาจต้องระวังการออกเสียงหรือการแบ่งวลี เพราะอะไร และมีทางเลือกในการพัฒนาอย่างไร โดยไม่ทำลายความหมายและอารมณ์ของเพลง"**
 
-- ตรวจโค้ดจริงก่อนแก้
-- แก้เฉพาะส่วนที่เกี่ยวกับ Output Contract / Parser / Adapter / UI Error Handling
-- ไม่เปลี่ยน Model หรือ Backend
-- ไม่เปลี่ยนการจัดการ Sessions
-- ไม่ทับ Custom Prompts ของผู้ใช้
-- ไม่เปลี่ยน Songwriting Logic
-- ไม่เพิ่ม Python Phonetic Verification
-- ไม่ลบข้อมูลเพลง
-- ไม่ Commit จนกว่าจะส่งผลตรวจสอบ
-
-หากพบความเสี่ยงกับข้อมูลผู้ใช้ ให้ใช้ Compatibility Layer แทนการบังคับ Migration ที่อาจทำข้อมูลเสีย
-
-## Final Principle
-
-**One Tag Grammar — Shared Parser — Task-Specific Schemas — Safe UI**
-
-ทุก LLM ใช้มาตรฐานเดียวกัน แต่ยังทำหน้าที่เดิม
-
-เป้าหมายไม่ใช่เปลี่ยนวิธีคิดของ AI แต่ทำให้คำตอบของ AI ถูกอ่าน แสดงผล และนำไปใช้งานได้อย่างเสถียร โดยไม่สร้างข้อผิดพลาดต่อเนื่องไปถึงผู้ใช้
+ระบบต้องเป็น **Critic & Coach ที่ช่วยผู้ใช้ตัดสินใจ** ไม่ใช่เครื่องนับพยางค์ที่เปลี่ยนตัวเลขให้กลายเป็นคำตัดสิน

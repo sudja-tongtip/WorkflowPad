@@ -1,0 +1,301 @@
+{
+ "grok|S1|0": {
+  "musical_judgment": 3,
+  "actionability": 4,
+  "critical_errors": [
+   "จุดอ่อนที่สุดคือคอรัสซ้ำทุกบรรทัดโดยไม่พัฒนา - invents flaw in the memorable, coherent chorus that REFERENCE calls a strength"
+  ],
+  "notes": "Lyrics report correctly flags concrete imagery and warm details but wrongly treats chorus repetition as a defect; music report gives usable line-specific arrangement cues without inventing audio claims."
+ },
+ "grok|S1|1": {
+  "musical_judgment": 3,
+  "actionability": 4,
+  "critical_errors": [
+   "จุดอ่อนที่สุดคือบริดจ์ L30-31 ที่เนื้อหาซ้ำกับพรีคอรัส - invents flaw in coherent section per reference"
+  ],
+  "notes": "Lyrics report correctly keeps most sections unchanged but wrongly flags bridge repetition as weakness. Music report gives usable low-energy ballad cues and arrangement without inventing problems."
+ },
+ "grok|S1|2": {
+  "musical_judgment": 3,
+  "actionability": 3,
+  "critical_errors": [
+   "L30-L31 สั้นเกินไป อาจไม่เพิ่มมุมมองใหม่มากนัก: invents flaw in a part that REFERENCE calls sound and coherent",
+   "The cues of this section can match the genre better: repeated invented problems on already-fitting sections without audio evidence"
+  ],
+  "notes": "Lyrics report correctly maps structure and hook but over-flags the short Bridge; music report gives usable section cues yet defaults to generic fixes that treat a finished ballad as incomplete."
+ },
+ "grok|S2|1": {
+  "musical_judgment": 4,
+  "actionability": 4,
+  "critical_errors": [],
+  "notes": "Lyrics report correctly treats chorus repetition as intentional strength and avoids rhyme complaints. Music report gives line-specific, genre-fitting cues without inventing audio details or flaws."
+ },
+ "grok|S2|2": {
+  "musical_judgment": 5,
+  "actionability": 4,
+  "critical_errors": [],
+  "notes": "Both reports correctly treat the repeated chorus as intentional identity and never flag the absent rhyme as a flaw. Advice stays specific to lines, names real strengths, and leaves good sections untouched."
+ },
+ "grok|S3|1": {
+  "musical_judgment": 2,
+  "actionability": 2,
+  "critical_errors": [
+   "Chorus sections: 'keep: L8-L11 ทำงานได้ดีเพราะการซ้ำเสริมอารมณ์หลัก' - praises generic hook as effective when reference identifies it as the weak part",
+   "Chorus sections: 'การซ้ำคำช่วยเน้นอารมณ์คิดถึงได้ตรงไปตรงมา' - treats repetitive generic lyrics as strength instead of noting lack of image and self-rhyme"
+  ],
+  "notes": "Lyrics report correctly praises verses but wrongly endorses the chorus instead of flagging it as weak. Music report gives generic arrangement cues without addressing lyrical hook issues or confirming when sections are already fine."
+ },
+ "grok|S3|2": {
+  "musical_judgment": 1,
+  "actionability": 2,
+  "critical_errors": [
+   "Chorus (L8-11,20-23) called effective due to repetition and 'ติดหู' (praises the weak generic hook)",
+   "Lyrics report never flags the hook as weak or notes verses are the strong part"
+  ],
+  "notes": "Lyrics report inverts the reference by treating the repetitive chorus as a strength while ignoring its lack of imagery. Music report stays generic and does not engage the actual lyrical strengths or flaws."
+ },
+ "grok|S4|1": {
+  "musical_judgment": 3,
+  "actionability": 2,
+  "critical_errors": [
+   "The cues of this section can match the genre better. | invents flaw in strong chorus hook that reference says needs no change"
+  ],
+  "notes": "Lyrics report correctly flags the repeatable hook and concrete images without suggesting changes. Music report adds unneeded arrangement tweaks that contradict the 'nothing needs fixing' reference."
+ },
+ "grok|S4|2": {
+  "musical_judgment": 3,
+  "actionability": 2,
+  "critical_errors": [
+   "NOT SURE: 'การปรับวลียาวในบรรทัด 2, 4, 5 และ 14' - suggests changing lyrics that REFERENCE says need no fixing",
+   "FINDING [cue/low] lines 7-7 and 19-19: invents need to 'เพิ่มพลังให้คอรัส' on already-strong hook"
+  ],
+  "notes": "Lyrics report correctly identifies the repeatable hook and concrete imagery without suggesting changes. Music report adds unnecessary production tweaks and lyric edits that contradict the song's strengths."
+ },
+ "grok|S5|1": {
+  "musical_judgment": 2,
+  "actionability": 1,
+  "critical_errors": [
+   "L14-L17 'การพลิกมุมมอง...เพิ่มมิติ' — treats viewpoint flip as deliberate strength instead of naming the contradiction flagged in reference",
+   "multiple empty 'issue:' and 'recommendation:' fields — fails to give usable line-specific fixes or confirm when original is already fine"
+  ],
+  "notes": "Lyrics report misreads the story contradiction as an asset and leaves most critique slots blank. Music report stays generic on arrangement without addressing lyrical inconsistency or hook placement."
+ },
+ "grok|S5|2": {
+  "musical_judgment": 3,
+  "actionability": 2,
+  "critical_errors": [
+   "lines 0-0: invalid reference with empty evidence/suggestion",
+   "Music report claims natural development while ignoring the core viewpoint flip"
+  ],
+  "notes": "Lyrics report correctly flags the Verse 1/Verse 2 contradiction with line evidence and keeps the chorus intact. Music report stays generic on arrangement and never engages the story inconsistency."
+ },
+ "grok|S6|1": {
+  "musical_judgment": 4,
+  "actionability": 3,
+  "critical_errors": [
+   "The cues of this section can match the genre better | implies current cues are insufficient without audio evidence or specific flaw"
+  ],
+  "notes": "Lyrics report correctly flags syllable density risk per reference and avoids invented issues while naming hook and story strengths by line. Music report gives usable section cues but overstates need for change on already-fitting hip-hop structure."
+ },
+ "grok|S6|2": {
+  "musical_judgment": 3,
+  "actionability": 2,
+  "critical_errors": [
+   "The cues of this section can match the genre better | suggests spoken-word for Verse 1/2 in energetic hip-hop without audio evidence or syllable-density link",
+   "Chorus: เพิ่ม synth และกลองหนักขึ้นจาก verse | prescribes arrangement change while claiming no real audio exists"
+  ],
+  "notes": "Lyrics report correctly flags syllable density risk at 70 BPM and keeps strong sections untouched. Music report gives generic cue and arrangement notes that ignore the REFERENCE density issue and risk sending the writer toward mismatched delivery."
+ },
+ "grok|S7|1": {
+  "musical_judgment": 3,
+  "actionability": 2,
+  "critical_errors": [
+   "L5 consider: ...ตรงกับอารมณ์หวังของเพลงหรือไม่ - invents potential flaw in quirky image that fits hopeful waiting story",
+   "recommendation: (all sections blank) - fails to name usable changes or confirm when fine"
+  ],
+  "notes": "Lyrics report correctly flags chorus hook and syllable flow but questions fridge line unnecessarily; production report maps structure well yet offers no concrete line-specific actions."
+ },
+ "grok|S7|2": {
+  "musical_judgment": 2,
+  "actionability": 2,
+  "critical_errors": [
+   "suggestion: But all I found was an empty street | changes meaning and removes deliberate surreal image",
+   "ภาพตู้เย็นที่พังดูไม่สอดคล้องกับบรรยากาศแห่งความหวัง | invents flaw in quirky L5 that fits indie style"
+  ],
+  "notes": "Lyrics report misreads L5 as a flaw and pushes a change that alters tone; music report stays generic and correctly notes the standard structure without overclaiming."
+ },
+ "grok|S8|1": {
+  "musical_judgment": 4,
+  "actionability": 3,
+  "critical_errors": [
+   "ลองปรับ L8 ให้ภาพชัดขึ้นก่อนรักษาสัมผัส: invents flaw in already-coherent line that fits the loneliness story"
+  ],
+  "notes": "Lyrics report correctly avoids rewriting cue tags and spots the chorus hook but has vague empty fields and one unneeded change suggestion. Music report gives usable section-specific arrangement notes that match the given cues and energy arc without claiming audio."
+ },
+ "grok|S8|2": {
+  "musical_judgment": 2,
+  "actionability": 2,
+  "critical_errors": [
+   "Chorus (บรรทัด 10) and (lines 1,4,10,16,20): counts cue tags as song sections instead of L11-L14 etc.",
+   "Bridge (บรรทัด 16) and similar: treats tags as performed content, violating REFERENCE rule on structure vs lyrics"
+  ],
+  "notes": "Lyrics report correctly identifies strengths in imagery and hook without rewriting tags and notes when parts are already fine. Music report mislabels structure at tag lines and offers arrangement suggestions tied to those errors."
+ },
+ "local|S1|1": {
+  "musical_judgment": 2,
+  "actionability": 2,
+  "critical_errors": [
+   "L009 suggestion 'ทุกอย่าง': invents flaw in coherent Pre-Chorus that REFERENCE calls steady",
+   "L013 'เธอรักในตัวฉัน': changes meaning of hook without evidence of problem",
+   "L021 remove 'ยัง': unnecessary edit to already sound Verse 2",
+   "Bridge spoken-word cue: claims audio delivery issue not present in lyrics",
+   "add Final Chorus after L32: invents structural flaw in complete ballad"
+  ],
+  "notes": "Lyrics report fabricates multiple wording problems in a song REFERENCE deems coherent with memorable chorus. Music report adds unneeded arrangement layers and structure changes instead of confirming what already works."
+ },
+ "local|S1|2": {
+  "musical_judgment": 2,
+  "actionability": 2,
+  "critical_errors": [
+   "L13: 'ว่าใจเธอมีฉัน' changes direct mutual declaration to indirect, altering meaning",
+   "L5/L8/L20/L30: invented wording flaws and 'telling' issues in a REFERENCE-coherent song",
+   "music: suggests final Chorus after Bridge when structure is already sound and complete"
+  ],
+  "notes": "Lyrics report over-criticizes a solid ballad with many unneeded tweaks; music report understands structure but pushes unnecessary arrangement changes without audio basis."
+ },
+ "local|S2|1": {
+  "musical_judgment": 2,
+  "actionability": 3,
+  "critical_errors": [
+   "issue: L9 ในเสียงที่ดังที่สุด ... suggestion: ในความเงียบที่ดังกว่า (and identical notes on L20) - invents flaw in the repeated chorus hook that REFERENCE states is an identity, not a problem to fix",
+   "SECTION Chorus (8-8) and (19-19): treats the deliberate repetition of the full chorus line as needing variation or different wording - directly contradicts REFERENCE that repetition is identity by design"
+  ],
+  "notes": "Lyrics report correctly praises Verse 1 imagery and overall hook/theme but repeatedly misreads the chorus as needing fixes that would alter its intentional identity. Music-production report stays within safe, usable arrangement suggestions that match the calm folk mood and structure without inventing audio claims."
+ },
+ "local|S2|2": {
+  "musical_judgment": 2,
+  "actionability": 2,
+  "critical_errors": [
+   "L9/L20 'ในเสียงที่ดังที่สุด' called generic/issue - invents flaw in hook identity",
+   "Chorus 'powerful belting' suggestion - contradicts calm mood and genre",
+   "L2/L14 change recs treat routine lines as needing fix when they work"
+  ],
+  "notes": "Lyrics report correctly avoids rhyme complaints but still flags hook repetition and wording as problems. Music report names sections yet pushes dynamics and textures that clash with stated calm folk setting."
+ },
+ "local|S3|1": {
+  "musical_judgment": 1,
+  "actionability": 2,
+  "critical_errors": [
+   "STRENGTHS ... Chorus ... Hook ที่ทรงพลัง: calls generic chorus strong, contradicting REFERENCE that hook is the weak part",
+   "SECTION Chorus ... ท่อนคอรัสนี้ทำหน้าที่เป็นหัวใจของเพลง: invents strength in weak hook instead of identifying it as generic/repetitive"
+  ],
+  "notes": "Lyrics report mislabels the chorus as powerful while nitpicking strong verses; music report adds unneeded sections and drops without addressing the actual hook weakness."
+ },
+ "local|S3|2": {
+  "musical_judgment": 2,
+  "actionability": 2,
+  "critical_errors": [
+   "L4 suggestion to change 'ยืม' to 'เคยยืม': invents flaw in strong verse image",
+   "L14/L17 wording fixes: treats good specific verses as needing improvement",
+   "Chorus praise as 'ทรงพลัง' then minor tweak: fails to call generic hook the real weakness",
+   "Music report calls chorus 'ติดหู' without noting repetition/empty rhyme"
+  ],
+  "notes": "Lyrics report correctly flags the hook but wastes effort inventing verse problems; music report ignores the hook entirely and focuses on arrangement. Both reports miss that verses already work and chorus needs image or new rhyme, not small word swaps."
+ },
+ "local|S4|1": {
+  "musical_judgment": 1,
+  "actionability": 1,
+  "critical_errors": [
+   "L005 suggestion to replace 'เหมือนมันรู้ว่าวันนี้ฉันต้องการอะไร': invents flaw in strong imagery line and pushes change where reference says nothing needs fixing",
+   "L011/L023 'ไปให้ไกล' change recommendations: alters repeatable hook line that reference identifies as already strong and concrete",
+   "L017 'เพราะเขาก็คงฟังเพลงนี้อยู่เหมือนกัน' rewrite: changes meaning and adds invented weakness to a good connecting image",
+   "Chorus section claims 'ยังไม่ถึงจุดสูงสุดทางอารมณ์': contradicts reference that hook is strong and needs no fixing"
+  ],
+  "notes": "Lyrics report repeatedly invents problems in the hook and concrete images, directly violating the reference instruction. Music report is less damaging but still proposes unnecessary structural and arrangement tweaks on an already complete energetic form."
+ },
+ "local|S4|2": {
+  "musical_judgment": 1,
+  "actionability": 2,
+  "critical_errors": [
+   "L9/L21 suggestion to replace 'ได้': invents flaw in strong hook line that REFERENCE says needs no change",
+   "L5 change to 'อยากจะเต้น': alters concrete image and open phrase in good Verse 1, sends writer wrong direction",
+   "L11/L23 'ไกล' discussion + build-up demand: claims hook needs variation when REFERENCE states it is already strong and repeatable"
+  ],
+  "notes": "Lyrics report repeatedly invents weaknesses inside the hook and concrete imagery that REFERENCE explicitly flags as already strong. Music report adds structural demands (bridge, post-chorus) without acknowledging the existing tight energetic form is sufficient."
+ },
+ "local|S5|1": {
+  "musical_judgment": 1,
+  "actionability": 2,
+  "critical_errors": [
+   "Lyrics report never names the V1/V2 viewpoint flip (L2-3 vs L14) despite REFERENCE requirement",
+   "Music report leaves multiple 'evidence' fields blank while claiming dynamic issues"
+  ],
+  "notes": "Both reports treat the narrative as coherent and miss the core contradiction. Actionable line suggestions exist but target invented wording problems instead of the inconsistent story."
+ },
+ "local|S5|2": {
+  "musical_judgment": 1,
+  "actionability": 2,
+  "critical_errors": [
+   "L002 praised as powerful opener without noting narrator leaves (contradicts V2 where other leaves)",
+   "Chorus treated as coherent hook despite explicit waiting contradiction in L8-11"
+  ],
+  "notes": "Both reports treat the narrative as consistent and emotionally clear, missing the viewpoint flip entirely. Advice stays local and surface-level, never addressing the core story incoherence."
+ },
+ "local|S6|1": {
+  "musical_judgment": 3,
+  "actionability": 2,
+  "critical_errors": [
+   "L004 suggestion to swap 'จดรายการ' for 'ลิสต์': invents a wording flaw in a line that already fits the storytelling tone",
+   "Music report lines 7-7 and 13-13 cue suggestions: generic labels like '[explosive] [anthemic]' without naming any concrete production change or confirming the original is already fine"
+  ],
+  "notes": "Both reports correctly identify the chorus hook and narrative arc but ignore the REFERENCE density issue at 70 BPM. Actionable advice is sparse and sometimes drifts into unneeded tweaks rather than confirming what already works."
+ },
+ "local|S6|2": {
+  "musical_judgment": 3,
+  "actionability": 3,
+  "critical_errors": [
+   "suggestion: [Bridge - emotional vocals...] (lines 13-13): pushes structural addition without referencing 120 s target or density, risking overlong track",
+   "evidence: ฉันฟังจนปลา... (lines 15-15): quotes lyrics as evidence for chorus repeat, misuses section reference"
+  ],
+  "notes": "Lyrics report correctly flags syllable density against duration and separates hook strength from minor word-flow notes. Music report understands basic V-C layout but invents peak-arrival problems and arrangement needs that ignore the given constraints."
+ },
+ "local|S7|1": {
+  "musical_judgment": 2,
+  "actionability": 2,
+  "critical_errors": [
+   "L11: change to \"still moving in this town\": alters core waiting/stuck meaning of hook",
+   "L5: fridge to \"cold, dead fridge\": invents flaw in strong surreal image"
+  ],
+  "notes": "Lyrics report repeatedly misreads effective images and rhyme as problems needing meaning-altering fixes. Production report is more section-aware but offers generic arrangement notes without clear \"already fine\" statements."
+ },
+ "local|S7|2": {
+  "musical_judgment": 2,
+  "actionability": 2,
+  "critical_errors": [
+   "suggestion: But all I found was a cracked mirror | invents flaw in rhyming couplet (bridge/fridge) and breaks exact rhyme",
+   "FINDING [filler/medium] lines 11-11: ...ซ้ำคำกับ L9 | treats intentional hook repetition as weakness needing change",
+   "FINDING [wording/medium] lines 15-15: ...คำว่า tea ...generic | invents flaw in functional line and suggests coffee which adds no story value"
+  ],
+  "notes": "Lyrics report repeatedly flags working rhyme and hook repetition as problems while offering changes that alter meaning or sound. Music report gives usable arrangement cues but includes empty suggestions and generic vocal notes that do not reference the given lyrics."
+ },
+ "local|S8|1": {
+  "musical_judgment": 2,
+  "actionability": 2,
+  "critical_errors": [
+   "[Chorus - powerful belting with harmonies] [Bridge - spoken word] - proposes rewriting cue tags",
+   "suggestion: [Chorus ...] after Bridge - invents flaw and alters song structure",
+   "The cues of this section can match the genre better - attempts to edit tags instead of lyrics"
+  ],
+  "notes": "Lyrics report stays within lyric changes and correctly treats tags as non-lyric cues, but contains one muddled analysis of pronoun/rhyme mismatch. Music-production report repeatedly suggests structural and tag edits that exceed its scope and invent weaknesses in an already balanced form."
+ },
+ "local|S8|2": {
+  "musical_judgment": 2,
+  "actionability": 2,
+  "critical_errors": [
+   "suggests adding Pre-Chorus: invents flaw in given structure and rewrites cue tags",
+   "suggests Chorus 2 after Bridge: changes song form and meaning",
+   "L013 suggestion to reorder 'ทั้งเมือง': alters hook wording without clear need"
+  ],
+  "notes": "Lyrics report correctly flags parentheticals as backing vocals and notes real strengths in imagery/hook but offers some unnecessary wording tweaks. Music report repeatedly invents structural problems and arrangement needs where the provided sections already function."
+ }
+}

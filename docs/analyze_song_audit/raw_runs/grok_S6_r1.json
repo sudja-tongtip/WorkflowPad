@@ -1,0 +1,619 @@
+{
+ "song": "S6",
+ "backend": "grok",
+ "round": "1",
+ "seconds": 86.6,
+ "error": "",
+ "requests": 7,
+ "reports": {
+  "songwriter": {
+   "spec": "songwriter",
+   "status": "ok",
+   "summary": "เพลงนี้พยายามบรรยายบรรยากาศตลาดเช้าที่มีชีวิตชีวาและเต็มไปด้วยความทรงจำส่วนตัวผ่านสายตาของผู้เล่า โดยทำได้ดีด้วยภาพที่ชัดเจนและรายละเอียดใน Verse 1 กับ Verse 2 ส่วน Chorus ช่วยย้ำธีมตลาดเป็นเมืองที่ไม่เคยหลับ หลักฐานจากบรรทัด 2-5 และ 14-15",
+   "strengths": [
+    "บรรยายรายละเอียดตลาดได้ดีและเป็นธรรมชาติ เช่น L3 แม่ค้าตะโกนเรียกลูกค้าแข่งกับเสียงมอเตอร์ไซค์",
+    "ภาพส่วนตัวใน L5 ป้าขายผักยัดถุงเพิ่มเพราะเห็นว่าฉันผอมลง สร้างความรู้สึกอบอุ่นได้ชัดเจน",
+    "Chorus ใช้การซ้ำคำเพื่อเน้นธีมตลาดที่ไม่เคยหลับและไม่เคยถาม ทำให้ติดหู",
+    "Verse 2 L14-15 เล่าเรื่องลุงขายปลาได้ต่อเนื่องจากท่อนก่อนและเพิ่มมิติความทรงจำ"
+   ],
+   "findings": [],
+   "uncertain": [
+    "ไม่สามารถตัดสินเรื่องจังหวะการหายใจและความหนาแน่นของพยางค์ได้เพราะไม่มีทำนองจริง Ask the Music Producer AI: ความเสี่ยงจากจำนวนพยางค์ต่อบรรทัด"
+   ],
+   "prompt_hash": "7abfe2ee7f27",
+   "lyrics_hash": "27fe9ff0f81844127415fe57577c13e0867c6b5c",
+   "backend": "grok",
+   "model": "grok-4-latest",
+   "ts": "2026-11-07 19:51:39",
+   "error": "",
+   "raw": "[REVIEW.1]\nSUMMARY: เพลงนี้พยายามบรรยายบรรยากาศตลาดเช้าที่มีชีวิตชีวาและเต็มไปด้วยความทรงจำส่วนตัวผ่านสายตาของผู้เล่า โดยทำได้ดีด้วยภาพที่ชัดเจนและรายละเอียดใน Verse 1 กับ Verse 2 ส่วน Chorus ช่วยย้ำธีมตลาดเป็นเมืองที่ไม่เคยหลับ หลักฐานจากบรรทัด 2-5 และ 14-15\n[STRENGTH.1]\n- บรรยายรายละเอียดตลาดได้ดีและเป็นธรรมชาติ เช่น L3 แม่ค้าตะโกนเรียกลูกค้าแข่งกับเสียงมอเตอร์ไซค์\n[STRENGTH.2]\n- ภาพส่วนตัวใน L5 ป้าขายผักยัดถุงเพิ่มเพราะเห็นว่าฉันผอมลง สร้างความรู้สึกอบอุ่นได้ชัดเจน\n[STRENGTH.3]\n- Chorus ใช้การซ้ำคำเพื่อเน้นธีมตลาดที่ไม่เคยหลับและไม่เคยถาม ทำให้ติดหู\n[STRENGTH.4]\n- Verse 2 L14-15 เล่าเรื่องลุงขายปลาได้ต่อเนื่องจากท่อนก่อนและเพิ่มมิติความทรงจำ\n[RHYME.1]\nsection: Verse 1\nlines: 2-5\nchecks: wording ok; meaning ok; story ok; imagery ok; hook -; flow ok; endings ok\nquality: ท่อนนี้ใช้ภาพตลาดเช้าที่ชัดเจนและเป็นธรรมชาติ เช่น การแข่งเสียงมอเตอร์ไซค์และการยัดถุงผักเพิ่ม สร้างบรรยากาศชีวิตประจำวันได้ดีโดยไม่ต้องอธิบายความรู้สึกตรง ๆ\nstrength: L2-L5 บรรยายรายละเอียดตลาดได้ต่อเนื่องและมีชีวิตชีวา\nissue: -\nconsideration: -\nrhyme: ไม่มีสัมผัสท้ายบรรทัดที่ชัดเจนตามผลวิเคราะห์ ABCD ทำให้เน้นเนื้อหาและภาพมากกว่าความไหลลื่นของเสียง\nkeep: ท่อนนี้สามารถอยู่ได้เพราะภาพและเรื่องราวชัดเจนตั้งแต่ L2 ถึง L5\nrecommendation: -\nreason: -\nbenefit: -\npriority: -\nlimits: -\n[RHYME.2]\nsection: Chorus\nlines: 8-11\nchecks: wording ok; meaning ok; story ok; imagery ok; hook ok; flow ok; endings ok\nquality: ท่อนนี้ย้ำธีมตลาดเป็นเมืองที่ไม่เคยหลับด้วยการซ้ำประโยคหลัก ทำให้รู้สึกถึงความต่อเนื่องของชีวิตตลาดและความคุ้นเคยของผู้เล่า\nstrength: L8 และ L10 ใช้การซ้ำเพื่อเน้นหัวใจของเพลงได้ชัดเจน\nissue: -\nconsideration: -\nrhyme: การซ้ำคำ \"ไหน\" และ \"วัน\" ตามผลวิเคราะห์ ABAB ช่วยให้ติดหูและเสริมความรู้สึกของตลาดที่ไม่เปลี่ยนแปลง\nkeep: ท่อนนี้สามารถอยู่ได้เพราะการซ้ำสร้าง hook ที่ชัดเจนตั้งแต่ L8 ถึง L11\nrecommendation: -\nreason: -\nbenefit: -\npriority: -\nlimits: -\n[RHYME.3]\nsection: Verse 2\nlines: 14-15\nchecks: wording ok; meaning ok; story ok; imagery ok; hook -; flow ok; endings ok\nquality: ท่อนนี้ต่อเรื่องจาก Verse 1 ด้วยการเล่าเรื่องลุงขายปลาและความทรงจำเก่า เพิ่มมิติส่วนตัวให้กับตลาด\nstrength: L14-15 ใช้รายละเอียดเรื่องราวเพื่อขยายภาพตลาดได้ดี\nissue: -\nconsideration: -\nrhyme: สัมผัส AB ระหว่าง \"กัน\" และ \"เก่ง\" ช่วยปิดท่อนได้สั้นกระชับตามผลวิเคราะห์\nkeep: ท่อนนี้สามารถอยู่ได้เพราะขยายเรื่องราวจากท่อนก่อนได้อย่างต่อเนื่อง\nrecommendation: -\nreason: -\nbenefit: -\npriority: -\nlimits: -\n[NOTE.1]\n- ไม่สามารถตัดสินเรื่องจังหวะการหายใจและความหนาแน่นของพยางค์ได้เพราะไม่มีทำนองจริง Ask the Music Producer AI: ความเสี่ยงจากจำนวนพยางค์ต่อบรรทัด\n[DONE]",
+   "data": {
+    "rhyme_flow": [
+     {
+      "name": "Verse 1",
+      "first": 2,
+      "last": 5,
+      "checks": "wording ok; meaning ok; story ok; imagery ok; hook -; flow ok; endings ok",
+      "quality": "ท่อนนี้ใช้ภาพตลาดเช้าที่ชัดเจนและเป็นธรรมชาติ เช่น การแข่งเสียงมอเตอร์ไซค์และการยัดถุงผักเพิ่ม สร้างบรรยากาศชีวิตประจำวันได้ดีโดยไม่ต้องอธิบายความรู้สึกตรง ๆ",
+      "strength": "L2-L5 บรรยายรายละเอียดตลาดได้ต่อเนื่องและมีชีวิตชีวา",
+      "issue": "",
+      "consideration": "",
+      "rhyme": "ไม่มีสัมผัสท้ายบรรทัดที่ชัดเจนตามผลวิเคราะห์ ABCD ทำให้เน้นเนื้อหาและภาพมากกว่าความไหลลื่นของเสียง",
+      "keep_reason": "ท่อนนี้สามารถอยู่ได้เพราะภาพและเรื่องราวชัดเจนตั้งแต่ L2 ถึง L5",
+      "recommendation": "",
+      "keep": true,
+      "reason": "",
+      "benefit": "",
+      "priority": "",
+      "limits": "",
+      "raw_priority": "-"
+     },
+     {
+      "name": "Chorus",
+      "first": 8,
+      "last": 11,
+      "checks": "wording ok; meaning ok; story ok; imagery ok; hook ok; flow ok; endings ok",
+      "quality": "ท่อนนี้ย้ำธีมตลาดเป็นเมืองที่ไม่เคยหลับด้วยการซ้ำประโยคหลัก ทำให้รู้สึกถึงความต่อเนื่องของชีวิตตลาดและความคุ้นเคยของผู้เล่า",
+      "strength": "L8 และ L10 ใช้การซ้ำเพื่อเน้นหัวใจของเพลงได้ชัดเจน",
+      "issue": "",
+      "consideration": "",
+      "rhyme": "การซ้ำคำ \"ไหน\" และ \"วัน\" ตามผลวิเคราะห์ ABAB ช่วยให้ติดหูและเสริมความรู้สึกของตลาดที่ไม่เปลี่ยนแปลง",
+      "keep_reason": "ท่อนนี้สามารถอยู่ได้เพราะการซ้ำสร้าง hook ที่ชัดเจนตั้งแต่ L8 ถึง L11",
+      "recommendation": "",
+      "keep": true,
+      "reason": "",
+      "benefit": "",
+      "priority": "",
+      "limits": "",
+      "raw_priority": "-"
+     },
+     {
+      "name": "Verse 2",
+      "first": 14,
+      "last": 15,
+      "checks": "wording ok; meaning ok; story ok; imagery ok; hook -; flow ok; endings ok",
+      "quality": "ท่อนนี้ต่อเรื่องจาก Verse 1 ด้วยการเล่าเรื่องลุงขายปลาและความทรงจำเก่า เพิ่มมิติส่วนตัวให้กับตลาด",
+      "strength": "L14-15 ใช้รายละเอียดเรื่องราวเพื่อขยายภาพตลาดได้ดี",
+      "issue": "",
+      "consideration": "",
+      "rhyme": "สัมผัส AB ระหว่าง \"กัน\" และ \"เก่ง\" ช่วยปิดท่อนได้สั้นกระชับตามผลวิเคราะห์",
+      "keep_reason": "ท่อนนี้สามารถอยู่ได้เพราะขยายเรื่องราวจากท่อนก่อนได้อย่างต่อเนื่อง",
+      "recommendation": "",
+      "keep": true,
+      "reason": "",
+      "benefit": "",
+      "priority": "",
+      "limits": "",
+      "raw_priority": "-"
+     }
+    ],
+    "rhyme_evidence": {
+     "sections": [
+      {
+       "name": "Verse 1",
+       "first": 2,
+       "last": 5,
+       "pattern": "ABCD",
+       "scheme_name": "",
+       "scheme_unverified": false,
+       "lines": [
+        {
+         "line": 2,
+         "sung": 1,
+         "label": "A",
+         "near": false,
+         "reported": true,
+         "ending": "เก่า",
+         "sound": "ao L 0",
+         "how": "ai",
+         "pos": [
+          64,
+          68
+         ],
+         "repeat": false
+        },
+        {
+         "line": 3,
+         "sung": 2,
+         "label": "B",
+         "near": false,
+         "reported": true,
+         "ending": "หยุด",
+         "sound": "u S t",
+         "how": "ai",
+         "pos": [
+          82,
+          86
+         ],
+         "repeat": false
+        },
+        {
+         "line": 4,
+         "sung": 3,
+         "label": "C",
+         "near": false,
+         "reported": true,
+         "ending": "ครึ่ง",
+         "sound": "ue S ng",
+         "how": "ai",
+         "pos": [
+          82,
+          87
+         ],
+         "repeat": false
+        },
+        {
+         "line": 5,
+         "sung": 4,
+         "label": "D",
+         "near": false,
+         "reported": true,
+         "ending": "มา",
+         "sound": "aa L 0",
+         "how": "ai",
+         "pos": [
+          81,
+          83
+         ],
+         "repeat": false
+        }
+       ],
+       "pairs": [],
+       "repetitions": [],
+       "not_confirmed": [],
+       "rejected": [],
+       "misplaced": [],
+       "reported": true,
+       "letters_from": "groups",
+       "inconsistent": false,
+       "inconsistencies": [],
+       "group_conflicts": 0,
+       "unlettered": [],
+       "uncertain": []
+      },
+      {
+       "name": "Chorus",
+       "first": 8,
+       "last": 11,
+       "pattern": "ABAB",
+       "scheme_name": "",
+       "scheme_unverified": false,
+       "lines": [
+        {
+         "line": 8,
+         "sung": 5,
+         "label": "A",
+         "near": false,
+         "reported": true,
+         "ending": "ไหน",
+         "sound": "ai S 0",
+         "how": "ai",
+         "pos": [
+          80,
+          83
+         ],
+         "repeat": true
+        },
+        {
+         "line": 9,
+         "sung": 6,
+         "label": "B",
+         "near": false,
+         "reported": true,
+         "ending": "วัน",
+         "sound": "a S n",
+         "how": "ai",
+         "pos": [
+          79,
+          82
+         ],
+         "repeat": true
+        },
+        {
+         "line": 10,
+         "sung": 7,
+         "label": "A",
+         "near": false,
+         "reported": true,
+         "ending": "ไหน",
+         "sound": "ai S 0",
+         "how": "ai",
+         "pos": [
+          80,
+          83
+         ],
+         "repeat": true
+        },
+        {
+         "line": 11,
+         "sung": 8,
+         "label": "B",
+         "near": false,
+         "reported": true,
+         "ending": "วัน",
+         "sound": "a S n",
+         "how": "ai",
+         "pos": [
+          79,
+          82
+         ],
+         "repeat": true
+        }
+       ],
+       "pairs": [],
+       "repetitions": [
+        {
+         "a": {
+          "line": 8,
+          "word": "ไหน",
+          "pos": [
+           80,
+           83
+          ],
+          "_found": true
+         },
+         "b": {
+          "line": 10,
+          "word": "ไหน",
+          "pos": [
+           80,
+           83
+          ],
+          "_found": true
+         },
+         "kind": "repetition",
+         "placement": "end",
+         "sound": "exact",
+         "verification": "analyzer",
+         "confidence": "high",
+         "why": "",
+         "sound_type": ""
+        },
+        {
+         "a": {
+          "line": 9,
+          "word": "วัน",
+          "pos": [
+           79,
+           82
+          ],
+          "_found": true
+         },
+         "b": {
+          "line": 11,
+          "word": "วัน",
+          "pos": [
+           79,
+           82
+          ],
+          "_found": true
+         },
+         "kind": "repetition",
+         "placement": "end",
+         "sound": "exact",
+         "verification": "analyzer",
+         "confidence": "high",
+         "why": "",
+         "sound_type": ""
+        }
+       ],
+       "not_confirmed": [],
+       "rejected": [],
+       "misplaced": [],
+       "reported": true,
+       "letters_from": "groups",
+       "inconsistent": false,
+       "inconsistencies": [],
+       "group_conflicts": 0,
+       "unlettered": [],
+       "uncertain": []
+      },
+      {
+       "name": "Verse 2",
+       "first": 14,
+       "last": 15,
+       "pattern": "AB",
+       "scheme_name": "",
+       "scheme_unverified": false,
+       "lines": [
+        {
+         "line": 14,
+         "sung": 9,
+         "label": "A",
+         "near": false,
+         "reported": true,
+         "ending": "กัน",
+         "sound": "a S n",
+         "how": "ai",
+         "pos": [
+          93,
+          96
+         ],
+         "repeat": false
+        },
+        {
+         "line": 15,
+         "sung": 10,
+         "label": "B",
+         "near": false,
+         "reported": true,
+         "ending": "เก่ง",
+         "sound": "e S ng",
+         "how": "ai",
+         "pos": [
+          90,
+          94
+         ],
+         "repeat": false
+        }
+       ],
+       "pairs": [],
+       "repetitions": [],
+       "not_confirmed": [],
+       "rejected": [],
+       "misplaced": [],
+       "reported": true,
+       "letters_from": "groups",
+       "inconsistent": false,
+       "inconsistencies": [],
+       "group_conflicts": 0,
+       "unlettered": [],
+       "uncertain": []
+      }
+     ],
+     "source": "llm",
+     "notes": [],
+     "left_out": 0,
+     "cross_section_pairs": 0,
+     "group_conflicts": 0
+    }
+   },
+   "diagnostics": []
+  },
+  "music_producer": {
+   "spec": "music_producer",
+   "status": "ok",
+   "summary": "เพลงมีโครงสร้างแบบ Verse 1 - Chorus - Verse 2 ซึ่งเป็นรูปแบบพื้นฐานที่ชัดเจน คอรัสถูกวางหลังเวอร์สแรกและทำซ้ำเพื่อเน้นฮุกหลัก ส่วนเวอร์สสองช่วยขยายเรื่องราวต่อจากนั้น",
+   "strengths": [
+    "โครงสร้างมีคอรัสที่ทำซ้ำสองครั้ง (บรรทัด 8-11) ช่วยให้เพลงมีจุดเด่นและจดจำง่ายในแนวฮิปฮอป",
+    "การจัดวางเวอร์สสองหลังคอรัส (บรรทัด 13) ช่วยให้เพลงพัฒนาจากการบรรยายตลาดไปสู่การเล่าเรื่องส่วนตัวเพิ่มเติม"
+   ],
+   "findings": [
+    {
+     "id": "sa1",
+     "spec": "music_producer",
+     "kind": "cue",
+     "priority": "low",
+     "first": 1,
+     "last": 1,
+     "evidence": "[Verse 1]",
+     "finding": "The cues of this section can match the genre better.",
+     "reason": "เหมาะกับการเล่าเรื่องตลาดในแนวฮิปฮอป",
+     "suggestion": "[Verse 1 - spoken word]",
+     "tradeoff": "",
+     "meaning": "",
+     "rhyme_effect": "",
+     "syllables": "",
+     "also_by": [],
+     "options": [],
+     "conflicts": []
+    },
+    {
+     "id": "sa2",
+     "spec": "music_producer",
+     "kind": "cue",
+     "priority": "low",
+     "first": 7,
+     "last": 7,
+     "evidence": "[Chorus]",
+     "finding": "The cues of this section can match the genre better.",
+     "reason": "ทำให้คอรัสเด่นและมีพลังมากกว่าเวอร์ส",
+     "suggestion": "[Chorus - high energy]",
+     "tradeoff": "",
+     "meaning": "",
+     "rhyme_effect": "",
+     "syllables": "",
+     "also_by": [],
+     "options": [],
+     "conflicts": []
+    },
+    {
+     "id": "sa3",
+     "spec": "music_producer",
+     "kind": "cue",
+     "priority": "low",
+     "first": 13,
+     "last": 13,
+     "evidence": "[Verse 2]",
+     "finding": "The cues of this section can match the genre better.",
+     "reason": "เหมาะกับการเล่าเรื่องต่อเนื่องจากเวอร์สแรก",
+     "suggestion": "[Verse 2 - spoken word]",
+     "tradeoff": "",
+     "meaning": "",
+     "rhyme_effect": "",
+     "syllables": "",
+     "also_by": [],
+     "options": [],
+     "conflicts": []
+    },
+    {
+     "id": "ar4",
+     "spec": "music_producer",
+     "kind": "arrangement",
+     "priority": "low",
+     "first": 1,
+     "last": 1,
+     "evidence": "",
+     "finding": "Verse 1: กลองเบสหนักและซินธ์เบา",
+     "reason": "พลังปานกลาง เสียงร้องชายพูดเล่าแบบ relaxed",
+     "suggestion": "",
+     "tradeoff": "",
+     "meaning": "",
+     "rhyme_effect": "",
+     "syllables": "",
+     "also_by": [],
+     "options": [],
+     "conflicts": []
+    },
+    {
+     "id": "ar5",
+     "spec": "music_producer",
+     "kind": "arrangement",
+     "priority": "low",
+     "first": 7,
+     "last": 7,
+     "evidence": "",
+     "finding": "Chorus: กลองหนักขึ้นและเบสหนัก",
+     "reason": "พลังเพิ่มขึ้น เสียงร้องชายชัดเจนและ energetic",
+     "suggestion": "",
+     "tradeoff": "",
+     "meaning": "",
+     "rhyme_effect": "",
+     "syllables": "",
+     "also_by": [],
+     "options": [],
+     "conflicts": []
+    },
+    {
+     "id": "ar6",
+     "spec": "music_producer",
+     "kind": "arrangement",
+     "priority": "low",
+     "first": 13,
+     "last": 13,
+     "evidence": "",
+     "finding": "Verse 2: กลองเบสหนักและซินธ์เบา",
+     "reason": "พลังปานกลางเหมือนเวอร์สแรก เสียงร้องชายพูดเล่าแบบ relaxed",
+     "suggestion": "",
+     "tradeoff": "",
+     "meaning": "",
+     "rhyme_effect": "",
+     "syllables": "",
+     "also_by": [],
+     "options": [],
+     "conflicts": []
+    }
+   ],
+   "uncertain": [
+    "ไม่มีสิ่งที่ตัดสินใจไม่ได้ เนื่องจากโครงสร้างและการจัดเรียงเสียงเหมาะสมกับเพลงแนวฮิปฮอปอยู่แล้ว"
+   ],
+   "prompt_hash": "55bce4eb6c17",
+   "lyrics_hash": "27fe9ff0f81844127415fe57577c13e0867c6b5c",
+   "backend": "grok",
+   "model": "grok-4-latest",
+   "ts": "2026-11-07 19:52:16",
+   "error": "",
+   "raw": "[REVIEW.1]\nSUMMARY: เพลงมีโครงสร้างแบบ Verse 1 - Chorus - Verse 2 ซึ่งเป็นรูปแบบพื้นฐานที่ชัดเจน คอรัสถูกวางหลังเวอร์สแรกและทำซ้ำเพื่อเน้นฮุกหลัก ส่วนเวอร์สสองช่วยขยายเรื่องราวต่อจากนั้น\n[STRENGTH.1]\n- โครงสร้างมีคอรัสที่ทำซ้ำสองครั้ง (บรรทัด 8-11) ช่วยให้เพลงมีจุดเด่นและจดจำง่ายในแนวฮิปฮอป\n[STRENGTH.2]\n- การจัดวางเวอร์สสองหลังคอรัส (บรรทัด 13) ช่วยให้เพลงพัฒนาจากการบรรยายตลาดไปสู่การเล่าเรื่องส่วนตัวเพิ่มเติม\n[CUE.1]\n1 | spoken word | เหมาะกับการเล่าเรื่องตลาดในแนวฮิปฮอป\n[CUE.2]\n7 | high energy | ทำให้คอรัสเด่นและมีพลังมากกว่าเวอร์ส\n[CUE.3]\n13 | spoken word | เหมาะกับการเล่าเรื่องต่อเนื่องจากเวอร์สแรก\n[ARRANGE.1]\n1 | กลองเบสหนักและซินธ์เบา | พลังปานกลาง เสียงร้องชายพูดเล่าแบบ relaxed\n[ARRANGE.2]\n7 | กลองหนักขึ้นและเบสหนัก | พลังเพิ่มขึ้น เสียงร้องชายชัดเจนและ energetic\n[ARRANGE.3]\n13 | กลองเบสหนักและซินธ์เบา | พลังปานกลางเหมือนเวอร์สแรก เสียงร้องชายพูดเล่าแบบ relaxed\n[NOTE.1]\n- ไม่มีสิ่งที่ตัดสินใจไม่ได้ เนื่องจากโครงสร้างและการจัดเรียงเสียงเหมาะสมกับเพลงแนวฮิปฮอปอยู่แล้ว\n[DONE]",
+   "data": {},
+   "diagnostics": []
+  }
+ },
+ "rhyme": {
+  "state": "ok",
+  "pairs": 0,
+  "has_llm": true,
+  "last_error": null
+ },
+ "log": [
+  {
+   "fn": "grok",
+   "system_tokens": 5341,
+   "user_tokens": 458,
+   "system_head": "# Role\nYou are the **Rhyme Analyzer** of a Thai songwriting studio: a specialist that reads a whole song and reports, as structured data, which words rhyme with which, how they sound and where they si",
+   "user": "LANGUAGE SETTING: th\nLines marked CONTEXT are only context for rhymes across the window edge.\n\n## Section s1: Verse 1\nL2 | ฉันเดินผ่านตลาดเช้าตรู่ที่คนเริ่มขายของริมถนนสายเล็กหลังโรงเรียนเก่า\nL3 | แม่ค้าตะโกนเรียกลูกค้าแข่งกับเสียงมอเตอร์ไซค์ที่ขับผ่านไปมาทุกนาทีไม่เว้นแม้แต่วันหยุด\nL4 | ฉันจดรายการที่แม่ฝากซื้อไว้ในมือถือแต่สุดท้ายก็ซื้อของที่ไม่ได้อยู่ในรายการมากกว่าครึ่ง\nL5 | ป้าขายผักยัดถุงเพิ่มให้อีกสองกำเพราะเห็นว่าฉันผอมลงไปมากตั้งแต่ครั้งสุดท้ายที่แวะมา\n## Section s2: Chorus\nL8 | ตลาดตอนเช้าคือเมืองที่ไม่เคยหลับและไม่เคยถามว่าใครเหนื่อยหรือใครเพิ่งเสียใจมาจากไหน\nL9 | ฉันเดินไปตามเสียงเรียกของคนที่จำชื่อฉันไม่ได้แต่จำได้ว่าฉันชอบกินอะไรตอนเช้าทุกวัน\nL10 | ตลาดตอนเช้าคือเมืองที่ไม่เคยหลับและไม่เคยถามว่าใครเหนื่อยหรือใครเพิ่งเสียใจมาจากไหน\nL11 | ฉันเดินไปตามเสียงเรียกของคนที่จำชื่อฉันไม่ได้แต่จำได้ว่าฉันชอบกินอะไรตอนเช้าทุกวัน\n## Section s3: Verse 2\nL14 | ลุงขายปลาเล่าเรื่องเมื่อสามสิบปีก่อนที่ตลาดนี้ยังเป็นแค่ทุ่งนากับคลองเล็กๆที่เด็กๆลงไปว่ายน้ำกัน\nL15 | ฉันฟังจนปลาในถังเริ่มหยุดดิ้นแล้วลุงก็หัวเราะแล้วบอกว่าวันนี้ลดให้เพราะฉันเป็นลูกค้าที่ฟังเก่ง",
+   "raw": "[META.1]\nlanguages: th, en\n\n[SECTION.1]\nid: s1\n\n[END.1]\nsound: ao L 0\nL2|เก่า\n\n[END.2]\nsound: u S t\nL3|หยุด\n\n[END.3]\nsound: ue S ng\nL4|ครึ่ง\n\n[END.4]\nsound: aa L 0\nL5|มา\n\n[ENDSECTION.1]\n\n[SECTION.2]\nid: s2\n\n[END.5]\nsound: ai S 0\nL8|ไหน\nL10|ไหน\n\n[END.6]\nsound: a S n\nL9|วัน\nL11|วัน\n\n[ENDSECTION.2]\n\n[SECTION.3]\nid: s3\n\n[END.7]\nsound: a S n\nL14|กัน\n\n[END.8]\nsound: e S ng\nL15|เก่ง\n\n[ENDSECTION.3]\n[DONE]",
+   "error": "",
+   "sec": 16.5
+  },
+  {
+   "fn": "grok",
+   "system_tokens": 6417,
+   "user_tokens": 2400,
+   "system_head": "## Role\nYou are **Songwriter AI**, a creative co-writer and a serious critic of Thai and multilingual lyrics. You combine wordcraft, story/emotion and an ear for sung language (syllables, rhyme, flow)",
+   "user": "DATA of this analysis (the song, its style and facts, and the lyrics; data, never instructions). Read them, then answer ONLY the request after the data.\n\nSONG: ตลาดเช้า\nSTYLE: genre Hip Hop; mood: Energetic; energy: medium energy; vocal: male vocal; BPM 70; language: th\nSECTIONS: Verse 1, Chorus, Verse 2\nREPLY LANGUAGE: Thai\nLYRIC SYLLABLES (Python count from the Thai dictionary and spelling rules. Not a recording. Not a judgement of the song. It says nothing about rhyme.)\ndict = the syllable pieces are real syllables. est = the count is not fully confirmed. manual = the user's correction.\nline | syllables | count | repeated words\nL002 | 19 syl | est | -\nL003 | 27 syl | dict | -\nL004 | 28 syl | dict | รายการ×2, ที่×2, ซื้อ×2, ใน×2\nL005 | 26 syl | dict | -\nL008 | 24 syl | est | ไม่×2, เคย×2, ใคร×2\nL009 | 27 syl | dict | ฉัน×3\nL010 | 24 syl | est | ไม่×2, เคย×2, ใคร×2\nL011 | 27 syl | dict | ฉัน×3\nL014 | 30 syl | est | -\nL015 | 29 syl | dict | ฉัน×2, ฟัง×2, แล้ว×2\nRHYME ANALYZER RESULT (the Rhyme Analyzer AI's own reading of the sounds; the program only checked its format and did not change a pair, a letter or a scheme. Judge it; do not contradict it, do not add pairs. Letters: the same letter = the same end sound, `-` = rhymes with no other line, `~` = only a near rhyme):\n- Verse 1 (lines 2-5): scheme ABCD\n    line endings: L2 เก่า [A]; L3 หยุด [B]; L4 ครึ่ง [C]; L5 มา [D]\n- Chorus (lines 8-11): scheme ABAB\n    line endings: L8 ไหน [A]; L9 วัน [B]; L10 ไหน [A]; L11 วัน [B]\n    repetition (not a rhyme): L8 ไหน ↔ L10 ไหน: repetition (the same word or syllable again) | L9 วัน ↔ L11 วัน: repetition (the same word or syllable again)\n- Verse 2 (lines 14-15): scheme AB\n    line endings: L14 กัน [A]; L15 เก่ง [B]\nPROGRAM FACTS (Python. dict = dictionary split confirmed as syllables, est = not fully confirmed, manual = the user's correction. Not audio. You may disagree; say why. Do not state an unverified sound as a fact, and do not call a repeated word a rhyme.):\nline | words/syllables | count | vocal density (estimate)\n2| 14/19 | est | Moderate 1.8 syl/s (much longer than its section)\n3| 17/27 | dict | Dense 2.6 syl/s (much longer than its section)\n4| 23/28 | dict | Very Dense 2.7 syl/s (much longer than its section)\n5| 23/26 | dict | Dense 2.5 syl/s (much longer than its section)\n8| 21/24 | est | Dense 2.3 syl/s (much longer than its section)\n9| 23/27 | dict | Dense 2.6 syl/s (much longer than its section)\n10| 21/24 | est | Dense 2.3 syl/s (much longer than its section)\n11| 23/27 | dict | Dense 2.6 syl/s (much longer than its section)\n14| 24/30 | est | Very Dense 2.8 syl/s (much longer than its section)\n15| 26/29 | dict | Very Dense 2.7 syl/s (much longer than its section)\nACE-STEP LYRICS HEALTH (an estimated risk that ACE-Step rushes, merges or skips words; not a measurement):\n- [Estimate] Whole song — 9 of 10 lines to check for density. Some lines have many syllables for the time they can get. ACE-Step may rush, merge or skip words on those lines. The rest of the song is not affected by this note.\n- [Estimate] Verse 1 — High risk. This section may need a faster delivery than its tempo allows. Try fewer words, or split the phrases so there is room to breathe.\n- [Estimate] Chorus — High risk. This section may need a faster delivery than its tempo allows. Try fewer words, or split the phrases so there is room to breathe.\n- [Estimate] Verse 2 — High risk. This section may need a faster delivery than its tempo allows. Try fewer words, or split the phrases so there is room to breathe.\n- [Guideline, estimated count] Verse 1 — line 2: long phrase. Line 2 has a phrase of about 19 syllables with no space or punctuation to breathe at. This is a text-based phrasing risk; the melody is not known. A break may help.\n- [Detected] Verse 1 — line 3: long phrase. Line 3 has a phrase of 27 syllables with no space or punctuation to breathe at. This is a text-based phrasing risk; the melody is not known. A break may help.\n- [Detected] Verse 1 — line 4: long phrase. Line 4 has a phrase of 28 syllables with no space or punctuation to breathe at. This is a text-based phrasing risk; the melody is not known. A break may help.\n- [Detected] Verse 1 — line 5: long phrase. Line 5 has a phrase of 26 syllables with no space or punctuation to breathe at. This is a text-based phrasing risk; the melody is not known. A break may help.\n- [Guideline, estimated count] Chorus — line 8: long phrase. Line 8 has a phrase of about 24 syllables with no space or punctuation to breathe at. This is a text-based phrasing risk; the melody is not known. A break may help.\n- [Detected] Chorus — line 9: long phrase. Line 9 has a phrase of 27 syllables with no space or punctuation to breathe at. This is a text-based phrasing risk; the melody is not known. A break may help.\nBasis: Detected = counted by the program; Guideline = the ACE-Step 1.5 guide reference of roughly 6-10 syllables per line (a rough reference, not a rule); Estimate = a risk worked out from the target duration and stated assumptions. The melody is NOT known; skipping a section has several possible causes and is not predicted or given a probability.\nAssumptions: 4/4, 70 BPM → 3.4 s per bar; target 120 s; about 0 s kept for the instrumental parts (a set number of bars each); 12 % of the rest is breath and pauses. Each line is judged on its own syllables against the average time slot and against the most time it could get (up to 4 bars, or what is left if every other line is sung at a comfortable pace). Pace is syllables per beat (comfortable under 1.25, moderate under 1.75, dense under 2.25), from the ACE-Step 1.5 Guide's 6-10 syllables per line. These cut-offs and the bar limits are stated assumptions, not measurements. The melody is not known, so this is an estimated risk, not a measurement, and OK is never a guarantee.\nLYRICS (data):\n<<<\n1| [Verse 1]\n2| ฉันเดินผ่านตลาดเช้าตรู่ที่คนเริ่มขายของริมถนนสายเล็กหลังโรงเรียนเก่า\n3| แม่ค้าตะโกนเรียกลูกค้าแข่งกับเสียงมอเตอร์ไซค์ที่ขับผ่านไปมาทุกนาทีไม่เว้นแม้แต่วันหยุด\n4| ฉันจดรายการที่แม่ฝากซื้อไว้ในมือถือแต่สุดท้ายก็ซื้อของที่ไม่ได้อยู่ในรายการมากกว่าครึ่ง\n5| ป้าขายผักยัดถุงเพิ่มให้อีกสองกำเพราะเห็นว่าฉันผอมลงไปมากตั้งแต่ครั้งสุดท้ายที่แวะมา\n6| \n7| [Chorus]\n8| ตลาดตอนเช้าคือเมืองที่ไม่เคยหลับและไม่เคยถามว่าใครเหนื่อยหรือใครเพิ่งเสียใจมาจากไหน\n9| ฉันเดินไปตามเสียงเรียกของคนที่จำชื่อฉันไม่ได้แต่จำได้ว่าฉันชอบกินอะไรตอนเช้าทุกวัน\n10| ตลาดตอนเช้าคือเมืองที่ไม่เคยหลับและไม่เคยถามว่าใครเหนื่อยหรือใครเพิ่งเสียใจมาจากไหน\n11| ฉันเดินไปตามเสียงเรียกของคนที่จำชื่อฉันไม่ได้แต่จำได้ว่าฉันชอบกินอะไรตอนเช้าทุกวัน\n12| \n13| [Verse 2]\n14| ลุงขายปลาเล่าเรื่องเมื่อสามสิบปีก่อนที่ตลาดนี้ยังเป็นแค่ทุ่งนากับคลองเล็กๆที่เด็กๆลงไปว่ายน้ำกัน\n15| ฉันฟังจนปลาในถังเริ่มหยุดดิ้นแล้วลุงก็หัวเราะแล้วบอกว่าวันนี้ลดให้เพราะฉันเป็นลูกค้าที่ฟังเก่ง\n16| \n>>>\n\nREQUEST:\nPART 1 of the report. This answer is SHORT: [REVIEW.1] with its SUMMARY line, then the [STRENGTH.n] tags (at most 5), then [DONE]. Everything else you write is thrown away, so write nothing else: no [RHYME], [FINDING], [CUE], [ARRANGE] or [NOTE] tag, and no other part of the report.\nLANGUAGE: write ALL the text of this answer in Thai (quotes from the lyrics stay as written; tag names, field names and `-` stay as they are).",
+   "raw": "[REVIEW.1]\nSUMMARY: เพลงนี้พยายามบรรยายบรรยากาศตลาดเช้าที่มีชีวิตชีวาและเต็มไปด้วยความทรงจำส่วนตัวผ่านสายตาของผู้เล่า โดยทำได้ดีด้วยภาพที่ชัดเจนและรายละเอียดใน Verse 1 กับ Verse 2 ส่วน Chorus ช่วยย้ำธีมตลาดเป็นเมืองที่ไม่เคยหลับ หลักฐานจากบรรทัด 2-5 และ 14-15\n[STRENGTH.1]\n- บรรยายรายละเอียดตลาดได้ดีและเป็นธรรมชาติ เช่น L3 แม่ค้าตะโกนเรียกลูกค้าแข่งกับเสียงมอเตอร์ไซค์\n[STRENGTH.2]\n- ภาพส่วนตัวใน L5 ป้าขายผักยัดถุงเพิ่มเพราะเห็นว่าฉันผอมลง สร้างความรู้สึกอบอุ่นได้ชัดเจน\n[STRENGTH.3]\n- Chorus ใช้การซ้ำคำเพื่อเน้นธีมตลาดที่ไม่เคยหลับและไม่เคยถาม ทำให้ติดหู\n[STRENGTH.4]\n- Verse 2 L14-15 เล่าเรื่องลุงขายปลาได้ต่อเนื่องจากท่อนก่อนและเพิ่มมิติความทรงจำ\n[DONE]",
+   "error": "",
+   "sec": 11.4
+  },
+  {
+   "fn": "grok",
+   "system_tokens": 6417,
+   "user_tokens": 176,
+   "system_head": "## Role\nYou are **Songwriter AI**, a creative co-writer and a serious critic of Thai and multilingual lyrics. You combine wordcraft, story/emotion and an ear for sung language (syllables, rhyme, flow)",
+   "user": "PART 2, SECTION REVIEWS of ALL 3 sections: write ONE [RHYME.n] tag for EACH section below (numbered 1.. in the order of the list), each with the fields described under SECTION REVIEW (section: its name; lines: its range), then [DONE]. Use only the RHYME ANALYZER RESULT for what rhymes with what. Write no other tag in this answer.\nSections:\n- Verse 1 (lines 2-5)\n- Chorus (lines 8-11)\n- Verse 2 (lines 14-15)\nLANGUAGE: write ALL the text of this answer in Thai (quotes from the lyrics stay as written; tag names, field names and `-` stay as they are).",
+   "raw": "[RHYME.1]\nsection: Verse 1\nlines: 2-5\nchecks: wording ok; meaning ok; story ok; imagery ok; hook -; flow ok; endings ok\nquality: ท่อนนี้ใช้ภาพตลาดเช้าที่ชัดเจนและเป็นธรรมชาติ เช่น การแข่งเสียงมอเตอร์ไซค์และการยัดถุงผักเพิ่ม สร้างบรรยากาศชีวิตประจำวันได้ดีโดยไม่ต้องอธิบายความรู้สึกตรง ๆ\nstrength: L2-L5 บรรยายรายละเอียดตลาดได้ต่อเนื่องและมีชีวิตชีวา\nissue: -\nconsideration: -\nrhyme: ไม่มีสัมผัสท้ายบรรทัดที่ชัดเจนตามผลวิเคราะห์ ABCD ทำให้เน้นเนื้อหาและภาพมากกว่าความไหลลื่นของเสียง\nkeep: ท่อนนี้สามารถอยู่ได้เพราะภาพและเรื่องราวชัดเจนตั้งแต่ L2 ถึง L5\nrecommendation: -\nreason: -\nbenefit: -\npriority: -\nlimits: -\n[RHYME.2]\nsection: Chorus\nlines: 8-11\nchecks: wording ok; meaning ok; story ok; imagery ok; hook ok; flow ok; endings ok\nquality: ท่อนนี้ย้ำธีมตลาดเป็นเมืองที่ไม่เคยหลับด้วยการซ้ำประโยคหลัก ทำให้รู้สึกถึงความต่อเนื่องของชีวิตตลาดและความคุ้นเคยของผู้เล่า\nstrength: L8 และ L10 ใช้การซ้ำเพื่อเน้นหัวใจของเพลงได้ชัดเจน\nissue: -\nconsideration: -\nrhyme: การซ้ำคำ \"ไหน\" และ \"วัน\" ตามผลวิเคราะห์ ABAB ช่วยให้ติดหูและเสริมความรู้สึกของตลาดที่ไม่เปลี่ยนแปลง\nkeep: ท่อนนี้สามารถอยู่ได้เพราะการซ้ำสร้าง hook ที่ชัดเจนตั้งแต่ L8 ถึง L11\nrecommendation: -\nreason: -\nbenefit: -\npriority: -\nlimits: -\n[RHYME.3]\nsection: Verse 2\nlines: 14-15\nchecks: wording ok; meaning ok; story ok; imagery ok; hook -; flow ok; endings ok\nquality: ท่อนนี้ต่อเรื่องจาก Verse 1 ด้วยการเล่าเรื่องลุงขายปลาและความทรงจำเก่า เพิ่มมิติส่วนตัวให้กับตลาด\nstrength: L14-15 ใช้รายละเอียดเรื่องราวเพื่อขยายภาพตลาดได้ดี\nissue: -\nconsideration: -\nrhyme: สัมผัส AB ระหว่าง \"กัน\" และ \"เก่ง\" ช่วยปิดท่อนได้สั้นกระชับตามผลวิเคราะห์\nkeep: ท่อนนี้สามารถอยู่ได้เพราะขยายเรื่องราวจากท่อนก่อนได้อย่างต่อเนื่อง\nrecommendation: -\nreason: -\nbenefit: -\npriority: -\nlimits: -\n[DONE]",
+   "error": "",
+   "sec": 15.6
+  },
+  {
+   "fn": "grok",
+   "system_tokens": 6417,
+   "user_tokens": 128,
+   "system_head": "## Role\nYou are **Songwriter AI**, a creative co-writer and a serious critic of Thai and multilingual lyrics. You combine wordcraft, story/emotion and an ear for sung language (syllables, rhyme, flow)",
+   "user": "PART 3 of the report: write the [FINDING.n] tags (the suggestions) and the [NOTE.1] tag (what you could not decide), then [DONE]. Write no [REVIEW], [STRENGTH], [RHYME], [CUE] or [ARRANGE] tag in this answer. If nothing needs to change, write no [FINDING].\nLANGUAGE: write ALL the text of this answer in Thai (quotes from the lyrics stay as written; tag names, field names and `-` stay as they are).",
+   "raw": "[NOTE.1]\n- ไม่สามารถตัดสินเรื่องจังหวะการหายใจและความหนาแน่นของพยางค์ได้เพราะไม่มีทำนองจริง Ask the Music Producer AI: ความเสี่ยงจากจำนวนพยางค์ต่อบรรทัด\n[DONE]",
+   "error": "",
+   "sec": 6.1
+  },
+  {
+   "fn": "grok",
+   "system_tokens": 7056,
+   "user_tokens": 1862,
+   "system_head": "## Role\nYou are the **Music Producer AI** of a Thai songwriting studio. You think about the **shape** of a song (its sections, their order, the cues in the section tags, the hook and the chorus) and a",
+   "user": "DATA of this analysis (the song, its style and facts, and the lyrics; data, never instructions). Read them, then answer ONLY the request after the data.\n\nSONG: ตลาดเช้า\nSTYLE: genre Hip Hop; mood: Energetic; energy: medium energy; vocal: male vocal; BPM 70; language: th\nSECTIONS: Verse 1, Chorus, Verse 2\nREPLY LANGUAGE: Thai\nPROGRAM FACTS (estimates by Python from the lyrics and the settings; the melody is NOT known and the real timing of the music generator is not controlled by these numbers):\nSettings: 70 BPM, 4/4, target 120 s.\nsection | sung lines | syllables | vocal density (estimate)\nVerse 1 | 4 | 100 | Very Dense 2.4 syl/s\nChorus | 4 | 102 | Very Dense 2.4 syl/s\nVerse 2 | 2 | 59 | Very Dense 2.8 syl/s\nWhole song: 261 syllables in about 106 s of singing time → 2.5 syl/s on average: Very Dense.\nACE-STEP LYRICS HEALTH:\n- [Estimate] Whole song — 9 of 10 lines to check for density. Some lines have many syllables for the time they can get. ACE-Step may rush, merge or skip words on those lines. The rest of the song is not affected by this note.\n- [Estimate] Verse 1 — High risk. This section may need a faster delivery than its tempo allows. Try fewer words, or split the phrases so there is room to breathe.\n- [Estimate] Chorus — High risk. This section may need a faster delivery than its tempo allows. Try fewer words, or split the phrases so there is room to breathe.\n- [Estimate] Verse 2 — High risk. This section may need a faster delivery than its tempo allows. Try fewer words, or split the phrases so there is room to breathe.\n- [Guideline, estimated count] Verse 1 — line 2: long phrase. Line 2 has a phrase of about 19 syllables with no space or punctuation to breathe at. This is a text-based phrasing risk; the melody is not known. A break may help.\n- [Detected] Verse 1 — line 3: long phrase. Line 3 has a phrase of 27 syllables with no space or punctuation to breathe at. This is a text-based phrasing risk; the melody is not known. A break may help.\n- [Detected] Verse 1 — line 4: long phrase. Line 4 has a phrase of 28 syllables with no space or punctuation to breathe at. This is a text-based phrasing risk; the melody is not known. A break may help.\n- [Detected] Verse 1 — line 5: long phrase. Line 5 has a phrase of 26 syllables with no space or punctuation to breathe at. This is a text-based phrasing risk; the melody is not known. A break may help.\n- [Guideline, estimated count] Chorus — line 8: long phrase. Line 8 has a phrase of about 24 syllables with no space or punctuation to breathe at. This is a text-based phrasing risk; the melody is not known. A break may help.\n- [Detected] Chorus — line 9: long phrase. Line 9 has a phrase of 27 syllables with no space or punctuation to breathe at. This is a text-based phrasing risk; the melody is not known. A break may help.\nBasis: Detected = counted by the program; Guideline = the ACE-Step 1.5 guide reference of roughly 6-10 syllables per line (a rough reference, not a rule); Estimate = a risk worked out from the target duration and stated assumptions. The melody is NOT known; skipping a section has several possible causes and is not predicted or given a probability.\nAssumptions: 4/4, 70 BPM → 3.4 s per bar; target 120 s; about 0 s kept for the instrumental parts (a set number of bars each); 12 % of the rest is breath and pauses. Each line is judged on its own syllables against the average time slot and against the most time it could get (up to 4 bars, or what is left if every other line is sung at a comfortable pace). Pace is syllables per beat (comfortable under 1.25, moderate under 1.75, dense under 2.25), from the ACE-Step 1.5 Guide's 6-10 syllables per line. These cut-offs and the bar limits are stated assumptions, not measurements. The melody is not known, so this is an estimated risk, not a measurement, and OK is never a guarantee.\nVOCAL CUE CHECK (the program compared the cues that apply to the same part at the same time; only cues the studio catalogue knows were judged; a custom cue is never called wrong; analysis only, nothing was changed):\n- No vocal cue conflict, repetition or excess was found among the cues the catalogue knows.\nLYRICS (data):\n<<<\n1| [Verse 1]\n2| ฉันเดินผ่านตลาดเช้าตรู่ที่คนเริ่มขายของริมถนนสายเล็กหลังโรงเรียนเก่า\n3| แม่ค้าตะโกนเรียกลูกค้าแข่งกับเสียงมอเตอร์ไซค์ที่ขับผ่านไปมาทุกนาทีไม่เว้นแม้แต่วันหยุด\n4| ฉันจดรายการที่แม่ฝากซื้อไว้ในมือถือแต่สุดท้ายก็ซื้อของที่ไม่ได้อยู่ในรายการมากกว่าครึ่ง\n5| ป้าขายผักยัดถุงเพิ่มให้อีกสองกำเพราะเห็นว่าฉันผอมลงไปมากตั้งแต่ครั้งสุดท้ายที่แวะมา\n6| \n7| [Chorus]\n8| ตลาดตอนเช้าคือเมืองที่ไม่เคยหลับและไม่เคยถามว่าใครเหนื่อยหรือใครเพิ่งเสียใจมาจากไหน\n9| ฉันเดินไปตามเสียงเรียกของคนที่จำชื่อฉันไม่ได้แต่จำได้ว่าฉันชอบกินอะไรตอนเช้าทุกวัน\n10| ตลาดตอนเช้าคือเมืองที่ไม่เคยหลับและไม่เคยถามว่าใครเหนื่อยหรือใครเพิ่งเสียใจมาจากไหน\n11| ฉันเดินไปตามเสียงเรียกของคนที่จำชื่อฉันไม่ได้แต่จำได้ว่าฉันชอบกินอะไรตอนเช้าทุกวัน\n12| \n13| [Verse 2]\n14| ลุงขายปลาเล่าเรื่องเมื่อสามสิบปีก่อนที่ตลาดนี้ยังเป็นแค่ทุ่งนากับคลองเล็กๆที่เด็กๆลงไปว่ายน้ำกัน\n15| ฉันฟังจนปลาในถังเริ่มหยุดดิ้นแล้วลุงก็หัวเราะแล้วบอกว่าวันนี้ลดให้เพราะฉันเป็นลูกค้าที่ฟังเก่ง\n16| \n>>>\n\nREQUEST:\nPART 1 of the report. This answer is SHORT: [REVIEW.1] with its SUMMARY line, then the [STRENGTH.n] tags (at most 5), then [DONE]. Everything else you write is thrown away, so write nothing else: no [RHYME], [FINDING], [CUE], [ARRANGE] or [NOTE] tag, and no other part of the report.\nLANGUAGE: write ALL the text of this answer in Thai (quotes from the lyrics stay as written; tag names, field names and `-` stay as they are).",
+   "raw": "[REVIEW.1]\nSUMMARY: เพลงมีโครงสร้างแบบ Verse 1 - Chorus - Verse 2 ซึ่งเป็นรูปแบบพื้นฐานที่ชัดเจน คอรัสถูกวางหลังเวอร์สแรกและทำซ้ำเพื่อเน้นฮุกหลัก ส่วนเวอร์สสองช่วยขยายเรื่องราวต่อจากนั้น\n[STRENGTH.1]\n- โครงสร้างมีคอรัสที่ทำซ้ำสองครั้ง (บรรทัด 8-11) ช่วยให้เพลงมีจุดเด่นและจดจำง่ายในแนวฮิปฮอป\n[STRENGTH.2]\n- การจัดวางเวอร์สสองหลังคอรัส (บรรทัด 13) ช่วยให้เพลงพัฒนาจากการบรรยายตลาดไปสู่การเล่าเรื่องส่วนตัวเพิ่มเติม\n[DONE]",
+   "error": "",
+   "sec": 11.5
+  },
+  {
+   "fn": "grok",
+   "system_tokens": 7056,
+   "user_tokens": 183,
+   "system_head": "## Role\nYou are the **Music Producer AI** of a Thai songwriting studio. You think about the **shape** of a song (its sections, their order, the cues in the section tags, the hook and the chorus) and a",
+   "user": "PART 2, ALL SECTIONS: for EACH of the 3 sections below write its [CUE.n] row and its [ARRANGE.n] row (one pair per section, numbered 1.. in the order of the list; N = the number of its tag line). Leave a row out when you have nothing concrete to say about that section. Then [DONE]. Write no other tag in this answer.\nSections:\n- Verse 1 (tag line 1, lines 1-6)\n- Chorus (tag line 7, lines 7-12)\n- Verse 2 (tag line 13, lines 13-16)\nLANGUAGE: write ALL the text of this answer in Thai (quotes from the lyrics stay as written; tag names, field names and `-` stay as they are).",
+   "raw": "[CUE.1]\n1 | spoken word | เหมาะกับการเล่าเรื่องตลาดในแนวฮิปฮอป\n[ARRANGE.1]\n1 | กลองเบสหนักและซินธ์เบา | พลังปานกลาง เสียงร้องชายพูดเล่าแบบ relaxed\n[CUE.2]\n7 | high energy | ทำให้คอรัสเด่นและมีพลังมากกว่าเวอร์ส\n[ARRANGE.2]\n7 | กลองหนักขึ้นและเบสหนัก | พลังเพิ่มขึ้น เสียงร้องชายชัดเจนและ energetic\n[CUE.3]\n13 | spoken word | เหมาะกับการเล่าเรื่องต่อเนื่องจากเวอร์สแรก\n[ARRANGE.3]\n13 | กลองเบสหนักและซินธ์เบา | พลังปานกลางเหมือนเวอร์สแรก เสียงร้องชายพูดเล่าแบบ relaxed\n[DONE]",
+   "error": "",
+   "sec": 15.3
+  },
+  {
+   "fn": "grok",
+   "system_tokens": 7056,
+   "user_tokens": 128,
+   "system_head": "## Role\nYou are the **Music Producer AI** of a Thai songwriting studio. You think about the **shape** of a song (its sections, their order, the cues in the section tags, the hook and the chorus) and a",
+   "user": "PART 3 of the report: write the [FINDING.n] tags (the suggestions) and the [NOTE.1] tag (what you could not decide), then [DONE]. Write no [REVIEW], [STRENGTH], [RHYME], [CUE] or [ARRANGE] tag in this answer. If nothing needs to change, write no [FINDING].\nLANGUAGE: write ALL the text of this answer in Thai (quotes from the lyrics stay as written; tag names, field names and `-` stay as they are).",
+   "raw": "[NOTE.1]\n- ไม่มีสิ่งที่ตัดสินใจไม่ได้ เนื่องจากโครงสร้างและการจัดเรียงเสียงเหมาะสมกับเพลงแนวฮิปฮอปอยู่แล้ว\n[DONE]",
+   "error": "",
+   "sec": 10.0
+  }
+ ],
+ "snapshot_keys": [
+  "backend",
+  "bpm",
+  "caption",
+  "corrections",
+  "duration",
+  "energy",
+  "genre",
+  "language",
+  "live",
+  "lyrics",
+  "lyrics_hash",
+  "mood",
+  "sheet_id",
+  "song_id",
+  "timesignature",
+  "title",
+  "vocal"
+ ],
+ "lyrics": "[Verse 1]\nฉันเดินผ่านตลาดเช้าตรู่ที่คนเริ่มขายของริมถนนสายเล็กหลังโรงเรียนเก่า\nแม่ค้าตะโกนเรียกลูกค้าแข่งกับเสียงมอเตอร์ไซค์ที่ขับผ่านไปมาทุกนาทีไม่เว้นแม้แต่วันหยุด\nฉันจดรายการที่แม่ฝากซื้อไว้ในมือถือแต่สุดท้ายก็ซื้อของที่ไม่ได้อยู่ในรายการมากกว่าครึ่ง\nป้าขายผักยัดถุงเพิ่มให้อีกสองกำเพราะเห็นว่าฉันผอมลงไปมากตั้งแต่ครั้งสุดท้ายที่แวะมา\n\n[Chorus]\nตลาดตอนเช้าคือเมืองที่ไม่เคยหลับและไม่เคยถามว่าใครเหนื่อยหรือใครเพิ่งเสียใจมาจากไหน\nฉันเดินไปตามเสียงเรียกของคนที่จำชื่อฉันไม่ได้แต่จำได้ว่าฉันชอบกินอะไรตอนเช้าทุกวัน\nตลาดตอนเช้าคือเมืองที่ไม่เคยหลับและไม่เคยถามว่าใครเหนื่อยหรือใครเพิ่งเสียใจมาจากไหน\nฉันเดินไปตามเสียงเรียกของคนที่จำชื่อฉันไม่ได้แต่จำได้ว่าฉันชอบกินอะไรตอนเช้าทุกวัน\n\n[Verse 2]\nลุงขายปลาเล่าเรื่องเมื่อสามสิบปีก่อนที่ตลาดนี้ยังเป็นแค่ทุ่งนากับคลองเล็กๆที่เด็กๆลงไปว่ายน้ำกัน\nฉันฟังจนปลาในถังเริ่มหยุดดิ้นแล้วลุงก็หัวเราะแล้วบอกว่าวันนี้ลดให้เพราะฉันเป็นลูกค้าที่ฟังเก่ง\n",
+ "settings": {
+  "genre": "Hip Hop",
+  "mood": "Energetic",
+  "bpm": 70,
+  "timesig": "4",
+  "duration": 120,
+  "vocal": "male vocal",
+  "energy": "medium energy",
+  "language": "th"
+ }
+}

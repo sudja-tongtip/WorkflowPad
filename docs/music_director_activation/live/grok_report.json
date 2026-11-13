@@ -1,0 +1,332 @@
+{
+  "backend": "grok",
+  "song": "มนุษย์ถ้ำ",
+  "prompt_hash": "3ae1d1e59225",
+  "seconds": 29.6,
+  "chars": 9602,
+  "done": true,
+  "requests": 1,
+  "directions": [
+    {
+      "name": "Driving Action Synthwave",
+      "genre": "Electronic",
+      "plan": {
+        "complete": true,
+        "duration_ok": true,
+        "bars": 120,
+        "clock": "3:28.7",
+        "rows": [
+          [
+            "Intro",
+            8,
+            "sets the ticking tension",
+            "high energy",
+            false
+          ],
+          [
+            "Verse 1",
+            8,
+            "opens the story with space",
+            "medium energy",
+            false
+          ],
+          [
+            "Verse 2",
+            16,
+            "builds personal detail",
+            "medium energy",
+            false
+          ],
+          [
+            "Build",
+            8,
+            "raises stakes",
+            "high energy",
+            false
+          ],
+          [
+            "Hook",
+            16,
+            "delivers the main hook with impact",
+            "high energy",
+            false
+          ],
+          [
+            "Breakdown",
+            8,
+            "creates brief emptiness",
+            "low energy",
+            false
+          ],
+          [
+            "Verse 3",
+            16,
+            "deepens the longing",
+            "medium energy",
+            false
+          ],
+          [
+            "Build",
+            8,
+            "re-ignites the chase",
+            "high energy",
+            false
+          ],
+          [
+            "Final Chorus",
+            16,
+            "maximum cinematic release",
+            "high energy",
+            false
+          ],
+          [
+            "Instrumental",
+            8,
+            "clears space for tension",
+            "high energy",
+            false
+          ],
+          [
+            "Outro",
+            8,
+            "lets the last lines dissolve",
+            "low energy",
+            false
+          ]
+        ],
+        "proposed": [],
+        "missing": [],
+        "rejected": [],
+        "cues": [
+          [
+            "Intro",
+            "keep",
+            "pulsing kick, atmospheric",
+            "freeform"
+          ],
+          [
+            "Hook",
+            "add",
+            "emotional vocals, melancholic",
+            "freeform"
+          ]
+        ]
+      },
+      "reasoning": "The bar counts follow the natural density of each Thai section and the action-movie request, letting dense Hook and Final Chorus lines sit in longer sections while shorter Breakdown and Outro sections keep contrast without padding."
+    },
+    {
+      "name": "Broken-Beat Action Electronica",
+      "genre": "Electronic",
+      "plan": {
+        "complete": true,
+        "duration_ok": true,
+        "bars": 124,
+        "clock": "3:40.4",
+        "rows": [
+          [
+            "Intro",
+            4,
+            "drops the first glitch hit",
+            "high energy",
+            false
+          ],
+          [
+            "Verse 1",
+            8,
+            "keeps early story intimate",
+            "medium energy",
+            false
+          ],
+          [
+            "Verse 2",
+            16,
+            "adds personal detail",
+            "medium energy",
+            false
+          ],
+          [
+            "Build",
+            8,
+            "creates sudden lift",
+            "high energy",
+            false
+          ],
+          [
+            "Hook",
+            16,
+            "hits with full broken-beat power",
+            "high energy",
+            false
+          ],
+          [
+            "Breakdown",
+            8,
+            "leaves empty digital space",
+            "low energy",
+            false
+          ],
+          [
+            "Verse 3",
+            16,
+            "deepens emotion",
+            "medium energy",
+            false
+          ],
+          [
+            "Build",
+            8,
+            "restarts the chase",
+            "high energy",
+            false
+          ],
+          [
+            "Final Chorus",
+            16,
+            "maximum broken-beat release",
+            "high energy",
+            false
+          ],
+          [
+            "Instrumental",
+            16,
+            "extended tension break",
+            "high energy",
+            false
+          ],
+          [
+            "Outro",
+            8,
+            "slow ambient dissolve",
+            "low energy",
+            false
+          ]
+        ],
+        "proposed": [],
+        "missing": [],
+        "rejected": [],
+        "cues": [
+          [
+            "Build",
+            "replace",
+            "emotional vocals, melancholic",
+            "freeform"
+          ],
+          [
+            "Final Chorus",
+            "add",
+            "emotional vocals, melancholic",
+            "freeform"
+          ]
+        ]
+      },
+      "reasoning": "Broken-beat sections use shorter Intro and longer Instrumental to create stop-start action contrast while still giving every sung line enough bars according to its syllable count."
+    },
+    {
+      "name": "Cinematic Hybrid Electronic",
+      "genre": "Electronic",
+      "plan": {
+        "complete": true,
+        "duration_ok": true,
+        "bars": 120,
+        "clock": "3:38.2",
+        "rows": [
+          [
+            "Intro",
+            8,
+            "opens with wide cinematic hit",
+            "high energy",
+            false
+          ],
+          [
+            "Verse 1",
+            8,
+            "keeps first lines close",
+            "medium energy",
+            false
+          ],
+          [
+            "Verse 2",
+            16,
+            "adds intimate detail",
+            "medium energy",
+            false
+          ],
+          [
+            "Build",
+            8,
+            "starts the cinematic lift",
+            "high energy",
+            false
+          ],
+          [
+            "Hook",
+            16,
+            "delivers epic hook impact",
+            "high energy",
+            false
+          ],
+          [
+            "Breakdown",
+            8,
+            "creates empty tension",
+            "low energy",
+            false
+          ],
+          [
+            "Verse 3",
+            16,
+            "deepens the emotion",
+            "medium energy",
+            false
+          ],
+          [
+            "Build",
+            8,
+            "reignites the epic chase",
+            "high energy",
+            false
+          ],
+          [
+            "Final Chorus",
+            16,
+            "maximum cinematic release",
+            "high energy",
+            false
+          ],
+          [
+            "Instrumental",
+            8,
+            "clears for reflection",
+            "high energy",
+            false
+          ],
+          [
+            "Outro",
+            8,
+            "slow ambient close",
+            "low energy",
+            false
+          ]
+        ],
+        "proposed": [],
+        "missing": [],
+        "rejected": [],
+        "cues": [
+          [
+            "Build",
+            "add",
+            "pulsing kick, atmospheric",
+            "freeform"
+          ],
+          [
+            "Outro",
+            "keep",
+            "Ambient Fade Out",
+            "duplicate"
+          ]
+        ]
+      },
+      "reasoning": "The bar plan follows the lyric density and the action-movie request by giving the Hook and Final Chorus longer sections for cinematic impact while keeping shorter Breakdown and Outro sections for contrast."
+    }
+  ]
+}

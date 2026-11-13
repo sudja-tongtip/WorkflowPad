@@ -1,0 +1,6 @@
+git apply --check on a clean HEAD worktree (no --recount): rc=0
+applied: 0
+test_songcraft: 55 / 55 passed
+test_critic_refs: 62 / 62 passed
+test_critic_actions: 59 / 59 passed
+test_spec_reports: 108 / 108 passed

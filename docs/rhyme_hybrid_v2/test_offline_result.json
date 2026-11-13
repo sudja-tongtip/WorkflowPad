@@ -1,0 +1,132 @@
+[
+ {
+  "case": "good answer parsed",
+  "pass": true,
+  "detail": "[]"
+ },
+ {
+  "case": "Python-verified pairs not lost when the reviewer agrees",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "valid new pair verified by Python (not by the reviewer's confidence)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "duplicate pair merged, not added twice",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "invented word blocked",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "tag line / fragment blocked",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "different sound rejected (not verified)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "repetition rejected as repetition",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "section coverage counted",
+  "pass": true,
+  "detail": "{'reviewed': 9, 'python_pairs': 9, 'sections_checked': 5, 'sections': 5, 'unknown_refs': 0}"
+ },
+ {
+  "case": "rejected pairs never listed as rhymes in Songwriter evidence",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "production evidence_text can read the merged evidence dict (shape compatible)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "LLM 'wrong' -> disputed (kept, not verified, not dropped)",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "LLM dispute -> disputed + disagreement kept",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "disputed pair not in Songwriter 'VERIFIED' list",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "broken answer: empty",
+  "pass": true,
+  "detail": "issues=['no [DONE] line: complete tags above were still read']"
+ },
+ {
+  "case": "broken answer: garbage",
+  "pass": true,
+  "detail": "issues=['no [DONE] line: complete tags above were still read', 'text before the first tag was ignored']"
+ },
+ {
+  "case": "broken answer: truncated (no DONE, half a tag)",
+  "pass": true,
+  "detail": "issues=['no [DONE] line: complete tags above were still read']"
+ },
+ {
+  "case": "broken answer: json instead of tags",
+  "pass": true,
+  "detail": "issues=['no [DONE] line: complete tags above were still read', 'text before the first tag was ignored']"
+ },
+ {
+  "case": "broken answer: unknown tag + repeated tag",
+  "pass": true,
+  "detail": "issues=['[FOO.1] is not a tag the reviewer may use (ignored)', '[REVIEW.1] repeated; the first is kept']"
+ },
+ {
+  "case": "reviewer failure -> python only still produces evidence",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "review of an unknown pair id is ignored and logged",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "no-rhyme song: reviewer's wrong 'exact' pairs are not verified",
+  "pass": true,
+  "detail": "[('ADD.1', 'rejected'), ('P1', 'verified'), ('ADD.2', 'rejected'), ('ADD.3', 'rejected')]"
+ },
+ {
+  "case": "no-rhyme song: the lone distant Python pair is flagged low confidence",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "repeated word 'ไป' is repetition, not a rhyme",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "no edit / apply action fields anywhere in the merged result",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "case": "engine does not change the lyrics",
+  "pass": true,
+  "detail": ""
+ }
+]

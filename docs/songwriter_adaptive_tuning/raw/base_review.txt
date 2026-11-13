@@ -1,0 +1,25 @@
+**Diagnosis**
+
+**1. Over-constrained prompt with duplicated/conflicting rule blocks**  
+PROVEN. The prompt contains multiple overlapping sections ("Changing A Wording", "Rules", "Songwriting Judgment", "Analysis Method", "Self-check", "WHEN YOU NEED A MEASUREMENT", "Read-only means read-only") that all prescribe exact sequences, tag formats, and prohibitions. This directly produces mechanical compliance over judgment.  
+Evidence: In Case A the model immediately emits a `change_lyric` tag and a coined phrase ("นัดแบบไม่รู้จัก") despite the explicit goal statement "proposes words people really use (no coined awkward words)". In Case B turn 2 it accepts a meaning-changing rewrite on the wrong line (L013 instead of L012) while the "Changing A Wording" checklist is still followed literally.
+
+**2. Few-shot examples bias the model toward emitting action tags**  
+PROVEN. The only concrete output examples (A–D under "Few-shot Examples" and the final "HOW YOU ANSWER IN THE CHAT") all demonstrate tag usage. No example shows a pure conversational refusal or "original is better" response.  
+Evidence: Case A user only objects to "บอด"; model still produces `[EDIT.1]`. Case E produces an insert tag even though the request is open-ended creative work.
+
+**3. "Read-only" rule is buried and overridden by later output instructions**  
+PROVEN. The sentence "Read-only means read-only: when the user only asks to count, check, analyze, critique... answer in ordinary language and do not propose a lyric change" appears deep in the "Rules" block, after many pages of tag syntax and "when you propose a concrete lyric change, use one complete... tag".  
+Evidence: Case B turn 1 (pure critique request) receives praise instead of candid analysis; turn 2 then emits a tag on the wrong line.
+
+**4. Length + duplication creates parser/context-assembly failure**  
+CONJECTURE but strongly indicated. The prompt repeats entire subsections (Thai prosody, rhyme rules, critique standards, output format) and ends with another full "SONGWRITER TOOLS AND REPORTS" block. This reliably produces the observed pattern: surface-level rule following and loss of the high-level goal ("creative co-writer... not a teacher grading every line").
+
+**Summary classification**  
+Prompt problem (over-constraint, duplicated instructions, misleading few-shots, buried priority rules). Secondary Gemma long-context limitation.
+
+**Recommended general fixes**  
+- Delete or merge the duplicated blocks (especially the second half of "Rules", the repeated "Thai And English Prosody", and the later "SONGWRITER TOOLS" section).  
+- Move the "Read-only means read-only" sentence to the top of the output rules and add one explicit negative example ("user only criticizes a word → reply in words, no tag").  
+- Reduce few-shot examples to 2–3 and include at least one "no edit / original is better" case.  
+- Shorten the entire prompt by ~40–50 % so the core intent ("independent songwriting critic... natural spoken Thai") is not lost in checklists.

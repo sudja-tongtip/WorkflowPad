@@ -1,0 +1,136 @@
+{
+ "S1": [
+  {
+   "line": "ฝนพรำเปียกหน้าบ้าน",
+   "anchor": 5,
+   "python": 5,
+   "status": "verified",
+   "segments": "['ฝน', 'พรำ', 'เปียก', 'หน้า', 'บ้าน']",
+   "match": true
+  },
+  {
+   "line": "เธอยืนอยู่ตรงนั้นนาน",
+   "anchor": 6,
+   "python": 6,
+   "status": "verified",
+   "segments": "['เธอ', 'ยืน', 'อยู่', 'ตรง', 'นั้น', 'นาน']",
+   "match": true
+  },
+  {
+   "line": "ฉันถือร่มคันเก่า",
+   "anchor": 5,
+   "python": 5,
+   "status": "verified",
+   "segments": "['ฉัน', 'ถือ', 'ร่ม', 'คัน', 'เก่า']",
+   "match": true
+  },
+  {
+   "line": "เธอเดินมาเบาเบา",
+   "anchor": 5,
+   "python": 5,
+   "status": "verified",
+   "segments": "['เธอ', 'เดิน', 'มา', 'เบา', 'เบา']",
+   "match": true
+  },
+  {
+   "line": "ไม่ต้องพูดอะไรสักคำ",
+   "anchor": 7,
+   "python": 7,
+   "status": "verified",
+   "segments": "['ไม่', 'ต้อง', 'พูด', 'อะ', 'ไร', 'สัก', 'คำ']",
+   "match": true
+  },
+  {
+   "line": "ให้ฝนเป็นพยาน ว่าฉันรักเธอ",
+   "anchor": 9,
+   "python": 8,
+   "status": "estimated",
+   "segments": "['ให้', 'ฝน', 'เป็น', 'พยาน', 'ว่า', 'ฉัน', 'รัก', 'เธอ']",
+   "match": false
+  },
+  {
+   "line": "ฉันจะอยู่กับเธอไปจนฟ้าใส",
+   "anchor": 9,
+   "python": 9,
+   "status": "verified",
+   "segments": "['ฉัน', 'จะ', 'อยู่', 'กับ', 'เธอ', 'ไป', 'จน', 'ฟ้า', 'ใส']",
+   "match": true
+  },
+  {
+   "line": "บางเรื่องไม่ต้องอธิบาย",
+   "anchor": 7,
+   "python": 6,
+   "status": "estimated",
+   "segments": "['บาง', 'เรื่อง', 'ไม่', 'ต้อง', 'อธิ', 'บาย']",
+   "match": false
+  }
+ ],
+ "S2": [
+  {
+   "line": "ลุงขายกาแฟยิ้มให้ฉันเหมือนเคย",
+   "anchor": 9,
+   "python": 9,
+   "status": "verified",
+   "segments": "['ลุง', 'ขาย', 'กา', 'แฟ', 'ยิ้ม', 'ให้', 'ฉัน', 'เหมือน', 'เคย']",
+   "match": true
+  },
+  {
+   "line": "ฉันซื้อแก้วเดิมไม่ต้องบอกอะไร",
+   "anchor": 9,
+   "python": 9,
+   "status": "verified",
+   "segments": "['ฉัน', 'ซื้อ', 'แก้ว', 'เดิม', 'ไม่', 'ต้อง', 'บอก', 'อะ', 'ไร']",
+   "match": true
+  },
+  {
+   "line": "เพื่อนร่วมงานถามว่าสุขไหม",
+   "anchor": 7,
+   "python": 7,
+   "status": "verified",
+   "segments": "['เพื่อน', 'ร่วม', 'งาน', 'ถาม', 'ว่า', 'สุข', 'ไหม']",
+   "match": true
+  },
+  {
+   "line": "ฉันตอบว่าก็ดีตามปกติ",
+   "anchor": 9,
+   "python": 8,
+   "status": "verified",
+   "segments": "['ฉัน', 'ตอบ', 'ว่า', 'ก็', 'ดี', 'ตาม', 'ปก', 'ติ']",
+   "match": false
+  }
+ ],
+ "S3": [
+  {
+   "line": "ตู้ไปรษณีย์สีแดงยังเปื้อนสีเทาของควัน",
+   "anchor": 13,
+   "python": 11,
+   "status": "estimated",
+   "segments": "['ตู้', 'ไปร', 'ษณีย์', 'สี', 'แดง', 'ยัง', 'เปื้อน', 'สี', 'เทา', 'ของ', 'ควัน']",
+   "match": false
+  },
+  {
+   "line": "ฉันรักเธอ ไม่เปลี่ยนไป",
+   "anchor": 6,
+   "python": 6,
+   "status": "verified",
+   "segments": "['ฉัน', 'รัก', 'เธอ', 'ไม่', 'เปลี่ยน', 'ไป']",
+   "match": true
+  },
+  {
+   "line": "คิดถึงเธอ คิดถึงเธอ",
+   "anchor": 6,
+   "python": 6,
+   "status": "verified",
+   "segments": "['คิด', 'ถึง', 'เธอ', 'คิด', 'ถึง', 'เธอ']",
+   "match": true
+  },
+  {
+   "line": "ฉันรักเธอ ตลอดไป",
+   "anchor": 6,
+   "python": 5,
+   "status": "estimated",
+   "segments": "['ฉัน', 'รัก', 'เธอ', 'ตลอด', 'ไป']",
+   "match": false
+  }
+ ]
+}

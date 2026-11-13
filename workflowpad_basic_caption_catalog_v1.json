@@ -1,0 +1,1466 @@
+{
+  "catalog_version": "1.0",
+  "purpose": "WorkflowPad Music Studio Basic caption builder, app-side deterministic composition; no LLM call needed",
+  "important": "ACE-Step 1.5 caption uses free-form text, not an official closed list of allowable enum values. Documented examples are not guarantees; curated entries are music terms to try.",
+  "source_urls": [
+    "https://github.com/ace-step/ACE-Step-1.5/blob/main/docs/en/Tutorial.md",
+    "https://github.com/ace-step/ACE-Step-1.5/blob/main/docs/en/ace_step_musicians_guide.md",
+    "https://huggingface.co/spaces/ACE-Step/Ace-Step-v1.5/blob/2b1ad1c0b68bb8bce2c0dc77ad224c35a274f7ee/INFERENCE.md"
+  ],
+  "behavior": {
+    "compose_mode": "selected English phrases joined by comma and single space, in category order; no translation, no paraphrase, no AI rewrite",
+    "caption_field_note": "reference inference guide lists a 512-character max; verify the currently installed ComfyUI node and keep length indicator plus warning",
+    "metadata_separate": [
+      "bpm",
+      "keyscale",
+      "timesignature",
+      "duration",
+      "vocal_language"
+    ],
+    "ai_recommend": "separate explicitly invoked action; never automatically called when Basic options change",
+    "preset_behavior": "preset sets selectors, then remains fully editable",
+    "conflict_policy": "show local rule-based warnings, do not silently remove selected phrases",
+    "state": "store stable item IDs and custom phrase strings per song, preserve Basic and Advanced values independently",
+    "source_label": "official_example_or_close means a close matching term is represented in the official docs; not officially enumerated and not guaranteed"
+  },
+  "sections": [
+    {
+      "id": "genre",
+      "name_en": "Genre / Style",
+      "name_th": "แนวเพลง",
+      "control": "multi_select_searchable",
+      "suggested_max": 3,
+      "items": [
+        {
+          "id": "genre_01",
+          "label_th": "ป๊อป",
+          "caption_en": "Pop",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "genre_02",
+          "label_th": "ไทยป๊อป",
+          "caption_en": "Thai Pop",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_03",
+          "label_th": "อินดี้ป๊อป",
+          "caption_en": "Indie Pop",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "genre_04",
+          "label_th": "อิเล็กโทรป๊อป",
+          "caption_en": "Electropop",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_05",
+          "label_th": "ซินธ์ป๊อป",
+          "caption_en": "Synth-Pop",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_06",
+          "label_th": "ซิตี้ป๊อป",
+          "caption_en": "City Pop",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_07",
+          "label_th": "เบดรูมป๊อป",
+          "caption_en": "Bedroom Pop",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "genre_08",
+          "label_th": "ดรีมป๊อป",
+          "caption_en": "Dream Pop",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_09",
+          "label_th": "ป๊อปร็อก",
+          "caption_en": "Pop Rock",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_10",
+          "label_th": "อัลเทอร์เนทีฟร็อก",
+          "caption_en": "Alternative Rock",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_11",
+          "label_th": "อินดี้ร็อก",
+          "caption_en": "Indie Rock",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_12",
+          "label_th": "ฮาร์ดร็อก",
+          "caption_en": "Hard Rock",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_13",
+          "label_th": "ฮิปฮอป",
+          "caption_en": "Hip-Hop",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "genre_14",
+          "label_th": "แทรป",
+          "caption_en": "Trap",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_15",
+          "label_th": "แทรปยามดึก",
+          "caption_en": "Late Night Trap",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_16",
+          "label_th": "เมโลดิกแทรป",
+          "caption_en": "Melodic Trap",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_17",
+          "label_th": "บูมแบป",
+          "caption_en": "Boom Bap",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_18",
+          "label_th": "ดริลล์",
+          "caption_en": "Drill",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_19",
+          "label_th": "อาร์แอนด์บี",
+          "caption_en": "R&B",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "genre_20",
+          "label_th": "อาร์แอนด์บีร่วมสมัย",
+          "caption_en": "Contemporary R&B",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_21",
+          "label_th": "อัลเทอร์เนทีฟอาร์แอนด์บี",
+          "caption_en": "Alternative R&B",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_22",
+          "label_th": "นีโอโซล",
+          "caption_en": "Neo-Soul",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_23",
+          "label_th": "โซล",
+          "caption_en": "Soul",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "genre_24",
+          "label_th": "ฟังก์",
+          "caption_en": "Funk",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "genre_25",
+          "label_th": "ดิสโก้",
+          "caption_en": "Disco",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_26",
+          "label_th": "เฮาส์",
+          "caption_en": "House",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "genre_27",
+          "label_th": "ดีปเฮาส์",
+          "caption_en": "Deep House",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_28",
+          "label_th": "อีดีเอ็ม",
+          "caption_en": "EDM",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_29",
+          "label_th": "ดรัมแอนด์เบส",
+          "caption_en": "Drum and Bass",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_30",
+          "label_th": "ฟิวเจอร์เบส",
+          "caption_en": "Future Bass",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_31",
+          "label_th": "โลไฟฮิปฮอป",
+          "caption_en": "Lo-Fi Hip-Hop",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_32",
+          "label_th": "ชิลฮอป",
+          "caption_en": "Chillhop",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_33",
+          "label_th": "ซินธ์เวฟ",
+          "caption_en": "Synthwave",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "genre_34",
+          "label_th": "แอมเบียนต์",
+          "caption_en": "Ambient",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_35",
+          "label_th": "แจ๊ส",
+          "caption_en": "Jazz",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "genre_36",
+          "label_th": "สมูทแจ๊ส",
+          "caption_en": "Smooth Jazz",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_37",
+          "label_th": "บอสซาโนวา",
+          "caption_en": "Bossa Nova",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_38",
+          "label_th": "เร็กเก้",
+          "caption_en": "Reggae",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_39",
+          "label_th": "อะคูสติกโฟล์ก",
+          "caption_en": "Acoustic Folk",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_40",
+          "label_th": "ออร์เคสตราภาพยนตร์",
+          "caption_en": "Cinematic Orchestral",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_41",
+          "label_th": "ลูกทุ่งป๊อป",
+          "caption_en": "Luk Thung Pop",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "genre_42",
+          "label_th": "หมอลำฟิวชัน",
+          "caption_en": "Mor Lam Fusion",
+          "provenance": "curated_music_phrase"
+        }
+      ]
+    },
+    {
+      "id": "mood",
+      "name_en": "Mood / Atmosphere",
+      "name_th": "อารมณ์และบรรยากาศ",
+      "control": "multi_select_searchable",
+      "suggested_max": 4,
+      "items": [
+        {
+          "id": "mood_01",
+          "label_th": "มืดหม่น",
+          "caption_en": "Dark",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "mood_02",
+          "label_th": "เศร้า",
+          "caption_en": "Melancholic",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "mood_03",
+          "label_th": "โรแมนติก",
+          "caption_en": "Romantic",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "mood_04",
+          "label_th": "เย้ายวน",
+          "caption_en": "Seductive",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "mood_05",
+          "label_th": "ชวนฝัน",
+          "caption_en": "Dreamy",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "mood_06",
+          "label_th": "มีบรรยากาศ",
+          "caption_en": "Atmospheric",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "mood_07",
+          "label_th": "ใกล้ชิด",
+          "caption_en": "Intimate",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "mood_08",
+          "label_th": "ชวนคิดถึง",
+          "caption_en": "Nostalgic",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "mood_09",
+          "label_th": "ปลุกใจ",
+          "caption_en": "Uplifting",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "mood_10",
+          "label_th": "สุขล้น",
+          "caption_en": "Euphoric",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "mood_11",
+          "label_th": "มีพลัง",
+          "caption_en": "Energetic",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "mood_12",
+          "label_th": "ดุดัน",
+          "caption_en": "Aggressive",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "mood_13",
+          "label_th": "ลึกลับ",
+          "caption_en": "Mysterious",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "mood_14",
+          "label_th": "หลอนละมุน",
+          "caption_en": "Haunting",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "mood_15",
+          "label_th": "มีความหวัง",
+          "caption_en": "Hopeful",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "mood_16",
+          "label_th": "ขี้เล่น",
+          "caption_en": "Playful",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "mood_17",
+          "label_th": "ทะเล้น",
+          "caption_en": "Cheeky",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "mood_18",
+          "label_th": "มั่นใจ",
+          "caption_en": "Confident",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "mood_19",
+          "label_th": "สงบ",
+          "caption_en": "Calm",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "mood_20",
+          "label_th": "หวานปนขม",
+          "caption_en": "Bittersweet",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "mood_21",
+          "label_th": "อบอุ่น",
+          "caption_en": "Warm",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "mood_22",
+          "label_th": "โดดเดี่ยว",
+          "caption_en": "Lonely",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "mood_23",
+          "label_th": "ตึงเครียด",
+          "caption_en": "Tense",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "mood_24",
+          "label_th": "มีเสน่ห์ชวนสัมผัส",
+          "caption_en": "Sensual",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "mood_25",
+          "label_th": "เหมือนภาพยนตร์",
+          "caption_en": "Cinematic",
+          "provenance": "curated_music_phrase"
+        }
+      ]
+    },
+    {
+      "id": "vocal_setup",
+      "name_en": "Lead Vocal Setup",
+      "name_th": "รูปแบบนักร้องหลัก",
+      "control": "single_select",
+      "suggested_max": 1,
+      "items": [
+        {
+          "id": "vocal_setup_01",
+          "label_th": "นักร้องนำหญิง",
+          "caption_en": "Female Lead Vocals",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "vocal_setup_02",
+          "label_th": "นักร้องนำชาย",
+          "caption_en": "Male Lead Vocals",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "vocal_setup_03",
+          "label_th": "แร็ปหญิง",
+          "caption_en": "Female Rap Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_setup_04",
+          "label_th": "แร็ปชาย",
+          "caption_en": "Male Rap Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_setup_05",
+          "label_th": "ชายแร็ป + หญิงร้องฮุก",
+          "caption_en": "Male Rap Vocals + Female Sung Hook",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_setup_06",
+          "label_th": "หญิงแร็ป + ชายร้องฮุก",
+          "caption_en": "Female Rap Vocals + Male Sung Hook",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_setup_07",
+          "label_th": "นักร้องคู่ชายหญิง",
+          "caption_en": "Male and Female Duet",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_setup_08",
+          "label_th": "นักร้องนำหลายคน",
+          "caption_en": "Mixed Lead Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_setup_09",
+          "label_th": "พูดกึ่งร้อง",
+          "caption_en": "Spoken Word Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_setup_10",
+          "label_th": "ดนตรีล้วน",
+          "caption_en": "Instrumental, No Vocals",
+          "provenance": "curated_music_phrase"
+        }
+      ]
+    },
+    {
+      "id": "vocal_character",
+      "name_en": "Vocal Tone / Delivery",
+      "name_th": "โทนและวิธีร้อง",
+      "control": "multi_select_searchable",
+      "suggested_max": 3,
+      "items": [
+        {
+          "id": "vocal_character_01",
+          "label_th": "เสียงหญิงอัลโตอุ่น",
+          "caption_en": "Warm Female Alto Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_02",
+          "label_th": "เสียงชายบาริโทนทุ้ม",
+          "caption_en": "Rich Male Baritone Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_03",
+          "label_th": "เสียงช่วงต่ำถึงกลาง",
+          "caption_en": "Low-to-Mid Vocal Register",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_04",
+          "label_th": "เสียงร้องอบอุ่น",
+          "caption_en": "Warm Vocal Tone",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_05",
+          "label_th": "เสียงร้องทุ้ม",
+          "caption_en": "Deep Vocal Tone",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_06",
+          "label_th": "เสียงร้องลมหายใจ",
+          "caption_en": "Breathy Vocals",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "vocal_character_07",
+          "label_th": "ร้องกระซิบมีลมหายใจ",
+          "caption_en": "Breathy Whispers",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_08",
+          "label_th": "เสียงร้องนุ่มใกล้ชิด",
+          "caption_en": "Soft Intimate Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_09",
+          "label_th": "เสียงร้องโซลลื่นไหล",
+          "caption_en": "Smooth Soulful Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_10",
+          "label_th": "เสียงร้องแหบมีเนื้อ",
+          "caption_en": "Raspy Vocals",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "vocal_character_11",
+          "label_th": "เสียงร้องโปร่งเบา",
+          "caption_en": "Airy Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_12",
+          "label_th": "เสียงร้องสว่างใส",
+          "caption_en": "Bright Clear Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_13",
+          "label_th": "เสียงร้องทรงพลัง",
+          "caption_en": "Powerful Vocals",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "vocal_character_14",
+          "label_th": "เสียงหลบ",
+          "caption_en": "Falsetto Vocals",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "vocal_character_15",
+          "label_th": "ร้องเหมือนพูดคุย",
+          "caption_en": "Conversational Phrasing",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_16",
+          "label_th": "ร้องผ่อนคลาย",
+          "caption_en": "Relaxed Vocal Delivery",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_17",
+          "label_th": "แร็ปตามกรูฟ",
+          "caption_en": "Rhythmic Rap Flow",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_18",
+          "label_th": "แร็ปมีเมโลดี",
+          "caption_en": "Melodic Rap Flow",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_19",
+          "label_th": "ออกเสียงภาษาไทยชัด",
+          "caption_en": "Clear Thai Pronunciation",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_20",
+          "label_th": "เสียงอกธรรมชาติ",
+          "caption_en": "Natural Chest Voice",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "vocal_character_21",
+          "label_th": "เสียงหญิงทุ้มเย้ายวน",
+          "caption_en": "Sultry Female Vocals",
+          "provenance": "curated_music_phrase"
+        }
+      ]
+    },
+    {
+      "id": "backing",
+      "name_en": "Backing Vocals / Harmonies",
+      "name_th": "เสียงร้องเสริม",
+      "control": "multi_select_searchable",
+      "suggested_max": 4,
+      "items": [
+        {
+          "id": "backing_01",
+          "label_th": "เสียงประสานหญิง",
+          "caption_en": "Female Background Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "backing_02",
+          "label_th": "เสียงประสานชาย",
+          "caption_en": "Male Background Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "backing_03",
+          "label_th": "ประสานเสียงหลายชั้น",
+          "caption_en": "Layered Vocal Harmonies",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "backing_04",
+          "label_th": "เสียงประสานเบา ๆ",
+          "caption_en": "Subtle Backing Harmonies",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "backing_05",
+          "label_th": "ร้องรับส่ง",
+          "caption_en": "Call and Response Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "backing_06",
+          "label_th": "เลเยอร์เสียงกระซิบ",
+          "caption_en": "Whisper Layers",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "backing_07",
+          "label_th": "เสียงแอดลิบ",
+          "caption_en": "Ad-Libs",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "backing_08",
+          "label_th": "คอรัสนุ่ม",
+          "caption_en": "Soft Choir",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "backing_09",
+          "label_th": "ร้องพร้อมกัน",
+          "caption_en": "Group Chant",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "backing_10",
+          "label_th": "เสียงร้องซ้อน",
+          "caption_en": "Double-Tracked Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "backing_11",
+          "label_th": "ตัดเสียงร้องเป็นจังหวะ",
+          "caption_en": "Vocal Chops",
+          "provenance": "curated_music_phrase"
+        }
+      ]
+    },
+    {
+      "id": "drums",
+      "name_en": "Drums / Percussion",
+      "name_th": "กลองและเพอร์คัสชัน",
+      "control": "multi_select_searchable",
+      "suggested_max": 4,
+      "items": [
+        {
+          "id": "drums_01",
+          "label_th": "กลอง 808 หนัก",
+          "caption_en": "Heavy 808 Drums",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "drums_02",
+          "label_th": "คิกแน่นกระแทก",
+          "caption_en": "Punchy Kick Drums",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "drums_03",
+          "label_th": "สแนร์คม",
+          "caption_en": "Crisp Snare",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "drums_04",
+          "label_th": "ไฮแฮตแทรปถี่",
+          "caption_en": "Tight Trap Hi-Hats",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "drums_05",
+          "label_th": "ไฮแฮตลูกกลิ้ง",
+          "caption_en": "Rolling Hi-Hats",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "drums_06",
+          "label_th": "สแนร์ตบมือ",
+          "caption_en": "Clap Snare",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "drums_07",
+          "label_th": "คิกสี่จังหวะ",
+          "caption_en": "Four-on-the-Floor Kick",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "drums_08",
+          "label_th": "เพอร์คัสชันจังหวะขัด",
+          "caption_en": "Syncopated Percussion",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "drums_09",
+          "label_th": "กลองใช้แปรง",
+          "caption_en": "Brushed Drums",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "drums_10",
+          "label_th": "กลองเบรกบีต",
+          "caption_en": "Breakbeat Drums",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "drums_11",
+          "label_th": "ชุดกลองอะคูสติก",
+          "caption_en": "Live Acoustic Drums",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "drums_12",
+          "label_th": "กลองจังหวะชัฟเฟิล",
+          "caption_en": "Shuffled Drums",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "drums_13",
+          "label_th": "กลองรีเวิร์บเกต",
+          "caption_en": "Gated Reverb Drums",
+          "provenance": "curated_music_phrase"
+        }
+      ]
+    },
+    {
+      "id": "bass",
+      "name_en": "Bass / Low End",
+      "name_th": "เบสและเสียงต่ำ",
+      "control": "multi_select_searchable",
+      "suggested_max": 3,
+      "items": [
+        {
+          "id": "bass_01",
+          "label_th": "เบส 808 หนัก",
+          "caption_en": "Heavy 808 Bass",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "bass_02",
+          "label_th": "ซับเบสลึก",
+          "caption_en": "Deep Sub Bass",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "bass_03",
+          "label_th": "เบสสแลป",
+          "caption_en": "Slap Bass",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "bass_04",
+          "label_th": "เบสไฟฟ้าอุ่น",
+          "caption_en": "Warm Electric Bass",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "bass_05",
+          "label_th": "เบสฟังก์",
+          "caption_en": "Funky Bassline",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "bass_06",
+          "label_th": "เบสมีทำนอง",
+          "caption_en": "Melodic Bassline",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "bass_07",
+          "label_th": "ซินธ์เบสเต้นเป็นจังหวะ",
+          "caption_en": "Pulsing Synth Bass",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "bass_08",
+          "label_th": "เบสต่อเนื่อง",
+          "caption_en": "Rolling Bassline",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "bass_09",
+          "label_th": "เบสแตก",
+          "caption_en": "Distorted Bass",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "bass_10",
+          "label_th": "รีสเบส",
+          "caption_en": "Reese Bass",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "bass_11",
+          "label_th": "ดับเบิลเบส",
+          "caption_en": "Upright Bass",
+          "provenance": "curated_music_phrase"
+        }
+      ]
+    },
+    {
+      "id": "instruments",
+      "name_en": "Instruments / Sound Elements",
+      "name_th": "เครื่องดนตรีและซาวด์",
+      "control": "multi_select_searchable",
+      "suggested_max": 6,
+      "items": [
+        {
+          "id": "instruments_01",
+          "label_th": "ซินธ์ก้องฉ่ำ",
+          "caption_en": "Wet Synths",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_02",
+          "label_th": "ซินธ์แพดอุ่น",
+          "caption_en": "Warm Synth Pads",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "instruments_03",
+          "label_th": "แพดซินธ์อนาล็อก",
+          "caption_en": "Analog Synth Pads",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_04",
+          "label_th": "ซินธ์พลักโปร่ง",
+          "caption_en": "Airy Synth Plucks",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_05",
+          "label_th": "ซินธ์อาร์เพจจิโอ",
+          "caption_en": "Arpeggiated Synths",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_06",
+          "label_th": "พื้นผิวซินธ์สร้างบรรยากาศ",
+          "caption_en": "Atmospheric Synth Textures",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_07",
+          "label_th": "เปียโนไฟฟ้าโรดส์",
+          "caption_en": "Rhodes Electric Piano",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_08",
+          "label_th": "เปียโนอ่อนโยน",
+          "caption_en": "Soft Piano",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_09",
+          "label_th": "เปียโนอะคูสติก",
+          "caption_en": "Acoustic Piano",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "instruments_10",
+          "label_th": "กีตาร์โปร่ง",
+          "caption_en": "Acoustic Guitar",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "instruments_11",
+          "label_th": "กีตาร์ไฟฟ้าคลีน",
+          "caption_en": "Clean Electric Guitar",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_12",
+          "label_th": "กีตาร์ไฟฟ้าใสกังวาน",
+          "caption_en": "Jangly Electric Guitar",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_13",
+          "label_th": "กีตาร์ไฟฟ้าแตก",
+          "caption_en": "Distorted Electric Guitar",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_14",
+          "label_th": "กีตาร์ดีดปิดเสียง",
+          "caption_en": "Muted Guitar Plucks",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_15",
+          "label_th": "เครื่องสายหนา",
+          "caption_en": "Lush Strings",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_16",
+          "label_th": "เครื่องสายออร์เคสตรา",
+          "caption_en": "Orchestral Strings",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "instruments_17",
+          "label_th": "เครื่องเป่าทองเหลือง",
+          "caption_en": "Brass Section",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "instruments_18",
+          "label_th": "แซกโซโฟนอุ่น",
+          "caption_en": "Warm Saxophone",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_19",
+          "label_th": "ฟลุต",
+          "caption_en": "Flute",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_20",
+          "label_th": "ออร์แกน",
+          "caption_en": "Organ",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_21",
+          "label_th": "ระฆังและกระดิ่ง",
+          "caption_en": "Bells and Chimes",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_22",
+          "label_th": "ซาวด์แอมเบียนต์",
+          "caption_en": "Ambient Textures",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_23",
+          "label_th": "โซโลกีตาร์",
+          "caption_en": "Guitar Solo",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "instruments_24",
+          "label_th": "โซโลเปียโน",
+          "caption_en": "Piano Solo",
+          "provenance": "curated_music_phrase"
+        }
+      ]
+    },
+    {
+      "id": "production",
+      "name_en": "Production / Mix",
+      "name_th": "ลักษณะโปรดักชันและมิกซ์",
+      "control": "multi_select_searchable",
+      "suggested_max": 4,
+      "items": [
+        {
+          "id": "production_01",
+          "label_th": "โปรดักชันห้องนอนโทนมืด",
+          "caption_en": "Dark Bedroom Production",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "production_02",
+          "label_th": "มิกซ์สตูดิโอเนี๊ยบ",
+          "caption_en": "Polished Studio Production",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "production_03",
+          "label_th": "ฟีลเพลงประกอบ R&B ภาพยนตร์",
+          "caption_en": "Cinematic R&B Soundtrack Feel",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "production_04",
+          "label_th": "ผิวเสียงโลไฟ",
+          "caption_en": "Lo-Fi Texture",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "production_05",
+          "label_th": "โปรดักชันเสียงคมชัด",
+          "caption_en": "High-Fidelity Production",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "production_06",
+          "label_th": "ร้องใกล้ไมค์",
+          "caption_en": "Intimate Close-Mic Vocals",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "production_07",
+          "label_th": "มิกซ์สเตอริโอกว้าง",
+          "caption_en": "Spacious Stereo Mix",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "production_08",
+          "label_th": "พื้นผิวอนาล็อกอุ่น",
+          "caption_en": "Warm Analog Texture",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "production_09",
+          "label_th": "รีเวิร์บหนา",
+          "caption_en": "Lush Reverb",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "production_10",
+          "label_th": "มิกซ์แน่นกระชับ",
+          "caption_en": "Tight Punchy Mix",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "production_11",
+          "label_th": "เสียงป๊อปสะอาด",
+          "caption_en": "Clean Commercial Pop Sound",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "production_12",
+          "label_th": "ฟีลอัดสดดิบ",
+          "caption_en": "Raw Live Recording Feel",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "production_13",
+          "label_th": "ดนตรีน้อยชิ้น",
+          "caption_en": "Minimal Stripped-Back Arrangement",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "production_14",
+          "label_th": "บรรยากาศคลับลอย ๆ",
+          "caption_en": "Atmospheric Club Vibes",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "production_15",
+          "label_th": "มิกซ์แห้งใกล้ชิด",
+          "caption_en": "Dry Intimate Mix",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "production_16",
+          "label_th": "เสียงชวนฝันก้องรีเวิร์บ",
+          "caption_en": "Dreamy Reverb-Drenched Sound",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "production_17",
+          "label_th": "ซาวด์สเคปกว้าง",
+          "caption_en": "Wide Ambient Soundscape",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "production_18",
+          "label_th": "ความอุ่นเทปวินเทจ",
+          "caption_en": "Vintage Tape Warmth",
+          "provenance": "curated_music_phrase"
+        }
+      ]
+    },
+    {
+      "id": "groove",
+      "name_en": "Groove / Movement",
+      "name_th": "ลักษณะกรูฟ",
+      "control": "multi_select_searchable",
+      "suggested_max": 2,
+      "items": [
+        {
+          "id": "groove_01",
+          "label_th": "กรูฟผ่อนคลาย",
+          "caption_en": "Laid-Back Groove",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "groove_02",
+          "label_th": "กรูฟแน่นอยู่ในพ็อกเก็ต",
+          "caption_en": "Deep Pocket Groove",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "groove_03",
+          "label_th": "จังหวะขัด",
+          "caption_en": "Syncopated Groove",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "groove_04",
+          "label_th": "จังหวะพุ่งไปข้างหน้า",
+          "caption_en": "Driving Rhythm",
+          "provenance": "official_example_or_close"
+        },
+        {
+          "id": "groove_05",
+          "label_th": "ฟีลครึ่งจังหวะ",
+          "caption_en": "Half-Time Feel",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "groove_06",
+          "label_th": "กรูฟชัฟเฟิล",
+          "caption_en": "Shuffling Groove",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "groove_07",
+          "label_th": "ฟีลสวิง",
+          "caption_en": "Swing Feel",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "groove_08",
+          "label_th": "กรูฟเด้งแบบแทรป",
+          "caption_en": "Trap Bounce",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "groove_09",
+          "label_th": "กรูฟฟังก์",
+          "caption_en": "Funky Groove",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "groove_10",
+          "label_th": "จังหวะเต้นสี่ห้อง",
+          "caption_en": "Four-on-the-Floor Pulse",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "groove_11",
+          "label_th": "ค่อย ๆ เพิ่มความเข้มข้น",
+          "caption_en": "Slow-Burning Build",
+          "provenance": "curated_music_phrase"
+        }
+      ]
+    },
+    {
+      "id": "scene",
+      "name_en": "Scene / Era / Vibe",
+      "name_th": "ฉากและยุคของเพลง",
+      "control": "multi_select_searchable",
+      "suggested_max": 2,
+      "items": [
+        {
+          "id": "scene_01",
+          "label_th": "บรรยากาศเมืองยามดึก",
+          "caption_en": "Late-Night Urban Vibe",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "scene_02",
+          "label_th": "ขับรถกลางคืนแสงนีออน",
+          "caption_en": "Neon-Lit Night Drive",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "scene_03",
+          "label_th": "คลับหลังเที่ยงคืน",
+          "caption_en": "After-Hours Club Atmosphere",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "scene_04",
+          "label_th": "เมืองกลางสายฝน",
+          "caption_en": "Rainy City Atmosphere",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "scene_05",
+          "label_th": "บรรยากาศห้องนอนใกล้ชิด",
+          "caption_en": "Intimate Bedroom Atmosphere",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "scene_06",
+          "label_th": "ซินธ์ป๊อปยุค 80",
+          "caption_en": "80s Synth-Pop Feel",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "scene_07",
+          "label_th": "R&B ยุค 90",
+          "caption_en": "90s R&B Feel",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "scene_08",
+          "label_th": "ป๊อปยุค 2000",
+          "caption_en": "2000s Pop Feel",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "scene_09",
+          "label_th": "แทรปสมัยใหม่",
+          "caption_en": "Modern Trap Aesthetic",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "scene_10",
+          "label_th": "โซลวินเทจ",
+          "caption_en": "Vintage Soul Feel",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "scene_11",
+          "label_th": "ดิสโก้ย้อนยุค",
+          "caption_en": "Retro Disco Feel",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "scene_12",
+          "label_th": "ภาพค่ำคืนแบบภาพยนตร์",
+          "caption_en": "Cinematic Nightscape",
+          "provenance": "curated_music_phrase"
+        }
+      ]
+    },
+    {
+      "id": "energy",
+      "name_en": "Energy",
+      "name_th": "ระดับพลัง",
+      "control": "single_select",
+      "suggested_max": 1,
+      "items": [
+        {
+          "id": "energy_01",
+          "label_th": "พลังต่ำ",
+          "caption_en": "Low Energy",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "energy_02",
+          "label_th": "พลังปานกลาง",
+          "caption_en": "Moderate Energy",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "energy_03",
+          "label_th": "พลังสูง",
+          "caption_en": "High Energy",
+          "provenance": "curated_music_phrase"
+        },
+        {
+          "id": "energy_04",
+          "label_th": "พลังระเบิด",
+          "caption_en": "Explosive Energy",
+          "provenance": "curated_music_phrase"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Late Night Trap & R&B",
+      "phrases": [
+        "Late Night Trap",
+        "R&B",
+        "Dark",
+        "Seductive",
+        "Male Rap Vocals + Female Sung Hook",
+        "Breathy Whispers",
+        "Female Background Vocals",
+        "Heavy 808 Bass",
+        "Deep Sub Bass",
+        "Wet Synths",
+        "Slap Bass",
+        "Dark Bedroom Production",
+        "Atmospheric Club Vibes",
+        "Cinematic R&B Soundtrack Feel"
+      ]
+    },
+    {
+      "name": "Warm Thai Indie Pop",
+      "phrases": [
+        "Thai Pop",
+        "Indie Pop",
+        "Warm",
+        "Nostalgic",
+        "Female Lead Vocals",
+        "Warm Vocal Tone",
+        "Jangly Electric Guitar",
+        "Warm Electric Bass",
+        "Live Acoustic Drums",
+        "Polished Studio Production"
+      ]
+    },
+    {
+      "name": "Cinematic R&B",
+      "phrases": [
+        "Contemporary R&B",
+        "Cinematic",
+        "Intimate",
+        "Female Lead Vocals",
+        "Breathy Vocals",
+        "Rhodes Electric Piano",
+        "Deep Sub Bass",
+        "Layered Vocal Harmonies",
+        "Cinematic R&B Soundtrack Feel"
+      ]
+    },
+    {
+      "name": "Dreamy Synth Pop",
+      "phrases": [
+        "Synth-Pop",
+        "Dreamy",
+        "Nostalgic",
+        "Female Lead Vocals",
+        "Airy Vocals",
+        "Analog Synth Pads",
+        "Arpeggiated Synths",
+        "Spacious Stereo Mix",
+        "80s Synth-Pop Feel"
+      ]
+    },
+    {
+      "name": "Acoustic Heartbreak",
+      "phrases": [
+        "Acoustic Folk",
+        "Melancholic",
+        "Intimate",
+        "Male Lead Vocals",
+        "Warm Vocal Tone",
+        "Acoustic Guitar",
+        "Soft Piano",
+        "Dry Intimate Mix"
+      ]
+    },
+    {
+      "name": "Funky Club Pop",
+      "phrases": [
+        "Funk",
+        "Pop",
+        "Playful",
+        "High Energy",
+        "Female Lead Vocals",
+        "Slap Bass",
+        "Crisp Snare",
+        "Funky Groove",
+        "Polished Studio Production"
+      ]
+    },
+    {
+      "name": "Late Night Lo-Fi",
+      "phrases": [
+        "Lo-Fi Hip-Hop",
+        "Chillhop",
+        "Nostalgic",
+        "Calm",
+        "Rhodes Electric Piano",
+        "Warm Electric Bass",
+        "Lo-Fi Texture",
+        "Laid-Back Groove"
+      ]
+    },
+    {
+      "name": "Rock Anthem",
+      "phrases": [
+        "Pop Rock",
+        "High Energy",
+        "Male Lead Vocals",
+        "Powerful Vocals",
+        "Distorted Electric Guitar",
+        "Live Acoustic Drums",
+        "Driving Rhythm",
+        "Polished Studio Production"
+      ]
+    }
+  ],
+  "example_from_user": "Late Night Trap, Heavy 808 Bass, Wet Synths, Female Background Vocals, Male Rap Vocals + Seductive Female Vocals, Dark Bedroom Production, Atmospheric Club Vibes, Breathy Whispers, Slap Bass, Deep Sub Bass, Cinematic R&B Soundtrack Feel"
+}

@@ -1,0 +1,469 @@
+diff --git a/music_studio.py b/music_studio.py
+index a5af739..14d471d 100644
+--- a/music_studio.py
++++ b/music_studio.py
+@@ -11856,7 +12073,7 @@ def main(page: ft.Page):
+         why = SR.outdated_why(rep, LA.text_hash(lyrics_now), sr_input_fp("song_critic"))
+         return SR.handoff_text(title=S.song.title or "", song_id=S.song.id, sheet_id=S.song.book.active_id, style={"genre": st.genre, "mood": st.mood, "energy": st.energy, "vocal": st.vocal, "language": st.language},
+                                settings={k: v for k, v in SH.settings_to_dict(st).items() if k in ("bpm", "timesignature", "duration", "keyscale")}, sr_data=d.get("sr") or {}, rep_ts=str(rep.ts or ""),
+-                               backend=rep.backend or "", model=rep.model or "", state=state, why=why, lyrics_then=d.get("lyrics") or lyrics_now, lyrics_now=lyrics_now, finding_id=ho.get("finding_id") or "", budget_tokens=budget)
++                               backend=rep.backend or "", model=rep.model or "", state=state, why=why, lyrics_then=d.get("lyrics") or lyrics_now, lyrics_now=lyrics_now, finding_id=ho.get("finding_id") or "", action_id=ho.get("action_id") or "", budget_tokens=budget)
+ 
+     def sr_handoff_avail(backend: str, user_msg: str, live=None) -> int:
+         """Tokens the hand-off may use: what the conversation can still hold (the engine's own limit) minus the system prompt, the conversation so far (earlier hand-offs stay in it), this message and a margin.
+@@ -11872,7 +12089,7 @@ def main(page: ft.Page):
+         cap = int(SE.LIMIT_RATIO * n_ctx) - SE.OUT_RESERVE
+         return cap - sys_est - int(getattr(live, "tokens", 0) or 0) - LC.estimate_tokens(user_msg) - 300
+ 
+-    def sr_discuss(finding_id: str = ""):
++    def sr_discuss(finding_id: str = "", action_id: str = ""):
+         """'Discuss with Songwriter': the Songwriter chat of this song and sheet gets a message of the user's, and the report (or the finding) goes with it as data. The Songwriter's session is kept (nothing is
+         reset), the Song Critic is not asked again, and nothing in the lyrics changes."""
+         if not S.song:
+@@ -11884,17 +12101,24 @@ def main(page: ft.Page):
+             toast("The AI is still busy. Try again in a moment.", C["amber"]); return
+         if not S.backend:
+             toast("No AI backend: put an LLM workflow in comfy_apis/llm or set a Grok key in Prompt Lab", C["amber"]); return
+-        f = next((x for x in (rep.data["sr"].get("findings") or []) if x.get("id") == finding_id), None) if finding_id else None
++        act = next((x for x in (rep.data["sr"].get("actions") or []) if x.get("id") == action_id), None) if action_id else None
++        if action_id and act is None:
++            toast("That action is not in the report any more.", C["amber"]); return
++        if act is not None and not finding_id:
++            finding_id = ""                                                   # the whole report travels, with this action marked
++        f = next((x for x in SR.items_of(rep.data["sr"]) if x.get("id") == finding_id), None) if finding_id else None
+         if finding_id and f is None:
+             toast("That finding is not in the report any more.", C["amber"]); return
+-        if f is not None:
++        if act is not None:
++            label = I18N.tr("Let's discuss this action of the Song Critic report") + ": " + (act.get("title") or act["action"])[:100]
++        elif f is not None:
+             refs = sr_refs_of(f)
+             where = SR.refs_label(refs) if refs else I18N.tr("the whole song")
+             label = I18N.tr("Let's discuss this Song Critic finding") + f" ({where}): " + (f.get("observation") or f.get("interpretation") or "")[:90]
+         else:
+             label = I18N.tr("Let's discuss the Song Critic report") + ": " + (rep.data["sr"].get("headline") or "")[:110]
+         sheet0 = S.song.book.active_id
+-        ho_try = {"label": label, "finding_id": finding_id, "rep": rep, "t": time.time()}
++        ho_try = {"label": label, "finding_id": finding_id, "action_id": action_id, "rep": rep, "t": time.time()}
+         room = min(3500, sr_handoff_avail(S.backend, lyr() + chr(10) * 3 + label))
+         if room <= 0 or sr_handoff_text(ho_try, lyr(), room)[0] is None:               # checked BEFORE anything is sent or written to the chat
+             toast("This conversation has no room for the report. Start a new session (New session), then press Discuss again. Nothing was sent.", C["amber"]); return
+@@ -11959,6 +12183,91 @@ def main(page: ft.Page):
+                                                style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF"))], spacing=6, wrap=True))
+         return out
+ 
++    ASPECT_STATUS_STYLE = {"strength": ("Strength", "green"), "concern": ("Concern", "amber"), "mixed": ("Mixed / Conditional", "accent"), "no_issue": ("No Significant Issue", "green"),
++                           "insufficient": ("Not Applicable / Insufficient Evidence", "text3"), "unrated": ("Not rated", "text3"), "missing": ("Not reviewed in this report", "text3")}
++    OPENING_LABEL = {"scene": "Scene Opening", "declaration": "Emotional Declaration", "question": "Question Opening", "in_medias_res": "In Medias Res", "dialogue": "Dialogue Opening",
++                     "contradiction": "Surprise / Contradiction", "hook_first": "Hook / Thesis First", "atmospheric": "Atmospheric / Symbolic Opening"}
++
++    def sr_status_chip(status: str):
++        label, col = ASPECT_STATUS_STYLE.get(status, ASPECT_STATUS_STYLE["missing"])
++        return sr_chip(I18N.tr(label), C[col])
++
++    def sr_aspect_tile(key: str, a: "dict | None", srd: dict, evid: dict, stale: bool, lyrics: str, default_open: bool):
++        """One of the eight aspects as an expand / collapse tile: the number and name, its lines and its status in the header; the finding (found / why it matters / suggested action / trade-off) inside.
++        The Section Purpose tile also holds the Song Journey (the sections, as a vertical timeline)."""
++        num = SR.ASPECTS.index(key) + 1
++        tkey = f"sr:aspect:{key}"
++
++        def changed(e):
++            try:
++                rep_open[tkey] = bool(e.control.expanded)
++            except Exception:
++                pass
++        status = a["status"] if a is not None else "missing"
++        where = SR.refs_label([(int(x), int(y)) for x, y in sr_refs_of(a)]) if a is not None and sr_refs_of(a) else ""
++        sub_row = ft.Row(([ft.Text(where, size=10, color=C["text3"])] if where else []) + [sr_status_chip(status)], spacing=8, wrap=True, run_spacing=2, vertical_alignment=ft.CrossAxisAlignment.CENTER)
++        body: list = []
++        if a is None:
++            body.append(ft.Text(I18N.tr("The Song Critic did not review this aspect in this report."), size=11, color=C["text3"]))
++        else:
++            if key == "opening" and a.get("patterns"):
++                body.append(ft.Row([sr_chip(I18N.tr(OPENING_LABEL[x])) for x in a["patterns"]], spacing=6, wrap=True, run_spacing=4))
++                body.append(ft.Text(I18N.tr("Opening patterns are tools for reading the opening, not rules the song has to follow."), size=10, color=C["text3"], italic=True))
++            if a["status"] in ("no_issue", "insufficient", "unrated") and not (a.get("observation") or a.get("interpretation") or a.get("keep")):
++                body.append(ft.Text(I18N.tr("Nothing more was said about this aspect."), size=11, color=C["text3"]))
++            else:
++                body.append(sr_finding(a, "song_critic", lyrics, stale, bare=True))
++            if key == "sections":
++                arc = sr_critic_ribbon(srd, evid, stale)
++                body += arc[1:] if arc else []
++        return ft.Container(ft.ExpansionTile(title=ft.Text(f"{num:02d} · {I18N.tr(SR.ASPECT_TITLE[key])}", size=13, weight=ft.FontWeight.BOLD, color=C["text1"]), subtitle=sub_row, controls=body,
++                                             expanded=rep_open.get(tkey, default_open), on_change=changed, tile_padding=po(10, 2, 10, 2), controls_padding=po(10, 4, 10, 10), maintain_state=True,
++                                             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START),
++                            border_radius=10, bgcolor=C["panel2"], border=ft.Border.all(1, C["border"]))
++
++    def sr_open_aspect(key: str):
++        rep_open[f"sr:aspect:{key}"] = True
++        sr_render()
++
++    def sr_action_card(act: dict, n: int, stale: bool, rank_label: bool = True):
++        refs = [(int(x), int(y)) for x, y in (act.get("refs") or [])]
++        head = ft.Text((f"{I18N.tr('Priority')} {n} — " if rank_label else "") + (act.get("title") or ""), size=13, weight=ft.FontWeight.BOLD, color=C["text1"])
++        body = [head, ft.Text(act["action"], size=12, color=C["text1"], selectable=True)]
++        chips = [sr_ref(a, b, stale) for a, b in refs]
++        if act.get("lines_invalid"):
++            chips.append(sr_chip(I18N.tr("Lines not readable:") + " " + act["lines_invalid"][:24], C["amber"]))
++        if chips:
++            body.append(ft.Row(chips, spacing=6, wrap=True, run_spacing=4))
++        if act.get("tradeoff"):
++            body.append(ft.Text(I18N.tr("Trade-off") + ": " + act["tradeoff"], size=11, color=C["text2"], selectable=True))
++        btns = []
++        if act.get("aspect"):
++            btns.append(ft.OutlinedButton(I18N.tr("View topic"), tooltip=I18N.tr("Open the aspect this action comes from"), on_click=lambda ev, k=act["aspect"]: sr_open_aspect(k)))
++        btns.append(ft.FilledButton(I18N.tr("Discuss with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this action and the report; nothing changes in the lyrics"),
++                                    on_click=lambda ev, i=act["id"]: sr_discuss("", i), style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF")))
++        body.append(ft.Row(btns, spacing=6, wrap=True, run_spacing=4))
++        return sr_card(*body)
++
++    def sr_songcraft(srd: dict, evid: dict, stale: bool, lyrics: str, rep) -> list:
++        """The Complete Songcraft Review: (the summary is drawn by the caller) the first action, the eight aspects as tiles in the fixed order, the Action Plan."""
++        out = []
++        acts = srd.get("actions") or []
++        got = {a["aspect"]: a for a in (srd.get("aspects") or [])}
++        if acts:
++            out.append(sr_card(ft.Text(I18N.tr("Start here"), size=10, weight=ft.FontWeight.W_700, color=C["accent"]), ft.Text(acts[0].get("title") or acts[0]["action"][:80], size=13, weight=ft.FontWeight.BOLD, color=C["text1"]),
++                               ft.Text(acts[0]["action"], size=12, color=C["text2"], max_lines=3, overflow=ft.TextOverflow.ELLIPSIS), tint=ft.Colors.with_opacity(0.45, C["accent"])))
++        first_key = acts[0].get("aspect") if acts else ""
++        out.append(sr_title(I18N.tr("Songcraft review"), I18N.tr("8 aspects")))
++        for key in SR.ASPECTS:
++            out.append(sr_aspect_tile(key, got.get(key), srd, evid, stale, lyrics, default_open=(key == first_key and bool(first_key))))
++        if acts:
++            out.append(sr_title(I18N.tr("Action Plan"), I18N.tr("What to consider next")))
++            for i, act in enumerate(acts, 1):
++                out.append(sr_action_card(act, i, stale))
++        else:
++            out.append(sr_card(ft.Text(I18N.tr("Action Plan"), size=13, weight=ft.FontWeight.BOLD, color=C["text1"]), ft.Text(I18N.tr("The Song Critic named no action to take now."), size=12, color=C["text2"])))
++        return out
++
+     def sr_toggle_arc():
+         sr["arc"].symmetric_difference_update({(S.song.id, S.song.book.active_id)})
+         sr_render()
+@@ -12014,7 +12323,7 @@ def main(page: ft.Page):
+     KIND_STYLE = {"strength": ("Strength", "green", ft.Icons.CHECK_ROUNDED), "concern": ("Worth a look", "amber", ft.Icons.DIAMOND_OUTLINED), "keep": ("Keep", "green", ft.Icons.CHECK_ROUNDED),
+                   "change": ("Language issue", "amber", ft.Icons.DIAMOND_OUTLINED)}
+ 
+-    def sr_finding(f: dict, spec: str, lyrics: str, stale: bool):
++    def sr_finding(f: dict, spec: str, lyrics: str, stale: bool, bare: bool = False):
+         """One finding: its lines and the lyric text, what can be seen (observation), the AI's reading (interpretation, said as a reading), what to try or why to keep, and the trade-offs of an alternative."""
+         label, col, icon = KIND_STYLE.get(f["kind"], ("Note", "text3", ft.Icons.INFO_OUTLINE))
+         head = ft.Row([ft.Icon(icon, size=14, color=C[col]), ft.Text(I18N.tr(label), size=11, weight=ft.FontWeight.W_700, color=C[col]), ft.Container(expand=True),
+@@ -12050,6 +12359,8 @@ def main(page: ft.Page):
+                 if x is not None:
+                     body.append(x)
+             body.append(ft.Text(I18N.tr("Comparison only: it is not applied to the lyrics."), size=10, color=C["text3"], italic=True))
++        if bare:                                                                  # inside an aspect tile: the tile header already says the status
++            return ft.Column(body[1:], spacing=6, tight=True)
+         return sr_card(*body, tint=ft.Colors.with_opacity(0.45, C[col]) if col != "text3" else None)
+ 
+     def sr_findings(sr_data: dict, spec: str, lyrics: str, stale: bool, order: tuple, titles: dict):
+@@ -12298,7 +12609,10 @@ def main(page: ft.Page):
+         if spec == "song_critic":
+             ctl.append(ft.Row([ft.OutlinedButton(I18N.tr("Discuss the whole report with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this report; nothing changes in the lyrics"),
+                                                  on_click=lambda ev: sr_discuss(""))], spacing=6, wrap=True))
+-        if spec == "song_critic":
++        songcraft = spec == "song_critic" and srd.get("format") == SR.FORMAT_SONGCRAFT
++        if songcraft:
++            ctl += sr_songcraft(srd, evid, stale, lyrics_then, rep)
++        elif spec == "song_critic":
+             ctl += sr_critic_ribbon(srd, evid, stale)
+             ctl += sr_findings(srd, spec, lyrics_then, stale, (("concern",), ("strength",), ("keep",)), {"concern": "Issues worth a look", "strength": "Strengths", "keep": "Keep"})
+         elif spec == "rhyme_flow":
+@@ -12310,7 +12624,7 @@ def main(page: ft.Page):
+         else:
+             ctl += sr_findings(srd, spec, lyrics_then, stale, (("change",), ("keep",)), {"change": "Language check", "keep": "Keep the original"})
+         tile = sr_sections_tile(spec, srd, stale=stale, title={"song_critic": I18N.tr("Section by section"), "rhyme_flow": I18N.tr("Section by section"), "vocal_flow": I18N.tr("Section by section"), "lyric_language": I18N.tr("Language by section")}[spec])
+-        if tile is not None:
++        if tile is not None and not songcraft:                                    # the sections are the Song Journey inside the Section Purpose tile of a Songcraft Review
+             ctl.append(tile)
+         if srd.get("notes"):
+             ctl.append(sr_card(ft.Text(I18N.tr("What the specialist could not judge"), size=11, weight=ft.FontWeight.W_700, color=C["text2"]), *[ft.Text("• " + x, size=11, color=C["text2"], selectable=True) for x in srd["notes"]]))
+diff --git a/music_studio/spec_reports.py b/music_studio/spec_reports.py
+index 8df7fff..36db81d 100644
+--- a/music_studio/spec_reports.py
++++ b/music_studio/spec_reports.py
+@@ -22,6 +22,24 @@ from . import specialists as SP
+ SCHEMA = 1                                           # the shape of `report.data["sr"]`; a newer / older one is read as an outdated report
+ MAX_FINDINGS = {"song_critic": 4, "rhyme_flow": 4, "vocal_flow": 4, "lyric_language": 5}
+ MAX_CONCERNS = 3
++# Song Critic V3 "Complete Songcraft Review": eight aspects (one [ASPECT.n] each), an Action Plan ([ACTION.n], at most three) and the sections as the Song Journey
++FORMAT_SONGCRAFT = "songcraft-1"
++ASPECTS = ("opening", "theme", "sections", "development", "hook", "imagery", "repetition", "ending")
++ASPECT_TITLE = {"opening": "Opening Review", "theme": "Central Idea / Theme", "sections": "Section Purpose / Song Journey", "development": "Emotional / Narrative Development", "hook": "Hook & Memorability",
++                "imagery": "Imagery & Metaphor", "repetition": "Repetition & Contrast", "ending": "Ending & Payoff"}
++ASPECT_STATUS = ("strength", "concern", "mixed", "no_issue", "insufficient")
++STATUS_KIND = {"strength": "strength", "concern": "concern", "mixed": "concern", "no_issue": "keep", "insufficient": "keep", "unrated": "keep"}
++OPENING_PATTERNS = ("scene", "declaration", "question", "in_medias_res", "dialogue", "contradiction", "hook_first", "atmospheric")
++MAX_ACTIONS = 3
++_ASPECT_ALIAS = {"opening_review": "opening", "central_idea": "theme", "central_idea_theme": "theme", "section_purpose": "sections", "section_purpose_song_journey": "sections", "song_journey": "sections",
++                 "emotional_narrative_development": "development", "emotional_development": "development", "narrative_development": "development", "development_emotional_narrative": "development",
++                 "hook_memorability": "hook", "hook_and_memorability": "hook", "imagery_metaphor": "imagery", "imagery_and_metaphor": "imagery", "repetition_contrast": "repetition",
++                 "repetition_and_contrast": "repetition", "ending_payoff": "ending", "ending_and_payoff": "ending", "section": "sections", "sections_purpose": "sections"}            # the names the model may write for the keys (the display names of the eight aspects)
++_STATUS_ALIAS = {"no_significant_issue": "no_issue", "none": "no_issue", "ok": "no_issue", "not_applicable": "insufficient", "na": "insufficient", "n_a": "insufficient", "insufficient_evidence": "insufficient",
++                 "mixed_conditional": "mixed", "conditional": "mixed"}
++_PATTERN_ALIAS = {"scene_opening": "scene", "emotional_declaration": "declaration", "question_opening": "question", "inmediasres": "in_medias_res", "dialogue_opening": "dialogue",
++                  "surprise": "contradiction", "surprise_contradiction": "contradiction", "hook_thesis_first": "hook_first", "thesis_first": "hook_first", "hook": "hook_first",
++                  "atmospheric_symbolic": "atmospheric", "symbolic": "atmospheric"}
+ 
+ 
+ @dataclass(frozen=True)
+@@ -215,7 +233,7 @@ def build_user(spec: str, snap: dict, evidence_text: str, reply_language: str =
+ 
+ 
+ # ── reading the answer ────────────────────────────────────────────────────────────────────────────────────────
+-_KEYS = ("headline", "reading", "kind", "priority", "lines", "quote", "observation", "interpretation", "recommendation", "keep", "alternative", "proposal", "meaning", "rhyme", "syllables", "name")
++_KEYS = ("headline", "reading", "kind", "priority", "lines", "quote", "observation", "interpretation", "recommendation", "keep", "alternative", "proposal", "meaning", "rhyme", "syllables", "name", "aspect", "status", "pattern", "action", "tradeoff", "title")
+ _KV = re.compile(r"^\s*(" + "|".join(_KEYS) + r")\s*:\s*(.*)$", re.IGNORECASE)
+ _NONE = ("", "-", "–", "—", "none", "n/a")
+ _LINE_REF = re.compile(r"^\s*L0*(\d{1,4})(?:\s*[-–—]\s*L0*(\d{1,4}))?\s*$", re.IGNORECASE)
+@@ -236,10 +254,12 @@ def fields_of(body: str) -> dict:
+                 while i < len(lines) and lines[i].strip() != ">>>":
+                     buf.append(lines[i])
+                     i += 1
+-                out[cur] = "\n".join(buf).strip("\n")
++                new = "\n".join(buf).strip("\n")
+             else:
+                 one = re.match(r"^<<<\s*(.*?)\s*>>>\s*(?:\(.*\))?$", val)
+-                out[cur] = one.group(1) if one else val
++                new = one.group(1) if one else val
++            if not (cur in out and not _none(out[cur]) and _none(new)):        # a field repeated at the end of a block with `-` does not erase what was written first
++                out[cur] = new
+         elif cur is not None and lines[i].strip() and cur not in ("quote", "alternative"):
+             out[cur] = (out.get(cur, "") + " " + lines[i].strip()).strip()
+         i += 1
+@@ -331,12 +351,16 @@ def parse_answer(raw: str, spec: str, lyrics: str, system: str = "") -> dict:
+     verdict = next((fields_of(b) for k, _n, b in blocks if k == "VERDICT"), None)
+     if verdict is None or _none(verdict.get("headline")):
+         return {"ok": False, "sr": {}, "diagnostics": diag + ["The answer has no [VERDICT] with a headline."], "incomplete": False}
+-    unknown = sorted({k for k, _n, _b in blocks if k not in ("VERDICT", "FINDING", "SECTION", "NOTE")})
++    known_tags = ("VERDICT", "FINDING", "SECTION", "NOTE") + (("ASPECT", "ACTION") if spec == "song_critic" else ())
++    has_aspects = spec == "song_critic" and any(k == "ASPECT" for k, _n, _b in blocks)
++    unknown = sorted({k for k, _n, _b in blocks if k not in known_tags})
+     if unknown:
+         diag.append(f"Tags that are not part of this report were not used: {unknown}.")
+     findings, concerns = [], 0
+     kinds = ("change", "keep") if spec == "lyric_language" else ("strength", "concern", "keep")
+-    for _k, n, body in [x for x in blocks if x[0] == "FINDING"]:
++    if has_aspects and any(k == "FINDING" for k, _n, _b in blocks):
++        diag.append("[FINDING] blocks are not part of the Songcraft Review format; they were not used.")
++    for _k, n, body in [x for x in blocks if x[0] == "FINDING" and not has_aspects]:
+         f = fields_of(body)
+         kind = (f.get("kind") or "").strip().lower()
+         if kind not in kinds:
+@@ -424,9 +448,120 @@ def parse_answer(raw: str, spec: str, lyrics: str, system: str = "") -> dict:
+     for _k, _n, body in [x for x in blocks if x[0] == "NOTE"]:
+         notes += [ln.lstrip("-•* ").strip() for ln in body.split("\n") if ln.strip() and not _none(ln.lstrip("-•* "))]
+     sr = {"schema": SCHEMA, "headline": verdict["headline"].strip(), "reading": "" if _none(verdict.get("reading")) else verdict["reading"].strip(), "findings": findings, "sections": sections, "notes": notes}
++    if has_aspects:
++        sr["format"] = FORMAT_SONGCRAFT
++        sr["aspects"] = _aspects_of(blocks, lyrics, total, diag)
++        sr["actions"] = _actions_of(blocks, sr["aspects"], total, diag)
+     return {"ok": True, "sr": sr, "diagnostics": diag, "incomplete": False}
+ 
+ 
++def _evidence_of(f: dict, lyrics: str, total: int, label: str, diag: list) -> dict:
++    """The lines and the quotation of one aspect (same rules as a finding): several separate references, nothing guessed; unreadable lines keep the item, marked, with an unverified quotation."""
++    refs, rstat = parse_refs(f.get("lines", ""), total)
++    raw_lines = (f.get("lines") or "").strip()
++    invalid = rstat == "invalid"
++    if invalid:
++        diag.append(f"{label}: its lines “{raw_lines[:24]}” are not a readable reference (use L12, L12-L13 or a list such as L5, L16-L18; every line must exist). It is kept WITHOUT a line link and its quotation is not verified.")
++    quote = f.get("quote", "")
++    shown, ok = "", True
++    if refs:
++        shown = "\n…\n".join(excerpt(lyrics, a, b) for a, b in refs)
++        if not _none(quote):
++            want = [_norm(x) for x in quote.split("\n") if x.strip() and x.strip() != "…"]
++            have = _norm("".join(excerpt(lyrics, a, b) for a, b in refs))
++            ok = all(w in have for w in want)
++            if not ok:
++                diag.append(f"{label}: the quote is not in the lyrics ({refs_label(refs)}); the lyric lines themselves are shown.")
++    elif invalid and not _none(quote):
++        shown, ok = quote.strip(), False
++    first, last = refs[0] if refs else (0, 0)
++    return {"refs": [[a, b] for a, b in refs], "first": first, "last": last, "lines_invalid": raw_lines[:60] if invalid else "", "quote": shown, "quote_ok": ok}
++
++
++def _norm_key(v: str) -> str:
++    return re.sub(r"[^a-z0-9]+", "_", (v or "").strip().lower()).strip("_")
++
++
++def _aspects_of(blocks: list, lyrics: str, total: int, diag: list) -> list:
++    """The eight aspects of the Songcraft Review, in the fixed order, each at most once. An aspect that is missing is simply not in the list (the page shows it as not reviewed)."""
++    got: dict = {}
++    for _k, n, body in [x for x in blocks if x[0] == "ASPECT"]:
++        f = fields_of(body)
++        key = _norm_key(f.get("aspect"))
++        key = _ASPECT_ALIAS.get(key, key)
++        if key not in ASPECTS:
++            diag.append(f"[ASPECT.{n}] was not used: aspect “{(f.get('aspect') or '')[:24]}” is not one of {', '.join(ASPECTS)}.")
++            continue
++        if key in got:
++            diag.append(f"[ASPECT.{n}] was not used: the aspect “{key}” was already given.")
++            continue
++        st = _STATUS_ALIAS.get(_norm_key(f.get("status")), _norm_key(f.get("status")))
++        if st not in ASPECT_STATUS:
++            diag.append(f"[ASPECT.{n}]: status “{(f.get('status') or '')[:24]}” is not one of {', '.join(ASPECT_STATUS)}; the aspect is shown as not rated.")
++            st = "unrated"
++        obs = "" if _none(f.get("observation")) else f["observation"].strip()
++        why = "" if _none(f.get("interpretation")) else f["interpretation"].strip()
++        if st in ("strength", "concern", "mixed") and not obs and not why:
++            diag.append(f"[ASPECT.{n}] was not used: a {st} aspect has no observation and no reading.")
++            continue
++        ev = _evidence_of(f, lyrics, total, f"[ASPECT.{n}]", diag)
++        pr = (f.get("priority") or "").strip().lower()
++        if st in ("concern", "mixed"):
++            if pr not in ("high", "medium", "low"):
++                if pr not in _NONE:
++                    diag.append(f"[ASPECT.{n}]: priority “{pr[:20]}” is not high / medium / low; it is shown as medium.")
++                pr = "medium"
++        else:
++            pr = ""
++        pats = []
++        if key == "opening" and not _none(f.get("pattern")):
++            for x in re.split(r"[,;/|]+", f["pattern"]):
++                k2 = _PATTERN_ALIAS.get(_norm_key(x), _norm_key(x))
++                if not k2:
++                    continue
++                if k2 in OPENING_PATTERNS:
++                    if k2 not in pats:
++                        pats.append(k2)
++                else:
++                    diag.append(f"[ASPECT.{n}]: the opening pattern “{x.strip()[:24]}” is not one of {', '.join(OPENING_PATTERNS)}; it was not used.")
++        got[key] = dict(ev, id="as_" + key, aspect=key, status=st, kind=STATUS_KIND[st], priority=pr, patterns=pats, observation=obs, interpretation=why,
++                        recommendation="" if _none(f.get("recommendation")) else f["recommendation"].strip(), keep="" if _none(f.get("keep")) else f["keep"].strip(),
++                        proposal="")
++    return [got[k] for k in ASPECTS if k in got]
++
++
++def _actions_of(blocks: list, aspects: list, total: int, diag: list) -> list:
++    """The Action Plan: at most three items in the order given (the most important first). Each names its aspect (when it is one of the eight), its lines (optional) and the trade-off."""
++    out = []
++    have = {a["aspect"] for a in aspects}
++    for _k, n, body in [x for x in blocks if x[0] == "ACTION"]:
++        if len(out) >= MAX_ACTIONS:
++            diag.append(f"[ACTION.{n}] was left out: the Action Plan keeps the first {MAX_ACTIONS}.")
++            continue
++        f = fields_of(body)
++        act = "" if _none(f.get("action")) else f["action"].strip()
++        if not act:
++            diag.append(f"[ACTION.{n}] was not used: it has no action.")
++            continue
++        key = _norm_key(f.get("aspect"))
++        key = _ASPECT_ALIAS.get(key, key)
++        if key and key not in have:
++            diag.append(f"[ACTION.{n}]: its aspect “{key[:24]}” is not in this report; the action is shown without a link to an aspect.")
++            key = ""
++        refs, rstat = parse_refs(f.get("lines", ""), total)
++        lines_invalid = (f.get("lines") or "").strip()[:60] if rstat == "invalid" else ""
++        if lines_invalid:
++            diag.append(f"[ACTION.{n}]: its lines “{lines_invalid[:24]}” are not a readable reference; the action is kept without a line link.")
++        out.append({"id": f"ac{len(out) + 1}", "title": "" if _none(f.get("title")) else f["title"].strip(), "action": act, "aspect": key, "refs": [[a, b] for a, b in refs],
++                    "lines_invalid": lines_invalid, "tradeoff": "" if _none(f.get("tradeoff") or f.get("keep")) else (f.get("tradeoff") or f.get("keep")).strip()})
++    return out
++
++
++def items_of(sr_data: dict) -> list:
++    """What a report discusses and hands off: the aspects of a Songcraft Review (as finding-shaped items), or the findings of an older report."""
++    return list(sr_data.get("aspects") or sr_data.get("findings") or [])
++
++
+ def alternative_of(text: str, original: str, first: int, last: int) -> tuple:
+     """(wording, why-not): the alternative as ONE wording for the quoted lines. Empty with a reason when it is not one: no text, the same as the original, a tag or an id inside, a different number of lines."""
+     from . import chat_tags as CT
+@@ -551,12 +686,12 @@ def _finding_text(f: dict, lyrics_then: str, full: bool = True, old_numbers: boo
+ 
+ 
+ def handoff_text(*, title: str, song_id: str, sheet_id: str, style: dict, settings: dict, sr_data: dict, rep_ts: str, backend: str, model: str, state: str, why: str,
+-                 lyrics_then: str, lyrics_now: str, finding_id: str = "", budget_tokens: int = 2500) -> tuple:
++                 lyrics_then: str, lyrics_now: str, finding_id: str = "", budget_tokens: int = 2500, action_id: str = "") -> tuple:
+     """(text, info): the context a Songwriter message carries when the user discusses a report (or one finding of it). Blocks are added in priority order and only while they fit `budget_tokens`
+     (llm_chat.estimate_tokens); a block that does not fit is shortened, and what was left out is named in `info` and in the text itself. The selected finding, its evidence and the status are the
+     last things to be cut: only to a short form when even they do not fit."""
+     from . import llm_chat as LC
+-    findings = sr_data.get("findings") or []
++    findings = items_of(sr_data)
+     sel = next((f for f in findings if f.get("id") == finding_id), None) if finding_id else None
+     rest = [f for f in findings if f is not sel]
+     ch = changed_lines(lyrics_then, lyrics_now)
+@@ -582,6 +717,14 @@ def handoff_text(*, title: str, song_id: str, sheet_id: str, style: dict, settin
+         label = "the other findings" if sel is not None else "the findings"
+         blocks.append((label, ("OTHER FINDINGS:\n" if sel is not None else "FINDINGS:\n") + "\n".join(_finding_text(f, lyrics_then, sel is None) for f in rest),
+                        "FINDINGS (short):\n" + "\n".join(_finding_text(f, lyrics_then, False) for f in rest)))
++    acts = sr_data.get("actions") or []
++    if acts:                                                                   # the Action Plan of a Songcraft Review: the user is about to decide what to do, so it comes right after the selected item
++        def _act(a, full):
++            where = refs_label([(int(x), int(y)) for x, y in (a.get("refs") or [])])
++            lim = 500 if full else 140
++            return ("► " if action_id and a["id"] == action_id else "") + f"- {a.get('title') or a['id']}" + (f" ({where})" if where else "") + (f" [aspect: {a['aspect']}]" if a.get("aspect") else "") + f": {_clip(a['action'], lim)}" + (f" Trade-off: {_clip(a['tradeoff'], lim)}" if a.get("tradeoff") else "")
++        blocks.insert(1 if sel is not None else 0, ("the action plan", "ACTION PLAN (what the Song Critic suggests to consider, most important first" + ("; ► = the action the user wants to discuss" if action_id else "") + "):" + chr(10) + chr(10).join(_act(a, True) for a in acts),
++                                                    "ACTION PLAN (short):" + chr(10) + chr(10).join(_act(a, False) for a in acts)))
+     secs = sr_data.get("sections") or []
+     if secs:
+         blocks.append(("the section readings", "SECTIONS:\n" + "\n".join(f"- {s['name']} ({('L%d-L%d' % (s['first'], s['last'])) if s.get('first') else '-'}): {_clip(s['reading'], 260)}" for s in secs),
+@@ -600,7 +743,7 @@ def handoff_text(*, title: str, song_id: str, sheet_id: str, style: dict, settin
+     for b_ in blocks:
+         label, full, short = b_[0], b_[1], b_[2]
+         v = [full] + ([short] if short and short != full else []) + ([b_[3]] if len(b_) > 3 else [])
+-        if not (label == "the selected finding"):
++        if label not in ("the selected finding", "the action plan"):               # these two are never cut: the item the user is discussing and what to do next (their last form is a short one)
+             v.append("")
+         variants.append(v)
+     levels = [0] * len(blocks)
+@@ -625,7 +768,7 @@ def handoff_text(*, title: str, song_id: str, sheet_id: str, style: dict, settin
+ 
+     full_text, shortened, cut = assemble()
+     for target in range(1, max(len(v) for v in variants)):            # every block is shortened before any block is cut: pass 1 = the short forms, pass 2 = the next form, ... (least important first)
+-        sel_i = [i for i, b_ in enumerate(blocks) if b_[0] == "the selected finding"]
++        sel_i = [i for i, b_ in enumerate(blocks) if b_[0] in ("the selected finding", "the action plan")]
+         for k in [i for i in range(len(blocks) - 1, -1, -1) if i not in sel_i] + sel_i:          # the selected finding is the last to be touched
+             if LC.estimate_tokens(full_text) <= budget_tokens:
+                 break
+diff --git a/music_studio/locales/th.json b/music_studio/locales/th.json
+index 24bc245..4209f80 100644
+--- a/music_studio/locales/th.json
++++ b/music_studio/locales/th.json
+@@ -4,6 +4,42 @@
+     "note": "UI texts only; lyrics, captions and AI prompts are never translated"
+   },
+   "strings": {
++    "Start here": "เริ่มจากตรงนี้",
++    "Songcraft review": "การวิเคราะห์การออกแบบเพลง",
++    "8 aspects": "8 ด้าน",
++    "Action Plan": "แผนปฏิบัติ",
++    "What to consider next": "สิ่งที่ควรพิจารณาทำต่อ",
++    "Priority": "อันดับ",
++    "View topic": "ดูหัวข้อ",
++    "Open the aspect this action comes from": "เปิดหัวข้อที่ข้อเสนอนี้มาจาก",
++    "Open the Songwriter chat with this action and the report; nothing changes in the lyrics": "เปิดแชตผู้ช่วยแต่งเพลงพร้อมข้อเสนอนี้และรายงาน ไม่มีอะไรเปลี่ยนในเนื้อเพลง",
++    "The Song Critic named no action to take now.": "นักวิจารณ์เพลงไม่ได้ระบุสิ่งที่ต้องทำตอนนี้",
++    "The Song Critic did not review this aspect in this report.": "นักวิจารณ์เพลงไม่ได้ตรวจด้านนี้ในรายงานนี้",
++    "Opening patterns are tools for reading the opening, not rules the song has to follow.": "รูปแบบการเปิดเป็นเครื่องมือช่วยอ่านการเปิดเพลง ไม่ใช่กฎที่เพลงต้องทำตาม",
++    "Nothing more was said about this aspect.": "ไม่มีข้อสังเกตเพิ่มเติมในด้านนี้",
++    "Let's discuss this action of the Song Critic report": "ขอคุยเรื่องข้อเสนอนี้ในรายงานของนักวิจารณ์เพลง",
++    "Concern": "ข้อกังวล",
++    "Mixed / Conditional": "ปนกัน / ขึ้นกับเจตนา",
++    "No Significant Issue": "ไม่มีประเด็นสำคัญ",
++    "Not Applicable / Insufficient Evidence": "ไม่เกี่ยวข้อง / หลักฐานไม่พอ",
++    "Not rated": "ยังไม่ได้ประเมิน",
++    "Not reviewed in this report": "ไม่ได้ตรวจในรายงานนี้",
++    "Opening Review": "การเปิดเพลง",
++    "Central Idea / Theme": "แก่นเพลง",
++    "Section Purpose / Song Journey": "หน้าที่ของแต่ละท่อน / เส้นทางของเพลง",
++    "Emotional / Narrative Development": "การพัฒนาอารมณ์ / เรื่องราว",
++    "Hook & Memorability": "Hook และความจดจำ",
++    "Imagery & Metaphor": "ภาพและสัญลักษณ์",
++    "Repetition & Contrast": "การซ้ำและความแตกต่าง",
++    "Ending & Payoff": "การจบและการคลี่คลาย",
++    "Scene Opening": "เปิดด้วยฉาก",
++    "Emotional Declaration": "เปิดด้วยการประกาศอารมณ์",
++    "Question Opening": "เปิดด้วยคำถาม",
++    "In Medias Res": "เปิดกลางเหตุการณ์",
++    "Dialogue Opening": "เปิดด้วยบทสนทนา",
++    "Surprise / Contradiction": "เปิดด้วยความประหลาดใจ / ความขัดแย้ง",
++    "Hook / Thesis First": "เปิดด้วย Hook / ใจความหลัก",
++    "Atmospheric / Symbolic Opening": "เปิดด้วยบรรยากาศ / สัญลักษณ์",
+     "Lines not readable:": "อ่านเลขบรรทัดไม่ได้:",
+     "The AI cited lines in a form the program does not accept, so there is no line link and the quotation was not checked.": "AI อ้างบรรทัดในรูปแบบที่โปรแกรมไม่รับ จึงไม่มีลิงก์บรรทัดและไม่ได้ตรวจข้อความที่อ้าง",
+     "Unverified: the lines this finding cites could not be read, so the quotation above is the AI's own words and was not checked against the lyrics.": "ยังไม่ยืนยัน: อ่านบรรทัดที่ข้อสังเกตนี้อ้างไม่ได้ ข้อความด้านบนจึงเป็นคำของ AI เองและไม่ได้ตรวจกับเนื้อเพลง",

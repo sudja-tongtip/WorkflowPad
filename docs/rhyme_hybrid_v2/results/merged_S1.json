@@ -1,0 +1,965 @@
+{
+ "merged": {
+  "items": [
+   {
+    "id": "P1",
+    "status": "verified",
+    "sound": "exact",
+    "placement": "end_to_end",
+    "scope": "same_section",
+    "confidence": "high",
+    "a": {
+     "line": 2,
+     "word": "บ้าน",
+     "start": 24,
+     "end": 28,
+     "sec": 0,
+     "sung": 1
+    },
+    "b": {
+     "line": 3,
+     "word": "นาน",
+     "start": 46,
+     "end": 49,
+     "sec": 0,
+     "sung": 2
+    },
+    "source": "python",
+    "rime": "อา+กน",
+    "python_detail": "Sound check: หน้าบ้าน อา+กน · นาน อา+กน",
+    "llm": {
+     "verdict": "agree",
+     "reason": "The final sounds of บ้าน (Baan) and นาน (Naan) are identical (อา+กน)."
+    },
+    "notes": []
+   },
+   {
+    "id": "P2",
+    "status": "disputed",
+    "sound": "near",
+    "placement": "end_to_end",
+    "scope": "distant",
+    "confidence": "low",
+    "a": {
+     "line": 3,
+     "word": "นาน",
+     "start": 46,
+     "end": 49,
+     "sec": 0,
+     "sung": 2
+    },
+    "b": {
+     "line": 20,
+     "word": "ช่าง",
+     "start": 343,
+     "end": 347,
+     "sec": 3,
+     "sung": 13
+    },
+    "source": "python",
+    "rime": "อา+กง",
+    "python_detail": "Sound check: นาน อา+กน · ก็ช่าง อา+กง",
+    "llm": {
+     "verdict": "unsure",
+     "reason": "While both share the 'a' vowel, the final consonant sound is /n/ (บ้าน) vs /ŋ/ (ช่าง), which might be too far for 'near'."
+    },
+    "notes": [
+     "reviewer disputes how Python read or classified this pair"
+    ]
+   },
+   {
+    "id": "P3",
+    "status": "verified",
+    "sound": "exact",
+    "placement": "end_to_end",
+    "scope": "same_section",
+    "confidence": "high",
+    "a": {
+     "line": 4,
+     "word": "เก่า",
+     "start": 62,
+     "end": 66,
+     "sec": 0,
+     "sung": 3
+    },
+    "b": {
+     "line": 5,
+     "word": "เบา",
+     "start": 79,
+     "end": 82,
+     "sec": 0,
+     "sung": 4
+    },
+    "source": "python",
+    "rime": "เอา+กา",
+    "python_detail": "Sound check: เก่า เอา+กา · เบา เอา+กา",
+    "llm": {
+     "verdict": "agree",
+     "reason": "The final sounds of เก่า (Gao) and เบา (Bao) are identical (เอา+กา)."
+    },
+    "notes": []
+   },
+   {
+    "id": "P4",
+    "status": "verified",
+    "sound": "exact",
+    "placement": "internal",
+    "scope": "same_section",
+    "confidence": "high",
+    "a": {
+     "line": 14,
+     "word": "ถ้า",
+     "start": 204,
+     "end": 207,
+     "sec": 2,
+     "sung": 9
+    },
+    "b": {
+     "line": 14,
+     "word": "ฟ้า",
+     "start": 213,
+     "end": 216,
+     "sec": 2,
+     "sung": 9
+    },
+    "source": "python",
+    "rime": "อา+กา",
+    "python_detail": "Sound check: ถ้า · ฟ้า อา+กา",
+    "llm": {
+     "verdict": "agree",
+     "reason": "The 'a' vowel and the final /k/ sound match perfectly between ถ้า and ฟ้า."
+    },
+    "notes": []
+   },
+   {
+    "id": "P5",
+    "status": "verified",
+    "sound": "exact",
+    "placement": "end_to_end",
+    "scope": "same_section",
+    "confidence": "high",
+    "a": {
+     "line": 14,
+     "word": "ไห้",
+     "start": 230,
+     "end": 233,
+     "sec": 2,
+     "sung": 9
+    },
+    "b": {
+     "line": 15,
+     "word": "ใส",
+     "start": 256,
+     "end": 258,
+     "sec": 2,
+     "sung": 10
+    },
+    "source": "python",
+    "rime": "ไอ+กา",
+    "python_detail": "Sound check: ร้องไห้ ไอ+กา · ใส ไอ+กา",
+    "llm": {
+     "verdict": "agree",
+     "reason": "The final sounds of ไห้ (Hai) and ใส (Sai) are identical (ไอ+กา)."
+    },
+    "notes": []
+   },
+   {
+    "id": "P6",
+    "status": "verified",
+    "sound": "exact",
+    "placement": "end_to_end",
+    "scope": "adjacent_section",
+    "confidence": "medium",
+    "a": {
+     "line": 15,
+     "word": "ใส",
+     "start": 256,
+     "end": 258,
+     "sec": 2,
+     "sung": 10
+    },
+    "b": {
+     "line": 18,
+     "word": "ไร",
+     "start": 296,
+     "end": 298,
+     "sec": 3,
+     "sung": 11
+    },
+    "source": "python",
+    "rime": "ไอ+กา",
+    "python_detail": "Sound check: ใส ไอ+กา · ไม่เป็นไร ไอ+กา",
+    "llm": {
+     "verdict": "agree",
+     "reason": "The final sounds of ไร (Rai) and ใส (Sai) are identical (ไอ+กา)."
+    },
+    "notes": []
+   },
+   {
+    "id": "P7",
+    "status": "verified",
+    "sound": "exact",
+    "placement": "end_to_end",
+    "scope": "adjacent_section",
+    "confidence": "medium",
+    "a": {
+     "line": 18,
+     "word": "ไร",
+     "start": 296,
+     "end": 298,
+     "sec": 3,
+     "sung": 11
+    },
+    "b": {
+     "line": 26,
+     "word": "ไห้",
+     "start": 463,
+     "end": 466,
+     "sec": 4,
+     "sung": 17
+    },
+    "source": "python",
+    "rime": "ไอ+กา",
+    "python_detail": "Sound check: ไม่เป็นไร ไอ+กา · ร้องไห้ ไอ+กา",
+    "llm": {
+     "verdict": "agree",
+     "reason": "The final sounds of ไร (Rai) and ไห้ (Hai) are identical (ไอ+กา)."
+    },
+    "notes": []
+   },
+   {
+    "id": "P8",
+    "status": "verified",
+    "sound": "exact",
+    "placement": "internal",
+    "scope": "same_section",
+    "confidence": "high",
+    "a": {
+     "line": 26,
+     "word": "ถ้า",
+     "start": 437,
+     "end": 440,
+     "sec": 4,
+     "sung": 17
+    },
+    "b": {
+     "line": 26,
+     "word": "ฟ้า",
+     "start": 446,
+     "end": 449,
+     "sec": 4,
+     "sung": 17
+    },
+    "source": "python",
+    "rime": "อา+กา",
+    "python_detail": "Sound check: ถ้า · ฟ้า อา+กา",
+    "llm": {
+     "verdict": "agree",
+     "reason": "The final sounds of ถ้า (Tha) and ฟ้า (Fah) are identical (อา+กา)."
+    },
+    "notes": []
+   },
+   {
+    "id": "P9",
+    "status": "verified",
+    "sound": "exact",
+    "placement": "end_to_end",
+    "scope": "same_section",
+    "confidence": "high",
+    "a": {
+     "line": 26,
+     "word": "ไห้",
+     "start": 463,
+     "end": 466,
+     "sec": 4,
+     "sung": 17
+    },
+    "b": {
+     "line": 27,
+     "word": "ใส",
+     "start": 489,
+     "end": 491,
+     "sec": 4,
+     "sung": 18
+    },
+    "source": "python",
+    "rime": "ไอ+กา",
+    "python_detail": "Sound check: ร้องไห้ ไอ+กา · ใส ไอ+กา",
+    "llm": {
+     "verdict": "agree",
+     "reason": "The final sounds of ไห้ (Hai) and ใส (Sai) are identical (ไอ+กา)."
+    },
+    "notes": []
+   }
+  ],
+  "disagreements": [
+   {
+    "target": "P2",
+    "type": "dispute",
+    "python": "near (L3 นาน <-> L20 ช่าง)",
+    "llm": "exact (L3 นาน <-> L20 ช่าง)",
+    "reason": "The final consonant sound /n/ in นาน is a very close match to the final /ŋ/ in ช่าง in Thai pronunciation contexts.",
+    "resolved": "disputed (not decided)"
+   },
+   {
+    "target": "U1",
+    "type": "dispute",
+    "python": "could not read (L9)",
+    "llm": "? (L9)",
+    "reason": "Python likely missed the inherent vowel sound or the final consonant sound of the word on L9.",
+    "resolved": "kept for debug only"
+   }
+  ],
+  "blocked": [
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.1",
+    "why": "0 endpoints"
+   },
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.2",
+    "why": "0 endpoints"
+   },
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.3",
+    "why": "0 endpoints"
+   },
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.4",
+    "why": "0 endpoints"
+   },
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.5",
+    "why": "0 endpoints"
+   },
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.6",
+    "why": "0 endpoints"
+   },
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.7",
+    "why": "0 endpoints"
+   },
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.8",
+    "why": "0 endpoints"
+   },
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.9",
+    "why": "0 endpoints"
+   }
+  ],
+  "coverage": {
+   "reviewed": 9,
+   "python_pairs": 9,
+   "sections_checked": 5,
+   "sections": 5,
+   "unknown_refs": 0
+  },
+  "reviewer_status": "ok",
+  "seconds": 0.0
+ },
+ "evidence": {
+  "sections": [
+   {
+    "name": "Verse 1",
+    "first": 2,
+    "last": 5,
+    "pattern": "",
+    "scheme_name": "",
+    "scheme_unverified": false,
+    "lines": [
+     {
+      "line": 2,
+      "sung": 1,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "หน้าบ้าน",
+      "sound": "อา+กน",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 3,
+      "sung": 2,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "นาน",
+      "sound": "อา+กน",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 4,
+      "sung": 3,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "เก่า",
+      "sound": "เอา+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 5,
+      "sung": 4,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "เบา",
+      "sound": "เอา+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     }
+    ],
+    "pairs": [
+     {
+      "a": {
+       "line": 2,
+       "word": "บ้าน",
+       "pos": null
+      },
+      "b": {
+       "line": 3,
+       "word": "นาน",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_end",
+      "sound": "exact",
+      "verification": "verified",
+      "confidence": "high",
+      "why": "",
+      "sound_type": "vowel_rhyme",
+      "group": "อา+กน",
+      "status": "verified",
+      "source": "python",
+      "id": "P1"
+     },
+     {
+      "a": {
+       "line": 4,
+       "word": "เก่า",
+       "pos": null
+      },
+      "b": {
+       "line": 5,
+       "word": "เบา",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_end",
+      "sound": "exact",
+      "verification": "verified",
+      "confidence": "high",
+      "why": "",
+      "sound_type": "vowel_rhyme",
+      "group": "เอา+กา",
+      "status": "verified",
+      "source": "python",
+      "id": "P3"
+     }
+    ],
+    "repetitions": [],
+    "not_confirmed": [
+     {
+      "a": {
+       "line": 3,
+       "word": "นาน",
+       "pos": null
+      },
+      "b": {
+       "line": 20,
+       "word": "ช่าง",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_end",
+      "sound": "near",
+      "verification": "disputed",
+      "confidence": "low",
+      "why": "reviewer disputes how Python read or classified this pair",
+      "sound_type": "vowel_rhyme",
+      "group": "อา+กง",
+      "status": "disputed",
+      "source": "python",
+      "id": "P2"
+     }
+    ],
+    "rejected": [],
+    "misplaced": [],
+    "reported": true,
+    "letters_from": "python",
+    "inconsistent": false,
+    "inconsistencies": [],
+    "group_conflicts": 0,
+    "unlettered": [],
+    "uncertain": []
+   },
+   {
+    "name": "Pre-Chorus",
+    "first": 8,
+    "last": 9,
+    "pattern": "",
+    "scheme_name": "",
+    "scheme_unverified": false,
+    "lines": [
+     {
+      "line": 8,
+      "sung": 5,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "คำ",
+      "sound": "อำ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 9,
+      "sung": 6,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "",
+      "sound": "",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     }
+    ],
+    "pairs": [],
+    "repetitions": [],
+    "not_confirmed": [],
+    "rejected": [],
+    "misplaced": [],
+    "reported": true,
+    "letters_from": "python",
+    "inconsistent": false,
+    "inconsistencies": [],
+    "group_conflicts": 0,
+    "unlettered": [],
+    "uncertain": []
+   },
+   {
+    "name": "Chorus",
+    "first": 12,
+    "last": 15,
+    "pattern": "",
+    "scheme_name": "",
+    "scheme_unverified": false,
+    "lines": [
+     {
+      "line": 12,
+      "sung": 7,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "เธอ",
+      "sound": "เออ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 13,
+      "sung": 8,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "ฉัน",
+      "sound": "อะ+กน",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 14,
+      "sung": 9,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "ร้องไห้",
+      "sound": "ไอ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 15,
+      "sung": 10,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "ใส",
+      "sound": "ไอ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     }
+    ],
+    "pairs": [
+     {
+      "a": {
+       "line": 14,
+       "word": "ถ้า",
+       "pos": null
+      },
+      "b": {
+       "line": 14,
+       "word": "ฟ้า",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "internal",
+      "sound": "exact",
+      "verification": "verified",
+      "confidence": "high",
+      "why": "",
+      "sound_type": "vowel_rhyme",
+      "group": "อา+กา",
+      "status": "verified",
+      "source": "python",
+      "id": "P4"
+     },
+     {
+      "a": {
+       "line": 14,
+       "word": "ไห้",
+       "pos": null
+      },
+      "b": {
+       "line": 15,
+       "word": "ใส",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_end",
+      "sound": "exact",
+      "verification": "verified",
+      "confidence": "high",
+      "why": "",
+      "sound_type": "vowel_rhyme",
+      "group": "ไอ+กา",
+      "status": "verified",
+      "source": "python",
+      "id": "P5"
+     },
+     {
+      "a": {
+       "line": 15,
+       "word": "ใส",
+       "pos": null
+      },
+      "b": {
+       "line": 18,
+       "word": "ไร",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_end",
+      "sound": "exact",
+      "verification": "verified",
+      "confidence": "medium",
+      "why": "",
+      "sound_type": "vowel_rhyme",
+      "group": "ไอ+กา",
+      "status": "verified",
+      "source": "python",
+      "id": "P6"
+     }
+    ],
+    "repetitions": [],
+    "not_confirmed": [],
+    "rejected": [],
+    "misplaced": [],
+    "reported": true,
+    "letters_from": "python",
+    "inconsistent": false,
+    "inconsistencies": [],
+    "group_conflicts": 0,
+    "unlettered": [],
+    "uncertain": []
+   },
+   {
+    "name": "Verse 2",
+    "first": 18,
+    "last": 21,
+    "pattern": "",
+    "scheme_name": "",
+    "scheme_unverified": false,
+    "lines": [
+     {
+      "line": 18,
+      "sung": 11,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "ไม่เป็นไร",
+      "sound": "ไอ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 19,
+      "sung": 12,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "คิด",
+      "sound": "อิ+กด",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 20,
+      "sung": 13,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "ก็ช่าง",
+      "sound": "อา+กง",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 21,
+      "sung": 14,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "ตรงนี้",
+      "sound": "อี+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     }
+    ],
+    "pairs": [
+     {
+      "a": {
+       "line": 18,
+       "word": "ไร",
+       "pos": null
+      },
+      "b": {
+       "line": 26,
+       "word": "ไห้",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_end",
+      "sound": "exact",
+      "verification": "verified",
+      "confidence": "medium",
+      "why": "",
+      "sound_type": "vowel_rhyme",
+      "group": "ไอ+กา",
+      "status": "verified",
+      "source": "python",
+      "id": "P7"
+     }
+    ],
+    "repetitions": [],
+    "not_confirmed": [],
+    "rejected": [],
+    "misplaced": [],
+    "reported": true,
+    "letters_from": "python",
+    "inconsistent": false,
+    "inconsistencies": [],
+    "group_conflicts": 0,
+    "unlettered": [],
+    "uncertain": []
+   },
+   {
+    "name": "Chorus",
+    "first": 24,
+    "last": 27,
+    "pattern": "",
+    "scheme_name": "",
+    "scheme_unverified": false,
+    "lines": [
+     {
+      "line": 24,
+      "sung": 15,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "เธอ",
+      "sound": "เออ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 25,
+      "sung": 16,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "ฉัน",
+      "sound": "อะ+กน",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 26,
+      "sung": 17,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "ร้องไห้",
+      "sound": "ไอ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 27,
+      "sung": 18,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "ใส",
+      "sound": "ไอ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     }
+    ],
+    "pairs": [
+     {
+      "a": {
+       "line": 26,
+       "word": "ถ้า",
+       "pos": null
+      },
+      "b": {
+       "line": 26,
+       "word": "ฟ้า",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "internal",
+      "sound": "exact",
+      "verification": "verified",
+      "confidence": "high",
+      "why": "",
+      "sound_type": "vowel_rhyme",
+      "group": "อา+กา",
+      "status": "verified",
+      "source": "python",
+      "id": "P8"
+     },
+     {
+      "a": {
+       "line": 26,
+       "word": "ไห้",
+       "pos": null
+      },
+      "b": {
+       "line": 27,
+       "word": "ใส",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_end",
+      "sound": "exact",
+      "verification": "verified",
+      "confidence": "high",
+      "why": "",
+      "sound_type": "vowel_rhyme",
+      "group": "ไอ+กา",
+      "status": "verified",
+      "source": "python",
+      "id": "P9"
+     }
+    ],
+    "repetitions": [],
+    "not_confirmed": [],
+    "rejected": [],
+    "misplaced": [],
+    "reported": true,
+    "letters_from": "python",
+    "inconsistent": false,
+    "inconsistencies": [],
+    "group_conflicts": 0,
+    "unlettered": [],
+    "uncertain": []
+   },
+   {
+    "name": "Bridge",
+    "first": 30,
+    "last": 31,
+    "pattern": "",
+    "scheme_name": "",
+    "scheme_unverified": false,
+    "lines": [
+     {
+      "line": 30,
+      "sung": 19,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "อธิบาย",
+      "sound": "อา+เกย",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 31,
+      "sung": 20,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "พอ",
+      "sound": "ออ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     }
+    ],
+    "pairs": [],
+    "repetitions": [],
+    "not_confirmed": [],
+    "rejected": [],
+    "misplaced": [],
+    "reported": true,
+    "letters_from": "python",
+    "inconsistent": false,
+    "inconsistencies": [],
+    "group_conflicts": 0,
+    "unlettered": [],
+    "uncertain": []
+   }
+  ],
+  "source": "hybrid-v2",
+  "notes": [
+   "reviewer: ok"
+  ],
+  "left_out": 0,
+  "cross_section_pairs": 0,
+  "group_conflicts": 0
+ }
+}

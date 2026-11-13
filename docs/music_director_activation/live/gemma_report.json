@@ -1,0 +1,12 @@
+{
+  "backend": "gemma",
+  "song": "มนุษย์ถ้ำ",
+  "prompt_hash": "3ae1d1e59225",
+  "seconds": 29.0,
+  "error": "The AI answer does not follow the required format.",
+  "problems": [
+    "The DIRECTION 2 marker is missing.",
+    "The DIRECTION 3 marker is missing."
+  ],
+  "requests": 1
+}

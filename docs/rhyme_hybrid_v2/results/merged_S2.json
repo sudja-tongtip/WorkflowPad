@@ -1,0 +1,665 @@
+{
+ "merged": {
+  "items": [
+   {
+    "id": "ADD.1",
+    "status": "rejected",
+    "sound": "different",
+    "placement": "end_to_end",
+    "scope": "same_section",
+    "confidence": "high",
+    "a": {
+     "line": 2,
+     "word": "เมล์",
+     "start": 41,
+     "end": 45,
+     "sec": 0,
+     "sung": 1
+    },
+    "b": {
+     "line": 5,
+     "word": "อะไร",
+     "start": 136,
+     "end": 140,
+     "sec": 0,
+     "sung": 4
+    },
+    "source": "llm",
+    "rime": "",
+    "python_detail": "เมล์ เอ+กา · ไร ไอ+กา",
+    "llm": {
+     "claimed": "exact",
+     "reason": "L2 ends in 'เอ+กา' (met), L5 ends in 'ไอ+กา' (rai), so L2's sound is slightly different but the final 'กา' sound is shared.",
+     "confidence": "high"
+    },
+    "notes": [
+     "Python sound check says not a vowel rhyme: เมล์ เอ+กา · ไร ไอ+กา"
+    ],
+    "reason_code": "sound"
+   },
+   {
+    "id": "ADD.3",
+    "status": "rejected",
+    "sound": "different",
+    "placement": "end_to_internal",
+    "scope": "distant",
+    "confidence": "high",
+    "a": {
+     "line": 4,
+     "word": "เคย",
+     "start": 107,
+     "end": 110,
+     "sec": 0,
+     "sung": 3
+    },
+    "b": {
+     "line": 15,
+     "word": "แชต",
+     "start": 343,
+     "end": 346,
+     "sec": 2,
+     "sung": 10
+    },
+    "source": "llm",
+    "rime": "",
+    "python_detail": "เคย เออ+เกย · แชต แอ+กด",
+    "llm": {
+     "claimed": "exact",
+     "reason": "L4 ends in 'เออ+เกย' (kher), and L15 contains 'แชต' (chaet) which shares the 'ae' vowel sound, but the final consonant is different ('y' vs 't'). This is a near rhyme.",
+     "confidence": "high"
+    },
+    "notes": [
+     "Python sound check says not a vowel rhyme: เคย เออ+เกย · แชต แอ+กด"
+    ],
+    "reason_code": "sound"
+   },
+   {
+    "id": "P1",
+    "status": "disputed",
+    "sound": "exact",
+    "placement": "end_to_end",
+    "scope": "distant",
+    "confidence": "low",
+    "a": {
+     "line": 5,
+     "word": "ไร",
+     "start": 138,
+     "end": 140,
+     "sec": 0,
+     "sung": 4
+    },
+    "b": {
+     "line": 13,
+     "word": "ไหม",
+     "start": 292,
+     "end": 295,
+     "sec": 2,
+     "sung": 8
+    },
+    "source": "python",
+    "rime": "ไอ+กา",
+    "python_detail": "Sound check: อะไร ไอ+กา · ไหม ไอ+กา",
+    "llm": {
+     "verdict": "unsure",
+     "reason": "\"อะไร\" (ai+ga) and \"ไหม\" (ai+ga) are phonetically very close, but the 'i' vowel length in \"อะไร\" might be slightly longer/clearer than the 'ai' in \"ไหม\"."
+    },
+    "notes": [
+     "reviewer disputes how Python read or classified this pair",
+     "ADD.4 proposed the same pair (duplicate merged)"
+    ]
+   },
+   {
+    "id": "ADD.2",
+    "status": "rejected",
+    "reason_code": "position",
+    "sound": "exact",
+    "placement": "end_to_end",
+    "scope": "",
+    "confidence": "",
+    "source": "llm",
+    "a": {
+     "line": 3,
+     "word": "วัน"
+    },
+    "b": {
+     "line": 14,
+     "word": "ตาม"
+    },
+    "llm": {
+     "claimed": "exact",
+     "reason": "L3 ends in 'อะ+กน' (wan), L14 ends in 'อิ+กา' (taam), but 'กน' and 'กา' are distinct endings, so this is a stretch, but the vowel sounds are close enough ('a' sound).",
+     "confidence": "high"
+    },
+    "notes": [
+     "L14 'ตาม': word is not at the end of the line"
+    ]
+   },
+   {
+    "id": "ADD.5",
+    "status": "rejected",
+    "reason_code": "position",
+    "sound": "exact",
+    "placement": "end_to_internal",
+    "scope": "",
+    "confidence": "",
+    "source": "llm",
+    "a": {
+     "line": 14,
+     "word": "ตาม"
+    },
+    "b": {
+     "line": 16,
+     "word": "รอบ"
+    },
+    "llm": {
+     "claimed": "exact",
+     "reason": "L14 ends in 'อิ+กา' (taam), and L16 contains 'รอบ' (rop) which shares the 'o' vowel sound, but the final consonant is different ('a' vs 'b'). This is a near rhyme.",
+     "confidence": "high"
+    },
+    "notes": [
+     "L14 'ตาม': word is not at the end of the line"
+    ]
+   }
+  ],
+  "disagreements": [
+   {
+    "target": "P1",
+    "type": "dispute",
+    "python": "exact | end_to_end | L5 ไร <-> L13 ไหม | ไอ+กา | distant",
+    "llm": "unsure | end_to_end | L5 ไร <-> L13 ไหม | ไอ+กา | close",
+    "reason": "The sound is very close, leaning towards 'unsure' rather than a definitive 'exact' match based on phonetic nuances.",
+    "resolved": "disputed (not decided)"
+   },
+   {
+    "target": "P2",
+    "type": "dispute",
+    "python": "exact | end_to_end | L8 ตัวเอง <-> L10 ตัวเอง | เอ+กง | distant",
+    "llm": "exact | end_to_end | L8 ตัวเอง <-> L10 ตัวเอง | เอ+กง | exact",
+    "reason": "Python labeled this as 'distant' even though it is an exact match for the same word.",
+    "resolved": "unknown target, kept for debug only"
+   },
+   {
+    "target": "P3",
+    "type": "dispute",
+    "python": "exact | end_to_end | L10 ตัวเอง <-> L19 ตัวเอง | เอ+กง | distant",
+    "llm": "exact | end_to_end | L10 ตัวเอง <-> L19 ตัวเอง | เอ+กง | exact",
+    "reason": "Python labeled this as 'distant' despite it being an exact match.",
+    "resolved": "unknown target, kept for debug only"
+   },
+   {
+    "target": "P4",
+    "type": "dispute",
+    "python": "exact | end_to_end | L19 ตัวเอง <-> L21 ตัวเอง | เอ+กง | distant",
+    "llm": "exact | end_to_end | L19 ตัวเอง <-> L21 ตัวเอง | เอ+กง | exact",
+    "reason": "Python labeled this as 'distant' even though it is an exact match.",
+    "resolved": "unknown target, kept for debug only"
+   },
+   {
+    "target": "ADD.1",
+    "type": "added_pair_rejected",
+    "python": "Python sound check says not a vowel rhyme: เมล์ เอ+กา · ไร ไอ+กา",
+    "llm": "exact",
+    "reason": "L2 ends in 'เอ+กา' (met), L5 ends in 'ไอ+กา' (rai), so L2's sound is slightly different but the final 'กา' sound is shared.",
+    "resolved": "rejected"
+   },
+   {
+    "target": "ADD.3",
+    "type": "added_pair_rejected",
+    "python": "Python sound check says not a vowel rhyme: เคย เออ+เกย · แชต แอ+กด",
+    "llm": "exact",
+    "reason": "L4 ends in 'เออ+เกย' (kher), and L15 contains 'แชต' (chaet) which shares the 'ae' vowel sound, but the final consonant is different ('y' vs 't'). This is a near rhyme.",
+    "resolved": "rejected"
+   }
+  ],
+  "blocked": [
+   {
+    "kind": "review_unknown_pair",
+    "ref": "P2"
+   },
+   {
+    "kind": "review_unknown_pair",
+    "ref": "P3"
+   },
+   {
+    "kind": "review_unknown_pair",
+    "ref": "P4"
+   },
+   {
+    "kind": "dispute_unknown_target",
+    "ref": "P2"
+   },
+   {
+    "kind": "dispute_unknown_target",
+    "ref": "P3"
+   },
+   {
+    "kind": "dispute_unknown_target",
+    "ref": "P4"
+   },
+   {
+    "kind": "hallucination_or_bad_position",
+    "ref": "ADD.2",
+    "why": "L14 'ตาม': word is not at the end of the line",
+    "claimed": [
+     [
+      3,
+      "วัน"
+     ],
+     [
+      14,
+      "ตาม"
+     ]
+    ]
+   },
+   {
+    "kind": "hallucination_or_bad_position",
+    "ref": "ADD.5",
+    "why": "L14 'ตาม': word is not at the end of the line",
+    "claimed": [
+     [
+      14,
+      "ตาม"
+     ],
+     [
+      16,
+      "รอบ"
+     ]
+    ]
+   }
+  ],
+  "coverage": {
+   "reviewed": 1,
+   "python_pairs": 1,
+   "sections_checked": 3,
+   "sections": 3,
+   "unknown_refs": 3
+  },
+  "reviewer_status": "ok",
+  "seconds": 0.001
+ },
+ "evidence": {
+  "sections": [
+   {
+    "name": "Verse 1",
+    "first": 2,
+    "last": 5,
+    "pattern": "",
+    "scheme_name": "",
+    "scheme_unverified": false,
+    "lines": [
+     {
+      "line": 2,
+      "sung": 1,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "รถเมล์",
+      "sound": "เอ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 3,
+      "sung": 2,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "ทุกวัน",
+      "sound": "อะ+กน",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 4,
+      "sung": 3,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "เหมือนเคย",
+      "sound": "เออ+เกย",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 5,
+      "sung": 4,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "อะไร",
+      "sound": "ไอ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     }
+    ],
+    "pairs": [],
+    "repetitions": [],
+    "not_confirmed": [
+     {
+      "a": {
+       "line": 5,
+       "word": "ไร",
+       "pos": null
+      },
+      "b": {
+       "line": 13,
+       "word": "ไหม",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_end",
+      "sound": "exact",
+      "verification": "disputed",
+      "confidence": "low",
+      "why": "reviewer disputes how Python read or classified this pair; ADD.4 proposed the same pair (duplicate merged)",
+      "sound_type": "vowel_rhyme",
+      "group": "ไอ+กา",
+      "status": "disputed",
+      "source": "python",
+      "id": "P1"
+     }
+    ],
+    "rejected": [
+     {
+      "a": {
+       "line": 2,
+       "word": "เมล์",
+       "pos": null
+      },
+      "b": {
+       "line": 5,
+       "word": "อะไร",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_end",
+      "sound": "different",
+      "verification": "rejected",
+      "confidence": "high",
+      "why": "Python sound check says not a vowel rhyme: เมล์ เอ+กา · ไร ไอ+กา",
+      "sound_type": "vowel_rhyme",
+      "group": "",
+      "status": "rejected",
+      "source": "llm",
+      "id": "ADD.1"
+     },
+     {
+      "a": {
+       "line": 4,
+       "word": "เคย",
+       "pos": null
+      },
+      "b": {
+       "line": 15,
+       "word": "แชต",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_internal",
+      "sound": "different",
+      "verification": "rejected",
+      "confidence": "high",
+      "why": "Python sound check says not a vowel rhyme: เคย เออ+เกย · แชต แอ+กด",
+      "sound_type": "vowel_rhyme",
+      "group": "",
+      "status": "rejected",
+      "source": "llm",
+      "id": "ADD.3"
+     },
+     {
+      "a": {
+       "line": 3,
+       "word": "วัน",
+       "pos": null
+      },
+      "b": {
+       "line": 14,
+       "word": "ตาม",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_end",
+      "sound": "exact",
+      "verification": "rejected",
+      "confidence": "",
+      "why": "L14 'ตาม': word is not at the end of the line",
+      "sound_type": "vowel_rhyme",
+      "group": "",
+      "status": "rejected",
+      "source": "llm",
+      "id": "ADD.2"
+     }
+    ],
+    "misplaced": [],
+    "reported": true,
+    "letters_from": "python",
+    "inconsistent": false,
+    "inconsistencies": [],
+    "group_conflicts": 0,
+    "unlettered": [],
+    "uncertain": []
+   },
+   {
+    "name": "Chorus",
+    "first": 8,
+    "last": 10,
+    "pattern": "",
+    "scheme_name": "",
+    "scheme_unverified": false,
+    "lines": [
+     {
+      "line": 8,
+      "sung": 5,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "ตัวเอง",
+      "sound": "เอ+กง",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 9,
+      "sung": 6,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "ที่สุด",
+      "sound": "อุ+กด",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 10,
+      "sung": 7,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "ตัวเอง",
+      "sound": "เอ+กง",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     }
+    ],
+    "pairs": [],
+    "repetitions": [],
+    "not_confirmed": [],
+    "rejected": [],
+    "misplaced": [],
+    "reported": true,
+    "letters_from": "python",
+    "inconsistent": false,
+    "inconsistencies": [],
+    "group_conflicts": 0,
+    "unlettered": [],
+    "uncertain": []
+   },
+   {
+    "name": "Verse 2",
+    "first": 13,
+    "last": 16,
+    "pattern": "",
+    "scheme_name": "",
+    "scheme_unverified": false,
+    "lines": [
+     {
+      "line": 13,
+      "sung": 8,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "ไหม",
+      "sound": "ไอ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 14,
+      "sung": 9,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "ตามปกติ",
+      "sound": "อิ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 15,
+      "sung": 10,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "แชต",
+      "sound": "แอ+กด",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 16,
+      "sung": 11,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "รอบ",
+      "sound": "ออ+กบ",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     }
+    ],
+    "pairs": [],
+    "repetitions": [],
+    "not_confirmed": [],
+    "rejected": [
+     {
+      "a": {
+       "line": 14,
+       "word": "ตาม",
+       "pos": null
+      },
+      "b": {
+       "line": 16,
+       "word": "รอบ",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_internal",
+      "sound": "exact",
+      "verification": "rejected",
+      "confidence": "",
+      "why": "L14 'ตาม': word is not at the end of the line",
+      "sound_type": "vowel_rhyme",
+      "group": "",
+      "status": "rejected",
+      "source": "llm",
+      "id": "ADD.5"
+     }
+    ],
+    "misplaced": [],
+    "reported": true,
+    "letters_from": "python",
+    "inconsistent": false,
+    "inconsistencies": [],
+    "group_conflicts": 0,
+    "unlettered": [],
+    "uncertain": []
+   },
+   {
+    "name": "Chorus",
+    "first": 19,
+    "last": 21,
+    "pattern": "",
+    "scheme_name": "",
+    "scheme_unverified": false,
+    "lines": [
+     {
+      "line": 19,
+      "sung": 12,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "ตัวเอง",
+      "sound": "เอ+กง",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 20,
+      "sung": 13,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "ที่สุด",
+      "sound": "อุ+กด",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 21,
+      "sung": 14,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "ตัวเอง",
+      "sound": "เอ+กง",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     }
+    ],
+    "pairs": [],
+    "repetitions": [],
+    "not_confirmed": [],
+    "rejected": [],
+    "misplaced": [],
+    "reported": true,
+    "letters_from": "python",
+    "inconsistent": false,
+    "inconsistencies": [],
+    "group_conflicts": 0,
+    "unlettered": [],
+    "uncertain": []
+   }
+  ],
+  "source": "hybrid-v2",
+  "notes": [
+   "reviewer: ok"
+  ],
+  "left_out": 0,
+  "cross_section_pairs": 0,
+  "group_conflicts": 0
+ }
+}

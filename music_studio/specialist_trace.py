@@ -21,8 +21,24 @@ def trace_path() -> Path:
     return Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "WorkflowPad" / "logs" / "specialist_trace.jsonl"
 
 
+_SECRET = ("key", "api_key", "apikey", "token", "secret", "authorization", "password")
+
+
+def log_analyze(**data) -> None:
+    """One analysis job (who was asked, where it was saved, whether it parsed). API keys and other secrets are never written."""
+    clean = {}
+    for k, v in data.items():
+        lk = str(k).lower()
+        if lk in _SECRET or lk.endswith("_key") or "api_key" in lk or "secret" in lk:
+            continue
+        if isinstance(v, str) and ("sk-" in v or "api_key" in v.lower() or "authorization" in v.lower()):
+            continue
+        clean[k] = v
+    log_event("analyze", **clean)
+
+
 def log_event(kind: str, **data) -> None:
-    """Append one entry. `kind`: chat | report | arrange | action. Long texts are kept whole up to 20,000 characters."""
+    """Append one entry. `kind`: chat | report | arrange | action | analyze. Long texts are kept whole up to 20,000 characters."""
     if not ENABLED:
         return
     try:

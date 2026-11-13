@@ -185,7 +185,7 @@ def _xml_text(raw: str) -> str:
     return raw
 
 
-_ID_PREFIX = re.compile(r"^[ \t]*L\d{3,4}\|[ \t]?")
+_ID_PREFIX = re.compile(r"^[ \t]*L\d{3,4}[a-z]?\|[ \t]?")                  # L052| and the id the model made up for a line it adds itself (L005a|)
 
 
 def strip_line_ids(text: str) -> str:

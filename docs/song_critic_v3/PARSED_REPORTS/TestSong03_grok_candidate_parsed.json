@@ -1,0 +1,290 @@
+{
+ "tag": "TestSong03_grok_candidate",
+ "raw_findings": 0,
+ "raw_aspects": 8,
+ "raw_actions": 1,
+ "parser_findings": 0,
+ "parser_aspects": 8,
+ "parser_actions": 1,
+ "ok": true,
+ "diagnostics": [],
+ "seconds": 35.7,
+ "error": null,
+ "parsed": {
+  "ok": true,
+  "sr": {
+   "schema": 1,
+   "headline": "เพลงสื่อถึงความเงียบสงบและความว่างเปล่าที่คงอยู่ผ่านภาพฝน แสงสีฟ้า และเสียงวิทยุ โดยไม่มีการเปลี่ยนแปลงใดเกิดขึ้น",
+   "reading": "บทกลอนสร้างบรรยากาศห้องที่เต็มไปด้วยรายละเอียดเล็กๆ น้อยๆ ที่ย้ำถึงการไม่มีใครมา บทคอรัสย้ำคำว่าเงียบซ้ำๆ เพื่อให้ผู้ฟังรู้สึกถึงความนิ่ง และบริดจ์ยืนยันการไม่มีใครเปิดประตูหรือปิดไฟ การกลับมาของภาพเดิมในเอาท์โทรทำให้เพลงจบด้วยความนิ่งเฉยที่ตั้งใจไว้",
+   "findings": [],
+   "sections": [
+    {
+     "name": "Verse 1",
+     "first": 2,
+     "last": 5,
+     "reading": "สร้างบรรยากาศห้องที่เงียบด้วยภาพฝน แสง และเสียงวิทยุ เพื่อปูทางให้คอรัสย้ำความเงียบ"
+    },
+    {
+     "name": "Chorus",
+     "first": 8,
+     "last": 11,
+     "reading": "ย้ำความเงียบและภาพเดิมเพื่อให้ผู้ฟังรู้สึกถึงความนิ่งที่คงอยู่"
+    },
+    {
+     "name": "Verse 2",
+     "first": 14,
+     "last": 17,
+     "reading": "เพิ่มรายละเอียดเวลาและการเคลื่อนไหวเล็กน้อยแต่ยังคงภาพเดิมไว้"
+    },
+    {
+     "name": "Chorus",
+     "first": 20,
+     "last": 23,
+     "reading": "กลับมาอีกครั้งเพื่อย้ำความรู้สึกเดิมให้หนักขึ้น"
+    },
+    {
+     "name": "Bridge",
+     "first": 26,
+     "last": 28,
+     "reading": "ยืนยันการไม่มีใครและสรุปภาพฝน แสง และเสียงที่ห่างออกไป"
+    },
+    {
+     "name": "Outro",
+     "first": 31,
+     "last": 32,
+     "reading": "กลับไปภาพเปิดเพื่อปิดเพลงด้วยความนิ่ง"
+    }
+   ],
+   "notes": [
+    "ไม่สามารถตัดสินเรื่องทำนองหรือเสียงร้องได้จากเนื้อเพลง"
+   ],
+   "format": "songcraft-1",
+   "aspects": [
+    {
+     "refs": [
+      [
+       2,
+       5
+      ]
+     ],
+     "first": 2,
+     "last": 5,
+     "lines_invalid": "",
+     "quote": "ฝนเคาะหลังคาสังกะสีเบาเบา\nไฟสีฟ้าค้างอยู่ที่ขอบประตู\nวิทยุกระซิบเพลงที่ฟังไม่ชัด\nห้องนี้ยังจำเสียงเท้าได้",
+     "quote_ok": true,
+     "id": "as_opening",
+     "aspect": "opening",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [
+      "scene"
+     ],
+     "observation": "เปิดด้วยภาพฝน แสง และเสียงในห้อง",
+     "interpretation": "ให้ผู้ฟังเข้าสู่บรรยากาศทันทีและตั้งความคาดหวังถึงความเงียบที่ดำเนินต่อไป",
+     "recommendation": "",
+     "keep": "ภาพเปิดชัดเจนและสอดคล้องกับส่วนอื่นของเพลง",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       8,
+       11
+      ]
+     ],
+     "first": 8,
+     "last": 11,
+     "lines_invalid": "",
+     "quote": "เงียบ เงียบ เหมือนน้ำในแก้ว\nเงียบ เงียบ เหมือนฝนบนหลังคา\nแสงสีฟ้าไม่ไปไหน\nวิทยุยังกระซิบอยู่",
+     "quote_ok": true,
+     "id": "as_theme",
+     "aspect": "theme",
+     "status": "no_issue",
+     "kind": "keep",
+     "priority": "",
+     "patterns": [],
+     "observation": "ธีมหลักคือความเงียบและความนิ่งที่ไม่เปลี่ยนแปลง",
+     "interpretation": "ผู้ฟังได้รับความรู้สึกถึงการรอคอยที่ว่างเปล่าผ่านการย้ำภาพเดิม",
+     "recommendation": "",
+     "keep": "ธีมชัดเจนและสอดคล้องกับภาพทั้งเพลง",
+     "proposal": ""
+    },
+    {
+     "refs": [],
+     "first": 0,
+     "last": 0,
+     "lines_invalid": "",
+     "quote": "",
+     "quote_ok": true,
+     "id": "as_sections",
+     "aspect": "sections",
+     "status": "no_issue",
+     "kind": "keep",
+     "priority": "",
+     "patterns": [],
+     "observation": "มีโครงสร้าง Verse-Chorus-Verse-Chorus-Bridge-Outro ชัดเจน",
+     "interpretation": "แต่ละส่วนทำหน้าที่สร้างและย้ำบรรยากาศได้ต่อเนื่อง",
+     "recommendation": "",
+     "keep": "โครงสร้างช่วยให้ความเงียบค่อยๆ หนักขึ้น",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       14,
+       17
+      ]
+     ],
+     "first": 14,
+     "last": 17,
+     "lines_invalid": "",
+     "quote": "ม่านขยับทั้งที่ไม่มีลม\nกาน้ำเย็นลงทีละหยด\nเงาของเก้าอี้ยาวกว่าเมื่อวาน\nฝนยังเคาะอยู่ที่เดิม",
+     "quote_ok": true,
+     "id": "as_development",
+     "aspect": "development",
+     "status": "mixed",
+     "kind": "concern",
+     "priority": "low",
+     "patterns": [],
+     "observation": "Verse 2 เพิ่มรายละเอียดเวลาและการเคลื่อนไหวเล็กน้อยแต่ยังคงภาพเดิม",
+     "interpretation": "ผู้ฟังรู้สึกถึงเวลาที่ผ่านไปช้าๆ แต่ไม่มีการเปลี่ยนแปลงทางอารมณ์ใหม่",
+     "recommendation": "ให้ Verse 2 เพิ่มข้อเท็จจริงใหม่เกี่ยวกับการไม่มีใครมา เพื่อให้คอรัสที่สองมีความหมายลึกขึ้น",
+     "keep": "การไม่เปลี่ยนแปลงอาจเป็นจุดประสงค์หลักของเพลง",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       8,
+       9
+      ],
+      [
+       20,
+       21
+      ]
+     ],
+     "first": 8,
+     "last": 9,
+     "lines_invalid": "",
+     "quote": "เงียบ เงียบ เหมือนน้ำในแก้ว\nเงียบ เงียบ เหมือนฝนบนหลังคา\n…\nเงียบ เงียบ เหมือนน้ำในแก้ว\nเงียบ เงียบ เหมือนฝนบนหลังคา",
+     "quote_ok": true,
+     "id": "as_hook",
+     "aspect": "hook",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [],
+     "observation": "คอรัสมีบรรทัดสั้นที่ซ้ำทุกครั้ง",
+     "interpretation": "ง่ายต่อการจดจำและย้ำความรู้สึกเงียบให้ผู้ฟัง",
+     "recommendation": "",
+     "keep": "ปล่อยให้ซ้ำแบบเดิมเพราะช่วยสร้างบรรยากาศ",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       2,
+       2
+      ],
+      [
+       3,
+       3
+      ],
+      [
+       15,
+       15
+      ]
+     ],
+     "first": 2,
+     "last": 2,
+     "lines_invalid": "",
+     "quote": "ฝนเคาะหลังคาสังกะสีเบาเบา\n…\nไฟสีฟ้าค้างอยู่ที่ขอบประตู\n…\nกาน้ำเย็นลงทีละหยด",
+     "quote_ok": true,
+     "id": "as_imagery",
+     "aspect": "imagery",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [],
+     "observation": "ภาพเฉพาะเจาะจงและสอดคล้องกับธีมความเงียบ",
+     "interpretation": "ช่วยให้ผู้ฟังเห็นภาพห้องและรู้สึกถึงความนิ่งได้ชัดเจน",
+     "recommendation": "",
+     "keep": "ภาพเหล่านี้เป็นจุดแข็งของเพลง",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       2,
+       2
+      ],
+      [
+       31,
+       31
+      ]
+     ],
+     "first": 2,
+     "last": 2,
+     "lines_invalid": "",
+     "quote": "ฝนเคาะหลังคาสังกะสีเบาเบา\n…\nฝนเคาะหลังคาสังกะสีเบาเบา",
+     "quote_ok": true,
+     "id": "as_repetition",
+     "aspect": "repetition",
+     "status": "no_issue",
+     "kind": "keep",
+     "priority": "",
+     "patterns": [],
+     "observation": "ภาพและบรรทัดคอรัสบางส่วนกลับมาคำต่อคำ",
+     "interpretation": "การกลับมาช่วยย้ำความรู้สึกไม่เปลี่ยนแปลง",
+     "recommendation": "",
+     "keep": "การซ้ำเป็นส่วนสำคัญของความหมายเพลง",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       31,
+       32
+      ]
+     ],
+     "first": 31,
+     "last": 32,
+     "lines_invalid": "",
+     "quote": "ฝนเคาะหลังคาสังกะสีเบาเบา\nแสงสีฟ้าค้างอยู่ที่ขอบประตู",
+     "quote_ok": true,
+     "id": "as_ending",
+     "aspect": "ending",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [],
+     "observation": "เอาท์โทรกลับไปยังภาพเปิด",
+     "interpretation": "ให้ผู้ฟังรู้สึกถึงการปิดวงจรด้วยความนิ่งที่ไม่เปลี่ยนแปลง",
+     "recommendation": "",
+     "keep": "การกลับไปเปิดช่วยให้เพลงจบอย่างมีน้ำหนัก",
+     "proposal": ""
+    }
+   ],
+   "actions": [
+    {
+     "id": "ac1",
+     "title": "ให้ Verse 2 เพิ่มรายละเอียดใหม่",
+     "action": "ให้ Verse 2 เพิ่มข้อเท็จจริงใหม่เกี่ยวกับการไม่มีใครมา เพื่อให้คอรัสที่สองมีความหมายลึกขึ้น",
+     "aspect": "development",
+     "refs": [
+      [
+       14,
+       17
+      ]
+     ],
+     "lines_invalid": "",
+     "tradeoff": "อาจลดความนิ่งที่เพลงตั้งใจไว้"
+    }
+   ]
+  },
+  "diagnostics": [],
+  "incomplete": false
+ },
+ "parser": "current parser (aspect-name aliases, a repeated empty field does not erase the first value); the first parse is in run_parser_v1.log"
+}

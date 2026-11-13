@@ -1,0 +1,38 @@
+[STYLE.1]
+Name: Cybernetic Pulse
+Vision: A driving, cinematic electronic track that feels like a high-stakes chase through a neon-drenched digital labyrinth. The energy builds relentlessly, driven by sharp synth lines and a heavy, four-on-the-floor kick.
+Reason: แนวทางนี้เน้นความ "ดุดัน" ของ Electronic โดยใช้กลิ่นอายของ Trance/Synthwave เพื่อขับเคลื่อนเรื่องราวของความติดอยู่กับหน้าจอ ทำให้รู้สึกเหมือนกำลังวิ่งตามแสงกระพริบในถ้ำดิจิทัล
+Music Caption: This direction features a relentless, driving groove perfect for an action movie sequence. The sound is characterized by sharp, heavily modulated synthesizers and a pounding, filtered kick drum that anchors the entire piece. The vocals are treated with a slightly gated, reverb-heavy effect, giving the male lead a sense of isolation amidst the overwhelming digital noise. The energy is a constant upward climb, making the listener feel the tension of waiting for connection in the digital cave.
+Suggested Settings:
+genre|Electronic
+genre_enum|Electronic
+mood|Energetic
+vocal|male vocal
+energy|High energy
+bpm|128
+key|E minor
+time_signature|4/4
+language|th
+Arrangement Plan:
+Intro|16|Instrumental|High energy|Atmospheric|no vocal|Verse 1|The intro sets a grand, cinematic stage, establishing the core rhythmic motif.
+Verse 1|8|Sung|Medium energy|Slightly wide|male vocal|Verse 2|The relatively sparse lyric allows the groove to breathe, letting the atmosphere settle before the next phrase.
+Verse 2|12|Sung|Medium energy|Medium wide|male vocal|Build|The increased bar count allows the intimacy of the message to expand, creating more room for the pulsing kick to become more complex.
+Build|10|Sung|Medium energy|Medium wide|male vocal|Hook|This slightly longer build creates a sense of anticipation—a drawn-out breath before the emotional peak.
+Hook|16|Sung|High energy|Wide|male vocal|Breakdown|The main hook needs space to breathe and feel impactful; 16 bars allows the melody to soar over the driving beat.
+Breakdown|8|Sung|Low energy|Narrow|male vocal|Verse 3|The sparse lyric (2 lines) benefits from a shorter, more stark presentation, pulling the energy back down sharply.
+Verse 3|10|Sung|Medium energy|Medium wide|male vocal|Build|A longer verse allows the melancholic feeling to linger before the second push.
+Build|10|Sung|Medium energy|Medium wide|male vocal|Final Chorus|This sustained build ensures the energy is maximized right before the final emotional explosion.
+Final Chorus|16|Sung|High energy|Wide|male vocal|Instrumental|The final chorus is the peak, demanding the most space to feel cathartic and epic.
+Instrumental|12|Instrumental|High energy|Driving|no vocal|Outro|This instrumental section provides a necessary, high-energy platform to transition out of the final chorus without losing momentum.
+Outro|8|Sung|Low energy|Narrow|male vocal|End|The outro fades slowly, allowing the energy to dissipate gracefully over 8 bars while the ambient texture remains present.
+Duration Reasoning: การจัดวางนี้ออกแบบมาเพื่อรักษาความรู้สึก "Action" ตลอดทั้งเพลง โดยให้ Hook และ Final Chorus มีพื้นที่ที่กว้างที่สุด (16 bars) เพื่อให้ความรู้สึกถึงการ "กลายเป็นมนุษย์" นั้นชัดเจนที่สุด การมี Instrumental 12 bars ช่วยยืดความรู้สึกของการถูกดึงเข้าไปในโลกดิจิทัลก่อนจะเข้าสู่ Outro ทำให้เพลงมีความยาวที่สมบูรณ์และไม่รีบร้อนจนเกินไปตามโจทย์ 180 วินาที
+Cue Suggestions:
+Intro|pulsing kick, atmospheric|keep|Keep เพื่อสร้างความรู้สึกดุดันทันทีตั้งแต่ต้น
+Hook|emotional vocals, melancholic|keep|Keep เพื่อเน้นย้ำความรู้สึกที่พุ่งสูงของท่อนฮุค
+Instrumental|build up synth riser|add|เพิ่มความรู้สึกของการไต่ระดับก่อนเข้าสู่ Outro
+Coaching:
+strength|การใช้ 16 bars ใน Hook และ Final Chorus ทำให้เพลงมีความรู้สึก 'Epic' ตามที่ต้องการได้อย่างเต็มที่
+recommendation|ลองเพิ่มการใช้ side-chain compression กับ Kick ใน Verse 1 และ Verse 3 เพื่อเสริมความรู้สึกของการถูก "ขับเคลื่อน"
+tradeoff|ให้ความรู้สึกดุดันและความยิ่งใหญ่ตลอดเวลา (Action) แต่ความรู้สึก "Intimate" ในช่วง Verse อาจถูกกลืนไปกับความหนักแน่นของดนตรีไปบ้าง
+Trade-offs: ให้ความรู้สึกถึงการไล่ล่าที่ไม่หยุดยั้ง แต่ความรู้สึกส่วนตัวอาจถูกบดบังด้วยความหนักแน่นของซาวด์
+[DONE]

@@ -1,0 +1,27 @@
+{
+ "Songwriter (first request)": {
+  "lines_sent": 22,
+  "lines_original": 22,
+  "identical_to_original": true
+ },
+ "Producer (first request)": {
+  "lines_sent": 22,
+  "lines_original": 22,
+  "identical_to_original": true
+ },
+ "Rhyme Analyzer (all section requests)": {
+  "sung_lines_sent": 14,
+  "each_equals_original_line": true,
+  "lines_not_sent": []
+ },
+ "Rhyme Analyzer raw: quoted words checked": {
+  "total": 65,
+  "not_in_their_line": [
+   [
+    4,
+    16,
+    "แชต"
+   ]
+  ]
+ }
+}

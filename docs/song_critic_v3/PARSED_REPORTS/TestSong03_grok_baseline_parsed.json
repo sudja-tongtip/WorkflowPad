@@ -1,0 +1,117 @@
+{
+ "tag": "TestSong03_grok_baseline",
+ "raw_findings": 2,
+ "raw_aspects": 0,
+ "raw_actions": 0,
+ "parser_findings": 2,
+ "parser_aspects": 0,
+ "parser_actions": 0,
+ "ok": true,
+ "diagnostics": [],
+ "seconds": 27.1,
+ "error": null,
+ "parsed": {
+  "ok": true,
+  "sr": {
+   "schema": 1,
+   "headline": "เพลงนี้พยายามสื่อถึงบรรยากาศความเงียบและความนิ่งในห้องว่างเปล่า โดยใช้ภาพฝน แสงสีฟ้า และเสียงวิทยุ",
+   "reading": "บทกลอนสร้างภาพเฉพาะเจาะจงตั้งแต่ต้น (L2-L4) แล้วคอรัสย้ำความเงียบซ้ำสองรอบโดยไม่เปลี่ยนแปลง การเคลื่อนไหวมีน้อยเพราะส่วนต่างๆ ยังคงภาพเดิมไว้จนจบเพลง บรรยากาศจึงชัดเจนแต่ขาดการพัฒนา",
+   "findings": [
+    {
+     "id": "so1",
+     "kind": "strength",
+     "priority": "",
+     "first": 2,
+     "last": 2,
+     "refs": [
+      [
+       2,
+       2
+      ]
+     ],
+     "lines_invalid": "",
+     "quote": "ฝนเคาะหลังคาสังกะสีเบาเบา",
+     "quote_ok": true,
+     "observation": "บรรทัดนี้ปรากฏทั้งใน Verse 1 และ Outro",
+     "interpretation": "ภาพเสียงฝนที่เป็นรูปธรรมช่วยสร้างบรรยากาศความเงียบได้ชัดเจนตั้งแต่ต้น",
+     "recommendation": "",
+     "keep": "ภาพนี้ทำให้เพลงมีจุดยึดที่จดจำได้ง่าย",
+     "alternative": "",
+     "proposal": "",
+     "meaning": "",
+     "rhyme": "",
+     "syllables": ""
+    },
+    {
+     "id": "so2",
+     "kind": "concern",
+     "priority": "high",
+     "first": 26,
+     "last": 28,
+     "refs": [
+      [
+       26,
+       28
+      ]
+     ],
+     "lines_invalid": "",
+     "quote": "ไม่มีใครเปิดประตู\nไม่มีใครปิดไฟ\nแค่ฝน แค่แสง แค่เสียงที่ไกลออกไป",
+     "quote_ok": true,
+     "observation": "บทบริดจ์ยืนยันสถานการณ์เดิมโดยไม่เพิ่มรายละเอียดใหม่",
+     "interpretation": "การซ้ำแบบนี้ทำให้เพลงรู้สึกนิ่งค้างแทนที่จะพัฒนาไปข้างหน้า",
+     "recommendation": "ลองเพิ่มการเปลี่ยนแปลงเล็กน้อยในสถานการณ์ก่อนคอรัสสุดท้าย",
+     "keep": "",
+     "alternative": "",
+     "proposal": "",
+     "meaning": "",
+     "rhyme": "",
+     "syllables": ""
+    }
+   ],
+   "sections": [
+    {
+     "name": "Verse 1",
+     "first": 2,
+     "last": 6,
+     "reading": "ส่วนนี้วางภาพพื้นฐานของห้องด้วยฝน ไฟสีฟ้า และวิทยุ เพื่อตั้งบรรยากาศความเงียบ"
+    },
+    {
+     "name": "Chorus",
+     "first": 8,
+     "last": 12,
+     "reading": "ส่วนนี้ย้ำความเงียบด้วยการเปรียบเทียบตรงๆ และซ้ำในรอบที่สองเพื่อเสริมอารมณ์"
+    },
+    {
+     "name": "Verse 2",
+     "first": 14,
+     "last": 18,
+     "reading": "ส่วนนี้ขยายภาพนิ่งด้วยม่าน กาน้ำ และเงาเก้าอี้ โดยยังคงสถานการณ์เดิม"
+    },
+    {
+     "name": "Chorus",
+     "first": 20,
+     "last": 24,
+     "reading": "ส่วนนี้ซ้ำคอรัสเดิมเพื่อย้ำบรรยากาศโดยไม่เพิ่มข้อมูลใหม่"
+    },
+    {
+     "name": "Bridge",
+     "first": 26,
+     "last": 29,
+     "reading": "ส่วนนี้ยืนยันความว่างเปล่าด้วยการปฏิเสธการกระทำของคนอื่น"
+    },
+    {
+     "name": "Outro",
+     "first": 31,
+     "last": 33,
+     "reading": "ส่วนนี้วนกลับไปภาพเริ่มต้นเพื่อปิดท้ายด้วยความนิ่งเดิม"
+    }
+   ],
+   "notes": [
+    "ไม่สามารถตัดสินเสียงร้องหรือทำนองจากเนื้อเพลงได้"
+   ]
+  },
+  "diagnostics": [],
+  "incomplete": false
+ },
+ "parser": "current parser (aspect-name aliases, a repeated empty field does not erase the first value); the first parse is in run_parser_v1.log"
+}

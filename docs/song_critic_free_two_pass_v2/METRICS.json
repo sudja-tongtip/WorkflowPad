@@ -1,0 +1,364 @@
+{
+ "TestSong01_gemma": {
+  "A": {
+   "requests": 1,
+   "seconds": 12.4,
+   "in_est": 2516,
+   "out_est": 1551,
+   "in_rep": 0,
+   "out_rep": 0,
+   "line_ids": 36,
+   "bad_line_ids": [],
+   "quoted_fragments": 22,
+   "bad_fragments": [
+    "เฝ้ามอง",
+    "ดำดิ่ง",
+    "หยุดยืนมอง",
+    "สัมผัส",
+    "เป็นความรู้สึกดั่งสายหมอกยามเช้า",
+    "เป็นความรู้สึกที่ไม่มีชื่อในพจนานุกรม"
+   ],
+   "errors": [],
+   "finish": [
+    null
+   ],
+   "chars": 3786,
+   "per_request": [
+    {
+     "tag": "TestSong01_gemma_oneshot",
+     "seconds": 12.4,
+     "reported_in": null,
+     "reported_out": null,
+     "out_est": 1551,
+     "chars": 3786,
+     "session_id": "none",
+     "session_used_est_after": null,
+     "finish": null
+    }
+   ]
+  },
+  "B": {
+   "requests": 2,
+   "seconds": 19.9,
+   "in_est": 1100,
+   "out_est": 2895,
+   "in_rep": 0,
+   "out_rep": 0,
+   "line_ids": 23,
+   "bad_line_ids": [],
+   "quoted_fragments": 33,
+   "bad_fragments": [
+    "ดำดิ่ง",
+    "จุดหักมุม",
+    "ตั้งคำถาม",
+    "การกระทำ",
+    "ฉันจะเก็บความงามนี้ไว้ในใจ",
+    "แม้ว่าแสงจันทร์จะเริ่มจาง",
+    "ล่องลอย สงบ และงดงามอย่างสมบูรณ์แบบ",
+    "จุดยึด",
+    "ความรู้สึกของการจมดิ่ง",
+    "คาดเดาได้",
+    "ความงามนี้ไม่มีวันเปลี่ยนแปลง",
+    "การยกระดับความรู้สึก",
+    "อย่าพยายามทำลายวงจรนี้ แต่จงเสริมสร้างมัน",
+    "วิ่งหนี",
+    "เพิ่มความเข้มข้น",
+    "พยายามจะหลุดลอย"
+   ],
+   "errors": [],
+   "finish": [
+    null,
+    null
+   ],
+   "chars": 6861,
+   "per_request": [
+    {
+     "tag": "TestSong01_gemma_twopass_pass1",
+     "seconds": 10.9,
+     "reported_in": null,
+     "reported_out": null,
+     "out_est": 1556,
+     "chars": 3695,
+     "session_id": "music_504019ca",
+     "session_used_est_after": 2423,
+     "finish": null
+    },
+    {
+     "tag": "TestSong01_gemma_twopass_pass2",
+     "seconds": 9.0,
+     "reported_in": null,
+     "reported_out": null,
+     "out_est": 1339,
+     "chars": 3166,
+     "session_id": "music_504019ca",
+     "session_used_est_after": 3995,
+     "finish": null
+    }
+   ]
+  }
+ },
+ "TestSong01_grok": {
+  "A": {
+   "requests": 1,
+   "seconds": 31.9,
+   "in_est": 2516,
+   "out_est": 834,
+   "in_rep": 2332,
+   "out_rep": 814,
+   "line_ids": 16,
+   "bad_line_ids": [],
+   "quoted_fragments": 4,
+   "bad_fragments": [],
+   "errors": [],
+   "finish": [
+    "stop"
+   ],
+   "chars": 2030,
+   "per_request": [
+    {
+     "tag": "TestSong01_grok_oneshot",
+     "seconds": 31.9,
+     "reported_in": 2332,
+     "reported_out": 814,
+     "out_est": 834,
+     "chars": 2030,
+     "session_id": "none",
+     "session_used_est_after": null,
+     "finish": "stop"
+    }
+   ]
+  },
+  "B": {
+   "requests": 2,
+   "seconds": 46.0,
+   "in_est": 1100,
+   "out_est": 1105,
+   "in_rep": 3249,
+   "out_rep": 1020,
+   "line_ids": 0,
+   "bad_line_ids": [],
+   "quoted_fragments": 15,
+   "bad_fragments": [
+    "ความว่างเปล่า",
+    "ความห่างไกล",
+    "บรรยายความงาม",
+    "ถ่ายทอดความรู้สึกคิดถึงที่ไร้ชื่อ"
+   ],
+   "errors": [],
+   "finish": [
+    "stop",
+    "stop"
+   ],
+   "chars": 2477,
+   "per_request": [
+    {
+     "tag": "TestSong01_grok_twopass_pass1",
+     "seconds": 25.0,
+     "reported_in": 1084,
+     "reported_out": 546,
+     "out_est": 584,
+     "chars": 1310,
+     "session_id": "none (stateless API; history replayed by the client)",
+     "session_used_est_after": null,
+     "finish": "stop"
+    },
+    {
+     "tag": "TestSong01_grok_twopass_pass2",
+     "seconds": 21.0,
+     "reported_in": 2165,
+     "reported_out": 474,
+     "out_est": 521,
+     "chars": 1167,
+     "session_id": "none (stateless API; history replayed by the client)",
+     "session_used_est_after": null,
+     "finish": "stop"
+    }
+   ]
+  }
+ },
+ "TestSong03_gemma": {
+  "A": {
+   "requests": 1,
+   "seconds": 14.0,
+   "in_est": 2410,
+   "out_est": 1706,
+   "in_rep": 0,
+   "out_rep": 0,
+   "line_ids": 46,
+   "bad_line_ids": [
+    "L6",
+    "L12",
+    "L18",
+    "L24",
+    "L29",
+    "L33"
+   ],
+   "quoted_fragments": 12,
+   "bad_fragments": [
+    "บางสิ่งบางอย่างกำลังเกิดขึ้น",
+    "การตัดสินใจ",
+    "การครอบงำ",
+    "การดำรงอยู่",
+    "เพียง",
+    "วนกลับสู่จุดเดิม"
+   ],
+   "errors": [],
+   "finish": [
+    null
+   ],
+   "chars": 4163,
+   "per_request": [
+    {
+     "tag": "TestSong03_gemma_oneshot",
+     "seconds": 14.0,
+     "reported_in": null,
+     "reported_out": null,
+     "out_est": 1706,
+     "chars": 4163,
+     "session_id": "none",
+     "session_used_est_after": null,
+     "finish": null
+    }
+   ]
+  },
+  "B": {
+   "requests": 2,
+   "seconds": 21.4,
+   "in_est": 995,
+   "out_est": 2850,
+   "in_rep": 0,
+   "out_rep": 0,
+   "line_ids": 29,
+   "bad_line_ids": [],
+   "quoted_fragments": 30,
+   "bad_fragments": [
+    "ดำดิ่ง",
+    "หยุดนิ่ง",
+    "การรับรู้ถึงรายละเอียดเล็กๆ น้อยๆ",
+    "ยกระดับ",
+    "ความเงียบนี้ไม่ได้คงที่ แต่มันกำลังผ่านไป",
+    "ประตูยังคงรอใครสักคนเปิด",
+    "รอคอย",
+    "รู้สึก",
+    "บรรยายถึงความว่างเปล่าที่กำลังรอใครสักคน",
+    "ยืนยันว่าไม่มีใครทำอะไร",
+    "ภาพวาดเสียง",
+    "เคาะเบาเบา",
+    "ค่อยๆ เคลื่อนตัว",
+    "กลับสู่จุดเริ่มต้น",
+    "ความปรารถนา",
+    "การรอคอย",
+    "ยกระดับ",
+    "การแสดงออกทางอารมณ์",
+    "การยืนยันว่าไม่มีอะไรเกิดขึ้น",
+    "การรับรู้ถึงความว่างเปล่าที่กำลังรออะไรบางอย่าง",
+    "น้ำหนัก",
+    "เติมความปรารถนา"
+   ],
+   "errors": [],
+   "finish": [
+    null,
+    null
+   ],
+   "chars": 6809,
+   "per_request": [
+    {
+     "tag": "TestSong03_gemma_twopass_pass1",
+     "seconds": 12.0,
+     "reported_in": null,
+     "reported_out": null,
+     "out_est": 1598,
+     "chars": 3826,
+     "session_id": "music_8e36be93",
+     "session_used_est_after": 2360,
+     "finish": null
+    },
+    {
+     "tag": "TestSong03_gemma_twopass_pass2",
+     "seconds": 9.4,
+     "reported_in": null,
+     "reported_out": null,
+     "out_est": 1252,
+     "chars": 2983,
+     "session_id": "music_8e36be93",
+     "session_used_est_after": 3845,
+     "finish": null
+    }
+   ]
+  }
+ },
+ "TestSong03_grok": {
+  "A": {
+   "requests": 1,
+   "seconds": 38.9,
+   "in_est": 2410,
+   "out_est": 840,
+   "in_rep": 2196,
+   "out_rep": 777,
+   "line_ids": 17,
+   "bad_line_ids": [],
+   "quoted_fragments": 3,
+   "bad_fragments": [],
+   "errors": [],
+   "finish": [
+    "stop"
+   ],
+   "chars": 2073,
+   "per_request": [
+    {
+     "tag": "TestSong03_grok_oneshot",
+     "seconds": 38.9,
+     "reported_in": 2196,
+     "reported_out": 777,
+     "out_est": 840,
+     "chars": 2073,
+     "session_id": "none",
+     "session_used_est_after": null,
+     "finish": "stop"
+    }
+   ]
+  },
+  "B": {
+   "requests": 2,
+   "seconds": 27.0,
+   "in_est": 995,
+   "out_est": 1078,
+   "in_rep": 2881,
+   "out_rep": 967,
+   "line_ids": 0,
+   "bad_line_ids": [],
+   "quoted_fragments": 8,
+   "bad_fragments": [],
+   "errors": [],
+   "finish": [
+    "stop",
+    "stop"
+   ],
+   "chars": 2416,
+   "per_request": [
+    {
+     "tag": "TestSong03_grok_twopass_pass1",
+     "seconds": 15.7,
+     "reported_in": 948,
+     "reported_out": 519,
+     "out_est": 568,
+     "chars": 1276,
+     "session_id": "none (stateless API; history replayed by the client)",
+     "session_used_est_after": null,
+     "finish": "stop"
+    },
+    {
+     "tag": "TestSong03_grok_twopass_pass2",
+     "seconds": 11.3,
+     "reported_in": 1933,
+     "reported_out": 448,
+     "out_est": 510,
+     "chars": 1140,
+     "session_id": "none (stateless API; history replayed by the client)",
+     "session_used_est_after": null,
+     "finish": "stop"
+    }
+   ]
+  }
+ }
+}

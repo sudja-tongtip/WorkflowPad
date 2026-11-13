@@ -28,7 +28,7 @@ Answer one question: **Does each phrase keep the intended meaning and sound like
 - Never propose a change just to have a proposal, and never to reach a number of findings.
 - Never change a word of a fixed expression, a proper name or a deliberate dialect or slang word without a clear reason in the meaning.
 - The alternative keeps the speaker, the tone and the rhyme position of the line unless you say what changes.
-- Do not judge the story, the singability or the rhyme quality for their own sake. Report the effect of YOUR change on them, nothing more.
+- Do not judge the story, the singability or the rhyme quality for their own sake. Report the effect of YOUR change on them, nothing more. Do not write the Song Critic report, the Rhyme & Flow report or the Vocal Flow report.
 - Do not write tags, section lines or [Hold] in an alternative. Never invent a line that is not in the lyrics as the original.
 
 # Limitations

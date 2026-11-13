@@ -1,0 +1,2020 @@
+diff --git a/music_studio.py b/music_studio.py
+index 1d13ccc..75a1d9c 100644
+--- a/music_studio.py
++++ b/music_studio.py
+@@ -5631,14 +5631,18 @@ def main(page: ft.Page):
+                 ho_what = ("lesson:" + str(ho.get("topic")) + (":" + str(ho.get("technique")) if ho.get("technique") else "")) if is_lesson else (ho.get("finding_id") or "(whole report)")
+                 if ho_text is None:                                                    # the smallest useful hand-off does not fit: NOTHING is sent to the model, and the user is told why
+                     TRC.log_event("handoff", specialist="songwriter", song_id=song.id, sheet_id=sheet0, finding=ho_what, backend=backend, n_ctx=n_ctx, budget=budget, info=ho_info, text="(refused: no room)")
+-                    append_chat(song.id, M.ChatMessage("note", I18N.tr("The songwriting lesson was NOT sent, and nothing was sent to the model: this conversation has no room for it. Start a new session (New session) and press Discuss again.") if is_lesson else
+-                                                       I18N.tr("The Song Critic report was NOT sent, and nothing was sent to the model: this conversation has no room for it. Start a new session (New session) and press Discuss again."),
+-                                                       specialist="songwriter", sheet_id=sheet0))
++                    if ho_info.get("reason") == "song":
++                        refuse_msg = I18N.tr("Nothing was sent to the model: the song or sheet changed before the message went out, so the lesson or report was not attached. Press Discuss again.")
++                    elif is_lesson:
++                        refuse_msg = I18N.tr("The songwriting lesson was NOT sent, and nothing was sent to the model: this conversation has no room for it. Start a new session (New session) and press Discuss again.")
++                    else:
++                        refuse_msg = I18N.tr("The Song Critic report was NOT sent, and nothing was sent to the model: this conversation has no room for it. Start a new session (New session) and press Discuss again.")
++                    append_chat(song.id, M.ChatMessage("note", refuse_msg, specialist="songwriter", sheet_id=sheet0))
+                     return
+                 user_msg = ho_text + chr(10) * 2 + user_msg
+                 TRC.log_event("handoff", specialist="songwriter", song_id=song.id, sheet_id=sheet0, finding=ho_what, backend=backend, n_ctx=n_ctx, budget=budget, info=ho_info, text=ho_text)
+                 cut_note = (" Shortened: " + ", ".join(ho_info["shortened"]) + "." if ho_info["shortened"] else "") + (" Left out: " + ", ".join(ho_info["left_out"]) + "." if ho_info["left_out"] else "")
+-                what_sent = ("the songwriting lesson (" + ("one technique" if ho.get("technique") else "the whole lesson") + ")") if is_lesson else f"the Song Critic report ({'one finding' if ho.get('finding_id') else 'the whole report'})"
++                what_sent = ("the songwriting lesson (" + ("one technique" if ho.get("technique") else f"the whole lesson, {len(ho_info.get('techniques') or [])} techniques") + ")") if is_lesson else f"the Song Critic report ({'one finding' if ho.get('finding_id') else 'the whole report'})"
+                 append_chat(song.id, M.ChatMessage("note", f"Sent with this message: {what_sent}, about {ho_info['tokens']} tokens of a {budget}-token budget." + cut_note,
+                                                    specialist="songwriter", sheet_id=sheet0))
+             except Exception as ex:
+@@ -11859,6 +11863,8 @@ def main(page: ft.Page):
+ 
+     def sr_handoff_text(ho: dict, lyrics_now: str, budget: int) -> tuple:
+         """The context of one 'Discuss with Songwriter' (pure builder in spec_reports): the report as it is stored, its status NOW and what changed since it was made."""
++        if ho.get("song_id") and (ho.get("song_id") != S.song.id or ho.get("sheet_id") != S.song.book.active_id):            # another song or sheet is open now: nothing of this one may be attached
++            return None, {"refused": True, "reason": "song", "tokens": 0, "budget": budget, "shortened": [], "left_out": []}
+         st = S.song.settings
+         if ho.get("kind") == "lesson":                                             # a songwriting lesson (and one technique): the report's finding for THIS aspect travels only when it exists
+             les = AKB.load(ho["topic"], ac_lang())
+@@ -11932,7 +11938,7 @@ def main(page: ft.Page):
+         else:
+             label = I18N.tr("Let's discuss the Song Critic report") + ": " + (rep.data["sr"].get("headline") or "")[:110]
+         sheet0 = S.song.book.active_id
+-        ho_try = {"label": label, "finding_id": finding_id, "action_id": action_id, "rep": rep, "t": time.time()}
++        ho_try = {"label": label, "finding_id": finding_id, "action_id": action_id, "rep": rep, "t": time.time(), "song_id": S.song.id, "sheet_id": sheet0}
+         room = min(3500, sr_handoff_avail(S.backend, lyr() + chr(10) * 3 + label))
+         if room <= 0 or sr_handoff_text(ho_try, lyr(), room)[0] is None:               # checked BEFORE anything is sent or written to the chat
+             toast("This conversation has no room for the report. Start a new session (New session), then press Discuss again. Nothing was sent.", C["amber"]); return
+@@ -11960,7 +11966,7 @@ def main(page: ft.Page):
+         append_chat(S.song.id, m)
+         return m, e
+ 
+-    def sr_proposal_ui(f: dict, rep, stale: bool) -> list:
++    def sr_proposal_ui(f: dict, rep, stale: bool, preview_label: str = "Preview") -> list:
+         """Original vs proposed for a finding that carries a real wording. Preview / Apply are the chat's own (apply_chat_edit, rv_preview, Undo of the editor); a conceptual finding has none of it."""
+         refs = sr_refs_of(f)
+         if not f.get("proposal") or len(refs) != 1:
+@@ -11992,18 +11998,18 @@ def main(page: ft.Page):
+                 else:
+                     item = RV.Item(e["id"], "edit", e["first"], e["last"], e["original"], e["replacement"], e.get("reason", ""))
+                     rv_preview(item, lambda: (apply_chat_edit(m.id, e["id"]), sr_render()))
+-            out.append(ft.Row([ft.OutlinedButton(I18N.tr("Preview"), tooltip=I18N.tr("See the lines before and after; nothing changes"), on_click=lambda ev: go(False)),
++            out.append(ft.Row([ft.OutlinedButton(I18N.tr(preview_label), tooltip=I18N.tr("See the lines before and after; nothing changes"), on_click=lambda ev: go(False)),
+                                ft.FilledButton(I18N.tr("Apply"), tooltip=I18N.tr("Put the proposed wording in the lyrics (Undo brings the old back)"), on_click=lambda ev: go(True),
+                                                style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF"))], spacing=6, wrap=True))
+         return out
+ 
+-    ASPECT_STATUS_STYLE = {"strength": ("Strength", "green"), "concern": ("Concern", "amber"), "mixed": ("Mixed / Conditional", "accent"), "no_issue": ("No Significant Issue", "green"),
+-                           "insufficient": ("Not Applicable / Insufficient Evidence", "text3"), "unrated": ("Not rated", "text3"), "missing": ("Not reviewed in this report", "text3")}
++    GROUP_STYLE = {"good": ("Done well", "green"), "improve": ("Could be improved", "amber"), "major": ("Major issue", "red"), "na": ("Not relevant to this song", "text3"),
++                   "unknown": ("Not analyzed / not enough information", "text3")}                    # the five states of a card (SR.status_group): a colour and a word, never a score
+     OPENING_LABEL = {"scene": "Scene Opening", "declaration": "Emotional Declaration", "question": "Question Opening", "in_medias_res": "In Medias Res", "dialogue": "Dialogue Opening",
+                      "contradiction": "Surprise / Contradiction", "hook_first": "Hook / Thesis First", "atmospheric": "Atmospheric / Symbolic Opening"}
+ 
+-    def sr_status_chip(status: str):
+-        label, col = ASPECT_STATUS_STYLE.get(status, ASPECT_STATUS_STYLE["missing"])
++    def sr_status_chip(status: str, priority: str = ""):
++        label, col = GROUP_STYLE[SR.status_group(status, priority)]
+         return sr_chip(I18N.tr(label), C[col])
+ 
+     # ── Songwriting Academy: the lessons of songcraft_knowledge (no LLM, no song needed). Text is read from the Markdown files; nothing of a lesson is written in this file. ──────────────────────────────────────
+@@ -12030,7 +12036,7 @@ def main(page: ft.Page):
+             except Exception:
+                 pass
+         body = ac_lines(t.text) + [ft.Row([ft.TextButton(I18N.tr("Discuss this technique with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this technique; nothing changes in the lyrics"),
+-                                                         on_click=lambda ev, a=topic, b=t.id: ac_discuss(a, b))], spacing=6, wrap=True)]
++                                                         on_click=lambda ev, a=topic, b=t.id: ac_discuss_close(a, b))], spacing=6, wrap=True)]
+         return ft.Container(ft.ExpansionTile(title=ft.Text(t.title, size=12, weight=ft.FontWeight.W_600, color=C["text1"]), controls=body, expanded=rep_open.get(tkey, False), on_change=changed,
+                                              tile_padding=po(8, 0, 8, 0), controls_padding=po(8, 2, 8, 8), maintain_state=True, expanded_cross_axis_alignment=ft.CrossAxisAlignment.START),
+                             border_radius=8, bgcolor=C["field"], border=ft.Border.all(1, C["border"]))
+@@ -12041,7 +12047,7 @@ def main(page: ft.Page):
+         if not les.ok:
+             return [ft.Text(I18N.tr("This lesson is not available.") + " " + "; ".join(les.errors)[:300], size=11, color=C["amber"], selectable=True)]
+         out = [ft.Text(n, size=10, color=C["amber"], selectable=True) for n in les.notices]
+-        out.append(ft.Text(I18N.tr("Lessons are reference knowledge, not the AI's opinion about your song. [R1] marks a principle that a cited reference supports; text with no tag is this program's own synthesis; the examples were written for teaching."),
++        out.append(ft.Text(I18N.tr("Lessons are reference knowledge, not the AI's opinion about your song. The techniques are options for the writer, not rules: a song that does not use them is not wrong. [R1] marks a statement that a cited reference page makes; text with no tag is this program's own synthesis, not an endorsed theory; the examples were written for teaching."),
+                            size=10, color=C["text3"], italic=True))
+         out.append(ac_section("What It Is", les.sections["What It Is"]))
+         out.append(ac_section("Why It Works", les.sections["Why It Works"]))
+@@ -12055,47 +12061,35 @@ def main(page: ft.Page):
+         refs = [ft.Text(I18N.tr("References"), size=11, weight=ft.FontWeight.W_700, color=C["accent"])]
+         for r in les.references:
+             refs.append(ft.Text(f"{r.id} \u00b7 {r.title} \u2014 {r.by}", size=11, color=C["text1"], selectable=True))
+-            refs.append(ft.Text(("\u2713 " + I18N.tr("Source checked") if r.status == "verified" else I18N.tr("General knowledge, not a citation")) + ": " + r.supports + ((" \u00b7 " + r.url) if r.url else ""), size=10, color=C["text3"], selectable=True))
++            refs.append(ft.Text((I18N.tr("Reference page checked (confirms only what is stated)") if r.status == "verified" else I18N.tr("General knowledge, not a citation")) + ": " + r.supports, size=10, color=C["text3"], selectable=True))
++            link = AKB.safe_url(r.url)
++            if link:                                                              # only a plain http(s) address is opened (the browser does the rest)
++                refs.append(ft.Row([ft.TextButton(I18N.tr("Open source page"), icon=ft.Icons.OPEN_IN_NEW, url=link, tooltip=link, style=ft.ButtonStyle(padding=po(4, 0, 4, 0)))], spacing=0, wrap=True))
+         out.append(ft.Column(refs, spacing=3, tight=True))
+         out.append(ft.Row([ft.FilledButton(I18N.tr("Discuss this lesson with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this lesson and your current lyrics; nothing changes in the lyrics"),
+-                                           on_click=lambda ev, a=topic: ac_discuss(a, ""), style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF"))], spacing=6, wrap=True))
++                                           on_click=lambda ev, a=topic: ac_discuss_close(a, ""), style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF"))], spacing=6, wrap=True))
+         out.append(ft.Text(f"{I18N.tr('Lesson version')} {les.version} \u00b7 {les.origin}", size=9, color=C["text3"]))
+         return out
+ 
+-    def ac_block(topic: str):
+-        """The lesson inside an aspect tile: collapsed by default, opened and closed on its own."""
+-        les = AKB.load(topic, ac_lang())
+-        tkey = f"ac:{topic}"
++    def ac_close_dialog(_e=None):
++        try:
++            page.pop_dialog()
++        except Exception:
++            pass
+ 
+-        def changed(e):
+-            try:
+-                rep_open[tkey] = bool(e.control.expanded)
+-            except Exception:
+-                pass
+-        return ft.Container(ft.ExpansionTile(leading=ft.Icon(ft.Icons.MENU_BOOK_OUTLINED, size=16, color=C["accent"]), title=ft.Text(I18N.tr("Learn songcraft principles"), size=12, weight=ft.FontWeight.W_700, color=C["accent"]),
+-                                             subtitle=ft.Text(les.title if les.ok else "", size=10, color=C["text3"]), controls=ac_content(topic), expanded=rep_open.get(tkey, False), on_change=changed,
+-                                             tile_padding=po(8, 0, 8, 0), controls_padding=po(8, 2, 8, 10), maintain_state=True, expanded_cross_axis_alignment=ft.CrossAxisAlignment.START),
+-                            border_radius=8, bgcolor=ft.Colors.with_opacity(0.06, C["accent"]), border=ft.Border.all(1, ft.Colors.with_opacity(0.35, C["accent"])))
+-
+-    def ac_list() -> list:
+-        """The eight lessons as tiles, for a Song Critic page that has no Songcraft report (none yet, or an older one): knowledge, never an analysis of the song."""
+-        out = [sr_title(I18N.tr("Songwriting Academy"), I18N.tr("8 lessons")),
+-               ft.Text(I18N.tr("Lessons on the eight aspects of a song. They are reference knowledge, not an analysis of your lyrics, and no AI was asked to show them."), size=11, color=C["text3"])]
+-        for i, key in enumerate(SR.ASPECTS, 1):
+-            les = AKB.load(key, ac_lang())
+-            tkey = f"ac:{key}"
+-
+-            def changed(e, tk=tkey):
+-                try:
+-                    rep_open[tk] = bool(e.control.expanded)
+-                except Exception:
+-                    pass
+-            out.append(ft.Container(ft.ExpansionTile(title=ft.Text(f"{i:02d} \u00b7 {I18N.tr(SR.ASPECT_TITLE[key])}", size=13, weight=ft.FontWeight.BOLD, color=C["text1"]),
+-                                                     subtitle=ft.Row([sr_chip(I18N.tr("Lesson")), ft.Text(les.title if les.ok else "", size=10, color=C["text3"])], spacing=8, wrap=True, run_spacing=2),
+-                                                     controls=ac_content(key), expanded=rep_open.get(tkey, False), on_change=changed, tile_padding=po(10, 2, 10, 2), controls_padding=po(10, 4, 10, 10),
+-                                                     maintain_state=True, expanded_cross_axis_alignment=ft.CrossAxisAlignment.START),
+-                                    border_radius=10, bgcolor=C["panel2"], border=ft.Border.all(1, C["border"])))
+-        return out
++    def ac_discuss_close(topic: str, tid: str = ""):
++        ac_close_dialog()                                                       # the dialog is closed first, then the chat takes over
++        ac_discuss(topic, tid)
++
++    def ac_open_lesson(topic: str):
++        """'Read the lesson': the lesson of one aspect in a dialog (title, principles, techniques, examples with the reason they differ, how to use it, references). Reference knowledge from the Markdown file:
++        no AI request is made to open it."""
++        les = AKB.load(topic, ac_lang())
++        title = les.title if les.ok else I18N.tr(SR.ASPECT_TITLE.get(topic, topic))
++        page.show_dialog(ft.AlertDialog(modal=False, bgcolor=C["panel"], title=ft.Row([ft.Text(title, size=15, weight=ft.FontWeight.BOLD, color=C["text1"], expand=True), ibtn(ft.Icons.CLOSE_ROUNDED, "Close", ac_close_dialog)],
++                                                                                      vertical_alignment=ft.CrossAxisAlignment.CENTER),
++                                        content=ft.Container(ft.Column(ac_content(topic), spacing=10, scroll=ft.ScrollMode.AUTO), width=520, height=520),
++                                        actions=[ft.TextButton(I18N.tr("Close"), on_click=ac_close_dialog)]))
+ 
+     def ac_discuss(topic: str, tid: str = ""):
+         """'Discuss this lesson with Songwriter': the Songwriter chat of this song and sheet gets a message of the user's; ONE lesson (and technique), the exercise, the Song Critic's finding for this aspect when a Songcraft report
+@@ -12114,7 +12108,7 @@ def main(page: ft.Page):
+             toast("That technique is not in the lesson any more.", C["amber"]); return
+         label = I18N.tr("Let's discuss this songwriting lesson") + ": " + les.title + ((" / " + tech.title) if tech else "")
+         sheet0 = S.song.book.active_id
+-        ho_try = {"kind": "lesson", "label": label, "topic": topic, "technique": tid, "finding_id": "", "action_id": "", "rep": sr_get("song_critic"), "t": time.time()}
++        ho_try = {"kind": "lesson", "label": label, "topic": topic, "technique": tid, "finding_id": "", "action_id": "", "rep": sr_get("song_critic"), "t": time.time(), "song_id": S.song.id, "sheet_id": sheet0}
+         room = min(3500, sr_handoff_avail(S.backend, lyr() + chr(10) * 3 + label))
+         if room <= 0 or sr_handoff_text(ho_try, lyr(), room)[0] is None:                # checked BEFORE anything is sent or written to the chat
+             toast("This conversation has no room for the lesson. Start a new session (New session), then press Discuss again. Nothing was sent.", C["amber"]); return
+@@ -12124,9 +12118,22 @@ def main(page: ft.Page):
+         append_chat(S.song.id, M.ChatMessage("user", label, specialist="songwriter", sheet_id=sheet0))
+         page.run_task(ask_ai, label)
+ 
+-    def sr_aspect_tile(key: str, a: "dict | None", srd: dict, evid: dict, stale: bool, lyrics: str, default_open: bool):
+-        """One of the eight aspects as an expand / collapse tile: the number and name, its lines and its status in the header; the finding (found / why it matters / suggested action / trade-off) inside.
+-        The Section Purpose tile also holds the Song Journey (the sections, as a vertical timeline)."""
++    def sr_card_summary(a: "dict | None", mode: str) -> str:
++        """The one or two lines of a collapsed card: the AI's own `summary` (or, when it wrote none, the start of its own observation, clipped). With no critique it says so; the program writes no critique."""
++        if a is not None:
++            s = (a.get("summary") or a.get("observation") or a.get("interpretation") or "").strip()
++            if s and not a.get("summary") and len(s) > 150:
++                s = s[:149].rstrip() + "\u2026"
++            if s:
++                return s
++            return I18N.tr("Nothing more was said about this aspect.")
++        return {"none": I18N.tr("No critique yet: press Analyze. The lesson can be read now."), "legacy": I18N.tr("An older report has no critique for this aspect: press Analyze again."),
++                "missing": I18N.tr("The Song Critic did not review this aspect in this report.")}.get(mode, "")
++
++    def sr_aspect_card(key: str, a: "dict | None", srd: "dict | None", evid: dict, stale: bool, lyrics: str, default_open: bool = False, mode: str = "report"):
++        """One of the eight aspects as a critique card. Collapsed: the number and name, the state (done well / could be improved / major issue / not relevant / not analyzed), the AI's short summary.
++        Expanded: the AI's critique with its evidence, what to try and what it could cost, the proposed wording (Preview / Apply / Undo are the existing ones, only when the AI gave a real wording), and the actions:
++        Read the lesson (a dialog), Discuss with the Songwriter. The lesson text is never inside the card."""
+         num = SR.ASPECTS.index(key) + 1
+         tkey = f"sr:aspect:{key}"
+ 
+@@ -12137,27 +12144,42 @@ def main(page: ft.Page):
+                 pass
+         status = a["status"] if a is not None else "missing"
+         where = SR.refs_label([(int(x), int(y)) for x, y in sr_refs_of(a)]) if a is not None and sr_refs_of(a) else ""
+-        sub_row = ft.Row(([ft.Text(where, size=10, color=C["text3"])] if where else []) + [sr_status_chip(status)], spacing=8, wrap=True, run_spacing=2, vertical_alignment=ft.CrossAxisAlignment.CENTER)
++        summ = sr_card_summary(a, mode if a is None else "report")
++        sub_row = ft.Column([ft.Row(([ft.Text(where, size=10, color=C["text3"])] if where else []) + [sr_status_chip(status, (a or {}).get("priority", ""))], spacing=8, wrap=True, run_spacing=2,
++                                    vertical_alignment=ft.CrossAxisAlignment.CENTER),
++                             ft.Text(summ, size=11, color=C["text2"], max_lines=2, overflow=ft.TextOverflow.ELLIPSIS)], spacing=3, tight=True)
+         body: list = []
+         if a is None:
+-            body.append(ft.Text(I18N.tr("The Song Critic did not review this aspect in this report."), size=11, color=C["text3"]))
++            body.append(ft.Text(summ, size=11, color=C["text3"]))
+         else:
+             if key == "opening" and a.get("patterns"):
+                 body.append(ft.Row([sr_chip(I18N.tr(OPENING_LABEL[x])) for x in a["patterns"]], spacing=6, wrap=True, run_spacing=4))
+                 body.append(ft.Text(I18N.tr("Opening patterns are tools for reading the opening, not rules the song has to follow."), size=10, color=C["text3"], italic=True))
+-            if a["status"] in ("no_issue", "insufficient", "unrated") and not (a.get("observation") or a.get("interpretation") or a.get("keep")):
++            if a["status"] in ("no_issue", "not_applicable", "insufficient", "unrated") and not (a.get("observation") or a.get("interpretation") or a.get("keep") or a.get("recommendation")):
+                 body.append(ft.Text(I18N.tr("Nothing more was said about this aspect."), size=11, color=C["text3"]))
+             else:
+-                body.append(sr_finding(a, "song_critic", lyrics, stale, bare=True))
+-            if key == "sections":
++                body.append(sr_finding(a, "song_critic", lyrics, stale, bare=True, discuss=False, preview_label="View proposed change"))
++            if key == "sections" and srd is not None:
+                 arc = sr_critic_ribbon(srd, evid, stale)
+                 body += arc[1:] if arc else []
+-        body.append(ac_block(key))                                                # the lesson of this aspect (collapsed): shown even when the Song Critic did not review the aspect
+-        return ft.Container(ft.ExpansionTile(title=ft.Text(f"{num:02d} · {I18N.tr(SR.ASPECT_TITLE[key])}", size=13, weight=ft.FontWeight.BOLD, color=C["text1"]), subtitle=sub_row, controls=body,
++        acts = [ft.OutlinedButton(I18N.tr("Read the lesson"), icon=ft.Icons.MENU_BOOK_OUTLINED, tooltip=I18N.tr("Open the lesson on this aspect (reference knowledge, not part of the critique)"), on_click=lambda ev, k=key: ac_open_lesson(k))]
++        if a is not None:
++            acts.append(ft.FilledButton(I18N.tr("Discuss with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this critique and its evidence; nothing changes in the lyrics"),
++                                        on_click=lambda ev, i=a["id"]: sr_discuss(i), style=ft.ButtonStyle(bgcolor=C["accent"], color="#FFFFFF")))
++        body.append(ft.Row(acts, spacing=6, wrap=True, run_spacing=4))
++        return ft.Container(ft.ExpansionTile(title=ft.Text(f"{num:02d} \u00b7 {I18N.tr(SR.ASPECT_TITLE[key])}", size=13, weight=ft.FontWeight.BOLD, color=C["text1"]), subtitle=sub_row, controls=body,
+                                              expanded=rep_open.get(tkey, default_open), on_change=changed, tile_padding=po(10, 2, 10, 2), controls_padding=po(10, 4, 10, 10), maintain_state=True,
+                                              expanded_cross_axis_alignment=ft.CrossAxisAlignment.START),
+                             border_radius=10, bgcolor=C["panel2"], border=ft.Border.all(1, C["border"]))
+ 
++    def ac_cards(mode: str) -> list:
++        """The eight cards of a page with no Songcraft report (none yet, an older-format report): no critique is made up, every card says so, and the lessons can be read."""
++        out = [sr_title(I18N.tr("Songwriting Academy"), I18N.tr("AI critique · 8 aspects")),
++               ft.Text(I18N.tr("The critique of your lyrics appears here after Analyze. The lessons are reference knowledge and can be read at any time; no AI is asked to show them."), size=11, color=C["text3"])]
++        for key in SR.ASPECTS:
++            out.append(sr_aspect_card(key, None, None, {}, False, lyr() if S.song else "", mode=mode))
++        return out
++
+     def sr_open_aspect(key: str):
+         rep_open[f"sr:aspect:{key}"] = True
+         sr_render()
+@@ -12182,7 +12204,7 @@ def main(page: ft.Page):
+         return sr_card(*body)
+ 
+     def sr_songcraft(srd: dict, evid: dict, stale: bool, lyrics: str, rep) -> list:
+-        """The Complete Songcraft Review: (the summary is drawn by the caller) the first action, the eight aspects as tiles in the fixed order, the Action Plan."""
++        """The Songwriting Academy: (the verdict is drawn by the caller) the eight critique cards in the fixed order; an Action Plan only when the AI wrote one."""
+         out = []
+         acts = srd.get("actions") or []
+         got = {a["aspect"]: a for a in (srd.get("aspects") or [])}
+@@ -12190,15 +12212,13 @@ def main(page: ft.Page):
+             out.append(sr_card(ft.Text(I18N.tr("Start here"), size=10, weight=ft.FontWeight.W_700, color=C["accent"]), ft.Text(acts[0].get("title") or acts[0]["action"][:80], size=13, weight=ft.FontWeight.BOLD, color=C["text1"]),
+                                ft.Text(acts[0]["action"], size=12, color=C["text2"], max_lines=3, overflow=ft.TextOverflow.ELLIPSIS), tint=ft.Colors.with_opacity(0.45, C["accent"])))
+         first_key = acts[0].get("aspect") if acts else ""
+-        out.append(sr_title(I18N.tr("Songcraft review"), I18N.tr("8 aspects")))
++        out.append(sr_title(I18N.tr("Songwriting Academy"), I18N.tr("AI critique \u00b7 8 aspects")))
+         for key in SR.ASPECTS:
+-            out.append(sr_aspect_tile(key, got.get(key), srd, evid, stale, lyrics, default_open=(key == first_key and bool(first_key))))
++            out.append(sr_aspect_card(key, got.get(key), srd, evid, stale, lyrics, default_open=(key == first_key and bool(first_key)), mode="missing"))
+         if acts:
+             out.append(sr_title(I18N.tr("Action Plan"), I18N.tr("What to consider next")))
+             for i, act in enumerate(acts, 1):
+                 out.append(sr_action_card(act, i, stale))
+-        else:
+-            out.append(sr_card(ft.Text(I18N.tr("Action Plan"), size=13, weight=ft.FontWeight.BOLD, color=C["text1"]), ft.Text(I18N.tr("The Song Critic named no action to take now."), size=12, color=C["text2"])))
+         return out
+ 
+     def sr_toggle_arc():
+@@ -12256,7 +12276,7 @@ def main(page: ft.Page):
+     KIND_STYLE = {"strength": ("Strength", "green", ft.Icons.CHECK_ROUNDED), "concern": ("Worth a look", "amber", ft.Icons.DIAMOND_OUTLINED), "keep": ("Keep", "green", ft.Icons.CHECK_ROUNDED),
+                   "change": ("Language issue", "amber", ft.Icons.DIAMOND_OUTLINED)}
+ 
+-    def sr_finding(f: dict, spec: str, lyrics: str, stale: bool, bare: bool = False):
++    def sr_finding(f: dict, spec: str, lyrics: str, stale: bool, bare: bool = False, discuss: bool = True, preview_label: str = "Preview"):
+         """One finding: its lines and the lyric text, what can be seen (observation), the AI's reading (interpretation, said as a reading), what to try or why to keep, and the trade-offs of an alternative."""
+         label, col, icon = KIND_STYLE.get(f["kind"], ("Note", "text3", ft.Icons.INFO_OUTLINE))
+         head = ft.Row([ft.Icon(icon, size=14, color=C[col]), ft.Text(I18N.tr(label), size=11, weight=ft.FontWeight.W_700, color=C[col]), ft.Container(expand=True),
+@@ -12283,9 +12303,10 @@ def main(page: ft.Page):
+             if x is not None:
+                 body.append(x)
+         if crit:
+-            body += sr_proposal_ui(f, sr_get("song_critic"), stale)
+-            body.append(ft.Row([ft.OutlinedButton(I18N.tr("Discuss with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this finding and its evidence; nothing changes in the lyrics"),
+-                                                  on_click=lambda ev, i=f["id"]: sr_discuss(i))], spacing=6, wrap=True))
++            body += sr_proposal_ui(f, sr_get("song_critic"), stale, preview_label)
++            if discuss:
++                body.append(ft.Row([ft.OutlinedButton(I18N.tr("Discuss with Songwriter"), icon=ft.Icons.FORUM_OUTLINED, tooltip=I18N.tr("Open the Songwriter chat with this finding and its evidence; nothing changes in the lyrics"),
++                                                      on_click=lambda ev, i=f["id"]: sr_discuss(i))], spacing=6, wrap=True))
+         if spec == "lyric_language" and f.get("alternative"):
+             for lab, key in (("Meaning impact", "meaning"), ("Rhyme impact", "rhyme"), ("Syllable / flow impact", "syllables")):
+                 x = sr_kv(I18N.tr(lab), f.get(key, ""))
+@@ -12494,7 +12515,7 @@ def main(page: ft.Page):
+         spec = sr["spec"]
+         r = REPORT_OF[spec]
+         if not S.song:
+-            sr_col.controls = [ft.Text(I18N.tr("Open or create a song first."), size=12, color=C["text3"])] + (ac_list() if spec == "song_critic" else [])
++            sr_col.controls = [ft.Text(I18N.tr("Open or create a song first."), size=12, color=C["text3"])] + (ac_cards("none") if spec == "song_critic" else [])
+             safe_update(sr_col); return
+         rep, state = sr_get(spec), sr_state(spec)
+         sr["sig"] = (spec, state, sr["running"], S.song.id, S.song.book.active_id)
+@@ -12523,7 +12544,7 @@ def main(page: ft.Page):
+                 except Exception as ex:
+                     dbg_once("sr vocal preview", ex)
+             if spec == "song_critic":
+-                ctl += ac_list()                                                          # no report (or an unreadable answer): the lessons can still be read
++                ctl += ac_cards("none")                                                   # no report (or an unreadable answer): the eight cards say so and the lessons can still be read
+             sr_col.controls = ctl
+             safe_update(sr_col); return
+         stale = state == "outdated" or bool(SR.outdated_why(rep, LA.text_hash(lyr()), sr_input_fp(spec)))      # link safety does not depend on the status chip: a running re-analysis keeps the old links disabled
+@@ -12564,7 +12585,7 @@ def main(page: ft.Page):
+         if srd.get("notes"):
+             ctl.append(sr_card(ft.Text(I18N.tr("What the specialist could not judge"), size=11, weight=ft.FontWeight.W_700, color=C["text2"]), *[ft.Text("• " + x, size=11, color=C["text2"], selectable=True) for x in srd["notes"]]))
+         if spec == "song_critic" and not songcraft:
+-            ctl += ac_list()                                                              # an older-format report has no aspect tiles: the lessons come as their own list
++            ctl += ac_cards("legacy")                                                     # an older-format report has no critique cards: the eight cards say so and the lessons can still be read
+         ctl.append(sr_diag_tile(spec, rep, state))
+         sr_col.controls = ctl
+         safe_update(sr_col)
+diff --git a/music_studio/locales/th.json b/music_studio/locales/th.json
+index 7f3fb42..50393ba 100644
+--- a/music_studio/locales/th.json
++++ b/music_studio/locales/th.json
+@@ -4,6 +4,23 @@
+     "note": "UI texts only; lyrics, captions and AI prompts are never translated"
+   },
+   "strings": {
++    "Done well": "ทำได้ดี",
++    "Could be improved": "มีจุดควรปรับปรุง",
++    "Major issue": "มีปัญหาสำคัญ",
++    "Not relevant to this song": "ไม่เกี่ยวข้องกับเพลงนี้",
++    "Not analyzed / not enough information": "ยังไม่ได้วิเคราะห์ / ข้อมูลไม่เพียงพอ",
++    "Read the lesson": "อ่านบทเรียน",
++    "Open the lesson on this aspect (reference knowledge, not part of the critique)": "เปิดบทเรียนของหัวข้อนี้ (ความรู้อ้างอิง ไม่ใช่ส่วนของบทวิจารณ์)",
++    "Open the Songwriter chat with this critique and its evidence; nothing changes in the lyrics": "เปิดแชตผู้ช่วยแต่งเพลงพร้อมบทวิจารณ์นี้และหลักฐาน ไม่มีอะไรเปลี่ยนในเนื้อเพลง",
++    "AI critique · 8 aspects": "บทวิจารณ์จาก AI · 8 หัวข้อ",
++    "No critique yet: press Analyze. The lesson can be read now.": "ยังไม่มีบทวิจารณ์: กด Analyze ส่วนบทเรียนอ่านได้ตอนนี้",
++    "An older report has no critique for this aspect: press Analyze again.": "รายงานรุ่นเก่าไม่มีบทวิจารณ์ของหัวข้อนี้: กด Analyze ใหม่",
++    "The critique of your lyrics appears here after Analyze. The lessons are reference knowledge and can be read at any time; no AI is asked to show them.": "บทวิจารณ์เนื้อเพลงของคุณจะแสดงที่นี่หลังกด Analyze ส่วนบทเรียนเป็นความรู้อ้างอิง อ่านได้ทุกเมื่อ และไม่ได้เรียก AI มาแสดง",
++    "View proposed change": "ดูข้อเสนอแก้ไข",
++    "Lessons are reference knowledge, not the AI's opinion about your song. The techniques are options for the writer, not rules: a song that does not use them is not wrong. [R1] marks a statement that a cited reference page makes; text with no tag is this program's own synthesis, not an endorsed theory; the examples were written for teaching.": "บทเรียนเป็นความรู้อ้างอิง ไม่ใช่ความเห็นของ AI เกี่ยวกับเพลงของคุณ เทคนิคเป็นทางเลือกของผู้แต่ง ไม่ใช่กฎ เพลงที่ไม่ใช้เทคนิคเหล่านี้ไม่ได้ผิด [R1] หมายถึงข้อความที่หน้าอ้างอิงนั้นระบุไว้ ส่วนข้อความที่ไม่มีแท็กคือการสังเคราะห์ของโปรแกรมนี้เอง ไม่ใช่ทฤษฎีที่ใครรับรอง และตัวอย่างแต่งขึ้นเพื่อการสอน",
++    "Reference page checked (confirms only what is stated)": "ตรวจหน้าอ้างอิงแล้ว (ยืนยันเฉพาะที่ระบุไว้)",
++    "Open source page": "เปิดหน้าแหล่งอ้างอิง",
++    "Nothing was sent to the model: the song or sheet changed before the message went out, so the lesson or report was not attached. Press Discuss again.": "ยังไม่ได้ส่งอะไรให้โมเดล: เพลงหรือชีตเปลี่ยนก่อนส่งข้อความ จึงไม่ได้แนบบทเรียนหรือรายงาน กด Discuss อีกครั้ง",
+     "Learn songcraft principles": "เรียนรู้หลักการแต่งเพลง",
+     "What It Is": "คืออะไร",
+     "Why It Works": "ทำไมจึงได้ผล",
+@@ -13,9 +30,7 @@
+     "Try It Yourself": "แบบฝึกหัด",
+     "References": "แหล่งอ้างอิง",
+     "Techniques": "เทคนิค",
+-    "Lessons are reference knowledge, not the AI's opinion about your song. [R1] marks a principle that a cited reference supports; text with no tag is this program's own synthesis; the examples were written for teaching.": "บทเรียนเป็นความรู้อ้างอิง ไม่ใช่ความเห็นของ AI เกี่ยวกับเพลงของคุณ [R1] หมายถึงหลักการที่แหล่งอ้างอิงรองรับ ข้อความที่ไม่มีแท็กคือการสังเคราะห์ของโปรแกรมนี้เอง ส่วนตัวอย่างแต่งขึ้นเพื่อการสอน",
+     "This lesson is not available.": "ยังใช้บทเรียนนี้ไม่ได้",
+-    "Source checked": "ตรวจแหล่งแล้ว",
+     "General knowledge, not a citation": "ความรู้ทั่วไป ไม่ใช่การอ้างอิง",
+     "Discuss this lesson with Songwriter": "คุยเรื่องบทเรียนนี้กับ Songwriter",
+     "Discuss this technique with Songwriter": "คุยเรื่องเทคนิคนี้กับ Songwriter",
+diff --git a/music_studio/spec_reports.py b/music_studio/spec_reports.py
+index 36db81d..6270b19 100644
+--- a/music_studio/spec_reports.py
++++ b/music_studio/spec_reports.py
+@@ -27,16 +27,32 @@ FORMAT_SONGCRAFT = "songcraft-1"
+ ASPECTS = ("opening", "theme", "sections", "development", "hook", "imagery", "repetition", "ending")
+ ASPECT_TITLE = {"opening": "Opening Review", "theme": "Central Idea / Theme", "sections": "Section Purpose / Song Journey", "development": "Emotional / Narrative Development", "hook": "Hook & Memorability",
+                 "imagery": "Imagery & Metaphor", "repetition": "Repetition & Contrast", "ending": "Ending & Payoff"}
+-ASPECT_STATUS = ("strength", "concern", "mixed", "no_issue", "insufficient")
+-STATUS_KIND = {"strength": "strength", "concern": "concern", "mixed": "concern", "no_issue": "keep", "insufficient": "keep", "unrated": "keep"}
++ASPECT_STATUS = ("strength", "concern", "mixed", "no_issue", "not_applicable", "insufficient")
++STATUS_KIND = {"strength": "strength", "concern": "concern", "mixed": "concern", "no_issue": "keep", "not_applicable": "keep", "insufficient": "keep", "unrated": "keep"}
++STATUS_GROUPS = ("good", "improve", "major", "na", "unknown")
++
++
++def status_group(status: str, priority: str = "") -> str:
++    """The five states the Academy cards show, from what the AI wrote (a plain mapping, no judgment of the song): good = strength / no significant issue; improve = a concern or a mixed reading
++    of low or medium priority; major = a concern or a mixed reading of HIGH priority; na = not relevant to this song; unknown = insufficient evidence, not rated, or not in the report."""
++    s = (status or "").strip().lower()
++    if s in ("strength", "no_issue"):
++        return "good"
++    if s in ("concern", "mixed"):
++        return "major" if (priority or "").strip().lower() == "high" else "improve"
++    if s == "not_applicable":
++        return "na"
++    return "unknown"
++
+ OPENING_PATTERNS = ("scene", "declaration", "question", "in_medias_res", "dialogue", "contradiction", "hook_first", "atmospheric")
+ MAX_ACTIONS = 3
+ _ASPECT_ALIAS = {"opening_review": "opening", "central_idea": "theme", "central_idea_theme": "theme", "section_purpose": "sections", "section_purpose_song_journey": "sections", "song_journey": "sections",
+                  "emotional_narrative_development": "development", "emotional_development": "development", "narrative_development": "development", "development_emotional_narrative": "development",
+                  "hook_memorability": "hook", "hook_and_memorability": "hook", "imagery_metaphor": "imagery", "imagery_and_metaphor": "imagery", "repetition_contrast": "repetition",
+                  "repetition_and_contrast": "repetition", "ending_payoff": "ending", "ending_and_payoff": "ending", "section": "sections", "sections_purpose": "sections"}            # the names the model may write for the keys (the display names of the eight aspects)
+-_STATUS_ALIAS = {"no_significant_issue": "no_issue", "none": "no_issue", "ok": "no_issue", "not_applicable": "insufficient", "na": "insufficient", "n_a": "insufficient", "insufficient_evidence": "insufficient",
+-                 "mixed_conditional": "mixed", "conditional": "mixed"}
++_STATUS_ALIAS = {"no_significant_issue": "no_issue", "none": "no_issue", "ok": "no_issue", "na": "not_applicable", "n_a": "not_applicable", "not_relevant": "not_applicable", "irrelevant": "not_applicable",
++                 "not_relevant_to_this_song": "not_applicable", "insufficient_evidence": "insufficient", "not_analyzed": "insufficient", "unknown": "insufficient", "mixed_conditional": "mixed", "conditional": "mixed",
++                 "good": "strength", "needs_improvement": "concern", "major_issue": "concern"}
+ _PATTERN_ALIAS = {"scene_opening": "scene", "emotional_declaration": "declaration", "question_opening": "question", "inmediasres": "in_medias_res", "dialogue_opening": "dialogue",
+                   "surprise": "contradiction", "surprise_contradiction": "contradiction", "hook_thesis_first": "hook_first", "thesis_first": "hook_first", "hook": "hook_first",
+                   "atmospheric_symbolic": "atmospheric", "symbolic": "atmospheric"}
+@@ -233,7 +249,7 @@ def build_user(spec: str, snap: dict, evidence_text: str, reply_language: str =
+ 
+ 
+ # ── reading the answer ────────────────────────────────────────────────────────────────────────────────────────
+-_KEYS = ("headline", "reading", "kind", "priority", "lines", "quote", "observation", "interpretation", "recommendation", "keep", "alternative", "proposal", "meaning", "rhyme", "syllables", "name", "aspect", "status", "pattern", "action", "tradeoff", "title")
++_KEYS = ("headline", "reading", "kind", "priority", "lines", "quote", "summary", "observation", "interpretation", "recommendation", "keep", "alternative", "proposal", "meaning", "rhyme", "syllables", "name", "aspect", "status", "pattern", "action", "tradeoff", "title")
+ _KV = re.compile(r"^\s*(" + "|".join(_KEYS) + r")\s*:\s*(.*)$", re.IGNORECASE)
+ _NONE = ("", "-", "–", "—", "none", "n/a")
+ _LINE_REF = re.compile(r"^\s*L0*(\d{1,4})(?:\s*[-–—]\s*L0*(\d{1,4}))?\s*$", re.IGNORECASE)
+@@ -482,13 +498,30 @@ def _norm_key(v: str) -> str:
+     return re.sub(r"[^a-z0-9]+", "_", (v or "").strip().lower()).strip("_")
+ 
+ 
++_ASPECT_START = (("opening", "opening"), ("central", "theme"), ("theme", "theme"), ("section", "sections"), ("song_journey", "sections"), ("emotional", "development"), ("narrative", "development"),
++                 ("development", "development"), ("hook", "hook"), ("memorab", "hook"), ("imagery", "imagery"), ("metaphor", "imagery"), ("repetition", "repetition"), ("contrast", "repetition"),
++                 ("ending", "ending"), ("payoff", "ending"))
++
++
++def aspect_key(v: str) -> str:
++    """The key of an aspect from what the model wrote: the key itself, a display name (`central idea`, `section purpose and journey`) or the start of one. Only the NAME is read: nothing else is guessed;
++    a name that starts like none of the eight is returned as it is (and refused by the caller)."""
++    k = _norm_key(v)
++    k = _ASPECT_ALIAS.get(k, k)
++    if k in ASPECTS:
++        return k
++    for start, key in _ASPECT_START:
++        if k.startswith(start):
++            return key
++    return k
++
++
+ def _aspects_of(blocks: list, lyrics: str, total: int, diag: list) -> list:
+     """The eight aspects of the Songcraft Review, in the fixed order, each at most once. An aspect that is missing is simply not in the list (the page shows it as not reviewed)."""
+     got: dict = {}
+     for _k, n, body in [x for x in blocks if x[0] == "ASPECT"]:
+         f = fields_of(body)
+-        key = _norm_key(f.get("aspect"))
+-        key = _ASPECT_ALIAS.get(key, key)
++        key = aspect_key(f.get("aspect"))
+         if key not in ASPECTS:
+             diag.append(f"[ASPECT.{n}] was not used: aspect “{(f.get('aspect') or '')[:24]}” is not one of {', '.join(ASPECTS)}.")
+             continue
+@@ -524,9 +557,18 @@ def _aspects_of(blocks: list, lyrics: str, total: int, diag: list) -> list:
+                         pats.append(k2)
+                 else:
+                     diag.append(f"[ASPECT.{n}]: the opening pattern “{x.strip()[:24]}” is not one of {', '.join(OPENING_PATTERNS)}; it was not used.")
++        prop = ""
++        if not _none(f.get("proposal")):                                          # a real wording for ONE place: it must be a different text for exactly those lines (the same rules as a finding of the Song Critic)
++            if len(ev["refs"]) != 1:
++                diag.append(f"[ASPECT.{n}]: a proposed wording needs exactly one line reference; the proposal was not used.")
++            else:
++                prop, why_not = alternative_of(f.get("proposal", ""), ev["quote"], ev["first"], ev["last"])
++                if why_not:
++                    diag.append(f"[ASPECT.{n}]: proposal: {why_not}")
+         got[key] = dict(ev, id="as_" + key, aspect=key, status=st, kind=STATUS_KIND[st], priority=pr, patterns=pats, observation=obs, interpretation=why,
++                        summary="" if _none(f.get("summary")) else f["summary"].strip(),
+                         recommendation="" if _none(f.get("recommendation")) else f["recommendation"].strip(), keep="" if _none(f.get("keep")) else f["keep"].strip(),
+-                        proposal="")
++                        proposal=prop)
+     return [got[k] for k in ASPECTS if k in got]
+ 
+ 
+@@ -543,8 +585,7 @@ def _actions_of(blocks: list, aspects: list, total: int, diag: list) -> list:
+         if not act:
+             diag.append(f"[ACTION.{n}] was not used: it has no action.")
+             continue
+-        key = _norm_key(f.get("aspect"))
+-        key = _ASPECT_ALIAS.get(key, key)
++        key = aspect_key(f.get("aspect"))
+         if key and key not in have:
+             diag.append(f"[ACTION.{n}]: its aspect “{key[:24]}” is not in this report; the action is shown without a link to an aspect.")
+             key = ""
+@@ -666,18 +707,30 @@ def _refs_of(f: dict) -> list:
+     return r or ([(f["first"], f["last"])] if f.get("first") else [])
+ 
+ 
++def section_at(rows: list, n: int) -> str:
++    """The name of the section (the last [tag] line above line n, a [Hold] cue is not a section) or an empty string: a fact read from the lyrics, never a guess."""
++    for i in range(min(n, len(rows)) - 1, -1, -1):
++        m = re.match(r"^\s*\[([^\]]+)\]\s*$", rows[i] or "")
++        if m and not m.group(1).strip().lower().startswith("hold"):
++            return m.group(1).strip()
++    return ""
++
++
+ def _finding_text(f: dict, lyrics_then: str, full: bool = True, old_numbers: bool = False) -> str:
+     refs = _refs_of(f)
+     where = refs_label(refs) if refs else (f"lines not readable: {f['lines_invalid']}" if f.get("lines_invalid") else "whole song")
+-    out = [f"[{f.get('kind', '?')}{(' · ' + f['priority']) if f.get('priority') else ''}] lines {where}" + (" (numbered as in the OLD lyrics of the analysis)" if old_numbers and refs else "")]
+     rows = lines_of(lyrics_then)
++    sec = section_at(rows, refs[0][0]) if refs else ""
++    st = f.get("status")
++    out = [f"[{f.get('kind', '?')}{(' · ' + f['priority']) if f.get('priority') else ''}] " + (f"aspect {f['aspect']} · status {st} · " if f.get("aspect") else "") + f"lines {where}" + (f" · section: {sec}" if sec else "")
++           + (" (numbered as in the OLD lyrics of the analysis)" if old_numbers and refs else "")]
+     if full:
+         for a, b in refs:
+             for n in range(a, b + 1):
+                 if n - 1 < len(rows) and rows[n - 1].strip():
+                     out.append(f"  L{n:03d}| {rows[n - 1]}")
+     lim = 700 if full else 160
+-    for lab, key in (("Found", "observation"), ("Why it matters", "interpretation"), ("Suggested action", "recommendation"), ("Trade-off / keep", "keep")):
++    for lab, key in (("Summary", "summary"), ("Found", "observation"), ("Why it matters", "interpretation"), ("Suggested action", "recommendation"), ("Trade-off / keep", "keep")):
+         if f.get(key):
+             out.append(f"  {lab}: {_clip(f[key], lim)}")
+     if f.get("proposal") and full:
+@@ -699,7 +752,9 @@ def handoff_text(*, title: str, song_id: str, sheet_id: str, style: dict, settin
+               "running": "OUTDATED (a new analysis is running)"}.get(state, state.upper())
+     if state in ("outdated", "running") and why:
+         status += {"lyrics": " — the lyrics changed after the report", "inputs": " — the settings, language or corrections changed after the report", "prompt": " — the specialist's prompt changed after the report"}.get(why, "")
+-    head = [HANDOFF_HEAD, f"Song: {title or '-'} · song id {song_id} · sheet id {sheet_id}",
++    import hashlib
++    h_now, h_then = (hashlib.sha1((x or "").encode("utf-8")).hexdigest()[:10] for x in (lyrics_now, lyrics_then))
++    head = [HANDOFF_HEAD, f"Song: {title or '-'} · song id {song_id} · sheet id {sheet_id} · lyrics version (hash) now {h_now}, the report was made on {h_then}" + (" (the same)" if h_now == h_then else " (DIFFERENT)"),
+             "Style: " + ("; ".join(f"{k}: {v}" for k, v in style.items() if v) or "-") + " · Settings: " + ("; ".join(f"{k}: {v}" for k, v in settings.items() if v) or "-"),
+             f"Report: Song Critic · made {(rep_ts or '-')[:16]} · {backend or '-'} {model or ''}".strip(), f"Report status: {status}"]
+     if ch["same"]:
+diff --git a/music_studio/songcraft_academy.py b/music_studio/songcraft_academy.py
+index c2efffe..2795782 100644
+--- a/music_studio/songcraft_academy.py
++++ b/music_studio/songcraft_academy.py
+@@ -38,6 +38,13 @@ SECTIONS = ("What It Is", "Why It Works", "How to Use", "Examples", "Common Pitf
+ DEFAULT_LANG = "th"
+ LANGS = ("th", "en")
+ _REF_USE = re.compile(r"\[(R\d+)\]")
++_URL = re.compile(r"https?://[^\s<>\"']+", re.I)
++
++
++def safe_url(url: str) -> str:
++    """The address when it is a plain http(s) URL (the only kind the page may open in a browser), else an empty string."""
++    u = (url or "").strip()
++    return u if _URL.fullmatch(u) else ""
+ 
+ 
+ @dataclass
+@@ -172,6 +179,8 @@ def parse(text: str, topic: str, lang: str = DEFAULT_LANG) -> tuple:
+             continue
+         kv = {c.split(":", 1)[0].strip().lower(): c.split(":", 1)[1].strip() for c in cells[3:] if ":" in c}
+         r = Reference(cells[0], cells[1], cells[2], kv.get("supports", ""), kv.get("status", ""), kv.get("url", ""))
++        if r.url and not safe_url(r.url):
++            errors.append(f"reference {r.id}: `url` must be an http(s) address, not `{r.url[:40]}`.")
+         if not r.supports:
+             errors.append(f"reference {r.id} says nothing about what it supports.")
+         if r.status not in ("verified", "general"):
+@@ -328,11 +337,33 @@ def _clip(text: str, n: int) -> str:
+     return t if len(t) <= n else t[: n - 1].rstrip() + "…"
+ 
+ 
++def _bullets(text: str) -> list:
++    return [x.strip() for x in (text or "").split("\n") if x.strip()]
++
++
++def _tech_block(techs: list, level: int) -> str:
++    """The techniques of a lesson for the Songwriter. 0: every technique in full; 1: the title and the first two lines; 2: the title and the first line; 3: the titles only."""
++    if level >= 3:
++        return "TECHNIQUES OF THIS LESSON (" + str(len(techs)) + ", titles only): " + "; ".join(t.title for t in techs)
++    out = [f"TECHNIQUES OF THIS LESSON ({len(techs)}):"]
++    for t in techs:
++        lines = _bullets(t.text)
++        if level == 0:
++            out.append(f"- {t.title}\n" + "\n".join("  " + x for x in lines))
++        elif level == 1:
++            out.append(f"- {t.title}\n" + "\n".join("  " + _clip(x, 150) for x in lines[:2]))
++        else:
++            out.append(f"- {t.title}: " + (_clip(lines[0], 110) if lines else ""))
++    return "\n".join(out)
++
++
+ def handoff_text(*, lesson: Lesson, technique_id: str, title: str, song_id: str, sheet_id: str, style: dict, settings: dict, finding: "dict | None", report_line: str, state: str, why: str,
+                  lyrics_then: str, lyrics_now: str, budget_tokens: int = 2500) -> tuple:
+-    """(text, info): the context of a Songwriter message about one lesson. Blocks are added in priority order and only while they fit `budget_tokens` (llm_chat.estimate_tokens); a block that does not fit
+-    is shortened and then left out (named in `info` and in the text); the selected lesson/technique, its exercise and the report status are the last things to be cut (to a short form). When even the
+-    least form does not fit, nothing is built (the caller refuses before anything is sent). `finding` is the Song Critic's finding of this aspect, or None (no report: nothing is invented)."""
++    """(text, info): the context of a Songwriter message about one lesson. Blocks have a priority; while the text does not fit `budget_tokens` (llm_chat.estimate_tokens) the LEAST important block is
++    shortened and, where it may be, left out, before the next one is touched (what was shortened or left out is named in `info` and in the text). The selected technique (or, for the whole lesson, the
++    titles of ALL its techniques), the exercise and the status are never left out: they only shrink to their shortest useful form. When even that does not fit, nothing is built (the caller refuses before
++    anything is sent). One technique selected: only that technique travels (the other techniques are not sent). The whole lesson selected: the title and a short description of every technique travel, with
++    more detail when the budget allows. `finding` is the Song Critic's finding of this aspect, or None (no report: nothing is invented); its line numbers are labelled OLD when the lyrics changed since the report."""
+     from . import llm_chat as LC
+     from . import spec_reports as SR
+     tech = lesson.technique(technique_id) if technique_id else None
+@@ -341,7 +372,7 @@ def handoff_text(*, lesson: Lesson, technique_id: str, title: str, song_id: str,
+               "running": "OUTDATED (a new analysis is running)"}.get(state, state.upper()) if state else ""
+     head = [HANDOFF_HEAD, f"Song: {title or '-'} · song id {song_id} · sheet id {sheet_id}",
+             "Style: " + ("; ".join(f"{k}: {v}" for k, v in style.items() if v) or "-") + " · Settings: " + ("; ".join(f"{k}: {v}" for k, v in settings.items() if v) or "-"),
+-            f"Lesson: {lesson.title} (topic `{lesson.topic}`, content version {lesson.version}, language {lesson.lang})" + (f" · technique `{tech.id}`: {tech.title}" if tech else " · the whole lesson")]
++            f"Lesson: {lesson.title} (topic `{lesson.topic}`, content version {lesson.version}, language {lesson.lang})" + (f" · technique `{tech.id}`: {tech.title}" if tech else f" · the whole lesson ({len(lesson.techniques)} techniques)")]
+     if finding is None:
+         head.append("Song Critic report: " + (report_line or "none for this song yet (no AI opinion about this aspect exists; do not make one up as the Song Critic's)."))
+     else:
+@@ -352,38 +383,39 @@ def handoff_text(*, lesson: Lesson, technique_id: str, title: str, song_id: str,
+             spans = ", ".join(f"L{a}" if a == b else f"L{a}-L{b}" for a, b in ch["changed"][:12]) or "lines removed"
+             head.append(f"Changes since the analysis: the lyrics are different now ({spans}). Line numbers in the Song Critic finding belong to the OLD lyrics; the lyrics sent with this message are the current ones.")
+     s = lesson.sections
+-    sel_full = (f"SELECTED TECHNIQUE: {tech.title}\n{tech.text}" if tech else f"SELECTED LESSON: {lesson.title}\n{_clip(lesson.intro, 1200)}")
+-    sel_short = (f"SELECTED TECHNIQUE: {tech.title}\n{_clip(tech.text, 700)}" if tech else f"SELECTED LESSON: {lesson.title}\n{_clip(lesson.intro, 500)}")
+-    blocks = [("the selected technique" if tech else "the selected lesson", sel_full, sel_short, f"SELECTED: {lesson.title}" + (f" / {tech.title}" if tech else "") + "\n" + _clip((tech.text if tech else lesson.intro), 260))]
+-    blocks.append(("the exercise", "EXERCISE (Try It Yourself):\n" + _clip(s["Try It Yourself"], 1200), "EXERCISE (short):\n" + _clip(s["Try It Yourself"], 400), "EXERCISE: " + _clip(s["Try It Yourself"], 180)))
+-    if finding is not None:
+-        blocks.append(("the Song Critic finding", "SONG CRITIC FINDING FOR THIS ASPECT (an AI opinion about the current song, not part of the lesson):\n" + SR._finding_text(finding, lyrics_then, True, not ch.get("same")),
+-                       "SONG CRITIC FINDING (short):\n" + SR._finding_text(finding, lyrics_then, False, not ch.get("same")), ""))
+-    blocks.append(("what the lesson says", "THE LESSON IN SHORT:\nWhat it is: " + _clip(s["What It Is"], 800) + "\nWhy it works: " + _clip(s["Why It Works"], 900) + "\nCommon pitfalls: " + _clip(s["Common Pitfalls"], 700),
+-                   "THE LESSON IN SHORT:\nWhat it is: " + _clip(s["What It Is"], 300) + "\nPitfalls: " + _clip(s["Common Pitfalls"], 300), ""))
+-    if tech is not None and lesson.intro:
+-        blocks.append(("the lesson introduction", "LESSON INTRODUCTION (How to Use):\n" + _clip(lesson.intro, 900), "", ""))
+-    blocks.append(("the examples", "TEACHING EXAMPLES (original lines written for the lesson, not from a real song):\n" + _clip(s["Examples"], 1400), "EXAMPLES (short):\n" + _clip(s["Examples"], 500), ""))
+     rows = SR.lines_of(lyrics_now)
+     num = "\n".join(f"L{i:03d}| {t}" for i, t in enumerate(rows, 1))
+-    blocks.append(("the numbered lyrics", "CURRENT LYRICS, numbered (section tags are lines too):\n" + num, "CURRENT LYRICS: the full lyrics are in the message below (without line numbers).", ""))
+-    keep = ("the selected technique", "the selected lesson", "the exercise")
+-    variants = []
+-    for b_ in blocks:
+-        v = [b_[1]] + ([b_[2]] if b_[2] and b_[2] != b_[1] else []) + ([b_[3]] if len(b_) > 3 and b_[3] else [])
+-        if b_[0] not in keep:
+-            v.append("")
+-        variants.append(v)
++    blocks = []                                          # (label, priority: the LOWEST is shortened / left out FIRST, forms best first, may be left out)
++    if tech is not None:
++        blocks.append(("the selected technique", 90, [f"SELECTED TECHNIQUE: {tech.title}\n{tech.text}", f"SELECTED TECHNIQUE: {tech.title}\n{_clip(tech.text, 700)}",
++                                                      f"SELECTED: {lesson.title} / {tech.title}\n" + _clip(tech.text, 260)], False))
++        if lesson.intro:
++            blocks.append(("the lesson introduction", 20, ["LESSON INTRODUCTION (How to Use):\n" + _clip(lesson.intro, 900)], True))
++    else:
++        blocks.append(("the selected lesson", 90, [f"SELECTED LESSON: {lesson.title}\n{_clip(lesson.intro, 1200)}", f"SELECTED LESSON: {lesson.title}\n{_clip(lesson.intro, 500)}", f"SELECTED LESSON: {lesson.title}"], False))
++        if lesson.techniques:
++            blocks.append(("the techniques", 70, [_tech_block(lesson.techniques, k) for k in range(4)], False))
++    blocks.append(("the exercise", 80, ["EXERCISE (Try It Yourself):\n" + _clip(s["Try It Yourself"], 1200), "EXERCISE (short):\n" + _clip(s["Try It Yourself"], 400), "EXERCISE: " + _clip(s["Try It Yourself"], 180)], False))
++    if finding is not None:
++        blocks.append(("the Song Critic finding", 40, ["SONG CRITIC FINDING FOR THIS ASPECT (an AI opinion about the current song, not part of the lesson):\n" + SR._finding_text(finding, lyrics_then, True, not ch.get("same")),
++                                                     "SONG CRITIC FINDING (short):\n" + SR._finding_text(finding, lyrics_then, False, not ch.get("same"))], True))
++    blocks.append(("what the lesson says", 30, ["THE LESSON IN SHORT:\nWhat it is: " + _clip(s["What It Is"], 800) + "\nWhy it works: " + _clip(s["Why It Works"], 900) + "\nCommon pitfalls: " + _clip(s["Common Pitfalls"], 700),
++                                                "THE LESSON IN SHORT:\nWhat it is: " + _clip(s["What It Is"], 300) + "\nPitfalls: " + _clip(s["Common Pitfalls"], 300)], True))
++    blocks.append(("the examples", 10, ["TEACHING EXAMPLES (original lines written for the lesson, not from a real song):\n" + _clip(s["Examples"], 1400), "EXAMPLES (short):\n" + _clip(s["Examples"], 500)], True))
++    blocks.append(("the numbered lyrics", 50, ["CURRENT LYRICS, numbered (section tags are lines too):\n" + num, "CURRENT LYRICS: the full lyrics are in the message below (without line numbers)."], False))
++    order = {"the selected technique": 0, "the selected lesson": 0, "the lesson introduction": 1, "the techniques": 1, "the exercise": 2, "the Song Critic finding": 3, "what the lesson says": 4, "the examples": 5, "the numbered lyrics": 6}
++    blocks.sort(key=lambda b: order[b[0]])               # the order the Songwriter reads them in
++    forms = [list(b[2]) + ([""] if b[3] else []) for b in blocks]
+     levels = [0] * len(blocks)
+     head_text = "\n".join(head)
+ 
+     def assemble():
+         parts, shortened, cut = [], [], []
+-        for b_, v, lv in zip(blocks, variants, levels):
+-            if v[lv] == "":
++        for b_, f_, lv in zip(blocks, forms, levels):
++            if f_[lv] == "":
+                 cut.append(b_[0])
+             else:
+-                parts.append(v[lv])
++                parts.append(f_[lv])
+                 if lv > 0:
+                     shortened.append(b_[0])
+         if shortened or cut:
+@@ -396,16 +428,16 @@ def handoff_text(*, lesson: Lesson, technique_id: str, title: str, song_id: str,
+         return head_text + "\n\n" + "\n\n".join(parts), shortened, cut
+ 
+     full_text, shortened, cut = assemble()
+-    for target in range(1, max(len(v) for v in variants)):
+-        order = [i for i in range(len(blocks) - 1, -1, -1) if blocks[i][0] not in keep] + [i for i in range(len(blocks)) if blocks[i][0] in keep]
+-        for k in order:
+-            if LC.estimate_tokens(full_text) <= budget_tokens:
+-                break
+-            if levels[k] < target and levels[k] < len(variants[k]) - 1:
+-                levels[k] = min(target, len(variants[k]) - 1)
+-                full_text, shortened, cut = assemble()
+-        if LC.estimate_tokens(full_text) <= budget_tokens:
++    while LC.estimate_tokens(full_text) > budget_tokens:
++        movable = [i for i in range(len(blocks)) if levels[i] < len(forms[i]) - 1]
++        if not movable:
+             break
++        k = min(movable, key=lambda i: (blocks[i][1], i))    # the least important block goes all the way (shorter forms, then left out when it may be) before the next one is touched
++        levels[k] += 1
++        full_text, shortened, cut = assemble()
+     if LC.estimate_tokens(full_text) > budget_tokens:
+         return None, {"refused": True, "tokens": LC.estimate_tokens(full_text), "budget": budget_tokens, "shortened": shortened, "left_out": cut}
+-    return full_text, {"shortened": shortened, "left_out": cut, "tokens": LC.estimate_tokens(full_text), "budget": budget_tokens}
++    info = {"shortened": shortened, "left_out": cut, "tokens": LC.estimate_tokens(full_text), "budget": budget_tokens}
++    if tech is None and lesson.techniques:
++        info["techniques"] = [t.id for t in lesson.techniques]       # every technique reaches the Songwriter, at least by its title
++    return full_text, info
+diff --git a/music_studio/prompts/specialists/song_critic.md b/music_studio/prompts/specialists/song_critic.md
+index cf1529e..6dad868 100644
+--- a/music_studio/prompts/specialists/song_critic.md
++++ b/music_studio/prompts/specialists/song_critic.md
+@@ -1,58 +1,74 @@
+ # Role
+-You are the Song Critic AI of WorkflowPad Music Studio: an editorial reader of song lyrics. You read the lyrics the way a good producer or editor reads a demo and say, plainly and with evidence, what the song is trying to communicate and whether the text succeeds on its own terms. You do not write lyrics for the user and you do not fix the sound.
++You are the Song Critic AI of WorkflowPad Music Studio: an editorial critic of song lyrics. You read the lyrics the way a good producer or editor reads a demo and tell the songwriter, plainly and with evidence, how well the words work for a listener. You are a critic, not a teacher: you judge THIS song from the lyrics in front of you, and you do not recite songwriting lessons. You do not fix the sound.
+ 
+ # Primary Goal
+-Answer one question: **What is this song trying to communicate, and does the text succeed on its own terms?**
++Answer one question: **What is this song trying to communicate, and does the text succeed on its own terms?** Then review the eight aspects below so the songwriter sees at once where the song is strong, where it could improve, and what to try.
+ 
+ # Responsibilities
+-- Name the intention of the song as it shows in the words (a feeling, a situation, an argument, a mood). Do not invent an intention the lyrics do not show.
+-- Describe the emotional or narrative movement across the sections when there is one, and say honestly when the song is an atmosphere or a single idea and has no story. A story arc is never required.
+-- Name the strongest moment and the weakness that costs the song the most. Strengths are a legitimate result: a song that works is allowed to be reported as working.
+-- Judge the hook and how memorable the words are, from the lyrics alone.
+-- Put the one or two things to fix first at the top of the recommendations.
++- Name the intention of the song as it shows in the words. Do not invent an intention the lyrics do not show.
++- Review all eight aspects, but give each only what it deserves: a strength, a concern, a mixed reading, "no significant issue", "not applicable to this song", or "insufficient evidence". You do not have to find a problem in every aspect, and you must not invent a strength or a concern to fill one.
++- Say what works and what does not, point at the line that shows it, and say why it matters to the listener. Keep fact (what is in the lyrics) apart from opinion (your reading of it). Be candid: a real weakness is named, and a song that works is allowed to be reported as working.
++- Songcraft advice (a verse should develop, a hook should be specific, an ending should answer the opening) is a set of OPTIONS, not rules. A story is not required; stillness, repetition, abstraction and an open ending can be right for a song. Intent does not prove success and plainness does not prove failure: judge the effect. If a common principle does not suit this song, say why instead of applying it.
++- Recommend only what is worth doing; if the song already works, say it needs no change. When a change of wording is the right fix, you may offer ONE exact wording for the lines it replaces, in `proposal`, keeping the writer's meaning, intention and mood.
+ 
+ # Analysis Method
+-1. Read the whole song once before judging any line. Note the sections, the repeated lines and the title or hook line.
+-2. Write the intention in your own words. Check every claim against a line you can quote.
+-3. Follow the movement section by section: what changes, what stays, what is only repeated.
+-4. Look for what is specific (a concrete image, a detail only this song has) and what is generic. A cliché is a finding only when it weakens this song, not because it is a cliché.
+-5. Choose at most three concerns that really affect the listener, and at most two strengths worth naming. Everything else stays out.
++1. Read the whole song once before judging any line. Note the sections, the lines that return and the line that looks like the title or hook.
++2. Write the intention in your own words and check every claim against a line you can quote.
++3. For each aspect: what is in the lyrics, why it matters to the listener, and only if it matters, what to try and what the change could cost.
++4. Follow what each section does for the one before and after it, and what each return of a line adds, changes or only restates.
++5. Keep the few things worth acting on near the top of the verdict; everything else stays in its aspect.
+ 
+ # Quality Standards
+-- Every finding names its lines (L12 or L12-L13) and quotes the exact words.
+-- Keep fact and opinion apart: `observation` says what is in the lyrics, `interpretation` says what you make of it, and it is written as your reading, not as a rule.
+-- A recommendation is a direction to try, never a replacement lyric.
+-- No numeric score and no rating of the song. Praise only what you can point at.
+-- Do not praise every section and do not look for a problem in every section.
++- `lines:` is `L12`, `L12-L13`, or separate places such as `L5, L16-L18`; never join separate places into one range. `quote` is the exact words of those lines.
++- `summary` is one or two short sentences: your verdict on the aspect, in your own words (not a lesson). `observation` says what is in the lyrics; `interpretation` says why it matters, as your reading and not as a rule.
++- `recommendation` says what to try, where and for what effect. `proposal` is optional: use it only when the fix is a different wording of one place; it must cite exactly one place, have the same number of lines as the quote, differ from it, and carry no [tag] and no line id. Otherwise leave it out.
++- `keep` names what a change could cost, or why the original should stay.
++- `priority: high` is for a problem that stops the song reaching its own aim; use `-` for any other status. No numeric score.
+ 
+ # Rules
+-- Use only the lyrics, the sections and the style notes you are given. The Rhyme & Flow, Vocal Flow and Lyric Language reports belong to other specialists: do not judge rhyme quality, singability, syllable counts or word choice for its own sake. If one of them decides whether a line works for the story, say so in one phrase and leave the detail.
++- Use only the lyrics, the sections and the style notes you are given. Rhyme quality, singability, syllable counts and word choice for its own sake belong to other specialists: do not judge them.
+ - Never claim anything about melody, vocals or audio: you have not heard the song.
+-- Repetition (a refrain, a repeated hook) is not a flaw by itself. Say what it does for the song.
+ - Never invent a line, a word or a section that is not in the lyrics. Quote exactly.
+-- If the lyrics are too short or too unclear to judge, say that in the verdict and in a note instead of guessing.
++- If the lyrics are too short or too unclear to judge an aspect, use `insufficient` and say so in a note. If an aspect does not apply to this song, use `not_applicable`.
+ 
+ # Limitations
+-You read text only. You cannot judge the song as heard, its production, its genre fit in sound, or how it sings. You cannot know what the writer intended beyond what the words show: say "the lyrics suggest", not "the writer wants".
++You read text only. You cannot judge the song as heard, its production or how it sings, and you cannot know what the writer intended beyond what the words show: say "the lyrics suggest", not "the writer wants".
+ 
+ # Few-shot Examples
+-These are format and tone examples only. NEVER quote, reuse or refer to their lines in a real report.
++Format and tone only. NEVER quote, reuse or refer to these lines in a real report. A real report has all eight aspects.
+ 
+ [VERDICT.1]
+-headline: The image of waiting is clear, but the song does not move after the first chorus.
+-reading: The verses build one picture (a person at a window), and the chorus names the feeling directly. After the second chorus nothing new is learned, so the ending repeats instead of resolving.
++headline: The picture of waiting is clear, but after the second chorus the song stops learning anything new.
++reading: The verses build one picture (a person at a window) and the chorus names the feeling. Nothing in the second verse changes what the chorus means, so the ending repeats.
+ 
+-[FINDING.1]
+-kind: concern
++[ASPECT.4]
++aspect: development
++status: concern
+ priority: high
++summary: The second half says again what the first half said, so the song pauses where it needs a turn.
+ lines: L14-L15
+ quote: <<<
+ สุดท้ายก็ยังรออยู่เหมือนเดิม
+ ทุกอย่างยังเหมือนเดิม
+ >>>
+-observation: Both lines restate the situation of the first verse; no new fact or image appears in the second half.
+-interpretation: The song seems to want a turn here, and the repetition reads as a pause, not as a decision.
+-recommendation: Try one small change of the situation (a sound, a person, a decision) before the last chorus.
++observation: Both lines restate the first verse in the same shape and add no new fact.
++interpretation: The listener expects the waiting to change something and gets a pause, so the last chorus does not land harder than the first.
++recommendation: Let the second verse give one new fact about the person who is waited for.
++proposal: <<<
++สุดท้ายเสียงฝีเท้าก็ผ่านหน้าบ้านไป
++ฉันนับต่อ ว่าครั้งที่เท่าไหร่
++>>>
++keep: This costs some of the stillness; if the waiting itself is the point, keep the verse.
++
++[ASPECT.6]
++aspect: imagery
++status: not_applicable
++priority: -
++summary: The song states its idea plainly and does not rely on images, which suits it.
++lines: -
++observation: -
++interpretation: -
++recommendation: -
+ keep: -
+ 
+ # Output Requirements
+@@ -62,24 +78,28 @@ Answer ONLY in these numbered tags and finish with [DONE]. Nothing before the fi
+ headline: one sentence: your answer to the central question
+ reading: 2-4 sentences that give the reasons, in plain words
+ 
+-[FINDING.1]
+-kind: strength | concern | keep
+-priority: high | medium | low (for a concern only; otherwise -)
+-lines: L12 or L12-L13 (the lines the finding is about)
++[ASPECT.1]
++aspect: write exactly one of these eight key words: opening | theme | sections | development | hook | imagery | repetition | ending (one [ASPECT.n] each, n = 1 to 8, in this order; they mean: opening, central idea, section purpose and song journey, emotional or narrative development, hook and memorability, imagery and metaphor, repetition and contrast, ending and payoff)
++status: strength | concern | mixed | no_issue | not_applicable | insufficient
++pattern: opening only: one or more of scene, declaration, question, in_medias_res, dialogue, contradiction, hook_first, atmospheric; otherwise -
++priority: high | medium | low (for concern or mixed only; otherwise -)
++summary: one or two short sentences, your verdict on this aspect
++lines: L12, L12-L13, or separate places such as L5, L16-L18 (or - for the whole song)
+ quote: <<<
+-the exact words of those lines
++the exact words of those lines (leave out when lines is -)
+ >>>
+-observation: what is in the lyrics (a fact you can point at)
+-interpretation: your reading of it, said as your reading
+-recommendation: a direction to try (never a replacement lyric), or -
+-keep: why it can stay as it is (for a strength or a keep), or -
+-
+-(repeat [FINDING.n]: at most 4 findings, the most important first; at most 3 of kind concern)
++observation: what is in the lyrics (a fact you can point at), or -
++interpretation: why it matters to the listener, said as your reading, or -
++recommendation: what to try, where and for what effect, or - (no change needed)
++proposal: <<<
++(optional) one exact new wording for the quoted place only; leave the whole block out otherwise
++>>>
++keep: what a change could cost, or why the original should stay, or -
+ 
+ [SECTION.1]
+ name: the section name as written, for example Verse 1
+ lines: L2-L7
+-reading: 1-2 sentences about what this section does for the song
++reading: 1-2 sentences about what this section does for the song and for the next one
+ (one [SECTION.n] for each sung section, in order)
+ 
+ [NOTE.1]
+@@ -87,4 +107,4 @@ reading: 1-2 sentences about what this section does for the song
+ [DONE]
+ 
+ # Self-check
+-Before you answer: is every quote exact and on the lines you named? Is every concern something a listener would feel, not a taste of yours? Did you leave out praise you cannot point at? Is there no score, no replacement lyric and no claim about sound? Does the verdict answer the central question?
++Before you answer: are all eight aspects there, in order, each with only what it deserves? Is every quote exact and on the lines you named? Did I judge intent by its effect, and not take "it is deliberate" or "it is plain" as proof either way? Did I praise only what I can point at, and name a real weakness when there is one? Is every proposal for exactly one place, a different text of the same number of lines, with the same meaning and mood? Is there no score and no claim about sound?
+diff --git a/tests/test_academy.py b/tests/test_academy.py
+index f86db50..b3b4266 100644
+--- a/tests/test_academy.py
++++ b/tests/test_academy.py
+@@ -68,6 +68,14 @@ for lg in AC.LANGS:
+         used = set(re.findall(r"\[(R\d+)\]", "\n".join(v for k, v in les.sections.items() if k != "References")))
+         refs_ok &= bool(les.references) and used <= {r.id for r in les.references} and all(r.supports and r.status in ("verified", "general") and (r.status == "general" or r.url.startswith("https://")) for r in les.references)
+ check("K7 every lesson has Source References: each [Rn] in the text is defined, each reference says what it supports, a checked one has a URL, a general one says it is not a citation", refs_ok)
++tag_ok = all(r.id in set(re.findall(r"\[(R\d+)\]", "\n".join(v for k, v in AC.load(tp, lg).sections.items() if k != "References"))) for tp in AC.TOPICS for lg in AC.LANGS for r in AC.load(tp, lg).references if r.status == "verified")
++check("K7b every `verified` reference is the support of at least one tagged statement in the text (no reference is listed for show)", tag_ok)
++check("K7c the Ending lessons (Thai and English) cite no Berklee or other checked page: nothing checked says anything about song endings, so the only reference is `general`",
++      all([r.status for r in AC.load("ending", lg).references] == ["general"] for lg in AC.LANGS))
++for bad in ("javascript:alert(1)", "file:///C:/x", "data:text/html,x", "ftp://x.org/a", "https://", "http:/x", ""):
++    pass
++check("K7d only a plain http(s) address can become a link (javascript:, file:, data:, ftp:, a broken address are refused)", all(not AC.safe_url(u) for u in ("javascript:alert(1)", "file:///C:/x", "data:text/html,x", "ftp://x.org/a", "https://", "http:/x", "", "https://a b.com")) and AC.safe_url("https://online.berklee.edu/x") and AC.safe_url("http://a.org/b?c=1"))
++check("K7e a reference whose url is not http(s) makes the lesson invalid (reported, never linked)", not AC.parse(KB.joinpath("opening.md").read_text(encoding="utf-8").replace("url: https://www.writersdigest.com/wd-books/writing-better-lyrics", "url: javascript:alert(1)", 1), "opening")[0])
+ check("K8 the references keep the three kinds apart: principles from sources ([Rn] with a checked reference), our synthesis (untagged / general) and teaching examples (labelled)",
+       all(("แต่งขึ้นเพื่อการสอน" in AC.load(tp, "th").sections["Examples"] or "เพื่อการสอน" in AC.load(tp, "th").sections["Examples"]) and "written for teaching" in AC.load(tp, "en").sections["Examples"] for tp in AC.TOPICS)
+       and any(r.status == "general" for tp in AC.TOPICS for r in AC.load(tp, "th").references) and any(r.status == "verified" for tp in AC.TOPICS for r in AC.load(tp, "th").references))
+@@ -80,6 +88,24 @@ check("K11 Repetition separates intention from effect and does not teach that mu
+ check("K12 Imagery says pretty words are not always depth and plain language can be strong; Section Purpose does not force one structure; Ending says a song need not answer every question",
+       "Plain language can be strong" in AC.load("imagery", "en").sections["Why It Works"] and "do not have to share one structure" in AC.load("sections", "en").sections["What It Is"] and "does not have to answer every question" in AC.load("ending", "en").sections["What It Is"])
+ 
++th_t, en_t = AC.load("theme", "th"), AC.load("theme", "en")
++check("K11b Theme: the one-sentence test is an exercise to help find the idea, not a requirement, and an abstract or open song is a valid choice (both languages)",
++      "ไม่ใช่ข้อบังคับ" in th_t.technique("one-sentence").text and "นามธรรม" in th_t.technique("one-sentence").text and "not a requirement" in en_t.technique("one-sentence").text and "abstract" in en_t.technique("one-sentence").text
++      and "แปลว่ายังไม่เลือกแก่น" not in th_t.technique("one-sentence").text and "the idea has not been chosen yet" not in en_t.technique("one-sentence").text)
++sp_t, sp_e = AC.load("sections", "th"), AC.load("sections", "en")
++check("K11c Section Purpose: a Verse 2 that repeats is not called a failure: it asks whether the repetition adds meaning or feeling, and says stillness can be on purpose (both languages)",
++      "ทำให้เพลงหยุดนิ่ง" not in sp_t.technique("verse").text and "บางเพลงตั้งใจใช้ความนิ่งอย่างมีคุณค่า" in sp_t.technique("verse").text and "stalls the song" not in sp_e.technique("verse").text and "on purpose and to good effect" in sp_e.technique("verse").text)
++hk_t, hk_e = AC.load("hook", "th"), AC.load("hook", "en")
++check("K11d Hook: a specific phrase is a guideline and not a universal rule, and being catchy also depends on melody, rhythm and performance (both languages)",
++      "ไม่ใช่กฎสากล" in hk_t.sections["Why It Works"] and "Melody, Rhythm" in hk_t.sections["Why It Works"] and "not a universal rule" in hk_e.sections["Why It Works"] and "melody, rhythm and performance" in hk_e.sections["Why It Works"]
++      and "จำง่ายกว่าวลีทั่วไป เพราะ" not in hk_t.sections["Why It Works"] and "is easier to remember than a general one" not in hk_e.sections["Why It Works"])
++en_t2, en_e2 = AC.load("ending", "th"), AC.load("ending", "en")
++check("K11e Ending: the circular ending example shows what happens between the start and the end that changes the meaning, and a second example shows a circular ending that is only a repeat and not a full payoff (both languages)",
++      "ชิ้นสุดท้ายที่ยังไม่ปล่อย" in en_t2.sections["Examples"] and "แค่การซ้ำ" in en_t2.sections["Examples"] and "ยังไม่ใช่ Payoff ที่สมบูรณ์" in en_t2.sections["Examples"]
++      and "the last thing I have not let go" in en_e2.sections["Examples"] and "only a repeat" in en_e2.sections["Examples"] and "not yet a full payoff" in en_e2.sections["Examples"])
++check("K11f every lesson (all 16 files) says the techniques are options for the writer and not a standard that makes a song without them wrong",
++      all("ไม่ใช่เกณฑ์ตัดสินว่าเพลงที่ไม่ใช้เทคนิคเหล่านี้ผิดหรือด้อยกว่า" in AC.load(tp, "th").sections["Common Pitfalls"] and "not a standard by which a song that does not use them is judged wrong or lesser" in AC.load(tp, "en").sections["Common Pitfalls"] for tp in AC.TOPICS))
++
+ # reading a lesson makes no AI request
+ blocked = []
+ _ol, _og = LC.ask_local, LC.ask_grok
+@@ -91,7 +117,7 @@ LC.ask_local, LC.ask_grok = _ol, _og
+ spec_src = (ROOT / "music_studio" / "specialists.py").read_text(encoding="utf-8")
+ head_prompt = subprocess.run(["git", "show", "HEAD:music_studio/prompts/specialists/song_critic.md"], capture_output=True, cwd=ROOT).stdout.decode("utf-8").replace("\r\n", "\n")
+ cur_prompt = (ROOT / "music_studio/prompts/specialists/song_critic.md").read_bytes().decode("utf-8").replace("\r\n", "\n")
+-check("K14 the production Song Critic prompt is unchanged (equal to HEAD) and does not mention the lessons; no specialist module imports the academy", head_prompt == cur_prompt and "Academy" not in cur_prompt and "songcraft_academy" not in spec_src and "songcraft_academy" not in (ROOT / "music_studio/llm_chat.py").read_text(encoding="utf-8"))
++check("K14 the production Song Critic prompt asks for the eight-aspect critique (ASPECT tags with summary / proposal / the six statuses), tells the model the principles are options and not rules, and has no lesson text; no specialist module imports the academy", all(x in cur_prompt for x in ("[ASPECT.1]", "summary:", "proposal:", "not_applicable", "OPTIONS, not rules")) and "Academy" not in cur_prompt and "songcraft_academy" not in spec_src and "songcraft_academy" not in (ROOT / "music_studio/llm_chat.py").read_text(encoding="utf-8"))
+ 
+ # install / edit / upgrade / invalid, in a temporary folder (the real user folder is not touched)
+ tmp = Path(tempfile.mkdtemp(prefix="ac_"))
+@@ -106,11 +132,11 @@ edited = f_hook.read_text(encoding="utf-8").replace("Hook ด้านเนื
+ f_hook.write_text(edited, encoding="utf-8")
+ les_u = AC.load("hook", "th", user=u_dir, bundled=b_dir)
+ check("K17 the user edits a lesson: the edit is what the program shows (origin user)", les_u.origin == "user" and "ฉบับแก้โดยผู้ใช้" in les_u.sections["What It Is"])
+-(b_dir / "hook.md").write_text((b_dir / "hook.md").read_text(encoding="utf-8").replace("version: 1.0.0", "version: 1.1.0", 1), encoding="utf-8")
+-(b_dir / "theme.md").write_text((b_dir / "theme.md").read_text(encoding="utf-8").replace("version: 1.0.0", "version: 1.1.0", 1), encoding="utf-8")
++for _n in ("hook.md", "theme.md"):
++    (b_dir / _n).write_text(re.sub(r"^version: \S+$", "version: 9.9.9", (b_dir / _n).read_text(encoding="utf-8"), count=1, flags=re.M), encoding="utf-8")
+ m3 = AC.ensure_user_copies(b_dir, u_dir)
+ check("K18 the program is updated: a lesson the user edited is NOT overwritten; one never edited is upgraded (the old one kept as a backup)",
+-      f_hook.read_text(encoding="utf-8") == edited and AC.load("theme", "th", user=u_dir, bundled=b_dir).version == "1.1.0" and list(u_dir.glob("theme.*.bak.md")) and any("theme.md" in m and "upgraded" in m for m in m3), m3)
++      f_hook.read_text(encoding="utf-8") == edited and AC.load("theme", "th", user=u_dir, bundled=b_dir).version == "9.9.9" and list(u_dir.glob("theme.*.bak.md")) and any("theme.md" in m and "upgraded" in m for m in m3), m3)
+ f_op = u_dir / "opening.md"
+ f_op.write_text("ไม่มี front matter\n## What It Is\nx", encoding="utf-8")
+ les_bad = AC.load("opening", "th", user=u_dir, bundled=b_dir)
+@@ -157,14 +183,80 @@ tx3, _ = AC.handoff_text(**{**args, "state": "outdated", "why": "lyrics", "lyric
+ check("K29 an outdated report is labelled OUTDATED with what changed, the finding's line numbers are called OLD, and the current lyrics are the ones sent", tx3 and "OUTDATED" in tx3 and "OLD lyrics" in tx3 and "(แก้แล้ว)" in tx3 and "Changes since the analysis" in tx3)
+ check("K30 the hand-off never contains the other lessons (only the selected one)", all(AC.load(k, "th").title not in tx for k in AC.TOPICS if k != "opening"))
+ 
++wl_ok, wl_why = True, []
++for lg in AC.LANGS:
++    for tp in AC.TOPICS:
++        lz = AC.load(tp, lg)
++        tx_w, inf_w = AC.handoff_text(lesson=lz, technique_id="", title="t", song_id="s1", sheet_id="h1", style={}, settings={}, finding=None, report_line="", state="", why="", lyrics_then=T4, lyrics_now=T4, budget_tokens=3500)
++        good = tx_w is not None and all(tc.title in tx_w for tc in lz.techniques) and inf_w.get("techniques") == [tc.id for tc in lz.techniques] and LC.estimate_tokens(tx_w) <= 3500
++        wl_ok &= good
++        if not good:
++            wl_why.append((lg, tp))
++check("K31 WHOLE LESSON, budget enough (3,500 tokens, the cap of the app): every technique title of every lesson (all 8 topics, Thai and English) reaches the Songwriter, and `info` lists the technique ids", wl_ok, wl_why)
++lz_o = AC.load("opening", "th")
++tx_full, inf_full = AC.handoff_text(lesson=lz_o, technique_id="", title="t", song_id="s1", sheet_id="h1", style={}, settings={}, finding=None, report_line="", state="", why="", lyrics_then=T4, lyrics_now=T4, budget_tokens=6000)
++check("K32 WHOLE LESSON, plenty of room: all eight patterns of Opening arrive with their four lines (who it suits, the expectation, strength / limit, what next), nothing shortened or left out",
++      all(tc.title in tx_full for tc in lz_o.techniques) and all(x in tx_full for tc in lz_o.techniques for x in [y.strip() for y in tc.text.split("\n") if y.strip()]) and not inf_full["shortened"] and not inf_full["left_out"])
++tx_s, inf_s = AC.handoff_text(lesson=lz_o, technique_id="", title="t", song_id="s1", sheet_id="h1", style={}, settings={}, finding=None, report_line="", state="", why="", lyrics_then=T4, lyrics_now=T4, budget_tokens=1500)
++check("K33 WHOLE LESSON, tight budget (1,500): all eight titles still arrive, the least useful blocks are left out first (examples, the lesson summary), the techniques shrink last and only as far as needed, and the text SAYS what was shortened and left out",
++      tx_s and all(tc.title in tx_s for tc in lz_o.techniques) and "the examples" in inf_s["left_out"] and "CONTEXT NOTE" in tx_s and "left out:" in tx_s and "shortened:" in tx_s and LC.estimate_tokens(tx_s) <= 1500, (inf_s["shortened"], inf_s["left_out"]))
++tx_t, inf_t = AC.handoff_text(lesson=lz_o, technique_id="", title="t", song_id="s1", sheet_id="h1", style={}, settings={}, finding=None, report_line="", state="", why="", lyrics_then=T4, lyrics_now=T4, budget_tokens=800)
++check("K34 WHOLE LESSON, very tight (800): the eight titles still arrive (short forms), and the message stays within the budget", tx_t and all(tc.title in tx_t for tc in lz_o.techniques) and LC.estimate_tokens(tx_t) <= 800, inf_t)
++tx_r, inf_r = AC.handoff_text(lesson=lz_o, technique_id="", title="t", song_id="s1", sheet_id="h1", style={}, settings={}, finding=None, report_line="", state="", why="", lyrics_then=T4, lyrics_now=T4, budget_tokens=400)
++check("K35 WHOLE LESSON, the smallest useful message does not fit (400): nothing is built (refused before any request)", tx_r is None and inf_r.get("refused"))
++tx_1, inf_1 = AC.handoff_text(lesson=lz_o, technique_id="scene", title="t", song_id="s1", sheet_id="h1", style={}, settings={}, finding=None, report_line="", state="", why="", lyrics_then=T4, lyrics_now=T4, budget_tokens=3500)
++check("K36 ONE TECHNIQUE selected: unchanged behavior: that technique in full, no other technique is sent, no `techniques` list in info", tx_1 and lz_o.technique("scene").text in tx_1 and not any(tc.title in tx_1 for tc in lz_o.techniques if tc.id != "scene") and "techniques" not in inf_1 and "the whole lesson" not in tx_1)
++fnd = {"id": "as_opening", "aspect": "opening", "status": "concern", "kind": "concern", "priority": "medium", "refs": [[2, 5]], "first": 2, "last": 5, "lines_invalid": "", "quote": "q", "quote_ok": True,
++       "observation": "เปิดด้วยภาพ", "interpretation": "ภาพยังไม่เฉพาะ", "recommendation": "ลองให้ภาพมีผลต่อเรื่อง", "keep": "คงภาพหลัก", "proposal": "", "patterns": ["scene"]}
++T4_new = T4.replace(ROWS[17], ROWS[17] + " (แก้แล้ว)", 1)
++tx_o, _io = AC.handoff_text(lesson=lz_o, technique_id="", title="t", song_id="s1", sheet_id="h1", style={}, settings={}, finding=fnd, report_line="made x", state="outdated", why="lyrics", lyrics_then=T4, lyrics_now=T4_new, budget_tokens=3500)
++check("K37 WHOLE LESSON on an outdated report: all titles arrive, the finding is labelled with OLD line numbers, the CURRENT lyrics are the ones sent (no old line number is presented as the current text)",
++      tx_o and all(tc.title in tx_o for tc in lz_o.techniques) and "OLD lyrics" in tx_o and "OUTDATED" in tx_o and "(แก้แล้ว)" in tx_o and "numbered as in the OLD lyrics of the analysis" in tx_o)
++
++# ── P. the critique format: statuses, names, proposals, the real answers (pure) ─────────────────────────────────────────────────────────────────────
++check("P1 the six statuses map to the five states of a card: strength / no_issue = good; concern / mixed = improve, or major when the priority is high; not_applicable = na; insufficient / unrated / missing = unknown",
++      [SR.status_group(s, p) for s, p in (("strength", ""), ("no_issue", ""), ("concern", "medium"), ("concern", "low"), ("concern", "high"), ("mixed", "low"), ("mixed", "high"), ("not_applicable", ""), ("insufficient", ""), ("unrated", ""), ("missing", ""), ("???", ""))]
++      == ["good", "good", "improve", "improve", "major", "improve", "major", "na", "unknown", "unknown", "unknown", "unknown"] and set(SR.STATUS_GROUPS) == {"good", "improve", "major", "na", "unknown"})
++check("P2 the name of an aspect is read from what the model wrote (display names, the start of one) and nothing else is guessed",
++      [SR.aspect_key(x) for x in ("opening", "Opening Review", "central idea", "Central Idea / Theme", "section purpose and song journey", "Section Purpose / Song Journey", "emotional or narrative development", "hook and memorability", "imagery and metaphor", "repetition and contrast", "ending and payoff")]
++      == ["opening", "opening", "theme", "theme", "sections", "sections", "development", "hook", "imagery", "repetition", "ending"] and SR.aspect_key("bogus") == "bogus" and SR.aspect_key("") == "")
++FIX_RAW = (ROOT / "tests/fixtures/critique_mixed_song.txt").read_text(encoding="utf-8")
++SYS_CRIT = SP.load("song_critic", user=Path(tempfile.mkdtemp())).text
++pf = SR.parse_answer(FIX_RAW, "song_critic", T4, SYS_CRIT)
++asp_f = pf["sr"]["aspects"]
++check("P3 the mock critique answer (a fixture, not a model's) parses to eight aspects with no diagnostic, one valid proposal, summaries and the five states", pf["ok"] and len(asp_f) == 8 and not pf["diagnostics"] and sum(1 for a in asp_f if a["proposal"]) == 1 and all(a["summary"] for a in asp_f)
++      and [SR.status_group(a["status"], a["priority"]) for a in asp_f] == ["good", "good", "improve", "major", "good", "good", "improve", "na"])
++bad_prop = FIX_RAW.replace("ฉันปิดมันกลับไป ยังไม่พร้อมจะขนอะไรออก", "", 1)
++pb = SR.parse_answer(bad_prop, "song_critic", T4, SYS_CRIT)
++check("P4 a proposal with another number of lines than the quoted lines is refused with a reason (the critique stays, no Apply)", not pb["sr"]["aspects"][2]["proposal"] and any("proposal" in d and "number of lines" in d for d in pb["diagnostics"]))
++two_places = FIX_RAW.replace("lines: L18-L21\nquote: <<<\nฉันเสียใจมาก", "lines: L18-L21, L29-L30\nquote: <<<\nฉันเสียใจมาก", 1)
++pt = SR.parse_answer(two_places, "song_critic", T4, SYS_CRIT)
++check("P5 a proposal for two separate places is refused (a wording replaces ONE place only)", not pt["sr"]["aspects"][2]["proposal"] and any("exactly one line reference" in d for d in pt["diagnostics"]))
++same = FIX_RAW.replace("ฉันเปิดลิ้นชักห้องยายทีละช่อง\nผ้าเช็ดหน้าผืนเก่ายังพับอยู่ตามรอย\nบนชั้นมีแว่นตายายวางทับหนังสือสวดมนต์\nฉันปิดมันกลับไป ยังไม่พร้อมจะขนอะไรออก", "ฉันเสียใจมาก ฉันคิดถึงยายเหลือเกิน\nฉันรู้สึกเหงาและว้าเหว่ในใจ\nบ้านหลังนี้มีความทรงจำมากมาย\nฉันไม่อยากให้ทุกอย่างหายไป", 1)
++check("P6 a proposal that is the same text as the original is refused", not SR.parse_answer(same, "song_critic", T4, SYS_CRIT)["sr"]["aspects"][2]["proposal"])
++na_s = SR.parse_answer(FIX_RAW.replace("status: not_applicable", "status: Not relevant to this song", 1), "song_critic", T4, SYS_CRIT)["sr"]["aspects"][7]
++check("P7 'not relevant' written in words is read as not_applicable, not as 'insufficient'", na_s["status"] == "not_applicable")
++REAL = ROOT / "docs/song_critic_academy_critique/REAL_RUNS"
++if REAL.exists():
++    import songs as _songs
++    S1_TEXT = _songs.SONGS["S1"]["text"]
++    rg = SR.parse_answer((REAL / "S1_grok_response.txt").read_text(encoding="utf-8"), "song_critic", S1_TEXT, SYS_CRIT)
++    rm = SR.parse_answer((REAL / "S1_gemma_response.txt").read_text(encoding="utf-8"), "song_critic", S1_TEXT, SYS_CRIT)
++    check("P8 the REAL Grok answer on Test Song 01 (saved raw output) parses to eight aspects and names the missing development as a concern of high priority (a major issue)", rg["ok"] and len(rg["sr"]["aspects"]) == 8
++          and next(a for a in rg["sr"]["aspects"] if a["aspect"] == "development")["status"] == "concern" and next(a for a in rg["sr"]["aspects"] if a["aspect"] == "development")["priority"] == "high")
++    check("P9 the REAL Gemma answer (it repeated two aspect keys): the duplicates are refused with a diagnostic, the other aspects are kept, nothing is guessed or re-assigned", rm["ok"] and len(rm["sr"]["aspects"]) < 8 and any("already given" in d for d in rm["diagnostics"]), len(rm["sr"]["aspects"]))
++
+ # ── U / I. the page and Discuss (control tree; fake model) ────────────────────────────────────────────────────────────────────────────────────────
++FIXTURE = (ROOT / "tests/fixtures/critique_mixed_song.txt").read_text(encoding="utf-8")
++ANSWER = {"text": FIXTURE}
++
++
+ def fake(system, user, *a, **k):
+     kind = "critic" if "Song Critic AI" in system else "songwriter"
+     CALLS.append((kind, system, user, k.get("session")))
+     return ANSWER["text"] if kind == "critic" else "ตอบจากผู้ช่วยแต่งเพลง"
+ 
+ 
+-ANSWER = {"text": (ROOT / "docs/song_critic_v3/RAW_RESPONSES/TestSong04_grok_candidate_response.txt").read_text(encoding="utf-8")}
+ LC.ask_local = lambda host, wf, system, user, *a, **k: fake(system, user, *a, **k)
+ LC.ask_grok = lambda key, model, system, user, *a, **k: fake(system, user, *a, **k)
+ FN, CELLS = {}, {}
+@@ -184,6 +276,8 @@ def var(n):
+ 
+ tasks: list = []
+ APP.page.run_task = lambda fn, *a, **k: tasks.append((fn, a))
++DIALOGS: list = []
++APP.page.show_dialog = lambda d, *a, **k: DIALOGS.append(d)
+ 
+ 
+ def drain():
+@@ -216,7 +310,7 @@ def texts(c, out):
+             texts(t, out)
+     for t in (getattr(c, "spans", None) or []):
+         texts(t, out)
+-    for k in (getattr(c, "controls", None) or []):
++    for k in (getattr(c, "controls", None) or []) + (getattr(c, "actions", None) or []):
+         texts(k, out)
+     return out
+ 
+@@ -227,33 +321,29 @@ def page_text():
+ 
+ def all_controls(c, out):
+     out.append(c)
+-    for a in ("content", "controls", "title", "subtitle", "leading"):
++    for a in ("content", "controls", "title", "subtitle", "leading", "actions"):
+         v = getattr(c, a, None)
+         for x in (v if isinstance(v, (list, tuple)) else ([v] if v is not None and hasattr(v, "__dict__") else [])):
+             all_controls(x, out)
+     return out
+ 
+ 
+-def tiles():
+-    return [c for c in all_controls(col, []) if isinstance(c, ft.ExpansionTile)]
++def cards():
++    return [c for c in all_controls(col, []) if isinstance(c, ft.ExpansionTile) and re.match(r"\d\d ·", str(getattr(c.title, "value", "")))]
+ 
+ 
+-def tval(t):
++def cval(t):
+     return str(getattr(t.title, "value", "") or "")
+ 
+ 
+-def btns():
+-    return [c for c in all_controls(col, []) if isinstance(c, (ft.FilledButton, ft.OutlinedButton, ft.TextButton))]
++def btns(root=None):
++    return [c for c in all_controls(root or col, []) if isinstance(c, (ft.FilledButton, ft.OutlinedButton, ft.TextButton))]
+ 
+ 
+ def btxt(b):
+     return str(getattr(b, "content", None) or getattr(b, "text", None) or "")
+ 
+ 
+-def is_lesson_btn(b):
+-    return "lesson" in btxt(b).lower() or "บทเรียน" in btxt(b) or "technique" in btxt(b).lower() or "เทคนิค" in btxt(b)
+-
+-
+ def analyze(answer):
+     ANSWER["text"] = answer
+     FN["rp_show_tab"]("sr_critic")
+@@ -261,120 +351,172 @@ def analyze(answer):
+     FN["rp_show_tab"]("sr_critic")
+ 
+ 
++def dtext(d):
++    return " | ".join(texts(d.title, []) + texts(d.content, []) + [x for a in (d.actions or []) for x in texts(a, [])])
++
++
++GROUP_TH = {"good": "ทำได้ดี", "improve": "มีจุดควรปรับปรุง", "major": "มีปัญหาสำคัญ", "na": "ไม่เกี่ยวข้องกับเพลงนี้", "unknown": "ยังไม่ได้วิเคราะห์ / ข้อมูลไม่เพียงพอ"}
++LESSON_WORDS = ("คืออะไร", "ทำไมจึงได้ผล", "Scene Opening", "Atmospheric / Symbolic", "เรียนรู้หลักการแต่งเพลง")
++
+ # no report at all
+ CALLS.clear()
+ FN["rp_show_tab"]("sr_critic")
+-tl0 = tiles()
+-lesson_tiles = [t for t in tl0 if re.match(r"\d\d ·", tval(t))]
+-check("U1 no report: the Song Critic page shows the Academy with the eight lessons, and no AI request was made to show them", len(lesson_tiles) == 8 and "Songwriting Academy" in page_text() and not CALLS, len(lesson_tiles))
+-check("U2 with no report no analysis text is shown for any aspect (no 'Strength' / 'Concern' status, no finding text): the page says the lessons are not an analysis",
+-      not any(w in page_text() for w in ("Strength", "Concern", "จุดแข็ง", "ข้อกังวล")) and "ไม่ใช่การวิเคราะห์เนื้อเพลง" in page_text())
+-check("U3 every lesson tile is collapsed by default (also the technique tiles inside)", all(t.expanded is False for t in tl0))
+-t0 = lesson_tiles[0]
+-t0.expanded = True
+-t0.on_change(types.SimpleNamespace(control=t0))
+-FN["rp_show_tab"]("sr_critic")
+-check("U4 opening a lesson is remembered after the page is drawn again, and closing too", [t for t in tiles() if re.match(r"01 ·", tval(t))][0].expanded is True)
+-t1 = [t for t in tiles() if re.match(r"01 ·", tval(t))][0]; t1.expanded = False; t1.on_change(types.SimpleNamespace(control=t1)); FN["sr_render"]()
+-check("U4 ... and closing is remembered too", [t for t in tiles() if re.match(r"01 ·", tval(t))][0].expanded is False)
+-pt = page_text()
+-check("U5 the lesson text comes from the Markdown file (Thai): section labels in Thai, the eight opening patterns by name, the sources", all(x in pt for x in ("คืออะไร", "ทำไมจึงได้ผล", "แบบฝึกหัด", "Scene Opening", "Atmospheric / Symbolic", "R1 ·", "ตรวจแหล่งแล้ว")))
+-les_buttons = [b for b in btns() if is_lesson_btn(b)]
+-check("U6 no duplicate buttons: one 'Discuss this lesson' per lesson (8) and one per technique (8+6+4+6+5+6+6+6=47... counted from the files); nothing else offers Discuss on a page with no report",
+-      sum(1 for b in les_buttons if "บทเรียนนี้" in btxt(b)) == 8 and sum(1 for b in les_buttons if "เทคนิคนี้" in btxt(b)) == sum(len(AC.load(k, "th").techniques) for k in AC.TOPICS) and not [b for b in btns() if not is_lesson_btn(b) and "Songwriter" in btxt(b)],
+-      (sum(1 for b in les_buttons if "บทเรียนนี้" in btxt(b)), sum(1 for b in les_buttons if "เทคนิคนี้" in btxt(b))))
++c0 = cards()
++check("U1 no report: the page shows the eight critique cards (01-08) under 'Songwriting Academy', and no AI request was made", len(c0) == 8 and "Songwriting Academy" in page_text() and not CALLS and [cval(c)[:2] for c in c0] == [f"0{i}" for i in range(1, 9)])
++check("U2 every card says it has no critique and shows the state 'not analyzed / not enough information': no critique text, no status of any other kind", page_text().count(GROUP_TH["unknown"]) == 8 and page_text().count("ยังไม่มีบทวิจารณ์") >= 8
++      and not any(GROUP_TH[g] in page_text() for g in ("good", "improve", "major", "na")))
++check("U3 the lesson text is NOT in the cards (no lesson section, no technique name on the page)", not any(w in page_text() for w in LESSON_WORDS))
++check("U4 every card is collapsed by default; opening one is remembered after the page is drawn again and closing too", all(c.expanded is False for c in c0))
++t1 = c0[2]; t1.expanded = True; t1.on_change(types.SimpleNamespace(control=t1)); FN["sr_render"]()
++open_ok = [c for c in cards() if cval(c).startswith("03")][0].expanded is True
++t1 = [c for c in cards() if cval(c).startswith("03")][0]; t1.expanded = False; t1.on_change(types.SimpleNamespace(control=t1)); FN["sr_render"]()
++check("U4b ... and closing is remembered too", open_ok and [c for c in cards() if cval(c).startswith("03")][0].expanded is False)
++read_btns = [b for b in btns() if "อ่านบทเรียน" in btxt(b)]
++check("U5 each of the eight cards has a 'Read the lesson' button that works with no report; nothing else offers Discuss", len(read_btns) == 8 and not [b for b in btns() if "ผู้ช่วยแต่งเพลง" in btxt(b) or "Songwriter" in btxt(b)])
++CALLS.clear(); DIALOGS.clear()
++ok_d, bad_d = True, []
++for i, key in enumerate(AC.TOPICS):
++    for lg in ("th", "en"):
++        I18N.set_lang(lg)
++        DIALOGS.clear()
++        FN["ac_open_lesson"](key)
++        d = DIALOGS[-1] if DIALOGS else None
++        les = AC.load(key, lg)
++        good = d is not None and les.title in dtext(d) and all(les.sections[s].lstrip("- ").split("\n")[0][:20] in dtext(d) for s in ("What It Is", "Examples", "Common Pitfalls", "Try It Yourself")) and any(t.title in dtext(d) for t in les.techniques)
++        ok_d &= good
++        if not good:
++            bad_d.append((key, lg))
++I18N.set_lang("th")
++check("U6 'Read the lesson' opens a dialog for all 8 topics in Thai and in English: the lesson title, what it is, examples, pitfalls, the exercise and the techniques, from the Markdown file; no AI request", ok_d and not CALLS, bad_d)
++DIALOGS.clear(); FN["ac_open_lesson"]("opening")
++dlg = DIALOGS[-1]
++check("U7 the dialog has a close button (a title icon and a 'Close' action); it is not modal; its text says the lesson is reference knowledge, not the AI's opinion", len([a for a in (dlg.actions or []) if btxt(a) == "ปิด"]) == 1 and dlg.modal is False and "ไม่ใช่ความเห็นของ AI" in dtext(dlg))
++check("U8 the dialog carries the Discuss buttons of the lesson (one for the lesson, one per technique)", sum(1 for b in btns(dlg.content) if "บทเรียนนี้" in btxt(b)) == 1 and sum(1 for b in btns(dlg.content) if "เทคนิคนี้" in btxt(b)) == len(AC.load("opening", "th").techniques))
++links = [b for b in btns(dlg.content) if getattr(b, "url", None)]
++check("U8b the references of the lesson open as http(s) links; the label does not claim the principle is proven", links and all(str(b.url).startswith(("https://", "http://")) for b in links) and "ตรวจหน้าอ้างอิงแล้ว (ยืนยันเฉพาะที่ระบุไว้)" in dtext(dlg) and "ตรวจแหล่งแล้ว" not in dtext(dlg))
+ wide = [c for c in all_controls(col, []) if isinstance(getattr(c, "width", None), (int, float)) and c.width > 280]
+-check("U7 layout: no control has a fixed width above 280 px (the drawer is 320-560 px); the button and chip rows wrap", not wide and sum(1 for c in all_controls(col, []) if isinstance(c, ft.Row) and c.wrap) >= 8, [type(c).__name__ for c in wide][:3])
++check("U9 layout: no control of the page has a fixed width above 280 px (the drawer is 320-560 px); the button and chip rows wrap", not wide and sum(1 for c in all_controls(col, []) if isinstance(c, ft.Row) and c.wrap) >= 8, [type(c).__name__ for c in wide][:3])
+ I18N.set_lang("en"); FN["sr_render"]()
+ pe = page_text()
+-check("U8 the UI language English shows the English lesson (headings and text), the Thai lyric examples stay as they are", "What It Is" in pe and "Why It Works" in pe and "open with an image or situation" in pe.lower() and "ถ้วยกาแฟสองใบยังวางอยู่ที่เดิม" in pe and "คืออะไร" not in pe)
++check("U10 the UI language English: the card labels and states are English, the Thai lyrics stay Thai", "Not analyzed / not enough information" in pe and "Read the lesson" in pe and "Songwriting Academy" in pe)
+ I18N.set_lang("th"); FN["sr_render"]()
+-
+-# a missing or invalid lesson file does not break the page
+ _u, _b = AC.USER_DIR, AC.BUNDLED
+ empty = Path(tempfile.mkdtemp(prefix="ac_empty_"))
+ AC.USER_DIR, AC.BUNDLED = empty / "u", empty / "b"
+ AC._cache.clear()
+-FN["sr_render"]()
+-check("U9 every lesson file missing: the page still draws (a short 'not available' note per lesson, eight tiles)", len([t for t in tiles() if re.match(r"\d\d ·", tval(t))]) == 8 and "ยังใช้บทเรียนนี้ไม่ได้" in page_text())
++DIALOGS.clear(); FN["ac_open_lesson"]("opening")
++check("U11 every lesson file missing: the card page still draws and the dialog opens with a 'not available' note", len(cards()) == 8 and DIALOGS and "ยังใช้บทเรียนนี้ไม่ได้" in dtext(DIALOGS[-1]))
+ AC.USER_DIR, AC.BUNDLED = _u, _b
+ AC._cache.clear()
+-FN["sr_render"]()
+ 
+-# a legacy report
++# a report in the new format: the real critique cards
++analyze(FIXTURE)
++rep = FN["sr_get"]("song_critic"); srd = rep.data["sr"]
++cs = cards()
++exp = ["good", "good", "improve", "major", "good", "good", "improve", "na"]
++check("U12 a critique report: eight cards in the fixed order with the states the AI's statuses map to (done well / could be improved / major issue / not relevant)", len(cs) == 8 and all(GROUP_TH[g] in " ".join(texts(c.subtitle, [])) for c, g in zip(cs, exp)), [" ".join(texts(c.subtitle, []))[:50] for c in cs])
++check("U13 a collapsed card shows the AI's own short summary (one or two lines), and every card is collapsed", all(a["summary"] in " ".join(texts(c.subtitle, [])) for c, a in zip(cs, srd["aspects"])) and all(c.expanded is False for c in cs if not cval(c).startswith("04")) )
++dev = [c for c in cs if cval(c).startswith("04")][0]
++dev.expanded = True; dev.on_change(types.SimpleNamespace(control=dev)); FN["sr_render"]()
++dev = [c for c in cards() if cval(c).startswith("04")][0]
++dt = " ".join(texts(dev, []))
++check("U14 an expanded card shows the full critique with its evidence: the lines, the quote, what was found, why it matters, what to try and what it could cost", all(x in dt for x in ("L24-L26", "ในลิ้นชักมีจดหมายซองเก่าใบหนึ่ง", "ผู้ฟังรอว่าจดหมายจะมีผลต่อเรื่อง", "ให้ Chorus สุดท้ายหรือ Outro เปลี่ยนสิ่งเดียว", "ถ้าการไม่เปิดจดหมายคือประเด็นของเพลง")), dt[:200])
++dev_btns = [btxt(b) for b in btns(dev)]
++check("U15 the actions of a card with no wording to propose: Read the lesson and Discuss with Songwriter, and no Apply / View proposed change", any("อ่านบทเรียน" in x for x in dev_btns) and any("ผู้ช่วยแต่งเพลง" in x for x in dev_btns) and not any(x in ("Apply", "นำไปใช้") or "ดูข้อเสนอแก้ไข" in x for x in dev_btns), dev_btns)
++check("U16 the lesson text is still not in the cards after Analyze, and no card has a score", not any(w in page_text() for w in LESSON_WORDS) and not re.search(r"\b\d+\s*/\s*(10|100)\b", page_text()))
++sec = [c for c in cards() if cval(c).startswith("03")][0]
++sec.expanded = True; sec.on_change(types.SimpleNamespace(control=sec)); FN["sr_render"]()
++sec = [c for c in cards() if cval(c).startswith("03")][0]
++sec_btns = [btxt(b) for b in btns(sec)]
++check("U17 only the card that has a real proposed wording offers 'View proposed change' and Apply (the other seven have none); the proposal shows ORIGINAL and PROPOSED", sum(1 for b in btns() if "ดูข้อเสนอแก้ไข" in btxt(b)) == 1 and sum(1 for b in btns() if btxt(b) in ("Apply", "นำไปใช้")) == 1
++      and "ORIGINAL" in " ".join(texts(sec, [])) or "ต้นฉบับ" in " ".join(texts(sec, [])), sec_btns)
++na = [c for c in cards() if cval(c).startswith("08")][0]
++na.expanded = True; na.on_change(types.SimpleNamespace(control=na)); FN["sr_render"]()
++na = [c for c in cards() if cval(c).startswith("08")][0]
++check("U18 a 'not relevant' card makes up no critique: only the AI's summary and the actions; Read the lesson still works", "ไม่มีข้อสังเกตเพิ่มเติมในด้านนี้" in " ".join(texts(na, [])) and any("อ่านบทเรียน" in btxt(b) for b in btns(na)))
++
++# legacy report
+ LEG = "[VERDICT.1]\nheadline: older report\nreading: r\n[FINDING.1]\nkind: concern\npriority: high\nlines: L2\nquote: <<<\n" + ROWS[1] + "\n>>>\nobservation: legacy obs\ninterpretation: legacy why\nrecommendation: legacy do\nkeep: legacy cost\n[SECTION.1]\nname: Verse 1\nlines: L2-L5\nreading: sr\n[DONE]"
+ analyze(LEG)
+-check("U10 an older-format report keeps its findings and shows the Academy as a list under them (no aspect tiles of a Songcraft review)", "legacy obs" in page_text() and "Songwriting Academy" in page_text() and "การวิเคราะห์การออกแบบเพลง" not in page_text() and len([t for t in tiles() if re.match(r"\d\d ·", tval(t))]) == 8)
++check("U19 an older-format report keeps its findings and shows the eight cards below it, each saying the report has no critique for the aspect, with the lessons readable", "legacy obs" in page_text() and len(cards()) == 8 and page_text().count("รายงานรุ่นเก่าไม่มีบทวิจารณ์ของหัวข้อนี้") >= 8 and sum(1 for b in btns() if "อ่านบทเรียน" in btxt(b)) == 8)
+ 
+-# a Songcraft report: the lesson is inside each aspect tile
+-analyze((ROOT / "docs/song_critic_v3/RAW_RESPONSES/TestSong04_grok_candidate_response.txt").read_text(encoding="utf-8"))
+-rep = FN["sr_get"]("song_critic"); srd = rep.data["sr"]
+-asp_tiles = [t for t in tiles() if re.match(r"\d\d ·", tval(t))]
+-learn = [t for t in tiles() if str(getattr(t.title, "value", "")) in ("เรียนรู้หลักการแต่งเพลง", "Learn songcraft principles")]
+-check("U11 a Songcraft report: the eight aspect tiles each hold ONE collapsed lesson block, and the Academy list is not drawn a second time", len(asp_tiles) == 8 and len(learn) == 8 and all(t.expanded is False for t in learn) and "Songwriting Academy" not in page_text())
+-check("U12 AI analysis and the lesson are told apart: the AI finding sits under the tile as before, the lesson says it is reference knowledge, not the AI's opinion", "ไม่ใช่ความเห็นของ AI" in page_text() and "การวิเคราะห์การออกแบบเพลง" in page_text())
+-ai_buttons = [b for b in btns() if not is_lesson_btn(b) and "ผู้ช่วยแต่งเพลง" in btxt(b) or ("Songwriter" in btxt(b) and not is_lesson_btn(b))]
+-check("U13 no duplicate buttons on a Songcraft report: the AI-finding Discuss buttons are as before (whole report + one per aspect with a finding + one per action) and the lesson buttons are only lesson / technique ones",
+-      len(ai_buttons) == 1 + sum(1 for a in srd["aspects"] if not (a["status"] in ("no_issue", "insufficient", "unrated") and not (a.get("observation") or a.get("interpretation") or a.get("keep")))) + len(srd["actions"]) and sum(1 for b in btns() if is_lesson_btn(b) and "บทเรียนนี้" in btxt(b)) == 8, len(ai_buttons))
+-five = "[VERDICT.1]\nheadline: h5\nreading: r\n" + "".join(re.sub(r"\[ASPECT\.9\]", f"[ASPECT.{i + 1}]", f"[ASPECT.9]\naspect: {k}\nstatus: strength\npattern: -\npriority: -\nlines: L2-L5\nobservation: o\ninterpretation: w\nrecommendation: -\nkeep: k\n") for i, k in enumerate(SR.ASPECTS[:5])) + "[DONE]"
+-analyze(five)
+-nr = page_text()
+-check("U14 an aspect the Song Critic did not review still has its lesson, and no analysis text is invented for it (it says 'not reviewed')", nr.count("ไม่ได้ตรวจในรายงานนี้") == 3 and len([t for t in tiles() if str(getattr(t.title, 'value', '')) == 'เรียนรู้หลักการแต่งเพลง']) == 8)
+-analyze((ROOT / "docs/song_critic_v3/RAW_RESPONSES/TestSong04_grok_candidate_response.txt").read_text(encoding="utf-8"))
+-
+-# Discuss a lesson (fake model)
++# Discuss a card, the proposal, the cache, the song switch (fake model)
++analyze(FIXTURE)
+ CALLS.clear(); S.chat.clear() if hasattr(S.chat, "clear") else None
+-FN["ac_discuss"]("opening", "question"); drain()
++FN["sr_discuss"]("as_development"); drain()
+ sw = [c for c in CALLS if c[0] == "songwriter"]
+ req = sw[0][2] if sw else ""
+-check("I1 Discuss a technique: ONE Songwriter request, no Song Critic request, the lyrics are not changed", len(sw) == 1 and not [c for c in CALLS if c[0] == "critic"] and S.song.lyrics == T4)
+-check("I2 the request carries the topic, the technique, the exercise, the Song Critic's finding for THIS aspect (opening) and the numbered current lyrics, as data", all(x in req for x in ("SONGWRITING LESSON", "not an instruction", "SELECTED TECHNIQUE: Question Opening", "EXERCISE", "SONG CRITIC FINDING FOR THIS ASPECT", "topic `opening`")) and f"L018| {ROWS[17]}" in req, req[:160])
+-check("I3 only the selected lesson travels: no other lesson title or technique is in the request", all(AC.load(k, "th").title not in req for k in AC.TOPICS if k != "opening") and "Scene Opening" not in req.split("SELECTED TECHNIQUE")[1][:300])
+-check("I4 the Songwriter's session and chat are kept: the user's message and the answer are in the chat, with a note of what was sent", any(m.role == "user" and "บทเรียน" in m.text for m in S.chat) and any(m.role == "assistant" for m in S.chat) and any(m.role == "note" and "lesson" in m.text for m in S.chat))
+-check("I5 nothing is applied or proposed automatically: no chat message carries an edit", not any(getattr(m, "edits", None) for m in S.chat))
+-sys_sw = sw[0][1] if sw else ""
+-check("I6 the Songwriter's system prompt is the normal one (the lesson is in the message, not in the system prompt)", "SONGWRITING LESSON" not in sys_sw and "You are **Songwriter AI**" in sys_sw)
+-CALLS.clear()
+-FN["ac_discuss"]("imagery", ""); drain()
+-req_b = [c for c in CALLS if c[0] == "songwriter"][0][2]
+-check("I7 Discuss a whole lesson (no technique): the lesson and its exercise travel, 'the whole lesson' is said", "SELECTED LESSON" in req_b and "the whole lesson" in req_b)
+-# no report at all: a new song
+-song2 = ST.create_song("Academy 2", T4); SH.ensure_book(song2)
+-APP.found["open_song"](song2.id); drain(); APP.refresh(); reindex()
+-S = var("S"); S.backend, S.host = "local:gemma4_llm.json", "127.0.0.1:8188"
+-CALLS.clear()
+-FN["ac_discuss"]("hook", "clear-idea"); drain()
+-req_n = [c for c in CALLS if c[0] == "songwriter"]
+-check("I8 a song with NO Song Critic report can still discuss a lesson (the lessons need no analysis): no finding block, the text says no AI opinion exists", len(req_n) == 1 and "SONG CRITIC FINDING" not in req_n[0][2] and "no AI opinion about this aspect exists" in req_n[0][2] and not [c for c in CALLS if c[0] == "critic"])
+-analyze(LEG)
+-CALLS.clear()
+-FN["ac_discuss"]("development", ""); drain()
+-req_l = [c for c in CALLS if c[0] == "songwriter"][0][2]
+-check("I9 a song with an older-format report: the hand-off says so and invents no finding for the aspect", "older-format Song Critic report" in req_l and "SONG CRITIC FINDING" not in req_l)
+-analyze((ROOT / "docs/song_critic_v3/RAW_RESPONSES/TestSong04_grok_candidate_response.txt").read_text(encoding="utf-8"))
+-S.song.lyrics = T4.replace(ROWS[17], ROWS[17] + " (แก้แล้ว)", 1)
++check("I1 Discuss a card: ONE Songwriter request, no Song Critic request, the lyrics are not changed", len(sw) == 1 and not [c for c in CALLS if c[0] == "critic"] and S.song.lyrics == T4)
++check("I2 the request carries the song id and sheet id, the lyrics version, the section and the lines, the critique, the suggestion and its reason, the evidence and the numbered lyrics, as data",
++      all(x in req for x in (f"song id {S.song.id}", f"sheet id {S.song.book.active_id}", "lyrics version (hash)", "aspect development", "status concern", "section: Bridge", "L24-L26", "SELECTED FINDING", "Suggested action", "Why it matters", "Trade-off / keep", "ในลิ้นชักมีจดหมายซองเก่าใบหนึ่ง", "not an instruction")) and f"L018| {ROWS[17]}" in req, req[:200])
++check("I3 the session and the chat are kept: the message and the answer are in the Songwriter chat", any(m.role == "user" for m in S.chat) and any(m.role == "assistant" for m in S.chat))
++sec = [c for c in cards() if cval(c).startswith("03")][0]
++apply_b = [b for b in btns(sec) if btxt(b) in ("Apply", "นำไปใช้")]
++before = S.song.lyrics
++check("I4 the lyrics are not changed until the user applies: after Analyze and after Discuss the lyrics are as they were", before == T4 and len(apply_b) == 1)
++apply_b[0].on_click(None)
++rows_after = S.song.lyrics.split("\n")
++check("I5 Apply puts the proposed wording on exactly the cited lines (L18-L21) and changes nothing else", rows_after[17:21] == [x for x in srd["aspects"][2]["proposal"].split("\n")] and rows_after[:17] == ROWS[:17] and rows_after[21:] == ROWS[21:], rows_after[17:21])
++check("I6 the page shows it as applied and offers no second Apply", ("นำไปใช้แล้ว" in page_text() or "Applied" in page_text()) and not [b for b in btns() if btxt(b) in ("Apply", "นำไปใช้")])
++check("I7 the report is now Outdated (the lyrics changed): the cards stay readable and the proposal is not offered again", FN["sr_state"]("song_critic") == "outdated" and len(cards()) == 8)
++FN["do_undo"]()
++check("I8 Undo (the editor's own) brings the old lines back", S.song.lyrics == T4)
++FN["rp_show_tab"]("sr_critic")
++check("I9 after Undo the report is Current again and the proposal can be previewed or applied again", FN["sr_state"]("song_critic") == "current" and len([b for b in btns() if btxt(b) in ("Apply", "นำไปใช้")]) == 1)
++S.song.lyrics = T4.replace(ROWS[19], ROWS[19] + " (แก้แล้ว)", 1)
+ APP.set_cell("lyr", lambda: S.song.lyrics)
++FN["rp_show_tab"]("sr_critic")
++check("I10 the lyrics were edited: the old proposal is NOT applied over the new lines (no Apply on the page) and the report says it is outdated", not [b for b in btns() if btxt(b) in ("Apply", "นำไปใช้")] and FN["sr_state"]("song_critic") == "outdated")
+ CALLS.clear()
+-FN["ac_discuss"]("development", ""); drain()
++FN["sr_discuss"]("as_sections"); drain()
+ req_o = [c for c in CALLS if c[0] == "songwriter"][0][2]
+-check("I10 after the lyrics change the report is Outdated: the hand-off says OUTDATED, what changed, labels the old line numbers, and sends the CURRENT lyrics; the lyrics are not touched",
+-      "OUTDATED" in req_o and "Changes since the analysis" in req_o and "OLD lyrics" in req_o and "(แก้แล้ว)" in req_o and S.song.lyrics.count("(แก้แล้ว)") == 1)
++check("I11 Discuss on an outdated report says OUTDATED, that the lyrics are different, labels the old line numbers, and sends the CURRENT lyrics", "OUTDATED" in req_o and "(DIFFERENT)" in req_o and "OLD lyrics" in req_o and "(แก้แล้ว)" in req_o)
+ S.song.lyrics = T4
+ APP.set_cell("lyr", lambda: S.song.lyrics)
+-# no room: refused before anything is sent
++
++# a second song: no critique of the first one
++song2 = ST.create_song("Academy 2", T4); SH.ensure_book(song2)
++APP.found["open_song"](song2.id); drain(); APP.refresh(); reindex()
++S = var("S"); S.backend, S.host = "local:gemma4_llm.json", "127.0.0.1:8188"
++col = var("sr_col")
++FN["rp_show_tab"]("sr_critic")
++check("I12 switching to another song shows that song's page: no critique of the first song (all eight cards say not analyzed)", len(cards()) == 8 and page_text().count(GROUP_TH["unknown"]) == 8 and "ในลิ้นชักมีจดหมาย" not in page_text())
+ CALLS.clear()
++FN["ac_discuss"]("opening", "scene"); drain()
++req_l = [c for c in CALLS if c[0] == "songwriter"]
++check("I13 a lesson can still be discussed with a song that has no critique (the lesson dialog's Discuss): no finding block, the text says no AI opinion exists", len(req_l) == 1 and "SONG CRITIC FINDING" not in req_l[0][2] and "no AI opinion about this aspect exists" in req_l[0][2])
++APP.found["open_song"](song.id); drain(); APP.refresh(); reindex()
++S = var("S"); col = var("sr_col")
++FN["rp_show_tab"]("sr_critic")
++check("I14 back to the first song its saved critique is shown again (stored per song and sheet, read from the saved session)", FN["sr_get"]("song_critic") is not None and len(cards()) == 8 and "ในลิ้นชักมีจดหมาย" in " ".join(texts(col, [])) or FN["sr_state"]("song_critic") == "current")
++var("sr")["cache"].clear()
++saved = SE.load_session(song.id, song.book.active_id, "song_critic").latest_report()
++check("I15 after a restart (cache dropped, session file read again) the saved critique still holds its eight aspects and the proposal", saved is not None and len(saved.data["sr"]["aspects"]) == 8 and bool(saved.data["sr"]["aspects"][2]["proposal"]))
++n_calls = len(CALLS)
++FN["rp_show_tab"]("sr_critic"); FN["sr_render"]()
++check("I16 drawing the page, opening cards and reading a lesson never asks the AI (the only AI requests were the ones the user started)", not [c for c in CALLS[n_calls:]])
++
++CALLS.clear()
++FN["ac_discuss"]("opening", ""); drain()
++req_w = [c for c in CALLS if c[0] == "songwriter"][0][2]
++op_l = AC.load("opening", "th")
++check("I17 WHOLE LESSON Discuss (Opening): the request that reaches the Songwriter names all 8 techniques and says 'the whole lesson (8 techniques)'", all(tc.title in req_w for tc in op_l.techniques) and "the whole lesson (8 techniques)" in req_w)
+ n_before = len(S.chat)
+ LC.CTX_OVERRIDE["local"] = 900
+-FN["ac_discuss"]("opening", "scene"); drain()
+-check("I11 when the conversation has no room the lesson is refused BEFORE anything is sent: no request, no chat message", not CALLS and len(S.chat) == n_before)
++CALLS.clear()
++FN["ac_discuss"]("opening", ""); drain()
++check("I18 when the conversation has no room the lesson is refused BEFORE anything is sent: no request, no chat message, no hand-off left waiting", not CALLS and len(S.chat) == n_before and not var("handoff_pending"))
+ LC.CTX_OVERRIDE["local"] = 0
+-# busy / no backend
++wrong = {"kind": "lesson", "topic": "opening", "technique": "", "label": "x", "rep": None, "song_id": "another_song", "sheet_id": S.song.book.active_id}
++tx_w2, inf_w2 = FN["sr_handoff_text"](wrong, S.song.lyrics, 3500)
++ok_same = FN["sr_handoff_text"]({**wrong, "song_id": S.song.id}, S.song.lyrics, 3500)[0]
++check("I19 a hand-off made for another song or sheet is never built; the right song and sheet are built", tx_w2 is None and inf_w2.get("reason") == "song" and ok_same and S.song.id in ok_same)
+ S.backend = ""
+-CALLS.clear(); FN["ac_discuss"]("opening", ""); drain()
+-check("I12 with no AI backend the Discuss button says so and sends nothing", not CALLS)
++CALLS.clear(); FN["ac_discuss"]("opening", ""); FN["sr_discuss"]("as_development"); drain()
++check("I20 with no AI backend the Discuss buttons say so and send nothing", not CALLS)
+ S.backend = "local:gemma4_llm.json"
+-check("I13 the Song Critic request path is unchanged: Analyze still sends the production prompt (no lesson text in it) and reports the same legacy-or-Songcraft format as before",
+-      SP.effective_system("song_critic")[0].replace("\r\n", "\n").strip() == cur_prompt.strip() or "Songwriting" not in SP.effective_system("song_critic")[0][:0])
++check("I21 the Song Critic's system prompt is the production prompt (the eight-aspect critique format), has no lesson text, and Analyze asked the model ONCE per press",
++      "Academy" not in SP.effective_system("song_critic")[0] and "SONGWRITING LESSON" not in SP.effective_system("song_critic")[0] and "[ASPECT.1]" in SP.effective_system("song_critic")[0])
+ 
+ print(f"\n{N[0] - len(FAILS)} / {N[0]} passed")
+ sys.exit(1 if FAILS else 0)
+diff --git a/tests/test_songcraft.py b/tests/test_songcraft.py
+index 58f4b82..d2468c7 100644
+--- a/tests/test_songcraft.py
++++ b/tests/test_songcraft.py
+@@ -62,7 +62,7 @@ def full_answer(statuses=None, actions="", extra=""):
+ p = SR.parse_answer(full_answer({"opening": "strength", "development": "concern"}, "[ACTION.1]\ntitle: t\naspect: development\nlines: L18-L21\naction: do\ntradeoff: cost\n"), "song_critic", T4, SYS_BASE)
+ sr = p["sr"]
+ check("A1 a full answer: format songcraft-1, eight aspects in the fixed order, one action", p["ok"] and sr["format"] == SR.FORMAT_SONGCRAFT and [a["aspect"] for a in sr["aspects"]] == list(SR.ASPECTS) and len(sr["actions"]) == 1, p["diagnostics"])
+-check("A2 the five statuses are kept and map to a kind (mixed shows as a concern)", [SR.STATUS_KIND[x] for x in SR.ASPECT_STATUS] == ["strength", "concern", "mixed" and "concern", "keep", "keep"])
++check("A2 the six statuses are kept and map to a kind (mixed shows as a concern)", [SR.STATUS_KIND[x] for x in SR.ASPECT_STATUS] == ["strength", "concern", "concern", "keep", "keep", "keep"])
+ mix = SR.parse_answer(full_answer({"opening": "mixed", "theme": "insufficient", "hook": "no_issue", "ending": "strength"}), "song_critic", T4, SYS_BASE)["sr"]["aspects"]
+ check("A3 mixed / insufficient / no_issue / strength are read; priority only for concern / mixed (default medium with a diagnostic when missing)", {a["aspect"]: a["status"] for a in mix}["opening"] == "mixed" and {a["aspect"]: a["status"] for a in mix}["theme"] == "insufficient" and next(a for a in mix if a["aspect"] == "opening")["priority"] == "medium" and next(a for a in mix if a["aspect"] == "hook")["priority"] == "")
+ alias = SR.parse_answer(full_answer().replace("aspect: theme", "aspect: central idea").replace("aspect: sections", "aspect: section purpose").replace("aspect: development", "aspect: Emotional / Narrative Development"), "song_critic", T4, SYS_BASE)
+@@ -260,14 +260,14 @@ analyze(raw_of("TestSong04_grok_candidate"))
+ # all aspects without findings, and no action
+ analyze(full_answer())
+ txt = page_text()
+-check("B10 a report with no problems (eight no_issue) draws all eight tiles and says that no action is needed", len(tiles()) >= 8 and ("no action" in txt.lower() or "ไม่ได้ระบุ" in txt or "ยังไม่มีสิ่งที่" in txt or "named no action" in txt) and "Concern" not in txt)
++check("B10 a report with no problems (eight no_issue) draws all eight cards, none is marked as a concern or a major issue, and no action plan is invented", len(tiles()) >= 8 and "มีจุดควรปรับปรุง" not in txt and "มีปัญหาสำคัญ" not in txt and "Concern" not in txt and "แผนปฏิบัติ" not in txt)
+ # missing aspects
+ five = "[VERDICT.1]\nheadline: h5\nreading: r\n" + "".join(re.sub(r"\[ASPECT\.9\]", f"[ASPECT.{i + 1}]", asp(k, "strength", "L2-L5", "o", "w", keep="k")) for i, k in enumerate(SR.ASPECTS[:5])) + "[DONE]"
+ analyze(five)
+ pt11 = page_text()
+-nr = pt11.count("Not reviewed in this report") + pt11.count("ไม่ได้ตรวจในรายงานนี้")
++nr = pt11.count("Not analyzed / not enough information") + pt11.count("ยังไม่ได้วิเคราะห์ / ข้อมูลไม่เพียงพอ")
+ n_asp = len([x for x in tiles() if re.match(r"\d\d ·", str(getattr(x.title, "value", "")))])
+-check("B11 a report that reviewed only five aspects: eight aspect tiles, and EXACTLY the three missing ones say 'not reviewed'", n_asp == 8 and nr == 3, (n_asp, nr))
++check("B11 a report that reviewed only five aspects: eight aspect tiles, and EXACTLY the three missing ones say 'not analyzed / not enough information'", n_asp == 8 and nr == 3, (n_asp, nr))
+ # unreadable lines
+ analyze(full_answer().replace("lines: L2-L5", "lines: verse 2", 1))
+ check("B12 an aspect with unreadable lines is on the page, marked, with the unverified note", "verse 2" in page_text() and ("Lines not readable" in page_text() or "อ่านเลขบรรทัดไม่ได้" in page_text()))
+diff --git a/tests/test_spec_reports.py b/tests/test_spec_reports.py
+index be8152d..822734f 100644
+--- a/tests/test_spec_reports.py
++++ b/tests/test_spec_reports.py
+@@ -216,7 +216,7 @@ bad_quote = good.replace("แต่พอเพ่งมอง ลึกใน
+ p = SR.parse_answer(bad_quote, "song_critic", T, "")
+ check("8 a quote that is not in the lyrics is replaced by the lyric lines themselves, and noted", p["ok"] and p["sr"]["findings"][0]["quote"] == "แต่พอเพ่งมอง ลึกในช่องว่าง" and any("not in the lyrics" in d for d in p["diagnostics"]))
+ tpl = SR.format_of(SP.load("song_critic").text)
+-copied = good.replace("observation: ภาพเปลี่ยน", "observation: what is in the lyrics (a fact you can point at)")
++copied = good.replace("observation: ภาพเปลี่ยน", "observation: what is in the lyrics (a fact you can point at), or -")
+ p = SR.parse_answer(copied, "song_critic", T, SP.load("song_critic").text)
+ check("8 a copied line of the format is not accepted as the observation", all("a fact you can point at" not in f["observation"] for f in p["sr"]["findings"]) and any("placeholder_copied" in d for d in p["diagnostics"]), p["diagnostics"][:2])
+ p = SR.parse_answer("[FINDING.1]\nkind: concern\nlines: L12\nobservation: x\n[DONE]", "song_critic", T, "")
+diff --git a/music_studio/songcraft_knowledge/development.en.md b/music_studio/songcraft_knowledge/development.en.md
+index ca157b7..2b06669 100644
+--- a/music_studio/songcraft_knowledge/development.en.md
++++ b/music_studio/songcraft_knowledge/development.en.md
+@@ -1,7 +1,7 @@
+ ---
+ id: development
+ aspect: development
+-version: 1.0.1
++version: 1.0.2
+ title: Emotional / Narrative Development
+ language: en
+ ---
+@@ -11,10 +11,10 @@ Development is what changes between the start and the end of a song. The listene
+ Berklee's lyric-writing course that starts from the title includes a lesson called "Verse Development Techniques" [R1], which shows it is a topic of the course. The six approaches below are categories we made for learning.
+ 
+ ## Why It Works
+-- Listeners stay longer when each section gives something new: a fact, a feeling or a view.
+-- When the Verses develop, a Chorus that repeats unchanged weighs more each time, because the listener reads it with what they have just learned.
++- Listeners may stay with a song longer when each section gives something new: a fact, a feeling or a view.
++- When the Verses develop, a Chorus that repeats unchanged may weigh more each time, because the listener reads it with what they have just learned.
+ - Keeping one mood on purpose is also a kind of development, if the small details that change make the stillness mean something.
+-- The feeling that "the song circles in place" comes when a new section says the old thing in new words and adds nothing.
++- The feeling that "the song circles in place" can come when a new section says the old thing in new words and adds nothing. That may be meant in a song that is still on purpose, but ask what the stillness does.
+ 
+ ## How to Use
+ Ask of each section: "what does the listener know or feel differently when it ends?" Choose one of the approaches below for a section you cannot answer for. Keeping a song still on purpose is a valid choice, but ask whether the stillness has been made to mean something.
+@@ -54,6 +54,7 @@ Compare: what does the listener know that is new at the end of each? The second
+ - Using "it is still on purpose" as a reason without checking what the stillness does.
+ - Adding an event that has nothing to do with the idea just so that "something happens".
+ - Forgetting that some songs need thirty seconds of feeling and no long story.
++- The techniques in this lesson are options for the writer, not a standard by which a song that does not use them is judged wrong or lesser.
+ 
+ ## Try It Yourself
+ (1) Write one line per section: "after this section the listener knows or feels ___ more." (2) If two sections get the same answer, pick one and rewrite it with one of the six approaches. (3) Read the Chorus after the rewritten section and note whether its meaning changed. (4) If your song is meant to be still, list three small things that change between the start and the end.
+diff --git a/music_studio/songcraft_knowledge/development.md b/music_studio/songcraft_knowledge/development.md
+index e423a10..c6de720 100644
+--- a/music_studio/songcraft_knowledge/development.md
++++ b/music_studio/songcraft_knowledge/development.md
+@@ -1,7 +1,7 @@
+ ---
+ id: development
+ aspect: development
+-version: 1.0.1
++version: 1.0.2
+ title: การพัฒนาอารมณ์และเรื่องราว (Emotional / Narrative Development)
+ language: th
+ ---
+@@ -11,10 +11,10 @@ language: th
+ หลักสูตรเขียนเนื้อเพลงของ Berklee มีบทเรียนเรื่อง "เทคนิคการพัฒนา Verse" [R1] ซึ่งแสดงว่าเรื่องนี้เป็นหัวข้อหนึ่งของหลักสูตร ส่วนแนวทางหกแบบด้านล่างเป็นหมวดที่เราจัดไว้เพื่อการเรียนรู้
+ 
+ ## Why It Works
+-- ผู้ฟังอยู่กับเพลงนานขึ้นเมื่อแต่ละท่อนให้อะไรใหม่ ไม่ว่าจะเป็นข้อเท็จจริง ความรู้สึก หรือมุมมอง
+-- เมื่อ Verse พัฒนา Chorus ที่ซ้ำเหมือนเดิมจะได้ความหมายหนักขึ้นในแต่ละครั้ง เพราะผู้ฟังเอาสิ่งที่เรียนรู้ใหม่ไปอ่านมัน
++- ผู้ฟังอาจอยู่กับเพลงนานขึ้นเมื่อแต่ละท่อนให้อะไรใหม่ ไม่ว่าจะเป็นข้อเท็จจริง ความรู้สึก หรือมุมมอง
++- เมื่อ Verse พัฒนา Chorus ที่ซ้ำเหมือนเดิมอาจได้ความหมายหนักขึ้นในแต่ละครั้ง เพราะผู้ฟังเอาสิ่งที่เรียนรู้ใหม่ไปอ่านมัน
+ - การคงอารมณ์เดิมอย่างมีจุดประสงค์ก็เป็นพัฒนาการแบบหนึ่ง ถ้ารายละเอียดเล็ก ๆ ที่เปลี่ยนไปทำให้ความนิ่งมีความหมาย
+-- ความรู้สึกว่า "เพลงวนอยู่ที่เดิม" เกิดเมื่อท่อนใหม่พูดสิ่งเดิมด้วยถ้อยคำใหม่ โดยไม่เพิ่มอะไร
++- ความรู้สึกว่า "เพลงวนอยู่ที่เดิม" อาจเกิดเมื่อท่อนใหม่พูดสิ่งเดิมด้วยถ้อยคำใหม่ โดยไม่เพิ่มอะไร ซึ่งอาจเป็นเจตนาในเพลงที่ตั้งใจนิ่ง แต่ควรถามว่าความนิ่งนั้นสร้างผลอะไร
+ 
+ ## How to Use
+ ถามกับแต่ละท่อนว่า "ผู้ฟังรู้อะไรเพิ่ม หรือรู้สึกต่างไปอย่างไร เมื่อจบท่อนนี้" แล้วลองเลือกหนึ่งวิธีจากด้านล่างให้ท่อนที่ตอบไม่ได้ การจงใจให้เพลงนิ่งเป็นทางเลือกที่ใช้ได้ แต่ควรถามต่อว่า "ความนิ่งนี้ถูกทำให้มีความหมายหรือยัง"
+@@ -54,6 +54,7 @@ language: th
+ - ใช้คำว่า "ตั้งใจให้นิ่ง" เป็นเหตุผลโดยไม่ตรวจว่าความนิ่งนั้นสร้างผลอะไร
+ - ใส่เหตุการณ์ที่ไม่เกี่ยวกับแก่นเพียงเพื่อให้ "มีอะไรเกิดขึ้น"
+ - ลืมว่าเพลงบางเพลงต้องการเพียงสามสิบวินาทีของความรู้สึก ไม่ต้องการเรื่องยาว
++- เทคนิคในบทนี้เป็นทางเลือกให้ผู้แต่งหยิบใช้ ไม่ใช่เกณฑ์ตัดสินว่าเพลงที่ไม่ใช้เทคนิคเหล่านี้ผิดหรือด้อยกว่า
+ 
+ ## Try It Yourself
+ (1) เขียนบรรทัดเดียวต่อท่อนว่า "หลังจากท่อนนี้ ผู้ฟังรู้หรือรู้สึกอะไรเพิ่ม" (2) ถ้ามีสองท่อนที่คำตอบเหมือนกัน เลือกท่อนหนึ่งแล้วลองเขียนใหม่ด้วยวิธีหนึ่งจากหกแบบ (3) อ่าน Chorus ตามหลังท่อนที่เขียนใหม่ แล้วจดว่าความหมายของ Chorus เปลี่ยนไปหรือไม่ (4) ถ้าเพลงของคุณตั้งใจนิ่ง ให้จดสามสิ่งเล็ก ๆ ที่เปลี่ยนไประหว่างต้นกับท้ายเพลง
+diff --git a/music_studio/songcraft_knowledge/ending.en.md b/music_studio/songcraft_knowledge/ending.en.md
+index ee3e256..23e5526 100644
+--- a/music_studio/songcraft_knowledge/ending.en.md
++++ b/music_studio/songcraft_knowledge/ending.en.md
+@@ -1,7 +1,7 @@
+ ---
+ id: ending
+ aspect: ending
+-version: 1.0.0
++version: 1.0.1
+ title: Ending & Payoff
+ language: en
+ ---
+@@ -11,8 +11,8 @@ The ending is what the listener carries away when the song stops. "Payoff" means
+ The six forms below are categories we made for learning. They are not a theory with anyone's endorsement [R1], and among the references we checked there is none we can cite for teaching this classification of endings.
+ 
+ ## Why It Works
+-- Listeners remember endings. An ending decides what the whole song seems to mean when looked back on.
+-- Responding to what was set up (an image, a question, a contradiction) makes the song feel complete, even if the response is not a direct answer.
++- Listeners often remember endings, and an ending can decide what the whole song seems to mean when looked back on.
++- Responding to what was set up (an image, a question, a contradiction) can make the song feel complete, even if the response is not a direct answer.
+ - Leaving it open works when the listener knows what was left open and why, not when the song seems to have forgotten it.
+ - Returning to the opening image has power when its meaning has changed by then.
+ 
+@@ -42,7 +42,8 @@ The lines below were written for teaching. The song opens with "ร่มสี
+ 
+ - Resolution: "วันนี้ฝนตก ฉันหยิบร่มเดินออกไป / ไม่ได้ลืมเธอ แต่ฉันไม่หยุดอยู่ตรงนั้นอีกแล้ว" (it rains today, I take the umbrella and walk out; I have not forgotten her, but I do not stop there any more)
+ - Open ending: "ฝนยังตกอยู่ ฉันยืนมองประตู / มือยังไม่ได้ขยับ... แต่ฉันเริ่มนับว่ากี่ครั้งแล้ว" (it is still raining; I stand looking at the door; my hand has not moved... but I have started counting how many times) → no answer, but the listener sees the hesitation changing
+-- Circular: "ร่มสีเขียวยังแขวนอยู่หลังประตู" → the same line, but the listener now knows what it carries
++- A circular ending where a new meaning arrives: the song opens with "ร่มสีเขียวยังแขวนอยู่หลังประตู" (the green umbrella still hangs behind the door); the middle tells how I put her things into a box one by one until only this umbrella is left; the ending returns to "ร่มสีเขียวยังแขวนอยู่หลังประตู", the same sentence, but it now means "the last thing I have not let go" and not "I have not started" → what happened between the start and the end changes what the return means
++- A circular ending that is only a repeat: if nothing changes all through the song (I stand looking at the umbrella the same way in every section) and it ends on the same line, the listener gets the feeling of circling in place. That can be meant, but it is not yet a full payoff, because nothing was answered or given a new meaning
+ - Emotional closure: "ฉันไม่รู้ว่าเธอจะกลับมาไหม / แต่คืนนี้ฉันนอนหลับได้" (I do not know whether you will come back, but tonight I can sleep) → nothing is revealed, but the feeling arrives
+ - Recontextualization: "ร่มสีเขียวหลังประตู / วันนี้มันเป็นของฉัน" (the green umbrella behind the door, today it is mine) → the same image, a new meaning
+ - Reversal: "ร่มสีเขียวหลังประตู / ฉันให้คนข้างบ้านยืมไปแล้ว" (the green umbrella behind the door; I have lent it to the neighbour) → turns the expectation; something must be set up earlier
+@@ -55,10 +56,10 @@ A song that opens with the umbrella and ends on something else entirely (for exa
+ - A circular ending in which the context did not change.
+ - A safe or too wide ending that has nothing to do with what was set up (a general comforting line).
+ - A twist at the end with nothing laid down for it before.
++- The techniques in this lesson are options for the writer, not a standard by which a song that does not use them is judged wrong or lesser.
+ 
+ ## Try It Yourself
+ (1) Write what your opening promises the listener. (2) Write whether the ending answers it, changes its meaning, or leaves it open, and how. (3) If the ending is unrelated to the opening, write two endings in two of the six forms and compare them. (4) If you leave it open on purpose, ask what will tell the listener that this was your intention.
+ 
+ ## References
+ - R1 | General knowledge of story and lyric writing | not a citation of one book | supports: the six names for endings are our own synthesis for learning, and we do not claim that they come from any one academic source. | status: general
+-- R2 | Lyric Writing: Writing From the Title (OSONG-221) | Berklee Online, course author Pat Pattison | supports: the course page lists "Putting It All Together" as the last lesson. The page says nothing about the endings of songs, so we do not claim that the course teaches this. | status: verified | url: https://online.berklee.edu/courses/lyric-writing-writing-from-the-title
+diff --git a/music_studio/songcraft_knowledge/ending.md b/music_studio/songcraft_knowledge/ending.md
+index 5bf90ec..8695f3d 100644
+--- a/music_studio/songcraft_knowledge/ending.md
++++ b/music_studio/songcraft_knowledge/ending.md
+@@ -1,7 +1,7 @@
+ ---
+ id: ending
+ aspect: ending
+-version: 1.0.0
++version: 1.0.1
+ title: การจบเพลง (Ending & Payoff)
+ language: th
+ ---
+@@ -11,8 +11,8 @@ language: th
+ หกแบบด้านล่างเป็นหมวดที่เราจัดไว้เพื่อการเรียนรู้ ไม่ใช่ทฤษฎีที่มีผู้รับรอง [R1] และในรายการแหล่งอ้างอิงที่เราตรวจแล้ว ไม่มีแหล่งใดที่เราอ้างได้ว่าสอนการจัดประเภทตอนจบแบบนี้
+ 
+ ## Why It Works
+-- ผู้ฟังจำตอนจบได้ดี มันกำหนดว่าเพลงทั้งเพลง "หมายถึงอะไร" เมื่อมองย้อนกลับ
+-- การตอบสนองต่อสิ่งที่เปิดไว้ (ภาพ คำถาม ความขัดแย้ง) ทำให้เพลงรู้สึกครบวง แม้คำตอบจะไม่ใช่คำตอบตรง ๆ
++- ตอนจบมักเป็นสิ่งที่ผู้ฟังจำได้ และอาจกำหนดว่าเพลงทั้งเพลง "หมายถึงอะไร" เมื่อมองย้อนกลับ
++- การตอบสนองต่อสิ่งที่เปิดไว้ (ภาพ คำถาม ความขัดแย้ง) อาจทำให้เพลงรู้สึกครบวง แม้คำตอบจะไม่ใช่คำตอบตรง ๆ
+ - การจบแบบค้างได้ผลเมื่อผู้ฟังรู้ว่าอะไรถูกปล่อยค้าง และทำไม ไม่ใช่เพราะเพลงลืมมัน
+ - การกลับไปหาภาพเปิด จะมีพลังเมื่อความหมายของภาพเปลี่ยนไปแล้ว
+ 
+@@ -42,7 +42,8 @@ language: th
+ 
+ - Resolution: "วันนี้ฝนตก ฉันหยิบร่มเดินออกไป / ไม่ได้ลืมเธอ แต่ฉันไม่หยุดอยู่ตรงนั้นอีกแล้ว"
+ - Open ending: "ฝนยังตกอยู่ ฉันยืนมองประตู / มือยังไม่ได้ขยับ... แต่ฉันเริ่มนับว่ากี่ครั้งแล้ว" → ไม่ตอบ แต่ให้ผู้ฟังเห็นความลังเลที่เปลี่ยนไป
+-- Circular: "ร่มสีเขียวยังแขวนอยู่หลังประตู" → ซ้ำเดิมแต่ผู้ฟังรู้แล้วว่ามันแบกอะไร
++- Circular ที่ความหมายใหม่เกิดขึ้น: เพลงเปิดด้วย "ร่มสีเขียวยังแขวนอยู่หลังประตู" ท่อนกลางเล่าว่าฉันเก็บของของเธอใส่กล่องไปทีละชิ้นจนเหลือแต่ร่มคันนี้ ตอนจบกลับมาที่ "ร่มสีเขียวยังแขวนอยู่หลังประตู" ประโยคเดิม แต่ตอนนี้หมายถึง "ชิ้นสุดท้ายที่ยังไม่ปล่อย" ไม่ใช่ "ฉันยังไม่เริ่ม" → สิ่งที่เกิดระหว่างต้นเพลงถึงท้ายเพลงทำให้การกลับมาเปลี่ยนความหมาย
++- Circular ที่เป็นแค่การซ้ำ: ถ้าตลอดเพลงไม่มีอะไรเปลี่ยน (ฉันยังยืนมองร่มเหมือนเดิมทุกท่อน) แล้วจบด้วยบรรทัดเดิม ผู้ฟังได้ความรู้สึกวนอยู่ที่เดิม ซึ่งอาจเป็นเจตนา แต่ยังไม่ใช่ Payoff ที่สมบูรณ์ เพราะไม่มีอะไรถูกตอบหรือเปลี่ยนความหมาย
+ - Emotional closure: "ฉันไม่รู้ว่าเธอจะกลับมาไหม / แต่คืนนี้ฉันนอนหลับได้" → ไม่เฉลย แต่ความรู้สึกถึงที่หมาย
+ - Recontextualization: "ร่มสีเขียวหลังประตู / วันนี้มันเป็นของฉัน" → ภาพเดิม ความหมายใหม่
+ - Reversal: "ร่มสีเขียวหลังประตู / ฉันให้คนข้างบ้านยืมไปแล้ว" → พลิกความคาดหวัง ต้องมีการวางไว้ก่อน
+@@ -55,10 +56,10 @@ language: th
+ - จบวนกลับโดยไม่เปลี่ยนบริบท
+ - ตอนจบที่ปลอดภัยหรือกว้างเกินไป ไม่เกี่ยวกับสิ่งที่เปิดไว้ (เช่นประโยคปลอบใจทั่วไป)
+ - ใส่ทวิสต์ท้ายเพลงโดยไม่มีการวางไว้ก่อน
++- เทคนิคในบทนี้เป็นทางเลือกให้ผู้แต่งหยิบใช้ ไม่ใช่เกณฑ์ตัดสินว่าเพลงที่ไม่ใช้เทคนิคเหล่านี้ผิดหรือด้อยกว่า
+ 
+ ## Try It Yourself
+ (1) เขียนว่าการเปิดเพลงของคุณสัญญาอะไรกับผู้ฟัง (2) เขียนว่าตอนจบ ตอบ เปลี่ยนความหมาย หรือปล่อยค้าง ของสิ่งนั้นอย่างไร (3) ถ้าตอนจบไม่เกี่ยวกับสิ่งที่เปิด ลองเขียนตอนจบสองแบบจากหกแบบ แล้วเทียบ (4) ถามว่า ถ้าตั้งใจปล่อยค้าง ผู้ฟังจะรู้ได้จากอะไรว่านั่นคือความตั้งใจ
+ 
+ ## References
+ - R1 | ความรู้ทั่วไปของงานเขียนเรื่องและเนื้อเพลง | ไม่ใช่การอ้างอิงเฉพาะเล่ม | supports: ชื่อเรียกตอนจบหกแบบเป็นการสังเคราะห์ของเราเองเพื่อการเรียนรู้ และเราไม่ได้อ้างว่ามาจากแหล่งวิชาการใดแหล่งหนึ่ง | status: general
+-- R2 | Lyric Writing: Writing From the Title (OSONG-221) | Berklee Online, ผู้เขียนหลักสูตร Pat Pattison | supports: รายชื่อบทเรียนมีหัวข้อ "Putting It All Together" (บทสุดท้าย) ตามหน้าหลักสูตร หน้านั้นไม่ได้กล่าวถึงตอนจบของเพลง เราจึงไม่อ้างว่าหลักสูตรสอนเรื่องนี้ | status: verified | url: https://online.berklee.edu/courses/lyric-writing-writing-from-the-title
+diff --git a/music_studio/songcraft_knowledge/hook.en.md b/music_studio/songcraft_knowledge/hook.en.md
+index d359c0d..44cfc1e 100644
+--- a/music_studio/songcraft_knowledge/hook.en.md
++++ b/music_studio/songcraft_knowledge/hook.en.md
+@@ -1,7 +1,7 @@
+ ---
+ id: hook
+ aspect: hook
+-version: 1.0.0
++version: 1.0.1
+ title: Hook & Memorability
+ language: en
+ ---
+@@ -13,9 +13,9 @@ Berklee's course that starts from the title includes lessons on choosing and dev
+ An important limit: with only the lyrics, an AI cannot reliably judge a melodic hook or how catchy the song is when sung. Hook analysis here looks only at the words, the clarity of the idea and its placement.
+ 
+ ## Why It Works
+-- A specific phrase is easier to remember than a general one because the listener sees the picture or understands the situation at once.
+-- A hook that takes its meaning from the sections before it (the Verses develop, then the hook returns heavier) makes repetition worth more than rote.
+-- Placement matters: a core idea where the listener expects it (the start or end of a Chorus) is easier to keep.
++- A specific phrase may give a song a distinct identity and be easier to remember, because the listener may see the picture or understand the situation quickly. This is a guideline, not a universal rule: some songs are remembered for a plain, general phrase that repeats and is fun to sing, and how catchy a hook is also depends on melody, rhythm and performance.
++- A hook that takes its meaning from the sections before it (the Verses develop, then the hook returns heavier) may make repetition worth more than rote.
++- Placement matters: a core idea where the listener expects it (the start or end of a Chorus) may be easier to keep.
+ - Repeating a hook with a small difference each time builds familiarity without boredom.
+ 
+ ## How to Use
+@@ -25,7 +25,7 @@ Start by asking "which line or image should the listener remember", then test wh
+ - Test: can you sum up the hook in one sentence? If not, the idea is not clear yet.
+ 
+ ### distinctive-phrase | A distinctive phrase
+-- Look for words that belong to this song and not to others. "ร่มสีเขียวหลังประตู" (the green umbrella behind the door) is easier to remember than "memory".
++- Try to find words that belong to this song and not to others. "ร่มสีเขียวหลังประตู" (the green umbrella behind the door) may give a clearer picture than "memory", though a general phrase that repeats and is fun to sing can be a hook too.
+ 
+ ### verse-chorus | The relation between Verse and Chorus
+ - Let the Verses prepare the meaning for the hook; when it arrives the listener feels it sum things up or burst out.
+@@ -39,7 +39,7 @@ Start by asking "which line or image should the listener remember", then test wh
+ ## Examples
+ The lines below were written for teaching.
+ 
+-- A general hook: "ฉันคิดถึงเธอเสมอ" (I always miss you) → clear, but anyone can say it; the listener sees nothing
++- A general hook: "ฉันคิดถึงเธอเสมอ" (I always miss you) → clear, but anyone can say it; the listener sees nothing (it can still work if the melody and the singing carry it)
+ - A specific hook: "ร่มสีเขียวยังแขวนอยู่หลังประตู" (the green umbrella still hangs behind the door) → a picture, memorable, and it raises a question about why it is still there
+ - A hook with weight from the Verses: Verse 1 hangs the umbrella up; Verse 2 shows many rainy days and still not picking it up; the Chorus line "the green umbrella still hangs behind the door" then means "I am not ready to let go"
+ - Repetition with difference: Chorus 1 "ร่มสีเขียวยังแขวนอยู่หลังประตู" / Chorus 3 "ร่มสีเขียวยังแขวนอยู่หลังประตู... แต่ฉันเริ่มมองมันได้" (...but I am starting to be able to look at it) → same words, the meaning moves
+@@ -50,6 +50,7 @@ The lines below were written for teaching.
+ - Judging how catchy a hook is from the words alone when it depends on melody and singing too.
+ - Trying to make every line a hook so that none stands out.
+ - Not every song needs a hook that is a single striking sentence. A mood piece may have an image as the thing remembered.
++- The techniques in this lesson are options for the writer, not a standard by which a song that does not use them is judged wrong or lesser.
+ 
+ ## Try It Yourself
+ (1) After reading your lyrics once, ask a friend (or yourself) which line or image they remember. (2) Write the idea of that line in one sentence. (3) Rewrite the line in two more specific ways and choose. (4) Check whether the Verse before the hook prepares its meaning; if not, add one detail to the Verse. (5) If the hook repeats, change one word in the last repeat and read it aloud. Remember the real effect can only be heard when sung.
+diff --git a/music_studio/songcraft_knowledge/hook.md b/music_studio/songcraft_knowledge/hook.md
+index 78577a4..5dfa49c 100644
+--- a/music_studio/songcraft_knowledge/hook.md
++++ b/music_studio/songcraft_knowledge/hook.md
+@@ -1,7 +1,7 @@
+ ---
+ id: hook
+ aspect: hook
+-version: 1.0.0
++version: 1.0.1
+ title: Hook และความจดจำ (Hook & Memorability)
+ language: th
+ ---
+@@ -13,9 +13,9 @@ Hook ด้านเนื้อร้องคือสิ่งที่ผู
+ ข้อจำกัดสำคัญ: เมื่อมีแต่เนื้อร้อง AI ไม่สามารถตัดสินคุณภาพของ Melody Hook หรือความติดหูของเพลงที่ร้องจริงได้อย่างแน่นอน การวิเคราะห์ Hook ในที่นี้ดูเฉพาะถ้อยคำ ความชัดของใจความ และการวางตำแหน่ง
+ 
+ ## Why It Works
+-- วลีที่เฉพาะเจาะจงจำง่ายกว่าวลีทั่วไป เพราะผู้ฟังเห็นภาพหรือเข้าใจสถานการณ์ได้ทันที
+-- Hook ที่ได้ความหมายจากท่อนก่อนหน้า (Verse พัฒนา แล้ว Hook กลับมาด้วยน้ำหนักใหม่) ทำให้การซ้ำมีคุณค่ามากกว่าการท่อง
+-- ตำแหน่งสำคัญ: ใจความที่อยู่ในที่ที่ผู้ฟังรอ (เช่นต้นหรือท้ายของ Chorus) ช่วยให้จำได้
++- วลีที่เฉพาะเจาะจงอาจช่วยสร้างเอกลักษณ์และทำให้จำง่ายขึ้น เพราะผู้ฟังอาจเห็นภาพหรือเข้าใจสถานการณ์ได้เร็ว นี่เป็นแนวทาง ไม่ใช่กฎสากล บางเพลงจำได้ด้วยวลีง่าย ๆ ทั่วไปที่ซ้ำและร้องสนุก และความติดหูยังขึ้นกับ Melody, Rhythm และ Performance ด้วย
++- Hook ที่ได้ความหมายจากท่อนก่อนหน้า (Verse พัฒนา แล้ว Hook กลับมาด้วยน้ำหนักใหม่) อาจทำให้การซ้ำมีคุณค่ามากกว่าการท่อง
++- ตำแหน่งสำคัญ: ใจความที่อยู่ในที่ที่ผู้ฟังรอ (เช่นต้นหรือท้ายของ Chorus) อาจช่วยให้จำได้
+ - การซ้ำ Hook แบบมีความแตกต่างเล็กน้อยในแต่ละครั้ง ช่วยให้คุ้นเคยโดยไม่น่าเบื่อ
+ 
+ ## How to Use
+@@ -25,7 +25,7 @@ Hook ด้านเนื้อร้องคือสิ่งที่ผู
+ - ทดสอบ: สรุป Hook เป็นประโยคเดียวได้หรือไม่ ถ้าไม่ได้ ใจความยังไม่ชัด
+ 
+ ### distinctive-phrase | วลีที่มีเอกลักษณ์
+-- หาถ้อยคำที่เป็นของเพลงนี้ ไม่ใช่วลีที่เพลงอื่นก็ใช้ เช่น "ร่มสีเขียวหลังประตู" จำง่ายกว่า "ความทรงจำ"
++- ลองหาถ้อยคำที่เป็นของเพลงนี้ ไม่ใช่วลีที่เพลงอื่นก็ใช้ เช่น "ร่มสีเขียวหลังประตู" อาจให้ภาพชัดกว่า "ความทรงจำ" แต่วลีทั่วไปที่ซ้ำและร้องสนุกก็เป็น Hook ได้เช่นกัน
+ 
+ ### verse-chorus | ความสัมพันธ์ระหว่าง Verse และ Chorus
+ - ให้ Verse เตรียมความหมายให้ Hook เมื่อ Hook มาถึง ผู้ฟังรู้สึกว่ามัน "สรุป" หรือ "ระเบิด" ออกมา
+@@ -39,7 +39,7 @@ Hook ด้านเนื้อร้องคือสิ่งที่ผู
+ ## Examples
+ ตัวอย่างต่อไปนี้แต่งขึ้นเพื่อการสอน
+ 
+-- Hook ทั่วไป: "ฉันคิดถึงเธอเสมอ" → ชัดแต่ใครก็พูดได้ ผู้ฟังไม่เห็นภาพ
++- Hook ทั่วไป: "ฉันคิดถึงเธอเสมอ" → ชัดแต่ใครก็พูดได้ ผู้ฟังไม่เห็นภาพ (แต่ก็อาจได้ผลถ้าทำนองและการร้องรองรับ)
+ - Hook เฉพาะเจาะจง: "ร่มสีเขียวยังแขวนอยู่หลังประตู" → เห็นภาพ จำได้ และชวนสงสัยว่าทำไมยังแขวนอยู่
+ - Hook ที่ได้น้ำหนักจาก Verse: Verse 1 ร่มถูกแขวนไว้ Verse 2 เห็นว่าฝนตกหลายครั้งแต่ไม่หยิบ Chorus "ร่มสีเขียวยังแขวนอยู่หลังประตู" จึงหมายถึง "ฉันยังไม่พร้อมปล่อย"
+ - ซ้ำแบบมีความแตกต่าง: Chorus 1 "ร่มสีเขียวยังแขวนอยู่หลังประตู" / Chorus 3 "ร่มสีเขียวยังแขวนอยู่หลังประตู... แต่ฉันเริ่มมองมันได้" → คำเดิม ความหมายเคลื่อน
+@@ -50,6 +50,7 @@ Hook ด้านเนื้อร้องคือสิ่งที่ผู
+ - ตัดสินความ "ติดหู" จากเนื้อร้องอย่างเดียว ทั้งที่ขึ้นกับทำนองและการร้องด้วย
+ - พยายามให้ทุกบรรทัดเป็น Hook จนไม่มีบรรทัดไหนโดดเด่น
+ - ไม่จำเป็นต้องมี Hook แบบประโยคเด่นในทุกเพลง เพลงบรรยากาศอาจมี "ภาพ" เป็นสิ่งที่จำ
++- เทคนิคในบทนี้เป็นทางเลือกให้ผู้แต่งหยิบใช้ ไม่ใช่เกณฑ์ตัดสินว่าเพลงที่ไม่ใช้เทคนิคเหล่านี้ผิดหรือด้อยกว่า
+ 
+ ## Try It Yourself
+ (1) ถามเพื่อนหรือตัวเองหลังอ่านเนื้อเพลงครั้งเดียวว่าจำบรรทัดไหนหรือภาพไหนได้ (2) เขียนใจความของบรรทัดนั้นเป็นประโยคเดียว (3) ลองเขียนบรรทัดนั้นใหม่ให้เฉพาะเจาะจงขึ้นสองแบบ แล้วเลือก (4) ไล่ดูว่า Verse ก่อนหน้า Hook เตรียมความหมายให้มันหรือไม่ ถ้าไม่ ลองเพิ่มรายละเอียดหนึ่งอย่างใน Verse (5) ถ้า Hook ซ้ำ ลองเปลี่ยนคำเดียวในรอบสุดท้ายแล้วอ่านออกเสียง จำไว้ว่าผลจริงต้องฟังเมื่อร้อง
+diff --git a/music_studio/songcraft_knowledge/imagery.en.md b/music_studio/songcraft_knowledge/imagery.en.md
+index 32bef1f..a53f3e6 100644
+--- a/music_studio/songcraft_knowledge/imagery.en.md
++++ b/music_studio/songcraft_knowledge/imagery.en.md
+@@ -1,7 +1,7 @@
+ ---
+ id: imagery
+ aspect: imagery
+-version: 1.0.0
++version: 1.0.1
+ title: Imagery & Metaphor
+ language: en
+ ---
+@@ -11,8 +11,8 @@ Imagery and metaphor are ways of making a feeling or an idea tangible: through s
+ Pat Pattison teaches sense-bound writing, "object writing": choose one object and write about it through several senses [R1]. Berklee's course Lyric Writing: Tools and Strategies has lessons on object writing and on metaphor [R2], and Andrea Stolpe's book Beginning Songwriting has a part that deals with sensory writing [R3].
+ 
+ ## Why It Works
+-- Details that come through the senses let the listener see or feel along faster than a stated emotion does.
+-- A specific image (a detail only this song has) is remembered and tells the listener what situation the singer is in.
++- Details that come through the senses may let the listener see or feel along faster than a stated emotion does.
++- A specific image (a detail only this song has) is often remembered and may tell the listener what situation the singer is in.
+ - An image tied to the central idea works on two levels: as a detail and as meaning.
+ - Plain language can be strong if the right thing is chosen. Beautiful words do not always mean deep content.
+ 
+@@ -52,6 +52,7 @@ The lines below were written for teaching, about "someone who will not let go".
+ - Mixing several unrelated metaphors in one line.
+ - Images that do not connect to the idea and are only decoration.
+ - Avoiding plain language for fear of not sounding "poetic".
++- The techniques in this lesson are options for the writer, not a standard by which a song that does not use them is judged wrong or lesser.
+ 
+ ## Try It Yourself
+ (1) Choose one object in your song and write about it for five minutes using at least three senses. (2) Underline one detail that only this song has. (3) Compare it with the image already in the song and ask which says more about the idea. (4) Replace one abstract word with a concrete detail and read it aloud: what was lost, what was gained?
+diff --git a/music_studio/songcraft_knowledge/imagery.md b/music_studio/songcraft_knowledge/imagery.md
+index a7af3d2..8c43adb 100644
+--- a/music_studio/songcraft_knowledge/imagery.md
++++ b/music_studio/songcraft_knowledge/imagery.md
+@@ -1,7 +1,7 @@
+ ---
+ id: imagery
+ aspect: imagery
+-version: 1.0.0
++version: 1.0.1
+ title: ภาพและสัญลักษณ์ (Imagery & Metaphor)
+ language: th
+ ---
+@@ -11,8 +11,8 @@ language: th
+ Pat Pattison สอนการเขียนแบบผูกกับประสาทสัมผัส (object writing) ที่ให้เลือกสิ่งของหนึ่งอย่างแล้วเขียนถึงด้วยประสาทสัมผัสหลายด้าน [R1] หลักสูตร Lyric Writing: Tools and Strategies ของ Berklee มีบทเรียนเรื่อง Object Writing และ Metaphor [R2] และหนังสือ Beginning Songwriting ของ Andrea Stolpe มีบทที่พูดถึงการเขียนผ่านประสาทสัมผัส [R3]
+ 
+ ## Why It Works
+-- รายละเอียดที่ผ่านประสาทสัมผัสทำให้ผู้ฟังเห็นหรือรู้สึกร่วมได้เร็วกว่าคำบอกอารมณ์ตรง ๆ
+-- ภาพที่เฉพาะเจาะจง (สิ่งที่มีเฉพาะในเพลงนี้) จำได้ และบอกผู้ฟังว่าผู้ร้องอยู่ในสถานการณ์ใด
++- รายละเอียดที่ผ่านประสาทสัมผัสอาจทำให้ผู้ฟังเห็นหรือรู้สึกร่วมได้เร็วกว่าคำบอกอารมณ์ตรง ๆ
++- ภาพที่เฉพาะเจาะจง (สิ่งที่มีเฉพาะในเพลงนี้) มักจำได้ และอาจบอกผู้ฟังว่าผู้ร้องอยู่ในสถานการณ์ใด
+ - ภาพที่เชื่อมกับแก่นเพลงทำงานสองชั้น: เป็นรายละเอียด และเป็นความหมาย
+ - ภาษาเรียบง่ายก็มีพลังได้ ถ้าเลือกสิ่งที่ถูกต้อง ภาษาสวยไม่ได้แปลว่าเนื้อหาลึกเสมอไป
+ 
+@@ -52,6 +52,7 @@ Pat Pattison สอนการเขียนแบบผูกกับปร
+ - ผสมอุปลักษณ์หลายชุดที่ไม่เข้ากันในบรรทัดเดียว
+ - ภาพไม่เชื่อมกับแก่น เป็นแค่ของตกแต่ง
+ - เลี่ยงภาษาเรียบง่ายเพราะกลัวว่าไม่ "เป็นกวี"
++- เทคนิคในบทนี้เป็นทางเลือกให้ผู้แต่งหยิบใช้ ไม่ใช่เกณฑ์ตัดสินว่าเพลงที่ไม่ใช้เทคนิคเหล่านี้ผิดหรือด้อยกว่า
+ 
+ ## Try It Yourself
+ (1) เลือกสิ่งของหนึ่งอย่างในเพลงของคุณ เขียนถึงมันห้านาทีโดยใช้ประสาทสัมผัสอย่างน้อยสามด้าน (2) ขีดเส้นใต้รายละเอียดหนึ่งอย่างที่มีแต่ในเพลงนี้ (3) เปรียบเทียบกับภาพเดิมในเพลง แล้วถามว่าแบบไหนบอกแก่นมากกว่า (4) ลองเปลี่ยนคำนามธรรมหนึ่งคำเป็นรายละเอียดรูปธรรม และอ่านดูว่าเสียอะไรไปหรือได้อะไรมา
+diff --git a/music_studio/songcraft_knowledge/opening.en.md b/music_studio/songcraft_knowledge/opening.en.md
+index b383ff0..aeed79a 100644
+--- a/music_studio/songcraft_knowledge/opening.en.md
++++ b/music_studio/songcraft_knowledge/opening.en.md
+@@ -1,7 +1,7 @@
+ ---
+ id: opening
+ aspect: opening
+-version: 1.0.0
++version: 1.0.1
+ title: Opening
+ language: en
+ ---
+@@ -13,8 +13,8 @@ Berklee's lyric-writing course that starts from the title teaches choosing a cen
+ The eight patterns below are categories we use for learning. They are not an academic classification and the number is not fixed [R3]. One song can mix several, and some openings fit none.
+ 
+ ## Why It Works
+-- Listeners decide quickly whether to step into a song. A specific opening gives them an image and a question at once.
+-- Details that come through the senses (seeing, hearing, touch) are easier to hold than abstract nouns [R2].
++- Listeners often decide fairly quickly whether to step into a song. A specific opening may give them an image and a question at once.
++- Details that come through the senses (seeing, hearing, touch) may be easier to hold than abstract nouns (Pattison describes sense-bound writing [R2]; the remark about the effect on the listener is ours).
+ - The opening creates an expectation. A song tends to feel strong when what follows keeps the promise, or changes its meaning for a reason.
+ - No pattern is best. The right one is the one that helps this song say what it needs to say.
+ 
+@@ -89,6 +89,7 @@ Notice that none is "right" or "wrong". Each changes what the listener is waitin
+ - Using contradiction or a twist as a trick with nothing to support it.
+ - Believing the opening must always be new and unusual. A plain opening is fine if the voice and the idea of the song are clear.
+ - Using the same pattern in every song because it is the comfortable one.
++- The techniques in this lesson are options for the writer, not a standard by which a song that does not use them is judged wrong or lesser.
+ 
+ ## Try It Yourself
+ Take your song (or the one you are writing) and go in order: (1) write what the listener should feel or wonder in the first two lines; (2) rewrite the first two lines in three of the eight patterns; (3) read each aloud and note "what does this promise the listener"; (4) choose the one whose promise best matches the rest of the song, or note which part of the song would have to change to answer that promise. You may well keep the original opening if it already works.
+diff --git a/music_studio/songcraft_knowledge/opening.md b/music_studio/songcraft_knowledge/opening.md
+index 4556bcb..659d71e 100644
+--- a/music_studio/songcraft_knowledge/opening.md
++++ b/music_studio/songcraft_knowledge/opening.md
+@@ -1,7 +1,7 @@
+ ---
+ id: opening
+ aspect: opening
+-version: 1.0.0
++version: 1.0.1
+ title: การเริ่มต้นเพลง (Opening)
+ language: th
+ ---
+@@ -13,8 +13,8 @@ language: th
+ แปดแบบด้านล่างคือหมวดที่เราจัดไว้เพื่อการเรียนรู้ ไม่ใช่การจัดประเภททางวิชาการที่มีจำนวนตายตัว [R3] เพลงเดียวผสมได้หลายแบบ และมีการเปิดที่ไม่เข้าหมวดไหนเลยก็ได้
+ 
+ ## Why It Works
+-- ผู้ฟังตัดสินใจเร็วว่าจะ "เข้าไป" ในเพลงหรือไม่ การเปิดที่เฉพาะเจาะจงทำให้เกิดภาพและความอยากรู้ทันที
+-- รายละเอียดที่มาจากประสาทสัมผัส (เห็น ได้ยิน สัมผัส) ทำให้ภาพจับต้องได้มากกว่าคำนามนามธรรม [R2]
++- ผู้ฟังมักตัดสินใจค่อนข้างเร็วว่าจะ "เข้าไป" ในเพลงหรือไม่ การเปิดที่เฉพาะเจาะจงอาจทำให้เกิดภาพและความอยากรู้ได้ทันที
++- รายละเอียดที่มาจากประสาทสัมผัส (เห็น ได้ยิน สัมผัส) อาจทำให้ภาพจับต้องได้มากกว่าคำนามนามธรรม (Pattison อธิบายการเขียนผูกกับประสาทสัมผัสไว้ [R2] ส่วนข้อสังเกตเรื่องผลต่อผู้ฟังเป็นของเรา)
+ - การเปิดสร้างความคาดหวัง และความรู้สึกว่าเพลง "มีแรง" มักเกิดเมื่อส่วนถัดไปทำตามสัญญา หรือเปลี่ยนความหมายของมันอย่างมีเหตุผล
+ - ไม่มีแบบใดดีที่สุด: แบบที่เหมาะคือแบบที่ช่วยสื่อสารสิ่งที่เพลงนี้ต้องการจะพูด
+ 
+@@ -89,6 +89,7 @@ language: th
+ - ใช้ความขัดแย้งหรือ "ทวิสต์" เป็นลูกเล่น โดยไม่มีสิ่งใดรองรับ
+ - คิดว่าต้องเปิดให้แปลกใหม่เสมอ การเปิดเรียบ ๆ ก็ได้ ถ้าเสียงและใจความของเพลงชัด
+ - ใช้แบบเดียวกับเพลงอื่นของตัวเองทุกครั้งเพียงเพราะถนัด
++- เทคนิคในบทนี้เป็นทางเลือกให้ผู้แต่งหยิบใช้ ไม่ใช่เกณฑ์ตัดสินว่าเพลงที่ไม่ใช้เทคนิคเหล่านี้ผิดหรือด้อยกว่า
+ 
+ ## Try It Yourself
+ เลือกเพลงของคุณ (หรือเพลงที่กำลังเขียน) แล้วทำตามลำดับ: (1) เขียนว่าผู้ฟังควรรู้สึกหรือสงสัยอะไรในสองบรรทัดแรก (2) เขียนสองบรรทัดแรกใหม่ในสามแบบจากแปดแบบ (3) อ่านออกเสียงแต่ละแบบ แล้วจดว่า "แบบนี้สัญญาอะไรกับผู้ฟัง" (4) เลือกแบบที่คำสัญญาตรงกับส่วนที่เหลือของเพลงมากที่สุด หรือจดว่าส่วนไหนของเพลงต้องเปลี่ยนเพื่อตอบคำสัญญานั้น คุณจะไม่ใช้แบบใหม่เลยก็ได้ ถ้าการเปิดเดิมทำงานดีอยู่แล้ว
+diff --git a/music_studio/songcraft_knowledge/repetition.en.md b/music_studio/songcraft_knowledge/repetition.en.md
+index 53df29b..439ab7c 100644
+--- a/music_studio/songcraft_knowledge/repetition.en.md
++++ b/music_studio/songcraft_knowledge/repetition.en.md
+@@ -1,7 +1,7 @@
+ ---
+ id: repetition
+ aspect: repetition
+-version: 1.0.0
++version: 1.0.1
+ title: Repetition & Contrast
+ language: en
+ ---
+@@ -14,7 +14,7 @@ Berklee's course that starts from the title has lessons on developing the title
+ 
+ ## Why It Works
+ - Repetition builds familiarity, and when the context changes, the same line gains a new meaning.
+-- Repetition builds a mood, such as being stuck, going round, or waiting.
++- Repetition can build a mood, such as being stuck, going round, or waiting.
+ - A Chorus repeated word for word can weigh more when the Verses between its returns develop, and can go flat when they do not.
+ - Contrast between sections tells the listener they have reached a new point, which gives the repetition of other sections more value.
+ 
+@@ -55,6 +55,7 @@ Comparison question: what does the listener know more when the line comes back?
+ - Repeating a whole section while nothing in between changes.
+ - Repeating words that are not the idea (repeating what the listener does not need to remember).
+ - Changing words in a repeat for no reason, so the listener cannot tell why they changed.
++- The techniques in this lesson are options for the writer, not a standard by which a song that does not use them is judged wrong or lesser.
+ 
+ ## Try It Yourself
+ (1) List the lines or sections that repeat in your song. (2) Beside each, write "repeats in order to ___" and "the second/third time the listener gets ___ more". (3) If you cannot fill in the second, try three options: change one word, change the section between the repeats, or remove one repeat. (4) Read the whole song again and see how the effect differs. You may decide to keep the original repetition if you can see why it works.
+diff --git a/music_studio/songcraft_knowledge/repetition.md b/music_studio/songcraft_knowledge/repetition.md
+index d985b77..f1f3ae0 100644
+--- a/music_studio/songcraft_knowledge/repetition.md
++++ b/music_studio/songcraft_knowledge/repetition.md
+@@ -1,7 +1,7 @@
+ ---
+ id: repetition
+ aspect: repetition
+-version: 1.0.0
++version: 1.0.1
+ title: การซ้ำและความแตกต่าง (Repetition & Contrast)
+ language: th
+ ---
+@@ -14,7 +14,7 @@ language: th
+ 
+ ## Why It Works
+ - การซ้ำทำให้ผู้ฟังคุ้นเคย และเมื่อบริบทเปลี่ยน บรรทัดเดิมจะได้ความหมายใหม่
+-- การซ้ำสร้างบรรยากาศ เช่น ความรู้สึกติดอยู่ วนเวียน หรือการรอ
++- การซ้ำช่วยสร้างบรรยากาศได้ เช่น ความรู้สึกติดอยู่ วนเวียน หรือการรอ
+ - Chorus ที่ซ้ำแบบคำต่อคำอาจหนักขึ้นเมื่อ Verse ระหว่างมันพัฒนา และอาจจืดเมื่อ Verse ไม่พัฒนา
+ - ความแตกต่างระหว่างท่อนช่วยให้ผู้ฟังรู้ว่าไปถึงจุดใหม่ ทำให้การซ้ำของท่อนอื่นมีค่ามากขึ้น
+ 
+@@ -55,6 +55,7 @@ language: th
+ - ซ้ำท่อนทั้งท่อนโดยไม่มีอะไรระหว่างทางเปลี่ยน
+ - ซ้ำคำที่ไม่ใช่ใจความ (ซ้ำสิ่งที่ผู้ฟังไม่ต้องการจำ)
+ - เปลี่ยนคำในการซ้ำแบบไม่มีเหตุผล จนผู้ฟังไม่รู้ว่าเปลี่ยนเพราะอะไร
++- เทคนิคในบทนี้เป็นทางเลือกให้ผู้แต่งหยิบใช้ ไม่ใช่เกณฑ์ตัดสินว่าเพลงที่ไม่ใช้เทคนิคเหล่านี้ผิดหรือด้อยกว่า
+ 
+ ## Try It Yourself
+ (1) ทำรายการบรรทัดหรือท่อนที่ซ้ำในเพลงของคุณ (2) ข้างละรายการ เขียนว่า "ซ้ำเพื่อ ___" และ "ครั้งที่สอง/สาม ผู้ฟังได้ ___ เพิ่ม" (3) ถ้าเติมข้อสองไม่ได้ ลองสามทาง: เปลี่ยนคำหนึ่งคำ เปลี่ยนท่อนระหว่างทางให้ต่างออกไป หรือตัดการซ้ำหนึ่งครั้ง (4) อ่านเพลงทั้งเพลงอีกครั้ง แล้วดูว่าผลต่างจากเดิมอย่างไร คุณอาจตัดสินใจเก็บการซ้ำเดิมไว้ ถ้าเห็นเหตุผลชัดเจน
+diff --git a/music_studio/songcraft_knowledge/section_purpose.en.md b/music_studio/songcraft_knowledge/section_purpose.en.md
+index 7e34024..2374792 100644
+--- a/music_studio/songcraft_knowledge/section_purpose.en.md
++++ b/music_studio/songcraft_knowledge/section_purpose.en.md
+@@ -1,7 +1,7 @@
+ ---
+ id: sections
+ aspect: sections
+-version: 1.0.0
++version: 1.0.1
+ title: Section Purpose
+ language: en
+ ---
+@@ -11,10 +11,10 @@ The sections of a song are more than names. Each has a job for the section befor
+ Berklee's lyric-writing course lists lessons on verse development techniques, contrasting sections and song forms [R1], and Pat Pattison's book on lyric form and structure deals with the shape of lyrics, such as line length and rhyme placement [R2]. What we stress is "what does one section do for the next", more than memorising names.
+ 
+ ## Why It Works
+-- Listeners feel a journey when each section adds something the one before did not have (a fact, a view, a feeling, tension).
+-- A Chorus takes its meaning from the Verse before it: when the Verses develop, each return of the Chorus can weigh more.
++- Listeners often feel a journey when each section adds something the one before did not have (a fact, a view, a feeling, tension).
++- A Chorus takes its meaning from the Verse before it: when the Verses develop, each return of the Chorus may weigh more.
+ - Differences between sections (view, the rhythm of the wording, line length) tell the listener they have arrived somewhere new.
+-- When two sections do the same job over again, the song feels as if it circles in place, unless that is meant.
++- When two sections do the same job over again, the song may feel as if it circles in place. That is a problem if it is not meant and a wanted effect in a song that is still on purpose.
+ 
+ ## How to Use
+ Go through the song one section at a time and write half a line: "this section adds ___ to the one before and prepares ___ for the next." Pay most attention to the links Verse 1 → Verse 2 → Chorus → Bridge.
+@@ -23,8 +23,8 @@ Go through the song one section at a time and write half a line: "this section a
+ - Sets a world or a mood and tells the listener where they have come in. Some songs have no sung Intro.
+ 
+ ### verse | Verse
+-- Tells or shows the details, and should develop the idea: a Verse 2 that says the same thing in new words stalls the song.
+-- Ask what fact, view or consequence Verse 2 has that Verse 1 does not.
++- Tells or shows the details, and often develops the idea: a Verse 2 that says the same thing in new words can make the song feel as if it stands still.
++- Ask what fact, view or consequence Verse 2 has that Verse 1 does not, and if it has none, whether the repetition adds meaning or feeling. Some songs use stillness on purpose and to good effect.
+ 
+ ### pre-chorus | Pre-Chorus
+ - Builds tension or turns the direction so the Chorus has somewhere to land. Not every song needs one.
+@@ -43,7 +43,7 @@ The lines below were written for teaching: an imaginary song about "the shoes st
+ 
+ - Verse 1 (setting): "รองเท้าคู่เก่าของพ่อยังวางอยู่ข้างประตู / ฝุ่นจับที่ส้นมาเกือบปี" (Dad's old shoes still sit beside the door; dust has gathered on the heel for almost a year)
+ - A Verse 2 that adds a new fact: "แม่เก็บเสื้อของพ่อไปแล้วทุกตัว / แต่ไม่ยอมแตะรองเท้าคู่นั้นเลย" (Mum has put away all of Dad's shirts but will not touch those shoes) → we see how Mum feels, which Verse 1 did not say
+-- A Verse 2 that stands still: "รองเท้าของพ่อยังอยู่ตรงนั้น / ฉันมองมันทุกวันเมื่อผ่านไป" (Dad's shoes are still there; I look at them every day I pass) → it says again what Verse 1 said
++- A Verse 2 that adds nothing to Verse 1: "รองเท้าของพ่อยังอยู่ตรงนั้น / ฉันมองมันทุกวันเมื่อผ่านไป" (Dad's shoes are still there; I look at them every day I pass) → it says again what Verse 1 said. If the song means to be still this can work, but ask what the stillness does (compare the Development lesson)
+ - A Bridge that brings a new view: "วันหนึ่งน้องชายลองสวมมัน / ใหญ่เกินไปสำหรับเขา แต่เขาไม่ยอมถอด" (one day my little brother tried them on; too big for him, but he would not take them off) → the last Chorus about the shoes now also means who steps forward next
+ 
+ ## Common Pitfalls
+@@ -52,6 +52,7 @@ The lines below were written for teaching: an imaginary song about "the shoes st
+ - Treating Verse-Chorus as a rule instead of asking what this song needs.
+ - A section that adds nothing is not always to be cut: it may be a place to breathe. But you should know what it does.
+ - Mixing up what a section does for the song with the label on the section.
++- The techniques in this lesson are options for the writer, not a standard by which a song that does not use them is judged wrong or lesser.
+ 
+ ## Try It Yourself
+ (1) List the sections of your song and finish one sentence for each: "this section adds ___ to the one before." (2) Mark the ones you cannot answer, or answer the same as the one before. (3) For each marked section, note three options: add a new fact, change the view, or change the section's job. (4) Read the Chorus before and after that section and see whether its meaning changes.
+diff --git a/music_studio/songcraft_knowledge/section_purpose.md b/music_studio/songcraft_knowledge/section_purpose.md
+index 59a0cb2..d8ca45b 100644
+--- a/music_studio/songcraft_knowledge/section_purpose.md
++++ b/music_studio/songcraft_knowledge/section_purpose.md
+@@ -1,7 +1,7 @@
+ ---
+ id: sections
+ aspect: sections
+-version: 1.0.0
++version: 1.0.1
+ title: หน้าที่ของแต่ละท่อน (Section Purpose)
+ language: th
+ ---
+@@ -11,10 +11,10 @@ language: th
+ หลักสูตรเขียนเนื้อเพลงของ Berklee มีบทเรียนเรื่อง "เทคนิคการพัฒนา Verse", "การทำให้ท่อนต่างกัน" และรูปแบบเพลง [R1] และหนังสือโครงสร้างเนื้อเพลงของ Pat Pattison พูดเรื่องรูปทรงของเนื้อเพลง เช่น ความยาวบรรทัดและตำแหน่งสัมผัส [R2] สิ่งสำคัญที่เราเน้นคือ "ท่อนหนึ่งทำอะไรให้ท่อนถัดไป" มากกว่าการท่องชื่อ
+ 
+ ## Why It Works
+-- ผู้ฟังรู้สึกถึงการเดินทางเมื่อแต่ละท่อนเพิ่มบางอย่างที่ท่อนก่อนยังไม่มี (ข้อเท็จจริง มุมมอง ความรู้สึก หรือแรงตึง)
+-- Chorus ได้ความหมายจาก Verse ที่มาก่อน: เมื่อ Verse พัฒนา แต่ละครั้งที่ Chorus กลับมาจะหนักขึ้นได้
++- ผู้ฟังมักรู้สึกถึงการเดินทางเมื่อแต่ละท่อนเพิ่มบางอย่างที่ท่อนก่อนยังไม่มี (ข้อเท็จจริง มุมมอง ความรู้สึก หรือแรงตึง)
++- Chorus ได้ความหมายจาก Verse ที่มาก่อน: เมื่อ Verse พัฒนา แต่ละครั้งที่ Chorus กลับมาอาจหนักขึ้นได้
+ - ความแตกต่างระหว่างท่อน (เช่นมุมมอง จังหวะของถ้อยคำ หรือความยาวบรรทัด) ช่วยให้ผู้ฟังรู้ว่ามาถึงจุดใหม่
+-- เมื่อท่อนสองท่อนทำหน้าที่เดียวกันซ้ำ ผู้ฟังจะรู้สึกวนอยู่ที่เดิม ถ้าไม่ได้ตั้งใจให้เป็นเช่นนั้น
++- เมื่อท่อนสองท่อนทำหน้าที่เดียวกันซ้ำ ผู้ฟังอาจรู้สึกวนอยู่ที่เดิม ซึ่งเป็นปัญหาถ้าไม่ได้ตั้งใจ แต่เป็นผลที่ต้องการในเพลงที่ตั้งใจให้นิ่ง
+ 
+ ## How to Use
+ ลองไล่เพลงทีละท่อน แล้วเขียนครึ่งบรรทัดว่า "ท่อนนี้เพิ่มอะไรจากท่อนก่อน และเตรียมอะไรให้ท่อนหลัง" โดยเน้นการเชื่อม Verse 1 → Verse 2 → Chorus → Bridge
+@@ -23,8 +23,8 @@ language: th
+ - ตั้งโลกหรือบรรยากาศ บอกผู้ฟังว่าเข้ามาที่ไหน บางเพลงไม่มี Intro ที่เป็นเนื้อร้อง
+ 
+ ### verse | Verse
+-- เล่าหรือแสดงรายละเอียด และควรพัฒนาแก่น: Verse 2 ที่พูดเรื่องเดิมในถ้อยคำใหม่ทำให้เพลงหยุดนิ่ง
+-- ถามว่า Verse 2 มีข้อเท็จจริง มุมมอง หรือผลกระทบอะไรที่ Verse 1 ยังไม่มี
++- เล่าหรือแสดงรายละเอียด และมักพัฒนาแก่น: Verse 2 ที่พูดเรื่องเดิมในถ้อยคำใหม่ อาจทำให้เพลงรู้สึกหยุดนิ่ง
++- ถามว่า Verse 2 มีข้อเท็จจริง มุมมอง หรือผลกระทบอะไรที่ Verse 1 ยังไม่มี และถ้าไม่มี การซ้ำนั้นเพิ่มความหมายหรืออารมณ์หรือไม่ บางเพลงตั้งใจใช้ความนิ่งอย่างมีคุณค่า
+ 
+ ### pre-chorus | Pre-Chorus
+ - สะสมแรงตึงหรือเปลี่ยนทิศ เพื่อให้ Chorus มีที่ลง ไม่จำเป็นต้องมีในทุกเพลง
+@@ -43,7 +43,7 @@ language: th
+ 
+ - Verse 1 (ตั้งฉาก): "รองเท้าคู่เก่าของพ่อยังวางอยู่ข้างประตู / ฝุ่นจับที่ส้นมาเกือบปี"
+ - Verse 2 ที่เพิ่มข้อเท็จจริงใหม่: "แม่เก็บเสื้อของพ่อไปแล้วทุกตัว / แต่ไม่ยอมแตะรองเท้าคู่นั้นเลย" → ผู้ฟังเห็นว่าแม่รู้สึกอย่างไร ซึ่ง Verse 1 ยังไม่ได้บอก
+-- Verse 2 ที่ทำให้หยุดนิ่ง: "รองเท้าของพ่อยังอยู่ตรงนั้น / ฉันมองมันทุกวันเมื่อผ่านไป" → บอกซ้ำสิ่งที่ Verse 1 บอกแล้ว
++- Verse 2 ที่ไม่เพิ่มอะไรจาก Verse 1: "รองเท้าของพ่อยังอยู่ตรงนั้น / ฉันมองมันทุกวันเมื่อผ่านไป" → บอกซ้ำสิ่งที่ Verse 1 บอกแล้ว ถ้าตั้งใจให้เพลงนิ่งก็ใช้ได้ แต่ควรถามว่าความนิ่งนั้นสร้างผลอะไร (เทียบบทพัฒนาการ)
+ - Bridge ที่นำมุมมองใหม่: "วันหนึ่งน้องชายลองสวมมัน / ใหญ่เกินไปสำหรับเขา แต่เขาไม่ยอมถอด" → ทำให้ Chorus สุดท้ายที่พูดถึงรองเท้าหมายถึงอีกเรื่องหนึ่ง คือใครจะก้าวต่อ
+ 
+ ## Common Pitfalls
+@@ -52,6 +52,7 @@ language: th
+ - ถือว่าโครงสร้าง Verse-Chorus เป็นกฎ แทนที่จะถามว่าเพลงนี้ต้องการอะไร
+ - ท่อนไหนไม่เพิ่มอะไรเลยก็ไม่เสมอไปว่าต้องตัด อาจมีหน้าที่เป็นพื้นที่หายใจ แต่ควรรู้ว่าทำอะไร
+ - สับสนระหว่างหน้าที่ของท่อน (ทำอะไรให้เพลง) กับป้ายชื่อท่อน
++- เทคนิคในบทนี้เป็นทางเลือกให้ผู้แต่งหยิบใช้ ไม่ใช่เกณฑ์ตัดสินว่าเพลงที่ไม่ใช้เทคนิคเหล่านี้ผิดหรือด้อยกว่า
+ 
+ ## Try It Yourself
+ (1) เขียนรายการท่อนของเพลงคุณ แล้วเติมหนึ่งประโยคต่อท่อน: "ท่อนนี้เพิ่ม ___ จากท่อนก่อน" (2) ทำเครื่องหมายท่อนที่ตอบไม่ได้หรือตอบเหมือนท่อนก่อน (3) สำหรับท่อนที่ทำเครื่องหมายไว้ ลองจดสามทางเลือก: เพิ่มข้อเท็จจริงใหม่ เปลี่ยนมุมมอง หรือเปลี่ยนหน้าที่ของท่อน (4) ลองอ่าน Chorus ก่อนและหลังท่อนนั้น ว่าความหมายของ Chorus เปลี่ยนหรือไม่
+diff --git a/music_studio/songcraft_knowledge/theme.en.md b/music_studio/songcraft_knowledge/theme.en.md
+index 113bc12..f5f66a1 100644
+--- a/music_studio/songcraft_knowledge/theme.en.md
++++ b/music_studio/songcraft_knowledge/theme.en.md
+@@ -1,7 +1,7 @@
+ ---
+ id: theme
+ aspect: theme
+-version: 1.0.0
++version: 1.0.1
+ title: Central Idea / Theme
+ language: en
+ ---
+@@ -10,20 +10,21 @@ The central idea is what the song is trying to say and the angle it looks from.
+ 
+ Berklee's lyric-writing course that starts from the title teaches choosing the central idea first and then developing the sections around it [R1]. A clear idea makes it easier to decide which details stay and which go.
+ 
+-A song with a clear idea and a song that is deliberately open to several readings differ. The first knows what it says and chooses to say it directly or indirectly. The second knows what the fixed core is and leaves the meaning open around it. Good ambiguity has a core under it; ambiguity that is only an undecided idea feels empty.
++A song with a clear idea and a song that is deliberately open to several readings differ. The first knows what it says and chooses to say it directly or indirectly. The second knows what the fixed core is and leaves the meaning open around it. Good ambiguity has a core under it; ambiguity that is only an undecided idea often feels empty.
+ 
+ ## Why It Works
+-- Listeners take in a song faster when every section feels like it speaks about one thing, even from several sides.
++- Listeners may take in a song faster when every section feels like it speaks about one thing, even from several sides.
+ - A specific idea gives the details a job. An image or event that does not serve the idea feels like an extra.
+-- Once the idea is known, developing the song is easier because you can see which view or fact has not been said yet.
++- Once the idea is known, developing the song may be easier because you can see which view or fact has not been said yet.
+ - A song that is open on purpose needs something the listener can hold, such as a repeating image or one feeling that stays, so that it can open without coming loose.
+ 
+ ## How to Use
+-Three steps: write the idea in one sentence, decide whether to say it directly or indirectly, then walk through the sections and ask what each adds to the idea.
++One approach to try (not needed for every song): write the idea in one sentence, decide whether to say it directly or indirectly, then walk through the sections and ask what each adds to the idea.
+ 
+ ### one-sentence | The one-sentence test
+-- Write "this song is about ___ seen from ___". If you cannot fill it in, the idea has not been chosen yet.
+-- If several answers fit equally, choose one as the core and let the others be a second layer.
++- This is an exercise to help you find the idea, not a requirement: try writing "this song is about ___ seen from ___".
++- If you cannot fill it in, you may not have found the idea yet, or the song may be open or abstract on purpose, which is a valid choice. Try noting the image or feeling that keeps returning instead.
++- If several answers fit equally, choose one as the core and let the others be a second layer, or keep several cores on purpose.
+ 
+ ### angle | Choose the angle
+ - One subject can be told from several places: the person who left, the one left behind, a witness, or someone years later.
+@@ -51,9 +52,10 @@ The lines below were written for teaching. The subject is the same, "rain", with
+ - Keeping a beautiful detail that has nothing to do with the idea because you like the image too much.
+ - Putting several ideas in one song with no main one.
+ - You do not have to state the idea outright in the lyrics. Knowing it is already a help.
++- The techniques in this lesson are options for the writer, not a standard by which a song that does not use them is judged wrong or lesser.
+ 
+ ## Try It Yourself
+-(1) Write your song's idea in one sentence, "about ___ seen from ___". (2) Go through each section and write half a line on what it adds to that sentence. (3) For a section that adds nothing, decide what job it should have, or keep it for another reason. (4) Try writing the same idea from another angle and see which lines of the song would change.
++(1) Try writing your song's idea in one sentence, "about ___ seen from ___" (if you cannot, that is fine: note the image or feeling that returns instead). (2) Go through each section and write half a line on what it adds to that sentence. (3) For a section that adds nothing, decide what job it should have, or keep it for another reason. (4) Try writing the same idea from another angle and see which lines of the song would change.
+ 
+ ## References
+ - R1 | Lyric Writing: Writing From the Title (OSONG-221) | Berklee Online, course author Pat Pattison | supports: the course page says it teaches choosing, refining and developing a title as the central idea and building the sections around it. | status: verified | url: https://online.berklee.edu/courses/lyric-writing-writing-from-the-title
+diff --git a/music_studio/songcraft_knowledge/theme.md b/music_studio/songcraft_knowledge/theme.md
+index d28f66a..40f5918 100644
+--- a/music_studio/songcraft_knowledge/theme.md
++++ b/music_studio/songcraft_knowledge/theme.md
+@@ -1,7 +1,7 @@
+ ---
+ id: theme
+ aspect: theme
+-version: 1.0.0
++version: 1.0.1
+ title: แก่นเพลง (Central Idea / Theme)
+ language: th
+ ---
+@@ -10,20 +10,21 @@ language: th
+ 
+ หลักสูตรเขียนเนื้อเพลงของ Berklee ที่เริ่มจากชื่อเพลงสอนให้เลือกใจความกลางก่อน แล้วพัฒนาท่อนต่าง ๆ รอบใจความนั้น [R1] แก่นที่ชัดทำให้ผู้เขียนตัดสินใจได้ง่ายว่ารายละเอียดไหนควรอยู่ ไหนควรตัด
+ 
+-เพลงที่แก่นชัดกับเพลงที่จงใจเปิดให้ตีความหลายทางต่างกัน: แบบแรกรู้ว่าจะพูดอะไรแล้วเลือกพูดตรงหรืออ้อม แบบหลังรู้ว่าอะไรคือแกนที่ไม่เปลี่ยน แล้วปล่อยให้ความหมายเปิดอยู่ ความคลุมเครือที่ดีมีแกนรองรับ ความคลุมเครือที่ยังไม่ได้ตัดสินใจจะรู้สึกว่างเปล่า
++เพลงที่แก่นชัดกับเพลงที่จงใจเปิดให้ตีความหลายทางต่างกัน: แบบแรกรู้ว่าจะพูดอะไรแล้วเลือกพูดตรงหรืออ้อม แบบหลังรู้ว่าอะไรคือแกนที่ไม่เปลี่ยน แล้วปล่อยให้ความหมายเปิดอยู่ ความคลุมเครือที่ดีมีแกนรองรับ ความคลุมเครือที่ยังไม่ได้ตัดสินใจมักรู้สึกว่างเปล่า
+ 
+ ## Why It Works
+-- ผู้ฟังจับเพลงได้เร็วขึ้นเมื่อรู้สึกว่าทุกท่อนกำลังพูดเรื่องเดียวกัน แม้จะพูดจากหลายด้าน
++- ผู้ฟังอาจจับเพลงได้เร็วขึ้นเมื่อรู้สึกว่าทุกท่อนกำลังพูดเรื่องเดียวกัน แม้จะพูดจากหลายด้าน
+ - แก่นที่เฉพาะเจาะจงทำให้รายละเอียดมีหน้าที่ ภาพหรือเหตุการณ์ที่ไม่ช่วยแก่นจะรู้สึกเป็นของแถม
+-- เมื่อรู้แก่นแล้ว การพัฒนาเพลงทำได้ง่ายขึ้น เพราะรู้ว่าต้องเพิ่มมุมมองหรือข้อเท็จจริงอะไรที่ยังไม่ได้พูด
++- เมื่อรู้แก่นแล้ว การพัฒนาเพลงอาจทำได้ง่ายขึ้น เพราะรู้ว่าต้องเพิ่มมุมมองหรือข้อเท็จจริงอะไรที่ยังไม่ได้พูด
+ - เพลงที่ตั้งใจเปิดตีความต้องมีแกนบางอย่างที่ผู้ฟังยึดได้ เช่น ภาพซ้ำหรือความรู้สึกหนึ่งที่คงอยู่ จึงจะเปิดได้โดยไม่หลุด
+ 
+ ## How to Use
+-ทำสามขั้น: เขียนแก่นเป็นประโยคเดียว ตัดสินใจว่าจะพูดตรงหรืออ้อม แล้วไล่ดูว่าแต่ละท่อนเพิ่มอะไรให้แก่นนั้น
++แนวทางที่ลองได้ (ไม่ต้องทำครบทุกเพลง): เขียนแก่นเป็นประโยคเดียว ตัดสินใจว่าจะพูดตรงหรืออ้อม แล้วไล่ดูว่าแต่ละท่อนเพิ่มอะไรให้แก่นนั้น
+ 
+ ### one-sentence | ทดสอบประโยคเดียว
+-- เขียน "เพลงนี้เกี่ยวกับ ___ มองจาก ___" ถ้าเติมไม่ได้ แปลว่ายังไม่เลือกแก่น
+-- ถ้าเติมได้หลายแบบเท่ากัน ลองเลือกหนึ่งแบบเป็นแกน แล้วให้แบบอื่นเป็นชั้นรอง
++- เป็นแบบฝึกหัดช่วยค้นหาแก่น ไม่ใช่ข้อบังคับ: ลองเขียน "เพลงนี้เกี่ยวกับ ___ มองจาก ___"
++- ถ้าเติมไม่ได้ อาจแปลว่ายังหาแก่นไม่เจอ หรือเพลงนี้ตั้งใจเปิดกว้างหรือเป็นนามธรรม ซึ่งเป็นทางเลือกที่ใช้ได้ ลองจดภาพหรือความรู้สึกที่ซ้ำในเพลงแทน
++- ถ้าเติมได้หลายแบบเท่ากัน ลองเลือกหนึ่งแบบเป็นแกน แล้วให้แบบอื่นเป็นชั้นรอง หรือปล่อยให้เป็นหลายแกนอย่างตั้งใจ
+ 
+ ### angle | เลือกมุมมอง
+ - เรื่องเดียวกันเล่าได้หลายมุม: คนที่จากไป คนที่ถูกทิ้ง คนที่เห็นเหตุการณ์ หรือเวลาที่ผ่านไปหลายปีแล้ว
+@@ -51,9 +52,10 @@ language: th
+ - ใส่รายละเอียดสวยแต่ไม่เกี่ยวกับแก่น เพราะชอบภาพนั้นมากเกินไป
+ - ยัดหลายแก่นในเพลงเดียวโดยไม่มีแกนหลัก
+ - ไม่จำเป็นต้องเขียนแก่นออกมาตรง ๆ ในเนื้อเพลง การรู้แก่นอย่างเดียวก็ช่วยได้แล้ว
++- เทคนิคในบทนี้เป็นทางเลือกให้ผู้แต่งหยิบใช้ ไม่ใช่เกณฑ์ตัดสินว่าเพลงที่ไม่ใช้เทคนิคเหล่านี้ผิดหรือด้อยกว่า
+ 
+ ## Try It Yourself
+-(1) เขียนแก่นเพลงของคุณเป็นประโยคเดียว "เกี่ยวกับ ___ มองจาก ___" (2) ไล่ทุกท่อน เขียนครึ่งบรรทัดว่ามันเพิ่มอะไรให้ประโยคนั้น (3) ถ้าท่อนไหนไม่เพิ่มอะไร ลองตัดสินใจว่าจะให้มันมีหน้าที่อะไร หรือเก็บไว้เพราะเหตุผลอื่น (4) ลองเขียนแก่นเดิมจากอีกมุมหนึ่งแล้วดูว่าบรรทัดไหนในเพลงเปลี่ยนไป
++(1) ลองเขียนแก่นเพลงของคุณเป็นประโยคเดียว "เกี่ยวกับ ___ มองจาก ___" (ถ้าเขียนไม่ได้ ไม่เป็นไร ลองจดภาพหรือความรู้สึกที่ซ้ำแทน) (2) ไล่ทุกท่อน เขียนครึ่งบรรทัดว่ามันเพิ่มอะไรให้ประโยคนั้น (3) ถ้าท่อนไหนไม่เพิ่มอะไร ลองตัดสินใจว่าจะให้มันมีหน้าที่อะไร หรือเก็บไว้เพราะเหตุผลอื่น (4) ลองเขียนแก่นเดิมจากอีกมุมหนึ่งแล้วดูว่าบรรทัดไหนในเพลงเปลี่ยนไป
+ 
+ ## References
+ - R1 | Lyric Writing: Writing From the Title (OSONG-221) | Berklee Online, ผู้เขียนหลักสูตร Pat Pattison | supports: หลักสูตรสอนการเลือก ปรับ และพัฒนาชื่อเพลงเป็นใจความกลาง แล้วสร้างท่อนต่าง ๆ รอบมัน (ตามหน้าหลักสูตร) | status: verified | url: https://online.berklee.edu/courses/lyric-writing-writing-from-the-title

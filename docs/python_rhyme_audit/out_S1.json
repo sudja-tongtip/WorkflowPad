@@ -1,0 +1,398 @@
+{
+ "song": "S1",
+ "title": "ฝนหน้าบ้าน",
+ "links": [
+  {
+   "a": [
+    2,
+    "บ้าน",
+    24
+   ],
+   "b": [
+    3,
+    "นาน",
+    46
+   ],
+   "sound": "exact",
+   "placement": "end",
+   "verification": "verified",
+   "group": "อา+กน",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: หน้าบ้าน อา+กน · นาน อา+กน"
+  },
+  {
+   "a": [
+    3,
+    "นาน",
+    46
+   ],
+   "b": [
+    20,
+    "ช่าง",
+    343
+   ],
+   "sound": "near",
+   "placement": "end",
+   "verification": "verified",
+   "group": "อา+กง",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: นาน อา+กน · ก็ช่าง อา+กง"
+  },
+  {
+   "a": [
+    4,
+    "เก่า",
+    62
+   ],
+   "b": [
+    5,
+    "เบา",
+    79
+   ],
+   "sound": "exact",
+   "placement": "end",
+   "verification": "verified",
+   "group": "เอา+กา",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: เก่า เอา+กา · เบา เอา+กา"
+  },
+  {
+   "a": [
+    14,
+    "ถ้า",
+    204
+   ],
+   "b": [
+    14,
+    "ฟ้า",
+    213
+   ],
+   "sound": "exact",
+   "placement": "internal",
+   "verification": "verified",
+   "group": "อา+กา",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: ถ้า · ฟ้า อา+กา"
+  },
+  {
+   "a": [
+    14,
+    "ไห้",
+    230
+   ],
+   "b": [
+    15,
+    "ใส",
+    256
+   ],
+   "sound": "exact",
+   "placement": "end",
+   "verification": "verified",
+   "group": "ไอ+กา",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: ร้องไห้ ไอ+กา · ใส ไอ+กา"
+  },
+  {
+   "a": [
+    15,
+    "ใส",
+    256
+   ],
+   "b": [
+    18,
+    "ไร",
+    296
+   ],
+   "sound": "exact",
+   "placement": "end",
+   "verification": "verified",
+   "group": "ไอ+กา",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: ใส ไอ+กา · ไม่เป็นไร ไอ+กา"
+  },
+  {
+   "a": [
+    18,
+    "ไร",
+    296
+   ],
+   "b": [
+    26,
+    "ไห้",
+    463
+   ],
+   "sound": "exact",
+   "placement": "end",
+   "verification": "verified",
+   "group": "ไอ+กา",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: ไม่เป็นไร ไอ+กา · ร้องไห้ ไอ+กา"
+  },
+  {
+   "a": [
+    26,
+    "ถ้า",
+    437
+   ],
+   "b": [
+    26,
+    "ฟ้า",
+    446
+   ],
+   "sound": "exact",
+   "placement": "internal",
+   "verification": "verified",
+   "group": "อา+กา",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: ถ้า · ฟ้า อา+กา"
+  },
+  {
+   "a": [
+    26,
+    "ไห้",
+    463
+   ],
+   "b": [
+    27,
+    "ใส",
+    489
+   ],
+   "sound": "exact",
+   "placement": "end",
+   "verification": "verified",
+   "group": "ไอ+กา",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: ร้องไห้ ไอ+กา · ใส ไอ+กา"
+  }
+ ],
+ "rejected": 0,
+ "skipped": [],
+ "line_ends": {},
+ "line_end_rime": {
+  "2": {
+   "text": "ฝนพรำเปียกหน้าบ้าน",
+   "last_token": "ฝนพรำเปียกหน้าบ้าน",
+   "last_syllable": "บ้าน",
+   "rime": "อา+กน"
+  },
+  "3": {
+   "text": "เธอยืนอยู่ตรงนั้นนาน",
+   "last_token": "เธอยืนอยู่ตรงนั้นนาน",
+   "last_syllable": "นาน",
+   "rime": "อา+กน"
+  },
+  "4": {
+   "text": "ฉันถือร่มคันเก่า",
+   "last_token": "ฉันถือร่มคันเก่า",
+   "last_syllable": "เก่า",
+   "rime": "เอา+กา"
+  },
+  "5": {
+   "text": "เธอเดินมาเบาเบา",
+   "last_token": "เธอเดินมาเบาเบา",
+   "last_syllable": "เบา",
+   "rime": "เอา+กา"
+  },
+  "8": {
+   "text": "ไม่ต้องพูดอะไรสักคำ",
+   "last_token": "ไม่ต้องพูดอะไรสักคำ",
+   "last_syllable": "คำ",
+   "rime": "อำ+กา"
+  },
+  "9": {
+   "text": "แค่ยืนใกล้ก็รู้ทั้งหมด",
+   "last_token": "แค่ยืนใกล้ก็รู้ทั้งหมด",
+   "last_syllable": null,
+   "rime": ""
+  },
+  "12": {
+   "text": "ให้ฝนเป็นพยาน ว่าฉันรักเธอ",
+   "last_token": "ว่าฉันรักเธอ",
+   "last_syllable": "เธอ",
+   "rime": "เออ+กา"
+  },
+  "13": {
+   "text": "ให้ฝนเป็นพยาน ว่าเธอรักฉัน",
+   "last_token": "ว่าเธอรักฉัน",
+   "last_syllable": "ฉัน",
+   "rime": "อะ+กน"
+  },
+  "14": {
+   "text": "ถ้าวันนี้ฟ้าไม่ยอมหยุดร้องไห้",
+   "last_token": "ถ้าวันนี้ฟ้าไม่ยอมหยุดร้องไห้",
+   "last_syllable": "ไห้",
+   "rime": "ไอ+กา"
+  },
+  "15": {
+   "text": "ฉันจะอยู่กับเธอไปจนฟ้าใส",
+   "last_token": "ฉันจะอยู่กับเธอไปจนฟ้าใส",
+   "last_syllable": "ใส",
+   "rime": "ไอ+กา"
+  },
+  "18": {
+   "text": "เสื้อเปียกทั้งตัวก็ไม่เป็นไร",
+   "last_token": "เสื้อเปียกทั้งตัวก็ไม่เป็นไร",
+   "last_syllable": "ไร",
+   "rime": "ไอ+กา"
+  },
+  "19": {
+   "text": "มือของเธออุ่นกว่าที่ฉันคิด",
+   "last_token": "มือของเธออุ่นกว่าที่ฉันคิด",
+   "last_syllable": "คิด",
+   "rime": "อิ+กด"
+  },
+  "20": {
+   "text": "ฝนจะตกอีกกี่วันก็ช่าง",
+   "last_token": "ฝนจะตกอีกกี่วันก็ช่าง",
+   "last_syllable": "ช่าง",
+   "rime": "อา+กง"
+  },
+  "21": {
+   "text": "ขอแค่เธอยังยืนอยู่ตรงนี้",
+   "last_token": "ขอแค่เธอยังยืนอยู่ตรงนี้",
+   "last_syllable": "นี้",
+   "rime": "อี+กา"
+  },
+  "24": {
+   "text": "ให้ฝนเป็นพยาน ว่าฉันรักเธอ",
+   "last_token": "ว่าฉันรักเธอ",
+   "last_syllable": "เธอ",
+   "rime": "เออ+กา"
+  },
+  "25": {
+   "text": "ให้ฝนเป็นพยาน ว่าเธอรักฉัน",
+   "last_token": "ว่าเธอรักฉัน",
+   "last_syllable": "ฉัน",
+   "rime": "อะ+กน"
+  },
+  "26": {
+   "text": "ถ้าวันนี้ฟ้าไม่ยอมหยุดร้องไห้",
+   "last_token": "ถ้าวันนี้ฟ้าไม่ยอมหยุดร้องไห้",
+   "last_syllable": "ไห้",
+   "rime": "ไอ+กา"
+  },
+  "27": {
+   "text": "ฉันจะอยู่กับเธอไปจนฟ้าใส",
+   "last_token": "ฉันจะอยู่กับเธอไปจนฟ้าใส",
+   "last_syllable": "ใส",
+   "rime": "ไอ+กา"
+  },
+  "30": {
+   "text": "บางเรื่องไม่ต้องอธิบาย",
+   "last_token": "บางเรื่องไม่ต้องอธิบาย",
+   "last_syllable": "บาย",
+   "rime": "อา+เกย"
+  },
+  "31": {
+   "text": "แค่ไม่ปล่อยมือกันก็พอ",
+   "last_token": "แค่ไม่ปล่อยมือกันก็พอ",
+   "last_syllable": "พอ",
+   "rime": "ออ+กา"
+  }
+ },
+ "groups": [
+  [
+   [
+    2,
+    "บ้าน",
+    "exact",
+    "end"
+   ],
+   [
+    3,
+    "นาน",
+    "exact",
+    "end"
+   ],
+   [
+    20,
+    "ช่าง",
+    "near",
+    "end"
+   ]
+  ],
+  [
+   [
+    4,
+    "เก่า",
+    "exact",
+    "end"
+   ],
+   [
+    5,
+    "เบา",
+    "exact",
+    "end"
+   ]
+  ],
+  [
+   [
+    14,
+    "ถ้า",
+    "exact",
+    "internal"
+   ],
+   [
+    14,
+    "ฟ้า",
+    "exact",
+    "internal"
+   ]
+  ],
+  [
+   [
+    14,
+    "ไห้",
+    "exact",
+    "end"
+   ],
+   [
+    15,
+    "ใส",
+    "exact",
+    "end"
+   ],
+   [
+    18,
+    "ไร",
+    "exact",
+    "end"
+   ],
+   [
+    26,
+    "ไห้",
+    "exact",
+    "end"
+   ],
+   [
+    27,
+    "ใส",
+    "exact",
+    "end"
+   ]
+  ],
+  [
+   [
+    26,
+    "ถ้า",
+    "exact",
+    "internal"
+   ],
+   [
+    26,
+    "ฟ้า",
+    "exact",
+    "internal"
+   ]
+  ]
+ ]
+}

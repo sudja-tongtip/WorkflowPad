@@ -1,0 +1,9 @@
+PRE-REGISTRATION (written before the first request of the 12)
+time: 2026-11-12T13:02:56
+014825495073f090ee7109f394c2b4327715fd5adfadfb37c16c4a158d01c77e *EXPECTED_OBSERVATIONS.md
+a9df36af5249eb3280a51e30b4a88723923cc1a394c70d44cfefd98a3a22bada *prompts_fr.py
+2cd5e08292376e10b3a93989a5edb8ff626081f266d22cc98d7e88deb7e94224 *run_fr.py
+5cad9f5a7289e33d31f7a66b59931f417e4708113e5d0d7749518513af76253b *checks.py
+production song_critic prompt sha256:
+f25320144ab238e2a6ee5d6401b8c6d86c9790f6ec88afc7ca7620e11a663106 *../../music_studio/prompts/specialists/song_critic.md
+Rule: one prototype, no retry, no tuning after the results, 4 one-shot + 8 pass requests; rubric and decision rule in EXPECTED_OBSERVATIONS.md. The evaluation script (evaluate_fr.py) is written after the run; it only counts line ids and quoted fragments and measures cost.

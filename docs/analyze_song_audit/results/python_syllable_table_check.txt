@@ -1,0 +1,27 @@
+Python syllable table vs hand count: lines marked 'verified' 16/17 right; lines marked 'estimated' 3/9 right
+S1 | ฝนพรำเปียกหน้าบ้าน | 5 | 5 | verified | OK
+S1 | เธอยืนอยู่ตรงนั้นนาน | 6 | 6 | verified | OK
+S1 | ฉันถือร่มคันเก่า | 5 | 5 | verified | OK
+S1 | เธอเดินมาเบาเบา | 5 | 5 | verified | OK
+S1 | ไม่ต้องพูดอะไรสักคำ | 7 | 7 | verified | OK
+S1 | ให้ฝนเป็นพยาน ว่าฉันรักเธอ | 9 | 8 | estimated | WRONG
+S1 | ฉันจะอยู่กับเธอไปจนฟ้าใส | 9 | 9 | verified | OK
+S1 | บางเรื่องไม่ต้องอธิบาย | 7 | 6 | estimated | WRONG
+S2 | ลุงขายกาแฟยิ้มให้ฉันเหมือนเคย | 9 | 9 | verified | OK
+S2 | ฉันซื้อแก้วเดิมไม่ต้องบอกอะไร | 9 | 9 | verified | OK
+S2 | เพื่อนร่วมงานถามว่าสุขไหม | 7 | 7 | verified | OK
+S2 | ฉันตอบว่าก็ดีตามปกติ | 9 | 8 | verified | WRONG
+S3 | คิดถึงเธอ คิดถึงเธอ | 6 | 6 | verified | OK
+S3 | ฉันรักเธอ ไม่เปลี่ยนไป | 6 | 6 | verified | OK
+S3 | ฉันรักเธอ ตลอดไป | 6 | 5 | estimated | WRONG
+S3 | ตู้ไปรษณีย์สีแดงยังเปื้อนสีเทาของค | 13 | 11 | estimated | WRONG
+S4 | ลุกขึ้นมาเต้น ลุกขึ้นมาเต้น | 8 | 8 | verified | OK
+S4 | ต่อให้พื้นร้าวก็ยังเต้นได้ | 8 | 8 | verified | OK
+S4 | เสียงเบสจะพาฉันไปให้ไกล | 8 | 8 | verified | OK
+S4 | เหมือนมันรู้ว่าวันนี้ฉันต้องการอะไ | 11 | 11 | verified | OK
+S5 | ฉันไม่เคยรอใครเลยในชีวิตนี้ | 10 | 10 | verified | OK
+S6 | ฉันเดินผ่านตลาดเช้าตรู่ที่คนเริ่มข | 21 | 19 | estimated | WRONG
+S7 | I left my keys inside your car | 8 | 8 | estimated | OK
+S7 | So call me when the lights go down | 8 | 8 | estimated | OK
+S7 | I'll be the one still in this town | 8 | 8 | estimated | OK
+S8 | ไฟถนนกระพริบเหมือนมันกำลังหายใจ | 11 | 10 | estimated | WRONG

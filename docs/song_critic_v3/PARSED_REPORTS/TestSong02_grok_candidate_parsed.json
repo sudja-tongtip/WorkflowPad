@@ -1,0 +1,323 @@
+{
+ "tag": "TestSong02_grok_candidate",
+ "raw_findings": 0,
+ "raw_aspects": 8,
+ "raw_actions": 1,
+ "parser_findings": 0,
+ "parser_aspects": 8,
+ "parser_actions": 1,
+ "ok": true,
+ "diagnostics": [],
+ "seconds": 27.8,
+ "error": null,
+ "parsed": {
+  "ok": true,
+  "sr": {
+   "schema": 1,
+   "headline": "เพลงนี้สื่อถึงความรักและการเสียสละของพ่อที่แสดงผ่านการวิ่งมาดูการแข่งขันของลูก และเนื้อเพลงประสบความสำเร็จด้วยรายละเอียดเฉพาะที่สร้างอารมณ์สะเทือนใจ",
+   "reading": "บทกลอนสร้างภาพพ่อขับแท็กซี่แล้ววิ่งสองกิโลเมตรเพื่อมาถึงสนามกีฬา โดยคอรัสที่กลับมาซ้ำทำให้ความหมายของการวิ่งของลูกเปลี่ยนไปจากความเหงาเป็นความอบอุ่น ข้อความชัดเจนจากบรรทัดที่พ่อพูดขอโทษและหัวเราะทั้งน้ำตา",
+   "findings": [],
+   "sections": [
+    {
+     "name": "Verse 1",
+     "first": 2,
+     "last": 6,
+     "reading": "แนะนำสถานการณ์ลูกยืนรอและพ่อติดงาน ขยายความคาดหวังก่อน Pre-Chorus"
+    },
+    {
+     "name": "Pre-Chorus",
+     "first": 8,
+     "last": 10,
+     "reading": "สร้างความตึงเครียดก่อน Chorus ด้วยการเรียกชื่อลงวิ่ง"
+    },
+    {
+     "name": "Chorus",
+     "first": 12,
+     "last": 16,
+     "reading": "แสดงการวิ่งโดยไม่มีใครเชียร์และการเห็นพ่อมาถึง"
+    },
+    {
+     "name": "Verse 2",
+     "first": 18,
+     "last": 22,
+     "reading": "เพิ่มรายละเอียดพ่อวิ่งมาและรองเท้าหลุด ทำให้อารมณ์พัฒนา"
+    },
+    {
+     "name": "Pre-Chorus",
+     "first": 24,
+     "last": 26,
+     "reading": "แสดงปฏิกิริยาของลูกที่ยื่นเหรียญให้พ่อ"
+    },
+    {
+     "name": "Chorus",
+     "first": 28,
+     "last": 32,
+     "reading": "กลับมาพร้อมความหมายใหม่ที่พ่อเห็นและซาบซึ้ง"
+    },
+    {
+     "name": "Outro",
+     "first": 34,
+     "last": 36,
+     "reading": "ปิดด้วยภาพพ่อขับแท็กซี่ต่อแต่เหรียญยังแขวนไว้"
+    }
+   ],
+   "notes": [],
+   "format": "songcraft-1",
+   "aspects": [
+    {
+     "refs": [
+      [
+       2,
+       3
+      ]
+     ],
+     "first": 2,
+     "last": 3,
+     "lines_invalid": "",
+     "quote": "พ่อสัญญาว่าวันกีฬาสีจะมา\nผมใส่เสื้อสีฟ้ายืนรอที่หน้าประตู",
+     "quote_ok": true,
+     "id": "as_opening",
+     "aspect": "opening",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [
+      "scene"
+     ],
+     "observation": "เปิดด้วยภาพลูกยืนรอที่ประตูและเพื่อนมีพ่อแม่มาดู",
+     "interpretation": "ทำให้ผู้ฟังเข้าใจสถานการณ์ทันทีและคาดหวังการปรากฏตัวของพ่อ",
+     "recommendation": "",
+     "keep": "เปิดแบบนี้สร้างความคาดหวังที่เพลงรักษาไว้ได้ดี",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       14,
+       15
+      ],
+      [
+       30,
+       30
+      ]
+     ],
+     "first": 14,
+     "last": 15,
+     "lines_invalid": "",
+     "quote": "พอข้ามเส้นชัยผมก็เห็นพ่อ\nยืนหอบอยู่ข้างรั้ว เสื้อเปียกเหงื่อทั้งตัว\n…\nพ่อหัวเราะทั้งน้ำตา บอกว่าเหรียญนี้สวยที่สุด",
+     "quote_ok": true,
+     "id": "as_theme",
+     "aspect": "theme",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [],
+     "observation": "ธีมคือความเสียสละของพ่อและการตระหนักของลูก",
+     "interpretation": "ผู้ฟังเห็นการเปลี่ยนจากความโกรธเป็นความเข้าใจผ่านรายละเอียดการวิ่งของพ่อ",
+     "recommendation": "",
+     "keep": "ธีมชัดเจนและสอดคล้องตลอดเพลง",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       7,
+       7
+      ],
+      [
+       11,
+       11
+      ],
+      [
+       17,
+       17
+      ],
+      [
+       23,
+       23
+      ],
+      [
+       27,
+       27
+      ],
+      [
+       33,
+       33
+      ]
+     ],
+     "first": 7,
+     "last": 7,
+     "lines_invalid": "",
+     "quote": "[Pre-Chorus]\n…\n[Chorus]\n…\n[Verse 2]\n…\n[Pre-Chorus]\n…\n[Chorus]\n…\n[Outro]",
+     "quote_ok": true,
+     "id": "as_sections",
+     "aspect": "sections",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [],
+     "observation": "โครงสร้างมี Verse, Pre-Chorus, Chorus, Outro ชัดเจน",
+     "interpretation": "Pre-Chorus สร้างความตึงเครียดก่อน Chorus ที่ให้ความรู้สึกปลดปล่อย",
+     "recommendation": "",
+     "keep": "โครงสร้างช่วยให้อารมณ์พัฒนาได้ดี",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       18,
+       19
+      ],
+      [
+       28,
+       31
+      ]
+     ],
+     "first": 18,
+     "last": 19,
+     "lines_invalid": "",
+     "quote": "พ่อทิ้งรถไว้ริมถนนแล้ววิ่งมา\nสองกิโลเมตร รองเท้าคู่เก่าหลุดข้างหนึ่ง\n…\nผมวิ่งไปทั้งที่ไม่มีใครเชียร์\nได้ที่สุดท้ายแต่พ่อเห็นผมวิ่งจนจบ\nพ่อหัวเราะทั้งน้ำตา บอกว่าเหรียญนี้สวยที่สุด\nผมเลยลืมไปว่าผมโกรธ",
+     "quote_ok": true,
+     "id": "as_development",
+     "aspect": "development",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [],
+     "observation": "Verse 2 เพิ่มรายละเอียดพ่อวิ่งมาและรองเท้าหลุด ทำให้ Chorus ที่สองมีความหมายลึกซึ้งขึ้น",
+     "interpretation": "ผู้ฟังรู้สึกถึงการเปลี่ยนแปลงจากความโกรธเป็นความซาบซึ้ง",
+     "recommendation": "",
+     "keep": "การพัฒนานี้ทำให้เพลงมีน้ำหนัก",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       12,
+       12
+      ],
+      [
+       28,
+       28
+      ]
+     ],
+     "first": 12,
+     "last": 12,
+     "lines_invalid": "",
+     "quote": "ผมวิ่งไปทั้งที่ไม่มีใครเชียร์\n…\nผมวิ่งไปทั้งที่ไม่มีใครเชียร์",
+     "quote_ok": true,
+     "id": "as_hook",
+     "aspect": "hook",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [],
+     "observation": "บรรทัดนี้กลับมาคำต่อคำใน Chorus ทั้งสอง",
+     "interpretation": "ง่ายต่อการจดจำและสะท้อนอารมณ์ที่เปลี่ยนไปเมื่อ Chorus ที่สองมีพ่อเห็น",
+     "recommendation": "",
+     "keep": "ปล่อยให้บรรทัดนี้คงเดิม",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       15,
+       15
+      ],
+      [
+       19,
+       19
+      ]
+     ],
+     "first": 15,
+     "last": 15,
+     "lines_invalid": "",
+     "quote": "ยืนหอบอยู่ข้างรั้ว เสื้อเปียกเหงื่อทั้งตัว\n…\nสองกิโลเมตร รองเท้าคู่เก่าหลุดข้างหนึ่ง",
+     "quote_ok": true,
+     "id": "as_imagery",
+     "aspect": "imagery",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [],
+     "observation": "ภาพเฉพาะเจาะจงเช่นเสื้อเปียกเหงื่อและรองเท้าหลุด",
+     "interpretation": "รายละเอียดเหล่านี้ทำให้ความเสียสละของพ่อรู้สึกจริงและน่าจดจำ",
+     "recommendation": "",
+     "keep": "ภาพเหล่านี้ช่วยเสริมธีมได้ดี",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       12,
+       12
+      ],
+      [
+       28,
+       28
+      ]
+     ],
+     "first": 12,
+     "last": 12,
+     "lines_invalid": "",
+     "quote": "ผมวิ่งไปทั้งที่ไม่มีใครเชียร์\n…\nผมวิ่งไปทั้งที่ไม่มีใครเชียร์",
+     "quote_ok": true,
+     "id": "as_repetition",
+     "aspect": "repetition",
+     "status": "no_issue",
+     "kind": "keep",
+     "priority": "",
+     "patterns": [],
+     "observation": "บรรทัดหลักกลับมาหนึ่งครั้งพร้อมเนื้อหาที่เปลี่ยนเล็กน้อยใน Chorus ที่สอง",
+     "interpretation": "การกลับมาช่วยเน้นการเปลี่ยนแปลงของความรู้สึกโดยไม่ซ้ำซาก",
+     "recommendation": "",
+     "keep": "การใช้ซ้ำแบบนี้มีประสิทธิภาพ",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       34,
+       35
+      ]
+     ],
+     "first": 34,
+     "last": 35,
+     "lines_invalid": "",
+     "quote": "วันนี้พ่อยังขับแท็กซี่เหมือนเดิม\nแต่เหรียญนั้นแขวนอยู่หน้ารถทุกวัน",
+     "quote_ok": true,
+     "id": "as_ending",
+     "aspect": "ending",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [],
+     "observation": "Outro แสดงภาพพ่อขับแท็กซี่ต่อแต่เหรียญแขวนไว้",
+     "interpretation": "ให้ความรู้สึกปิดท้ายด้วยความอบอุ่นและยั่งยืน",
+     "recommendation": "",
+     "keep": "การจบแบบนี้ตอบคำถามที่เพลงตั้งไว้ได้ดี",
+     "proposal": ""
+    }
+   ],
+   "actions": [
+    {
+     "id": "ac1",
+     "title": "รักษาภาพเฉพาะใน Verse 2",
+     "action": "ปล่อยให้รายละเอียดการวิ่งของพ่อคงเดิมเพื่อรักษาความรู้สึกจริงจัง",
+     "aspect": "imagery",
+     "refs": [
+      [
+       18,
+       19
+      ]
+     ],
+     "lines_invalid": "",
+     "tradeoff": ""
+    }
+   ]
+  },
+  "diagnostics": [],
+  "incomplete": false
+ },
+ "parser": "current parser (aspect-name aliases, a repeated empty field does not erase the first value); the first parse is in run_parser_v1.log"
+}

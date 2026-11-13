@@ -1,0 +1,110 @@
+PASS 1 four report icons are in the strip, in the order of the design, after Lyrics Tools  ['settings', 'tools', 'sr_critic', 'sr_rhyme', 'sr_vocal', 'sr_lang', 'rep_lyrics', 'rep_vocal', 'cc_rhyme', 'cc_rhythm', 'gen', 'results']
+PASS 1 each icon shows its own report page (and hides the old report page)  {'sr_critic': ('sr_critic', 'song_critic', True, False), 'sr_rhyme': ('sr_rhyme', 'rhyme_flow', True, False), 'sr_vocal': ('sr_vocal', 'vocal_flow', True, False), 'sr_lan
+PASS 1 the headers show the names of the reports
+PASS 1 sr_critic: the page names its specialist
+PASS 1 sr_rhyme: the page names its specialist
+PASS 1 sr_vocal: the page names its specialist
+PASS 1 sr_lang: the page names its specialist
+PASS 2 switching between the four tabs makes no LLM call
+PASS 2 each page starts as 'not analyzed' with the explanation
+PASS 3 Analyze makes exactly ONE request, and only the Song Critic report exists afterwards  (1, {'song_critic': 'current', 'rhyme_flow': 'not_analyzed', 'vocal_flow': 'not_analyzed', 'lyric_language': 'not_analyzed'})
+PASS 3 the request holds the Song Critic prompt and the lyrics, not the other specialists' evidence
+PASS 3 the report was saved in the specialist's session file of this song and sheet
+PASS 3 the page shows the verdict, the findings and the line references
+PASS 3 the saved report keeps its lyrics, so its quotes stay right when the lyrics change
+PASS 4 each of the four reports is saved apart  {'song_critic': 'current', 'rhyme_flow': 'current', 'vocal_flow': 'current', 'lyric_language': 'current'}
+PASS 4 four requests in all (one per report)  4
+PASS 4 after 'a restart' (the session files read again) every report is there
+PASS 4 another song has none of these reports (separate by song id)
+PASS 5 Rhyme & Flow shows EXACT / NEAR as text per pair and the pair words  สัมผัสและความลื่นไหล | รายงานผู้เชี่ยวชาญ · อ่านอย่างเดียว · 2026-11-12 11:58 | เป็นปัจจุบัน | RHYME QUALITY & NATURAL FLOW | ภาพชัดแต่เรื่องไม่เดิน | อธิบาย | หลักฐานสัม
+PASS 5 it says that a shared colour never makes a pair and that no listed pair is not proof of no rhyme
+PASS 5 Vocal Flow shows the live / dead counts and the no-melody limit  การไหลของเสียงร้อง | รายงานผู้เชี่ยวชาญ · อ่านอย่างเดียว · 2026-11-12 11:58 | เป็นปัจจุบัน | SINGABILITY & PHRASING | ภาพชัดแต่เรื่องไม่เดิน | อธิบาย | คำเป็น–ค
+PASS 5 Lyric Language shows the original and the alternative as a comparison with 'not applied'  ภาษาของเนื้อเพลง | รายงานผู้เชี่ยวชาญ · อ่านอย่างเดียว · 2026-11-12 11:58 | เป็นปัจจุบัน | IDIOMATIC WRITING & WORD CHOICE | ภาษาธรรมชาติเกือบทั้งเพลง | มีวลีเดียวที่ควรด
+PASS 5 there is NO Apply button on any report page (comparison only)
+PASS 6 changed lyrics make every report 'outdated'  {'song_critic': 'outdated', 'rhyme_flow': 'outdated', 'vocal_flow': 'outdated', 'lyric_language': 'outdated'}
+PASS 6 the outdated report is still readable and says so  นักวิจารณ์เพลง | รายงานผู้เชี่ยวชาญ · อ่านอย่างเดียว · 2026-11-12 11:58 | ล้าสมัย | เนื้อเพลงเปลี่ยนหลังสร้างรายงานนี้ ยังอ่านได้ แต่เลขแถวและข้อสรุปอ
+PASS 7 an error is shown, the other three reports are untouched
+PASS 7 the failing report keeps its earlier good report on the page
+PASS 8 a valid answer is read in full
+PASS 8 an answer without [DONE] is not used
+PASS 8 text after [DONE] is not used and is noted
+PASS 8 text before the first tag is noted
+PASS 8 a Song Critic finding about a line that does not exist is KEPT, without a line link and marked, with a diagnostic (the report stays)
+PASS 8 a quote that is not in the lyrics is replaced by the lyric lines themselves, and noted
+PASS 8 a copied line of the format is not accepted as the observation  ["song_critic: placeholder_copied: in [FINDING.1] the `observation` field “observation: what is in the lyrics (a fact you can point at)” is the format's own text, not an 
+PASS 8 an answer with no [VERDICT] is not a report
+PASS 8 an alternative equal to the original gives no comparison
+PASS 8 an alternative with a [tag] inside is refused
+PASS 8 a line id in front of an alternative is taken off (format only)
+PASS 8 the number of findings and of concerns is limited  ['concern', 'strength', 'concern', 'concern']
+PASS 8 a closing tag the model added ([/VERDICT.1]) is taken off the text, not shown
+PASS 9 state: current for the same lyrics, outdated for other lyrics, not_analyzed for none, running while it runs
+PASS 9 state: partial when something of the answer was refused
+PASS 9 state: error for an unreadable answer (and outdated once the lyrics changed)
+PASS 10 the chat specialists are still the Songwriter AI and the Music Producer AI only (the four reports are not chat specialists)
+PASS 10 Analyze Song (all) now asks the Music Producer only
+PASS 10 the Songwriter report button is refused with an explanation (no request)
+PASS 10 the older report page and route still exist (rp_show_tab('report'))
+PASS 10 rp_show_tab('report') still opens a report page (the old route is not broken)  rep_lyrics
+PASS 11 song_critic: prompt is valid and has the required sections
+PASS 11 rhyme_flow: prompt is valid and has the required sections
+PASS 11 vocal_flow: prompt is valid and has the required sections
+PASS 11 lyric_language: prompt is valid and has the required sections
+PASS 11 the four prompts are different documents (no copy of one long prompt)
+PASS 11 none of them is a copy of the Songwriter prompt
+PASS 11 each specialist gets its own evidence: only Rhyme & Flow has the rhyme evidence, only Vocal Flow the live / dead data
+PASS 11 the request of a specialist holds the numbered lyrics and its evidence only
+PASS 12 the report column scrolls (a long report never overflows the panel)
+PASS 12 the rows that hold chips and buttons wrap (they stack in a narrow panel)  7
+PASS 12 the lyrics of the program are not changed by any report
+PASS 13A all four reports are current before any setting changes  {'song_critic': 'current', 'rhyme_flow': 'current', 'vocal_flow': 'current', 'lyric_language': 'current'}
+PASS 13A a new BPM makes ONLY Vocal Flow outdated  {'song_critic': 'current', 'rhyme_flow': 'current', 'vocal_flow': 'outdated', 'lyric_language': 'current'}
+PASS 13A analysing it again makes it current for the new BPM
+PASS 13A a new duration makes ONLY Vocal Flow outdated
+PASS 13A a new genre makes all four outdated (every request carries the STYLE line; see 14F1)  {'song_critic': 'outdated', 'rhyme_flow': 'outdated', 'vocal_flow': 'outdated', 'lyric_language': 'outdated'}
+PASS 13A the outdated reason is 'inputs' (settings), not 'lyrics'
+PASS 13A input_fp: BPM, signature, duration, corrections and language change the Vocal Flow fingerprint
+PASS 13A input_fp: the style words DO change every fingerprint (they are in every request), BPM does not change Rhyme & Flow
+PASS 13A an old report without a stored fingerprint is not marked outdated by it
+PASS 13B 40 pairs: the page says 24 / 40, offers Show all and does NOT claim that only these pairs exist  นใจ: high | EXACT | L22 · L23 | ขาว | ↔ | ขาว | g22 · end · ความมั่นใจ: high | NEAR | L23 · L24 | ขาว | ↔ | ขาว | g23 · end · ความมั่นใจ: high | EXACT | L24 · L25 | ขาว |
+PASS 13B 13+ marked lines: the lines are cut at 12 and say so  คำร้องพร้อมหลักฐาน | การวิเคราะห์สัมผัสด้วย Python | สีเดียวกันช่วยให้เห็นความสัมพันธ์ แต่ไม่ได้สร้างคู่สัมผัสขึ้นใหม่ | L1 |  | L2 |  | L3 |  | L4 |  | L5 |  | L6 |  | L
+PASS 13B Show all: every pair is listed (40 cards) and the exhaustive statement is allowed again
+PASS 13B 25 pairs also show the cut (24 / 25)
+PASS 13B 10 pairs: no cut, the statement stays
+PASS 13C two UNRELATED exact groups get different colours, and a near pair of the first group keeps that group's colour  {'ขาว': '#60A5FA', 'ดำ': '#F472B6', 'แดง': '#60A5FA'}
+PASS 13C exact and near differ by style (italic), not by colour
+PASS 13D a current reference opens the editor line; an outdated one is shown but has no click action
+PASS 13D the story arc, the quotes and the sections of an outdated report get stale=True
+PASS 13D after a line is inserted above, NO line reference on the outdated page is clickable (quotes, sections, story arc)  4
+PASS 13E parse_lines accepts L12, L012, L12-L13, l12–L13
+PASS 13E parse_lines rejects 'verse 2', a bare number, text with numbers and a missing line
+PASS 13E parse_lines: nothing / whole song = (0, 0)
+PASS 13E a finding whose lines are 'verse 2' is KEPT without a link (no number guessed), marked, with a diagnostic that says what a reference must be  ['[FINDING.1]: its lines “verse 2” are not a readable reference (use L12, L12-L13 or a list such as L5, L16-L18; every line must exist). The finding is kept WITHOUT a lin
+PASS 13E a section with a free-text line field is kept WITHOUT a line link, with a diagnostic  ['[SECTION.1]: its lines “the second verse” are not an L12 / L12-L13 reference; the section is shown without a line link.']
+PASS Q3 a finding whose quotation did not match carries quote_ok = False
+PASS Q3 the page marks it as unverified
+PASS Q3 a verified finding has no such mark
+PASS 14F1 for every report, a change that alters the request text always alters input_fp (title, genre, mood, energy, vocal, language)
+PASS 14F1 renaming the song makes every report outdated (the title is part of the request)  {'song_critic': 'outdated', 'rhyme_flow': 'outdated', 'vocal_flow': 'outdated', 'lyric_language': 'outdated'}
+PASS 14F1 a new mood makes ALL FOUR outdated (all four requests carry the STYLE line)
+PASS 14F2 the state is 'running' while the old report (of the old lyrics) is on the page  running
+PASS 14F2 while it runs, NO saved line reference can navigate  4
+PASS 14F2 when the new report has arrived, its references work again  ('partial', 4, {}, ['[FINDING.1]: the quote is not in the lyrics (L12); the lyric lines themselves are shown.', '[FINDING.2]: the quote is not in the lyrics (L10); the ly
+PASS 14F3 every evidence pair carries the Real-time colour-group id of its words (same ids as rhyme_color)
+PASS 14F3 the page paints a pair's words with the editor's palette colour of that group  [('ฟ้า', '#60A5FA', False), ('นั่ง', '#F472B6', True), ('ตา', '#60A5FA', False)]
+PASS 14F3 same sound key but different components -> different colours; one component with different keys -> one colour  {'ขาว': '#60A5FA', 'ดาว': '#F472B6', 'แดง': '#60A5FA'}
+PASS 14F4 the evidence keeps the number detected before the cap (pairs_total) and the cap is 40 per section  (72, 40)
+PASS 14F4 the page says how many were detected and that the list is not complete (no 'only these pairs exist')   lyrics. | • If a pair is not in this evidence that does NOT mean the song has no rhyme there. | • Keep what can be checked (which words share a sound, where they are) ap
+PASS 14F4 with no cap, no such warning
+PASS 14F5 a story arc of 15 sections shows 12 / 15 and a Show all
+PASS 14F5 after Show all every section is there
+PASS 14F6 'L12-13' and a reversed 'L13-L12' are refused
+PASS 15 for every report, a different reply language changes both the request and input_fp
+PASS 15 all four reports are current before the window language changes  {'song_critic': 'current', 'rhyme_flow': 'current', 'vocal_flow': 'current', 'lyric_language': 'current'}
+PASS 15 the open report page shows its status as Current before the switch  นักวิจารณ์เพลง | รายงานผู้เชี่ยวชาญ · อ่านอย่างเดียว · 2026-11-12 11:58 | เป็นปัจจุบัน | SONG INTENT & CRAFT | ภาพชัดแต่
+PASS 15 immediately after the window-language switch the VISIBLE status is Outdated (no tab change, no request)  Song Critic | Specialist Report · Read-only · 2026-11-12 11:58 | Outdated | The song settings, the language or the syllable corrections chan
+PASS 15 switching') the window language makes every report Outdated and readable, without any LLM call
+PASS 15 the saved report is still on the page after the switch (no request was made)
+PASS 15 Analyze again with the new window language makes only that report current again
+
+108 / 108 passed

@@ -1,0 +1,8 @@
+PRE-REGISTRATION (written before the first request of the 40)
+time: 2026-11-12T12:34:15
+65b7a406465048e458eab6b9a14a7591692fbdb722ae758e754b6656c0ccf679 *EXPECTED_OBSERVATIONS.md
+48a4f2790614e4afa308189a8a37918561217134306797d449908fe583e637a9 *steps.py
+cc4412903d2b3b9b1c00f3f596a79bb364c0d03b490d0ec84cb9c2883899269f *run_seq.py
+production song_critic prompt (arm A system) sha256:
+f25320144ab238e2a6ee5d6401b8c6d86c9790f6ec88afc7ca7620e11a663106 *../../music_studio/prompts/specialists/song_critic.md
+Rule: one prototype, no retry, no tuning after the results, 4 one-shot + 36 step requests; decision rule in EXPECTED_OBSERVATIONS.md.

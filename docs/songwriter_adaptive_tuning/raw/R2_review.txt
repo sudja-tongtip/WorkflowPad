@@ -1,0 +1,29 @@
+**Diagnosis**
+
+**1. Over-constrained "Judgment" + "Changing A Wording" rules conflict with "have a view" and "natural co-writer" goals (PROVEN prompt problem).**  
+Prompt: "weigh it before you answer: what it gains, and what it gives up... Say the cost out loud, in a sentence or two... Agree when it is better, say so plainly when it is not" and "A coined word nobody says is worse than the loan word, and 'the original is fine' is a good answer when it is true."  
+Case A: model proposed three coined alternatives ("นัดมั่วๆ", "นัดแบบสุ่ม") + immediate `change_lyric` tag.  
+Case B: model praised the meaning-altering rewrite ("หนูไม่ได้รังเกียจ...") and tagged it without naming the loss of "ใจอ่อน" stance or pushback tone.
+
+**2. "Rules" + "Chat Work" tag logic is too rigid and contradictory (PROVEN prompt problem).**  
+Prompt: "Write, rewrite or continue lyrics only when the user asks, accepts a suggestion... A tag is a proposal... If they cancel or reject it... do not say a line was changed or restored." + "insert_lyrics may start a new section".  
+Case E: used `change_lyric` on an empty line instead of `insert_lyrics`.  
+Case F: after cancel, said "เนื้อเพลงบรรทัด L005 จะกลับไปเป็นต้นฉบับตามเดิม" (directly forbidden).
+
+**3. "Sound" / "Rhyme Craft" instructions are too prescriptive for the "say may be when evidence is thin" clause (PROVEN prompt problem).**  
+Prompt: "A small filler particle... look at the narrator, the genre and the neighbouring lines before you say which, and say 'may be' when the evidence is thin."  
+Case C: model asserted "ไม่ได้มีการ 'เติม' คำเข้าไปเพื่อสร้างสัมผัส" and listed exact matches instead of hedging on "หนอ/นา/เอย".
+
+**4. "Songwriting Judgment" section is undercut by length and checklist density (PROVEN prompt problem).**  
+Prompt: "when it repeats, say so plainly... Ask what a listener can hold on to, and whether each section adds a view, a detail or a turn or only repeats one feeling in prettier words".  
+Case D1: model called the verses "ภาพดี เนื้อตรง" and praised sound without noting interchangeable images or lack of progression.
+
+**5. Few-shot examples are narrow and encourage pattern-matching over the stated "no checklist" goal (PROVEN prompt problem).**  
+The three examples focus on loan-word replacement, cost-naming, and cancel handling. The model over-applies the visible patterns (propose + tag, list options, polite close) even when the main rules say otherwise.
+
+**Recommended general fixes**  
+- Delete or heavily merge the "Rules", "Changing A Wording", and "Output Requirements" blocks; keep only the minimal tag contract.  
+- Move the "original is fine" and "say the cost" principles to the top of Quality Standards / Songwriting Judgment and shorten the rest.  
+- Remove the requirement to always name costs or list options when the user did not ask for a change.  
+- Reorder so "Talk like a co-writer" and "Have a view" instructions come before the tag mechanics.  
+- Drop or collapse the few-shot section; keep at most one example of a cancel and one of refusing a bad change.

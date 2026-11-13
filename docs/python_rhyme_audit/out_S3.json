@@ -1,0 +1,316 @@
+{
+ "song": "S3",
+ "title": "ร้านซักรีด",
+ "links": [
+  {
+   "a": [
+    3,
+    "ควัน",
+    81
+   ],
+   "b": [
+    5,
+    "นั้น",
+    156
+   ],
+   "sound": "exact",
+   "placement": "end",
+   "verification": "verified",
+   "group": "อะ+กน",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: ควัน อะ+กน · นั้น อะ+กน"
+  },
+  {
+   "a": [
+    4,
+    "ยืม",
+    123
+   ],
+   "b": [
+    17,
+    "คืน",
+    455
+   ],
+   "sound": "near",
+   "placement": "end",
+   "verification": "verified",
+   "group": "อือ+กน",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: ยืม อือ+กม · ได้คืน อือ+กน"
+  },
+  {
+   "a": [
+    5,
+    "นั้น",
+    156
+   ],
+   "b": [
+    16,
+    "ร้าน",
+    398
+   ],
+   "sound": "near",
+   "placement": "end",
+   "verification": "verified",
+   "group": "อะ+กน",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: นั้น อะ+กน · ร้าน อา+กน"
+  },
+  {
+   "a": [
+    9,
+    "ไป",
+    214
+   ],
+   "b": [
+    11,
+    "ไป",
+    251
+   ],
+   "sound": "exact",
+   "placement": "end",
+   "verification": "verified",
+   "group": "ไอ+กา",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: เปลี่ยนไป ไอ+กา · ตลอดไป ไอ+กา"
+  },
+  {
+   "a": [
+    11,
+    "ไป",
+    251
+   ],
+   "b": [
+    21,
+    "ไป",
+    512
+   ],
+   "sound": "exact",
+   "placement": "end",
+   "verification": "verified",
+   "group": "ไอ+กา",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: ตลอดไป ไอ+กา · เปลี่ยนไป ไอ+กา"
+  },
+  {
+   "a": [
+    16,
+    "ยืน",
+    355
+   ],
+   "b": [
+    16,
+    "กลืน",
+    390
+   ],
+   "sound": "exact",
+   "placement": "internal",
+   "verification": "verified",
+   "group": "อือ+กน",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: ยืน · กลืน อือ+กน"
+  },
+  {
+   "a": [
+    21,
+    "ไป",
+    512
+   ],
+   "b": [
+    23,
+    "ไป",
+    549
+   ],
+   "sound": "exact",
+   "placement": "end",
+   "verification": "verified",
+   "group": "ไอ+กา",
+   "kind": "vowel",
+   "colourable": true,
+   "reason": "Sound check: เปลี่ยนไป ไอ+กา · ตลอดไป ไอ+กา"
+  }
+ ],
+ "rejected": 0,
+ "skipped": [],
+ "line_ends": {},
+ "line_end_rime": {
+  "2": {
+   "text": "ร้านซักรีดหัวมุมถนนปิดไปตั้งแต่ปีก่อน",
+   "last_token": "ร้านซักรีดหัวมุมถนนปิดไปตั้งแต่ปีก่อน",
+   "last_syllable": "ก่อน",
+   "rime": "ออ+กน"
+  },
+  "3": {
+   "text": "ตู้ไปรษณีย์สีแดงยังเปื้อนสีเทาของควัน",
+   "last_token": "ตู้ไปรษณีย์สีแดงยังเปื้อนสีเทาของควัน",
+   "last_syllable": "ควัน",
+   "rime": "อะ+กน"
+  },
+  "4": {
+   "text": "ฉันยังจำกลิ่นผงซักฟอกบนแขนเสื้อที่เธอยืม",
+   "last_token": "ฉันยังจำกลิ่นผงซักฟอกบนแขนเสื้อที่เธอยืม",
+   "last_syllable": "ยืม",
+   "rime": "อือ+กม"
+  },
+  "5": {
+   "text": "ตอนฝนตกเราวิ่งหนีเข้าไปในร้านนั้น",
+   "last_token": "ตอนฝนตกเราวิ่งหนีเข้าไปในร้านนั้น",
+   "last_syllable": "นั้น",
+   "rime": "อะ+กน"
+  },
+  "8": {
+   "text": "ฉันคิดถึงเธอ คิดถึงเธอ",
+   "last_token": "คิดถึงเธอ",
+   "last_syllable": "เธอ",
+   "rime": "เออ+กา"
+  },
+  "9": {
+   "text": "ฉันรักเธอ ไม่เปลี่ยนไป",
+   "last_token": "ไม่เปลี่ยนไป",
+   "last_syllable": "ไป",
+   "rime": "ไอ+กา"
+  },
+  "10": {
+   "text": "คิดถึงเธอ คิดถึงเธอ",
+   "last_token": "คิดถึงเธอ",
+   "last_syllable": "เธอ",
+   "rime": "เออ+กา"
+  },
+  "11": {
+   "text": "ฉันรักเธอ ตลอดไป",
+   "last_token": "ตลอดไป",
+   "last_syllable": "ไป",
+   "rime": "ไอ+กา"
+  },
+  "14": {
+   "text": "ป้ายราคาที่เธอเคยแอบเปลี่ยนให้ฉันยังติดอยู่",
+   "last_token": "ป้ายราคาที่เธอเคยแอบเปลี่ยนให้ฉันยังติดอยู่",
+   "last_syllable": "อยู่",
+   "rime": "อู+กา"
+  },
+  "15": {
+   "text": "ลูกกุญแจดอกเล็กในลิ้นชักที่ไม่เคยมีใครเปิด",
+   "last_token": "ลูกกุญแจดอกเล็กในลิ้นชักที่ไม่เคยมีใครเปิด",
+   "last_syllable": "เปิด",
+   "rime": "เออ+กด"
+  },
+  "16": {
+   "text": "ฉันยืนอยู่หน้าบานเหล็กที่ลงสนิมจนเกือบกลืนชื่อร้าน",
+   "last_token": "ฉันยืนอยู่หน้าบานเหล็กที่ลงสนิมจนเกือบกลืนชื่อร้าน",
+   "last_syllable": "ร้าน",
+   "rime": "อา+กน"
+  },
+  "17": {
+   "text": "แล้วหัวเราะกับตัวเองว่าฉันยังเอาเสื้อตัวนั้นไปไม่ได้คืน",
+   "last_token": "แล้วหัวเราะกับตัวเองว่าฉันยังเอาเสื้อตัวนั้นไปไม่ได้คืน",
+   "last_syllable": "คืน",
+   "rime": "อือ+กน"
+  },
+  "20": {
+   "text": "ฉันคิดถึงเธอ คิดถึงเธอ",
+   "last_token": "คิดถึงเธอ",
+   "last_syllable": "เธอ",
+   "rime": "เออ+กา"
+  },
+  "21": {
+   "text": "ฉันรักเธอ ไม่เปลี่ยนไป",
+   "last_token": "ไม่เปลี่ยนไป",
+   "last_syllable": "ไป",
+   "rime": "ไอ+กา"
+  },
+  "22": {
+   "text": "คิดถึงเธอ คิดถึงเธอ",
+   "last_token": "คิดถึงเธอ",
+   "last_syllable": "เธอ",
+   "rime": "เออ+กา"
+  },
+  "23": {
+   "text": "ฉันรักเธอ ตลอดไป",
+   "last_token": "ตลอดไป",
+   "last_syllable": "ไป",
+   "rime": "ไอ+กา"
+  }
+ },
+ "groups": [
+  [
+   [
+    3,
+    "ควัน",
+    "exact",
+    "end"
+   ],
+   [
+    5,
+    "นั้น",
+    "exact",
+    "end"
+   ],
+   [
+    16,
+    "ร้าน",
+    "near",
+    "end"
+   ]
+  ],
+  [
+   [
+    4,
+    "ยืม",
+    "near",
+    "end"
+   ],
+   [
+    17,
+    "คืน",
+    "near",
+    "end"
+   ]
+  ],
+  [
+   [
+    9,
+    "ไป",
+    "exact",
+    "end"
+   ],
+   [
+    11,
+    "ไป",
+    "exact",
+    "end"
+   ],
+   [
+    21,
+    "ไป",
+    "exact",
+    "end"
+   ],
+   [
+    23,
+    "ไป",
+    "exact",
+    "end"
+   ]
+  ],
+  [
+   [
+    16,
+    "ยืน",
+    "exact",
+    "internal"
+   ],
+   [
+    16,
+    "กลืน",
+    "exact",
+    "internal"
+   ]
+  ]
+ ]
+}

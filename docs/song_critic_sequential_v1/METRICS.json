@@ -1,0 +1,128 @@
+{
+ "TestSong01_gemma": {
+  "A": {
+   "seconds": 15.0,
+   "tokens": {
+    "in_est": 2516,
+    "out_est": 1624,
+    "in_reported": null,
+    "out_reported": null,
+    "reasoning_reported": null
+   },
+   "evidence_items": 4,
+   "unverified": 1,
+   "no_evidence": 0,
+   "unverified_detail": [
+    "FINDING.2: unreadable line reference: ['L005/L016']"
+   ],
+   "error": null
+  },
+  "B": {
+   "requests": 9,
+   "seconds": 54.2,
+   "in_est": 6688,
+   "out_est": 5064,
+   "in_reported": null,
+   "out_reported": null,
+   "evidence_items": 15,
+   "unverified": 0,
+   "no_evidence": 0,
+   "unverified_detail": [],
+   "errors": [],
+   "completed_9": true
+  }
+ },
+ "TestSong01_grok": {
+  "A": {
+   "seconds": 11.8,
+   "tokens": {
+    "in_est": 2516,
+    "out_est": 716,
+    "in_reported": 2332,
+    "out_reported": 700,
+    "reasoning_reported": 559
+   },
+   "evidence_items": 2,
+   "unverified": 0,
+   "no_evidence": 0,
+   "unverified_detail": [],
+   "error": null
+  },
+  "B": {
+   "requests": 9,
+   "seconds": 47.8,
+   "in_est": 6688,
+   "out_est": 3102,
+   "in_reported": 47651,
+   "out_reported": 3064,
+   "evidence_items": 15,
+   "unverified": 0,
+   "no_evidence": 0,
+   "unverified_detail": [],
+   "errors": [],
+   "completed_9": true
+  }
+ },
+ "TestSong03_gemma": {
+  "A": {
+   "seconds": 16.6,
+   "tokens": {
+    "in_est": 2410,
+    "out_est": 1884,
+    "in_reported": null,
+    "out_reported": null,
+    "reasoning_reported": null
+   },
+   "evidence_items": 4,
+   "unverified": 0,
+   "no_evidence": 0,
+   "unverified_detail": [],
+   "error": null
+  },
+  "B": {
+   "requests": 9,
+   "seconds": 53.1,
+   "in_est": 6583,
+   "out_est": 5323,
+   "in_reported": null,
+   "out_reported": null,
+   "evidence_items": 8,
+   "unverified": 0,
+   "no_evidence": 0,
+   "unverified_detail": [],
+   "errors": [],
+   "completed_9": true
+  }
+ },
+ "TestSong03_grok": {
+  "A": {
+   "seconds": 11.0,
+   "tokens": {
+    "in_est": 2410,
+    "out_est": 731,
+    "in_reported": 2196,
+    "out_reported": 701,
+    "reasoning_reported": 630
+   },
+   "evidence_items": 2,
+   "unverified": 0,
+   "no_evidence": 0,
+   "unverified_detail": [],
+   "error": null
+  },
+  "B": {
+   "requests": 9,
+   "seconds": 87.5,
+   "in_est": 6583,
+   "out_est": 2875,
+   "in_reported": 43727,
+   "out_reported": 2665,
+   "evidence_items": 8,
+   "unverified": 0,
+   "no_evidence": 0,
+   "unverified_detail": [],
+   "errors": [],
+   "completed_9": false
+  }
+ }
+}

@@ -1,0 +1,758 @@
+{
+ "merged": {
+  "items": [
+   {
+    "id": "P1",
+    "status": "verified",
+    "sound": "exact",
+    "placement": "end_to_end",
+    "scope": "same_section",
+    "confidence": "high",
+    "a": {
+     "line": 3,
+     "word": "ควัน",
+     "start": 81,
+     "end": 85,
+     "sec": 0,
+     "sung": 2
+    },
+    "b": {
+     "line": 5,
+     "word": "นั้น",
+     "start": 156,
+     "end": 160,
+     "sec": 0,
+     "sung": 4
+    },
+    "source": "python",
+    "rime": "อะ+กน",
+    "python_detail": "Sound check: ควัน อะ+กน · นั้น อะ+กน",
+    "llm": {
+     "verdict": "agree",
+     "reason": "The final sounds /an/ are pronounced identically in both \"ควัน\" and \"นั้น\"."
+    },
+    "notes": []
+   },
+   {
+    "id": "P2",
+    "status": "verified",
+    "sound": "near",
+    "placement": "end_to_end",
+    "scope": "distant",
+    "confidence": "low",
+    "a": {
+     "line": 4,
+     "word": "ยืม",
+     "start": 123,
+     "end": 126,
+     "sec": 0,
+     "sung": 3
+    },
+    "b": {
+     "line": 17,
+     "word": "คืน",
+     "start": 455,
+     "end": 458,
+     "sec": 2,
+     "sung": 12
+    },
+    "source": "python",
+    "rime": "อือ+กน",
+    "python_detail": "Sound check: ยืม อือ+กม · ได้คืน อือ+กน",
+    "llm": {
+     "verdict": "agree",
+     "reason": "The vowel /u/ and final /n/ in \"ยืม\" are very close to the vowel /u/ and final /n/ in \"คืน\"."
+    },
+    "notes": [
+     "sound matches but the lines are in sections that are not next to each other: low confidence, not offered as a rhyme scheme"
+    ]
+   },
+   {
+    "id": "P3",
+    "status": "verified",
+    "sound": "near",
+    "placement": "end_to_end",
+    "scope": "distant",
+    "confidence": "low",
+    "a": {
+     "line": 5,
+     "word": "นั้น",
+     "start": 156,
+     "end": 160,
+     "sec": 0,
+     "sung": 4
+    },
+    "b": {
+     "line": 16,
+     "word": "ร้าน",
+     "start": 398,
+     "end": 402,
+     "sec": 2,
+     "sung": 11
+    },
+    "source": "python",
+    "rime": "อะ+กน",
+    "python_detail": "Sound check: นั้น อะ+กน · ร้าน อา+กน",
+    "llm": {
+     "verdict": "agree",
+     "reason": "The vowel /a/ and final /n/ in \"นั้น\" are pronounced identically to the vowel /a/ and final /n/ in \"ร้าน\"."
+    },
+    "notes": [
+     "sound matches but the lines are in sections that are not next to each other: low confidence, not offered as a rhyme scheme"
+    ]
+   },
+   {
+    "id": "R1",
+    "status": "rejected",
+    "reason_code": "repetition",
+    "sound": "exact",
+    "placement": "end_to_end",
+    "scope": "same_section",
+    "confidence": "high",
+    "a": {
+     "line": 9,
+     "word": "ไป",
+     "start": 214,
+     "end": 216,
+     "sec": 1,
+     "sung": 6
+    },
+    "b": {
+     "line": 11,
+     "word": "ไป",
+     "start": 251,
+     "end": 253,
+     "sec": 1,
+     "sung": 8
+    },
+    "source": "python",
+    "rime": "ไอ+กา",
+    "python_detail": "Sound check: เปลี่ยนไป ไอ+กา · ตลอดไป ไอ+กา",
+    "llm": null,
+    "notes": [
+     "the same word again: repetition, not a rhyme"
+    ]
+   },
+   {
+    "id": "R2",
+    "status": "rejected",
+    "reason_code": "repetition",
+    "sound": "exact",
+    "placement": "end_to_end",
+    "scope": "distant",
+    "confidence": "high",
+    "a": {
+     "line": 11,
+     "word": "ไป",
+     "start": 251,
+     "end": 253,
+     "sec": 1,
+     "sung": 8
+    },
+    "b": {
+     "line": 21,
+     "word": "ไป",
+     "start": 512,
+     "end": 514,
+     "sec": 3,
+     "sung": 14
+    },
+    "source": "python",
+    "rime": "ไอ+กา",
+    "python_detail": "Sound check: ตลอดไป ไอ+กา · เปลี่ยนไป ไอ+กา",
+    "llm": null,
+    "notes": [
+     "the same word again: repetition, not a rhyme"
+    ]
+   },
+   {
+    "id": "P4",
+    "status": "verified",
+    "sound": "exact",
+    "placement": "internal",
+    "scope": "same_section",
+    "confidence": "high",
+    "a": {
+     "line": 16,
+     "word": "ยืน",
+     "start": 355,
+     "end": 358,
+     "sec": 2,
+     "sung": 11
+    },
+    "b": {
+     "line": 16,
+     "word": "กลืน",
+     "start": 390,
+     "end": 394,
+     "sec": 2,
+     "sung": 11
+    },
+    "source": "python",
+    "rime": "อือ+กน",
+    "python_detail": "Sound check: ยืน · กลืน อือ+กน",
+    "llm": {
+     "verdict": "agree",
+     "reason": "The vowel /u/ and final /n/ in \"ยืน\" are pronounced identically to the vowel /u/ and final /n/ in \"กลืน\"."
+    },
+    "notes": []
+   },
+   {
+    "id": "R3",
+    "status": "rejected",
+    "reason_code": "repetition",
+    "sound": "exact",
+    "placement": "end_to_end",
+    "scope": "same_section",
+    "confidence": "high",
+    "a": {
+     "line": 21,
+     "word": "ไป",
+     "start": 512,
+     "end": 514,
+     "sec": 3,
+     "sung": 14
+    },
+    "b": {
+     "line": 23,
+     "word": "ไป",
+     "start": 549,
+     "end": 551,
+     "sec": 3,
+     "sung": 16
+    },
+    "source": "python",
+    "rime": "ไอ+กา",
+    "python_detail": "Sound check: เปลี่ยนไป ไอ+กา · ตลอดไป ไอ+กา",
+    "llm": null,
+    "notes": [
+     "the same word again: repetition, not a rhyme"
+    ]
+   }
+  ],
+  "disagreements": [
+   {
+    "target": "R1",
+    "type": "dispute",
+    "python": "\"ไป\" (L9) / \"ไป\" (L11)",
+    "llm": "\"ไป\" (L9) / \"ไป\" (L11)",
+    "reason": "Python correctly identified this as a repetition, but it is also a perfect rhyme, so it should be noted as both.",
+    "resolved": "kept for debug only"
+   },
+   {
+    "target": "R2",
+    "type": "dispute",
+    "python": "\"ไป\" (L11) / \"ไป\" (L21)",
+    "llm": "\"ไป\" (L11) / \"ไป\" (L21)",
+    "reason": "Python correctly identified this as a repetition, but it is also a perfect rhyme, so it should be noted as both.",
+    "resolved": "kept for debug only"
+   },
+   {
+    "target": "R3",
+    "type": "dispute",
+    "python": "\"ไป\" (L21) / \"ไป\" (L23)",
+    "llm": "\"ไป\" (L21) / \"ไป\" (L23)",
+    "reason": "Python correctly identified this as a repetition, but it is also a perfect rhyme, so it should be noted as both.",
+    "resolved": "kept for debug only"
+   }
+  ],
+  "blocked": [
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.1",
+    "why": "0 endpoints"
+   },
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.2",
+    "why": "0 endpoints"
+   },
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.3",
+    "why": "0 endpoints"
+   },
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.4",
+    "why": "0 endpoints"
+   },
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.5",
+    "why": "0 endpoints"
+   },
+   {
+    "kind": "add_bad_endpoints",
+    "ref": "ADD.6",
+    "why": "0 endpoints"
+   }
+  ],
+  "coverage": {
+   "reviewed": 4,
+   "python_pairs": 4,
+   "sections_checked": 3,
+   "sections": 3,
+   "unknown_refs": 0
+  },
+  "reviewer_status": "ok",
+  "seconds": 0.0
+ },
+ "evidence": {
+  "sections": [
+   {
+    "name": "Verse 1",
+    "first": 2,
+    "last": 5,
+    "pattern": "",
+    "scheme_name": "",
+    "scheme_unverified": false,
+    "lines": [
+     {
+      "line": 2,
+      "sung": 1,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "ปีก่อน",
+      "sound": "ออ+กน",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 3,
+      "sung": 2,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "ควัน",
+      "sound": "อะ+กน",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 4,
+      "sung": 3,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "ยืม",
+      "sound": "อือ+กม",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 5,
+      "sung": 4,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "นั้น",
+      "sound": "อะ+กน",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     }
+    ],
+    "pairs": [
+     {
+      "a": {
+       "line": 3,
+       "word": "ควัน",
+       "pos": null
+      },
+      "b": {
+       "line": 5,
+       "word": "นั้น",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_end",
+      "sound": "exact",
+      "verification": "verified",
+      "confidence": "high",
+      "why": "",
+      "sound_type": "vowel_rhyme",
+      "group": "อะ+กน",
+      "status": "verified",
+      "source": "python",
+      "id": "P1"
+     }
+    ],
+    "repetitions": [],
+    "not_confirmed": [
+     {
+      "a": {
+       "line": 4,
+       "word": "ยืม",
+       "pos": null
+      },
+      "b": {
+       "line": 17,
+       "word": "คืน",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_end",
+      "sound": "near",
+      "verification": "verified",
+      "confidence": "low",
+      "why": "sound matches but the lines are in sections that are not next to each other: low confidence, not offered as a rhyme scheme",
+      "sound_type": "vowel_rhyme",
+      "group": "อือ+กน",
+      "status": "verified",
+      "source": "python",
+      "id": "P2"
+     },
+     {
+      "a": {
+       "line": 5,
+       "word": "นั้น",
+       "pos": null
+      },
+      "b": {
+       "line": 16,
+       "word": "ร้าน",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "end_to_end",
+      "sound": "near",
+      "verification": "verified",
+      "confidence": "low",
+      "why": "sound matches but the lines are in sections that are not next to each other: low confidence, not offered as a rhyme scheme",
+      "sound_type": "vowel_rhyme",
+      "group": "อะ+กน",
+      "status": "verified",
+      "source": "python",
+      "id": "P3"
+     }
+    ],
+    "rejected": [],
+    "misplaced": [],
+    "reported": true,
+    "letters_from": "python",
+    "inconsistent": false,
+    "inconsistencies": [],
+    "group_conflicts": 0,
+    "unlettered": [],
+    "uncertain": []
+   },
+   {
+    "name": "Chorus",
+    "first": 8,
+    "last": 11,
+    "pattern": "",
+    "scheme_name": "",
+    "scheme_unverified": false,
+    "lines": [
+     {
+      "line": 8,
+      "sung": 5,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "เธอ",
+      "sound": "เออ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 9,
+      "sung": 6,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "เปลี่ยนไป",
+      "sound": "ไอ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 10,
+      "sung": 7,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "เธอ",
+      "sound": "เออ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 11,
+      "sung": 8,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "ตลอดไป",
+      "sound": "ไอ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     }
+    ],
+    "pairs": [],
+    "repetitions": [
+     {
+      "a": {
+       "line": 9,
+       "word": "ไป",
+       "pos": null
+      },
+      "b": {
+       "line": 11,
+       "word": "ไป",
+       "pos": null
+      },
+      "kind": "repetition",
+      "placement": "end_to_end",
+      "sound": "exact",
+      "verification": "rejected",
+      "confidence": "high",
+      "why": "the same word again: repetition, not a rhyme",
+      "sound_type": "vowel_rhyme",
+      "group": "ไอ+กา",
+      "status": "rejected",
+      "source": "python",
+      "id": "R1"
+     },
+     {
+      "a": {
+       "line": 11,
+       "word": "ไป",
+       "pos": null
+      },
+      "b": {
+       "line": 21,
+       "word": "ไป",
+       "pos": null
+      },
+      "kind": "repetition",
+      "placement": "end_to_end",
+      "sound": "exact",
+      "verification": "rejected",
+      "confidence": "high",
+      "why": "the same word again: repetition, not a rhyme",
+      "sound_type": "vowel_rhyme",
+      "group": "ไอ+กา",
+      "status": "rejected",
+      "source": "python",
+      "id": "R2"
+     }
+    ],
+    "not_confirmed": [],
+    "rejected": [],
+    "misplaced": [],
+    "reported": true,
+    "letters_from": "python",
+    "inconsistent": false,
+    "inconsistencies": [],
+    "group_conflicts": 0,
+    "unlettered": [],
+    "uncertain": []
+   },
+   {
+    "name": "Verse 2",
+    "first": 14,
+    "last": 17,
+    "pattern": "",
+    "scheme_name": "",
+    "scheme_unverified": false,
+    "lines": [
+     {
+      "line": 14,
+      "sung": 9,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "อยู่",
+      "sound": "อู+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 15,
+      "sung": 10,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "เปิด",
+      "sound": "เออ+กด",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 16,
+      "sung": 11,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "ร้าน",
+      "sound": "อา+กน",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 17,
+      "sung": 12,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "ได้คืน",
+      "sound": "อือ+กน",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     }
+    ],
+    "pairs": [
+     {
+      "a": {
+       "line": 16,
+       "word": "ยืน",
+       "pos": null
+      },
+      "b": {
+       "line": 16,
+       "word": "กลืน",
+       "pos": null
+      },
+      "kind": "vowel",
+      "placement": "internal",
+      "sound": "exact",
+      "verification": "verified",
+      "confidence": "high",
+      "why": "",
+      "sound_type": "vowel_rhyme",
+      "group": "อือ+กน",
+      "status": "verified",
+      "source": "python",
+      "id": "P4"
+     }
+    ],
+    "repetitions": [],
+    "not_confirmed": [],
+    "rejected": [],
+    "misplaced": [],
+    "reported": true,
+    "letters_from": "python",
+    "inconsistent": false,
+    "inconsistencies": [],
+    "group_conflicts": 0,
+    "unlettered": [],
+    "uncertain": []
+   },
+   {
+    "name": "Chorus",
+    "first": 20,
+    "last": 23,
+    "pattern": "",
+    "scheme_name": "",
+    "scheme_unverified": false,
+    "lines": [
+     {
+      "line": 20,
+      "sung": 13,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "เธอ",
+      "sound": "เออ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 21,
+      "sung": 14,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "เปลี่ยนไป",
+      "sound": "ไอ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 22,
+      "sung": 15,
+      "label": null,
+      "near": false,
+      "reported": false,
+      "ending": "เธอ",
+      "sound": "เออ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     },
+     {
+      "line": 23,
+      "sung": 16,
+      "label": null,
+      "near": false,
+      "reported": true,
+      "ending": "ตลอดไป",
+      "sound": "ไอ+กา",
+      "how": "python",
+      "pos": null,
+      "repeat": false
+     }
+    ],
+    "pairs": [],
+    "repetitions": [
+     {
+      "a": {
+       "line": 21,
+       "word": "ไป",
+       "pos": null
+      },
+      "b": {
+       "line": 23,
+       "word": "ไป",
+       "pos": null
+      },
+      "kind": "repetition",
+      "placement": "end_to_end",
+      "sound": "exact",
+      "verification": "rejected",
+      "confidence": "high",
+      "why": "the same word again: repetition, not a rhyme",
+      "sound_type": "vowel_rhyme",
+      "group": "ไอ+กา",
+      "status": "rejected",
+      "source": "python",
+      "id": "R3"
+     }
+    ],
+    "not_confirmed": [],
+    "rejected": [],
+    "misplaced": [],
+    "reported": true,
+    "letters_from": "python",
+    "inconsistent": false,
+    "inconsistencies": [],
+    "group_conflicts": 0,
+    "unlettered": [],
+    "uncertain": []
+   }
+  ],
+  "source": "hybrid-v2",
+  "notes": [
+   "reviewer: ok"
+  ],
+  "left_out": 0,
+  "cross_section_pairs": 0,
+  "group_conflicts": 0
+ }
+}

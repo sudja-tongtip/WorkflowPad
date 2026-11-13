@@ -1,0 +1,8 @@
+base = clean HEAD + the Song Critic V3 task patch (V3 is not committed)
+git apply --check of the Academy patch (no --recount): rc=0
+applied: 0
+test_academy: 58 / 58 passed
+test_songcraft: 55 / 55 passed
+test_critic_refs: 62 / 62 passed
+test_critic_actions: 59 / 59 passed
+test_spec_reports: 108 / 108 passed

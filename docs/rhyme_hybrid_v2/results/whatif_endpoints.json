@@ -1,0 +1,134 @@
+{
+ "S1": {
+  "adds_in_answer": 9,
+  "adds_with_endpoints_extracted": 9,
+  "result": [
+   {
+    "id": "ADD.5",
+    "status": "rejected",
+    "pair": "L5:เบา <-> L12:เธอ",
+    "note": "Python sound check says not a vowel rhyme: เบา เอา+กา · เธอ เออ+กา"
+   },
+   {
+    "id": "ADD.7",
+    "status": "rejected",
+    "pair": "L12:เธอ <-> L21:ตรงนี้",
+    "note": "Python sound check says not a vowel rhyme: เธอ เออ+กา · นี้ อี+กา"
+   },
+   {
+    "id": "ADD.6",
+    "status": "rejected",
+    "pair": "L13:ฉัน <-> L25:ฉัน",
+    "note": "same word or same last syllable again: repetition, not a rhyme"
+   },
+   {
+    "id": "ADD.9",
+    "status": "verified",
+    "pair": "L14:ร้องไห้ <-> L27:ใส",
+    "note": "Python sound check: ไห้ ไอ+กา · ใส ไอ+กา"
+   },
+   {
+    "id": "ADD.8",
+    "status": "rejected",
+    "pair": "L18:ไม่เป็นไร <-> L21:ตรงนี้",
+    "note": "Python sound check says not a vowel rhyme: ไร ไอ+กา · นี้ อี+กา"
+   }
+  ],
+  "verified_new": 1,
+  "blocked": []
+ },
+ "S2": {
+  "adds_in_answer": 5,
+  "adds_with_endpoints_extracted": 0,
+  "result": [
+   {
+    "id": "ADD.1",
+    "status": "rejected",
+    "pair": "L2:เมล์ <-> L5:อะไร",
+    "note": "Python sound check says not a vowel rhyme: เมล์ เอ+กา · ไร ไอ+กา"
+   },
+   {
+    "id": "ADD.3",
+    "status": "rejected",
+    "pair": "L4:เคย <-> L15:แชต",
+    "note": "Python sound check says not a vowel rhyme: เคย เออ+เกย · แชต แอ+กด"
+   },
+   {
+    "id": "ADD.2",
+    "status": "rejected",
+    "pair": "L3:วัน <-> L14:ตาม",
+    "note": "L14 'ตาม': word is not at the end of the line"
+   },
+   {
+    "id": "ADD.5",
+    "status": "rejected",
+    "pair": "L14:ตาม <-> L16:รอบ",
+    "note": "L14 'ตาม': word is not at the end of the line"
+   }
+  ],
+  "verified_new": 0,
+  "blocked": [
+   {
+    "kind": "review_unknown_pair",
+    "ref": "P2"
+   },
+   {
+    "kind": "review_unknown_pair",
+    "ref": "P3"
+   },
+   {
+    "kind": "review_unknown_pair",
+    "ref": "P4"
+   },
+   {
+    "kind": "dispute_unknown_target",
+    "ref": "P2"
+   },
+   {
+    "kind": "dispute_unknown_target",
+    "ref": "P3"
+   },
+   {
+    "kind": "dispute_unknown_target",
+    "ref": "P4"
+   },
+   {
+    "kind": "hallucination_or_bad_position",
+    "ref": "ADD.2",
+    "why": "L14 'ตาม': word is not at the end of the line",
+    "claimed": [
+     [
+      3,
+      "วัน"
+     ],
+     [
+      14,
+      "ตาม"
+     ]
+    ]
+   },
+   {
+    "kind": "hallucination_or_bad_position",
+    "ref": "ADD.5",
+    "why": "L14 'ตาม': word is not at the end of the line",
+    "claimed": [
+     [
+      14,
+      "ตาม"
+     ],
+     [
+      16,
+      "รอบ"
+     ]
+    ]
+   }
+  ]
+ },
+ "S3": {
+  "adds_in_answer": 6,
+  "adds_with_endpoints_extracted": 0,
+  "result": [],
+  "verified_new": 0,
+  "blocked": []
+ }
+}

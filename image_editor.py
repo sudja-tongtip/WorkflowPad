@@ -16,7 +16,7 @@ except ImportError:
 # ── App metadata ──────────────────────
 APP_ID      = "image_editor"
 APP_NAME    = "Image Editor"
-APP_VERSION = "0.3.5"   # SemVer; see RELEASE.md
+APP_VERSION = "0.3.6"   # SemVer; see RELEASE.md
 
 # ── Config ────────────────────────────────────────────────────────────
 COMFY_HOST  = "127.0.0.1:8188"
@@ -142,6 +142,7 @@ _ALL_SIZES = [
     ("[1:1] 768 × 768",    768,  768),
     ("[1:1] 1024 × 1024",  1024, 1024),
     ("[1:1] 2048 × 2048",  2048, 2048),
+    ("[1:1] 3000 × 3000",  3000, 3000),
     ("[3:2] 576 × 384",    576,  384),
     ("[3:2] 768 × 512",    768,  512),
     ("[3:2] 1536 × 1024",  1536, 1024),
@@ -2122,7 +2123,7 @@ async def main(page:ft.Page):
         for sub in (VERSIONS_DIRNAME, MASKS_DIRNAME):
             try: ws_path(folder, sub).mkdir(parents=True, exist_ok=True)
             except OSError: pass
-        _cur_temp[0] = ws_path(folder, VERSIONS_DIRNAME)
+        _cur_temp[0] = folder                            # generated images are saved in the Working Folder itself (not hidden in .image_editor/versions); history keeps them by relative path
         remember_working_folder(folder)
         _autosave()                                      # make the reconciliation durable
         _refresh_folder_ui()

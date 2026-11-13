@@ -1,0 +1,190 @@
+{
+ "windows_asked": 1,
+ "pairs": [
+  {
+   "a": [
+    1,
+    "เมล์"
+   ],
+   "b": [
+    2,
+    "เหมือน"
+   ],
+   "type": "cross",
+   "verify": "llm_exact",
+   "confidence": "high",
+   "kind": "consonant",
+   "relation": null
+  }
+ ],
+ "rejected": [
+  {
+   "a": [
+    1,
+    "เมล์"
+   ],
+   "b": [
+    3,
+    "เคย"
+   ],
+   "verify": "rejected"
+  },
+  {
+   "a": [
+    3,
+    "เคย"
+   ],
+   "b": [
+    4,
+    "แก้ว"
+   ],
+   "verify": "rejected"
+  },
+  {
+   "a": [
+    2,
+    "วัน"
+   ],
+   "b": [
+    4,
+    "อะไร"
+   ],
+   "verify": "rejected"
+  },
+  {
+   "a": [
+    5,
+    "เงียบ"
+   ],
+   "b": [
+    5,
+    "ตัวเอง"
+   ],
+   "verify": "rejected"
+  },
+  {
+   "a": [
+    7,
+    "เงียบ"
+   ],
+   "b": [
+    7,
+    "ตัวเอง"
+   ],
+   "verify": "rejected"
+  },
+  {
+   "a": [
+    5,
+    "ได้ยิน"
+   ],
+   "b": [
+    5,
+    "ตัวเอง"
+   ],
+   "verify": "rejected"
+  },
+  {
+   "a": [
+    8,
+    "ไหม"
+   ],
+   "b": [
+    9,
+    "ปกติ"
+   ],
+   "verify": "rejected"
+  },
+  {
+   "a": [
+    10,
+    "แชต"
+   ],
+   "b": [
+    11,
+    "รอบ"
+   ],
+   "verify": "rejected"
+  },
+  {
+   "a": [
+    8,
+    "ไหม"
+   ],
+   "b": [
+    11,
+    "รอบ"
+   ],
+   "verify": "rejected"
+  },
+  {
+   "a": [
+    9,
+    "ปกติ"
+   ],
+   "b": [
+    10,
+    "แชต"
+   ],
+   "verify": "rejected"
+  },
+  {
+   "a": [
+    10,
+    "ระหว่าง"
+   ],
+   "b": [
+    10,
+    "แชต"
+   ],
+   "verify": "rejected"
+  }
+ ],
+ "ignored": [
+  "เงียบ ↔ เงียบ: the same word repeated is repetition, not a rhyme.",
+  "ที่สุด ↔ ตัวเอง|internal: “ตัวเอง|internal” is not in line 5.",
+  "นี้ ↔ นี้: the same word repeated is repetition, not a rhyme.",
+  "เสียง ↔ เสียง: the same word repeated is repetition, not a rhyme.",
+  "ได้ ↔ ได้: the same word repeated is repetition, not a rhyme.",
+  "ตัวเอง ↔ ตัวเอง: the same word repeated is repetition, not a rhyme."
+ ],
+ "notes": [],
+ "sections": [],
+ "llm_keys": [
+  "pairs",
+  "sections",
+  "endings",
+  "sounds",
+  "repeats",
+  "notes",
+  "dropped_pairs"
+ ],
+ "llm_pairs_n": 18,
+ "llm_notes": [],
+ "llm_dropped_pairs": 0,
+ "llm_endings": {
+  "2": "เมล์",
+  "3": "วัน",
+  "4": "เคย",
+  "5": "อะไร",
+  "8": "นี้",
+  "9": "ที่",
+  "10": "นี้",
+  "13": "ไหม",
+  "14": "ปกติ",
+  "15": "แชต",
+  "16": "รอบ",
+  "19": "ตัวเอง",
+  "21": "ตัวเอง",
+  "20": "ที่สุด"
+ },
+ "llm_sounds": {
+  "2": "e L l",
+  "3": "an S 0",
+  "4": "e S y",
+  "5": "ai S 0",
+  "19": "ua S ng",
+  "21": "ua S ng",
+  "20": "i L t"
+ }
+}

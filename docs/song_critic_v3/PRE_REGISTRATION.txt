@@ -1,0 +1,8 @@
+PRE-REGISTRATION (written before the first request of the 20 runs)
+time: 2026-11-12T11:36:35
+4e177defaae585f061d60be0573c8204c3fd0a5f81002ccac74e6f30b9823fcd  EXPECTED_OBSERVATIONS.md
+df048bf541d422cde16837bf5e56a1410d98d91cae5a4cc4d02cd4632dbc051f  CANDIDATE_PROMPT.md
+4a017250edc5a5e9b45e04dc7d1b978c5e5fc623e2990b49616be2389076709e  run_v3c.py
+c4918d79dd3b7e7a3116c28ba5e88246acf5856794cc02b48f49e645b62df6cb  songs_s5.py
+baseline (production prompt as sent) sha256: 0761dadcaba35175477ba98c2d867fff45521311bdfafc9da7c3abb6bfe05e67
+Rule: one candidate, no re-tuning after the results, no retries, 20 runs; adoption rule in EXPECTED_OBSERVATIONS.md.

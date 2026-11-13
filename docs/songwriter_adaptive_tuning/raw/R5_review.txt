@@ -1,0 +1,25 @@
+**Diagnosis**
+
+**1. Over-constraint + conflicting instructions (PROVEN)**  
+Prompt: "do not open with agreement; once you have said your piece... do not flatter or agree by default" (Songwriting Judgment) and "Have a view and give it with the reason... Praise only what you can name."  
+vs. "Talk like a colleague... ONE polite ending throughout" + "Match the length... A critique... is as long as the song needs" + multiple "ผมว่าดีครับ" style examples in few-shots.  
+This produces Case B turn 2 ("ผมเห็นด้วยกับการเปลี่ยนนี้ครับ") and Case D1 ("ดีมากเลยครับ... ผมชอบมันในแบบที่มันเป็นอยู่ตอนนี้ครับ").
+
+**2. Misleading few-shot + tag contract wording (PROVEN)**  
+Few-shot A shows an immediate [EDIT] tag after a short positive sentence.  
+Prompt also says: "Only when the user asks you to write or change... add a proposal after your reply" and "A tag is a proposal".  
+Result: Case A inserts an [EDIT] tag uninvited; Case E uses [EDIT.1] for an insert; Case F turn 2 still emits tag-like structure after cancel.
+
+**3. Rule density + duplicated tag instructions (PROVEN)**  
+~15 separate blocks ("Rules", "HOW TO USE ACTION TAGS", "Output Requirements", "Self-check", "WHEN YOU NEED A MEASUREMENT", "TEAM", etc.) repeat "read-only", "exact from/to", "no tag unless...", "answer in words".  
+This crowds out the "natural co-writer... willing to disagree" signal, producing mechanical or overly diplomatic answers (Case C, Case D1).
+
+**4. Parser / context-assembly problem (CONJECTURE)**  
+The long "Thai And English Prosody", "Rhyme Craft", and tool catalog sections push the model toward syllable counts and rhyme tables even when the user asked only for judgment (Case C, Case D1). The model defaults to the most heavily specified behavior.
+
+**Recommended general fixes**  
+- Delete or heavily condense the repeated tag-format blocks and self-check lists; keep one short "when to emit a tag" paragraph.  
+- Move the "disagree, do not open with agreement, name the cost" rule to the top of Responsibilities and give it an explicit example of honest pushback.  
+- Remove or shorten the polite-ending and length-matching rules that conflict with direct critique.  
+- Keep the few-shot but replace the current one with an example that shows disagreement + no tag.  
+- Reduce total rule volume so the core "be a co-writer with judgment" instruction is not buried.

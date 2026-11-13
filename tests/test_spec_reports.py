@@ -216,7 +216,7 @@ bad_quote = good.replace("แต่พอเพ่งมอง ลึกใน�
 p = SR.parse_answer(bad_quote, "song_critic", T, "")
 check("8 a quote that is not in the lyrics is replaced by the lyric lines themselves, and noted", p["ok"] and p["sr"]["findings"][0]["quote"] == "แต่พอเพ่งมอง ลึกในช่องว่าง" and any("not in the lyrics" in d for d in p["diagnostics"]))
 tpl = SR.format_of(SP.load("song_critic").text)
-copied = good.replace("observation: ภาพเปลี่ยน", "observation: what is in the lyrics (a fact you can point at)")
+copied = good.replace("observation: ภาพเปลี่ยน", "observation: what is in the lyrics (a fact you can point at), or -")
 p = SR.parse_answer(copied, "song_critic", T, SP.load("song_critic").text)
 check("8 a copied line of the format is not accepted as the observation", all("a fact you can point at" not in f["observation"] for f in p["sr"]["findings"]) and any("placeholder_copied" in d for d in p["diagnostics"]), p["diagnostics"][:2])
 p = SR.parse_answer("[FINDING.1]\nkind: concern\nlines: L12\nobservation: x\n[DONE]", "song_critic", T, "")
@@ -249,8 +249,11 @@ check("9 state: error for an unreadable answer (and outdated once the lyrics cha
 
 # 10. Songwriter = chat only; Music Producer path unchanged
 check("10 the chat specialists are still the Songwriter AI and the Music Producer AI only (the four reports are not chat specialists)", SP.CHAT_IDS == ("songwriter", "music_producer") and not set(SP.REPORT_IDS) & set(SP.CHAT_IDS))
-check("10 Analyze Song (all) now asks the Music Producer only", "SP.PRODUCER]" in Path(ROOT / "music_studio.py").read_text(encoding="utf-8").split("specs = [only] if only else ")[1][:60])
+_src10 = Path(ROOT / "music_studio.py").read_text(encoding="utf-8")
+check("10 a report run with no specialist does not pick the Music Producer", "specs = [only] if only else " not in _src10 and "else [SP.PRODUCER]" not in _src10)
 n_before = len(CALLS)
+FN["start_report"](); drain()
+check("10 Analyze with no specialist sends nothing", len(CALLS) == n_before, CALLS[n_before:])
 FN["start_report"]("songwriter"); drain()
 check("10 the Songwriter report button is refused with an explanation (no request)", len(CALLS) == n_before, CALLS[n_before:])
 check("10 the older report page and route still exist (rp_show_tab('report'))", "report" in Path(ROOT / "music_studio.py").read_text(encoding="utf-8") and var("report_page") is not None)

@@ -1,0 +1,286 @@
+{
+ "tag": "TestSong04_grok_candidate",
+ "raw_findings": 0,
+ "raw_aspects": 8,
+ "raw_actions": 1,
+ "parser_findings": 0,
+ "parser_aspects": 8,
+ "parser_actions": 1,
+ "ok": true,
+ "diagnostics": [],
+ "seconds": 27.0,
+ "error": null,
+ "parsed": {
+  "ok": true,
+  "sr": {
+   "schema": 1,
+   "headline": "เพลงนี้สื่อถึงการยึดติดกับความทรงจำของยายผ่านถ้วยใบเก่า หลังบ้านถูกขาย และเนื้อเพลงทำได้ดีด้วยภาพที่ชัดเจนแต่พัฒนาน้อย",
+   "reading": "ข้อความแสดงความรู้สึกเศร้าและไม่ยอมปล่อยวางผ่านฉากบ้านและรายละเอียดถ้วยในท่อนเปิดกับคอรัส เนื้อเพลงสร้างภาพได้ดีแต่ท่อนเวิร์สสองพูดซ้ำอารมณ์เดิมโดยไม่เพิ่มข้อเท็จจริงใหม่ ทำให้คอรัสที่สองไม่มีความหมายลึกซึ้งขึ้น",
+   "findings": [],
+   "sections": [
+    {
+     "name": "Verse 1",
+     "first": 2,
+     "last": 6,
+     "reading": "สร้างภาพบ้านที่กำลังถูกย้ายและยายกับถ้วยเพื่อตั้งฉากให้คอรัส"
+    },
+    {
+     "name": "Pre-Chorus",
+     "first": 8,
+     "last": 10,
+     "reading": "เชื่อมภาพกับแนวคิดเรื่องการเปลี่ยนแปลงเพื่อนำไปสู่คอรัส"
+    },
+    {
+     "name": "Chorus",
+     "first": 12,
+     "last": 16,
+     "reading": "ประกาศการตัดสินใจเก็บถ้วยและให้ความหมายกับภาพก่อนหน้า"
+    },
+    {
+     "name": "Verse 2",
+     "first": 18,
+     "last": 22,
+     "reading": "กล่าวถึงความเศร้าและความทรงจำซ้ำโดยไม่เพิ่มรายละเอียดใหม่"
+    },
+    {
+     "name": "Bridge",
+     "first": 24,
+     "last": 27,
+     "reading": "เพิ่มรายละเอียดจดหมายเพื่อขยายความทรงจำก่อนคอรัสที่สอง"
+    },
+    {
+     "name": "Chorus",
+     "first": 29,
+     "last": 33,
+     "reading": "กลับมาซ้ำเพื่อย้ำการยึดติดหลังจากบริดจ์"
+    },
+    {
+     "name": "Outro",
+     "first": 35,
+     "last": 37,
+     "reading": "ปิดด้วยภาพถ้วยที่เปลี่ยนสถานะเพื่อให้ความรู้สึกปิดฉาก"
+    }
+   ],
+   "notes": [
+    "insufficient สำหรับการตัดสินด้านทำนองหรือเสียงร้องเพราะมีเพียงเนื้อเพลง"
+   ],
+   "format": "songcraft-1",
+   "aspects": [
+    {
+     "refs": [
+      [
+       2,
+       3
+      ]
+     ],
+     "first": 2,
+     "last": 3,
+     "lines_invalid": "",
+     "quote": "รถขนของจอดหน้าบ้านหลังเก่าตั้งแต่เช้า\nยายยืนถือถ้วยสีฟ้าใบที่บิ่นตรงขอบ",
+     "quote_ok": true,
+     "id": "as_opening",
+     "aspect": "opening",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [],
+     "observation": "เปิดด้วยภาพสถานที่และรายละเอียดของยายกับถ้วย",
+     "interpretation": "ทำให้ผู้ฟังเห็นภาพชัดเจนตั้งแต่ต้นและเข้าใจบริบทของการจากไป",
+     "recommendation": "",
+     "keep": "ภาพนี้เป็นฐานที่แข็งแรงสำหรับส่วนที่เหลือ",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       12,
+       15
+      ]
+     ],
+     "first": 12,
+     "last": 15,
+     "lines_invalid": "",
+     "quote": "เก็บถ้วยใบเก่าไว้ เก็บไว้\nไม่ใช่เพราะมันสวย แต่มันเป็นของยาย\nบ้านขายไปแล้วก็ช่าง\nแต่ถ้วยใบนี้ ฉันจะไม่ทิ้ง",
+     "quote_ok": true,
+     "id": "as_theme",
+     "aspect": "theme",
+     "status": "no_issue",
+     "kind": "keep",
+     "priority": "",
+     "patterns": [],
+     "observation": "แนวคิดหลักคือการเก็บถ้วยเพื่อระลึกถึงยายแม้บ้านจะขายไปแล้ว",
+     "interpretation": "แนวคิดนี้ชัดเจนและสอดคล้องกับทุกส่วนที่ตามมา",
+     "recommendation": "",
+     "keep": "ปล่อยให้เป็นศูนย์กลางของเพลง",
+     "proposal": ""
+    },
+    {
+     "refs": [],
+     "first": 0,
+     "last": 0,
+     "lines_invalid": "",
+     "quote": "",
+     "quote_ok": true,
+     "id": "as_sections",
+     "aspect": "sections",
+     "status": "no_issue",
+     "kind": "keep",
+     "priority": "",
+     "patterns": [],
+     "observation": "โครงสร้างมีเวิร์ส พรีคอรัส คอรัส เวิร์สสอง บริดจ์ คอรัส และเอาท์โทร",
+     "interpretation": "แต่ละส่วนทำหน้าที่ชัดเจนและต่อเนื่องกัน",
+     "recommendation": "",
+     "keep": "โครงสร้างนี้ช่วยให้เพลงไหลลื่น",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       18,
+       21
+      ]
+     ],
+     "first": 18,
+     "last": 21,
+     "lines_invalid": "",
+     "quote": "ฉันเสียใจมาก ฉันคิดถึงยายเหลือเกิน\nฉันรู้สึกเหงาและว้าเหว่ในใจ\nบ้านหลังนี้มีความทรงจำมากมาย\nฉันไม่อยากให้ทุกอย่างหายไป",
+     "quote_ok": true,
+     "id": "as_development",
+     "aspect": "development",
+     "status": "concern",
+     "kind": "concern",
+     "priority": "high",
+     "patterns": [],
+     "observation": "ท่อนเวิร์สสองกล่าวถึงความเศร้าและความทรงจำเหมือนท่อนแรก",
+     "interpretation": "ผู้ฟังคาดหวังการเปลี่ยนแปลงที่ทำให้คอรัสมีความหมายมากขึ้น แต่กลับได้การพัก",
+     "recommendation": "ให้เวิร์สสองเพิ่มข้อเท็จจริงใหม่เกี่ยวกับยายหรือจดหมายเพื่อให้คอรัสที่สองตอบคำถามบางอย่าง",
+     "keep": "การเปลี่ยนนี้อาจลดความนิ่งที่เพลงสร้างไว้",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       12,
+       15
+      ]
+     ],
+     "first": 12,
+     "last": 15,
+     "lines_invalid": "",
+     "quote": "เก็บถ้วยใบเก่าไว้ เก็บไว้\nไม่ใช่เพราะมันสวย แต่มันเป็นของยาย\nบ้านขายไปแล้วก็ช่าง\nแต่ถ้วยใบนี้ ฉันจะไม่ทิ้ง",
+     "quote_ok": true,
+     "id": "as_hook",
+     "aspect": "hook",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [],
+     "observation": "คอรัสมีบรรทัดสั้นเฉพาะเจาะจงและกลับมาครบทุกครั้ง",
+     "interpretation": "ทำให้ผู้ฟังจดจำได้ง่ายและแต่ละการกลับมีความหมายจากภาพก่อนหน้า",
+     "recommendation": "",
+     "keep": "ปล่อยให้คอรัสเป็นจุดยึดของเพลง",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       3,
+       3
+      ],
+      [
+       35,
+       36
+      ]
+     ],
+     "first": 3,
+     "last": 3,
+     "lines_invalid": "",
+     "quote": "ยายยืนถือถ้วยสีฟ้าใบที่บิ่นตรงขอบ\n…\nน้ำชาเย็นแล้วในถ้วยสีฟ้า\nรอยบิ่นยังอยู่ตรงที่ยายเคยจับ",
+     "quote_ok": true,
+     "id": "as_imagery",
+     "aspect": "imagery",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [],
+     "observation": "ภาพถ้วยสีฟ้าที่บิ่นถูกใช้ซ้ำและเชื่อมโยงกับยาย",
+     "interpretation": "ภาพนี้เฉพาะเจาะจงและสอดคล้องกับแนวคิดเรื่องความทรงจำ",
+     "recommendation": "",
+     "keep": "ภาพนี้ช่วยให้เพลงมีเอกลักษณ์",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       12,
+       12
+      ],
+      [
+       29,
+       29
+      ]
+     ],
+     "first": 12,
+     "last": 12,
+     "lines_invalid": "",
+     "quote": "เก็บถ้วยใบเก่าไว้ เก็บไว้\n…\nเก็บถ้วยใบเก่าไว้ เก็บไว้",
+     "quote_ok": true,
+     "id": "as_repetition",
+     "aspect": "repetition",
+     "status": "no_issue",
+     "kind": "keep",
+     "priority": "",
+     "patterns": [],
+     "observation": "คอรัสกลับมาครบสี่บรรทัดสองครั้ง",
+     "interpretation": "การกลับมาช่วยเสริมความรู้สึกยึดติดโดยไม่ทำให้เพลงน่าเบื่อ",
+     "recommendation": "",
+     "keep": "การซ้ำนี้เหมาะกับธีมของเพลง",
+     "proposal": ""
+    },
+    {
+     "refs": [
+      [
+       35,
+       36
+      ]
+     ],
+     "first": 35,
+     "last": 36,
+     "lines_invalid": "",
+     "quote": "น้ำชาเย็นแล้วในถ้วยสีฟ้า\nรอยบิ่นยังอยู่ตรงที่ยายเคยจับ",
+     "quote_ok": true,
+     "id": "as_ending",
+     "aspect": "ending",
+     "status": "strength",
+     "kind": "strength",
+     "priority": "",
+     "patterns": [],
+     "observation": "เอาท์โทรปิดด้วยภาพถ้วยที่เปลี่ยนจากร้อนเป็นเย็น",
+     "interpretation": "ให้ความรู้สึกปิดฉากที่สอดคล้องกับการจากไปและความทรงจำที่คงอยู่",
+     "recommendation": "",
+     "keep": "ปล่อยให้เป็นจุดจบที่สงบ",
+     "proposal": ""
+    }
+   ],
+   "actions": [
+    {
+     "id": "ac1",
+     "title": "ให้เวิร์สสองเพิ่มรายละเอียดใหม่",
+     "action": "ให้เวิร์สสองเพิ่มข้อเท็จจริงใหม่เกี่ยวกับยายหรือจดหมายเพื่อให้คอรัสที่สองมีความหมายลึกซึ้งขึ้น",
+     "aspect": "development",
+     "refs": [
+      [
+       18,
+       21
+      ]
+     ],
+     "lines_invalid": "",
+     "tradeoff": "อาจลดความนิ่งที่เพลงสร้างไว้"
+    }
+   ]
+  },
+  "diagnostics": [],
+  "incomplete": false
+ },
+ "parser": "current parser (aspect-name aliases, a repeated empty field does not erase the first value); the first parse is in run_parser_v1.log"
+}

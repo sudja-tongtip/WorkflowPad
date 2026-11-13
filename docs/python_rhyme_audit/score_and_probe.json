@@ -1,0 +1,330 @@
+{
+ "S1": {
+  "true_pairs": [
+   {
+    "a": "ฝนพรำเปียกหน้าบ้าน",
+    "b": "เธอยืนอยู่ตรงนั้นนาน",
+    "lines": [
+     [
+      2
+     ],
+     [
+      3
+     ]
+    ],
+    "found_by_python": true
+   },
+   {
+    "a": "ฉันถือร่มคันเก่า",
+    "b": "เธอเดินมาเบาเบา",
+    "lines": [
+     [
+      4
+     ],
+     [
+      5
+     ]
+    ],
+    "found_by_python": true
+   },
+   {
+    "a": "ถ้าวันนี้ฟ้าไม่ยอมหยุดร้องไห้",
+    "b": "ฉันจะอยู่กับเธอไปจนฟ้าใส",
+    "lines": [
+     [
+      14,
+      26
+     ],
+     [
+      15,
+      27
+     ]
+    ],
+    "found_by_python": true
+   }
+  ],
+  "false_pairs": [
+   {
+    "a": "ไม่ต้องพูดอะไรสักคำ",
+    "b": "แค่ยืนใกล้ก็รู้ทั้งหมด",
+    "lines": [
+     [
+      8
+     ],
+     [
+      9
+     ]
+    ],
+    "python_claims_rhyme": false
+   },
+   {
+    "a": "ให้ฝนเป็นพยาน ว่าฉันรักเธอ",
+    "b": "ให้ฝนเป็นพยาน ว่าเธอรักฉัน",
+    "lines": [
+     [
+      12,
+      24
+     ],
+     [
+      13,
+      25
+     ]
+    ],
+    "python_claims_rhyme": false
+   },
+   {
+    "a": "เสื้อเปียกทั้งตัวก็ไม่เป็นไร",
+    "b": "มือของเธออุ่นกว่าที่ฉันคิด",
+    "lines": [
+     [
+      18
+     ],
+     [
+      19
+     ]
+    ],
+    "python_claims_rhyme": false
+   },
+   {
+    "a": "บางเรื่องไม่ต้องอธิบาย",
+    "b": "แค่ไม่ปล่อยมือกันก็พอ",
+    "lines": [
+     [
+      30
+     ],
+     [
+      31
+     ]
+    ],
+    "python_claims_rhyme": false
+   }
+  ],
+  "other_python_links": [
+   "L3:นาน <-> L20:ช่าง (near end)",
+   "L14:ถ้า <-> L14:ฟ้า (exact internal)",
+   "L15:ใส <-> L18:ไร (exact end)",
+   "L18:ไร <-> L26:ไห้ (exact end)",
+   "L26:ถ้า <-> L26:ฟ้า (exact internal)"
+  ],
+  "TP": 3,
+  "FN": 0,
+  "FP_vs_reference_false_pairs": 0,
+  "TN": 4
+ },
+ "S2": {
+  "true_pairs": [],
+  "false_pairs": [
+   {
+    "a": "ลุงขายกาแฟยิ้มให้ฉันเหมือนเคย",
+    "b": "ฉันซื้อแก้วเดิมไม่ต้องบอกอะไร",
+    "lines": [
+     [
+      4
+     ],
+     [
+      5
+     ]
+    ],
+    "python_claims_rhyme": false
+   },
+   {
+    "a": "เพื่อนร่วมงานถามว่าสุขไหม",
+    "b": "ฉันตอบว่าก็ดีตามปกติ",
+    "lines": [
+     [
+      13
+     ],
+     [
+      14
+     ]
+    ],
+    "python_claims_rhyme": false
+   },
+   {
+    "a": "แต่ระหว่างบรรทัดที่พิมพ์ในแชต",
+    "b": "มีประโยคที่ฉันลบไปหลายรอบ",
+    "lines": [
+     [
+      15
+     ],
+     [
+      16
+     ]
+    ],
+    "python_claims_rhyme": false
+   }
+  ],
+  "other_python_links": [
+   "L5:ไร <-> L13:ไหม (exact end)"
+  ],
+  "TP": 0,
+  "FN": 0,
+  "FP_vs_reference_false_pairs": 0,
+  "TN": 3
+ },
+ "S3": {
+  "true_pairs": [],
+  "false_pairs": [
+   {
+    "a": "ร้านซักรีดหัวมุมถนนปิดไปตั้งแต่ปีก่อน",
+    "b": "ตู้ไปรษณีย์สีแดงยังเปื้อนสีเทาของควัน",
+    "lines": [
+     [
+      2
+     ],
+     [
+      3
+     ]
+    ],
+    "python_claims_rhyme": false
+   }
+  ],
+  "other_python_links": [
+   "L3:ควัน <-> L5:นั้น (exact end)",
+   "L4:ยืม <-> L17:คืน (near end)",
+   "L5:นั้น <-> L16:ร้าน (near end)",
+   "L9:ไป <-> L11:ไป (exact end)",
+   "L11:ไป <-> L21:ไป (exact end)",
+   "L16:ยืน <-> L16:กลืน (exact internal)",
+   "L21:ไป <-> L23:ไป (exact end)"
+  ],
+  "TP": 0,
+  "FN": 0,
+  "FP_vs_reference_false_pairs": 0,
+  "TN": 1
+ },
+ "probe": {
+  "final_syllable": {
+   "สบายใจ": [
+    "ใจ",
+    "ไอ+กา"
+   ],
+   "โอเค": [
+    "เค",
+    "เอ+กา"
+   ],
+   "ไฟแดง": [
+    "แดง",
+    "แอ+กง"
+   ],
+   "เสมอ": [
+    null,
+    ""
+   ],
+   "พยาน": [
+    null,
+    ""
+   ],
+   "ปกติ": [
+    "ติ",
+    "อิ+กา"
+   ],
+   "อธิบาย": [
+    "บาย",
+    "อา+เกย"
+   ],
+   "กาแฟ": [
+    "แฟ",
+    "แอ+กา"
+   ],
+   "คอมพิวเตอร์": [
+    "เตอร์",
+    "เออ+กา"
+   ],
+   "ความรัก": [
+    "รัก",
+    "อะ+กก"
+   ],
+   "สวัสดี": [
+    "ดี",
+    "อี+กา"
+   ],
+   "ทรัพย์": [
+    null,
+    ""
+   ],
+   "ยิ้ม": [
+    "ยิ้ม",
+    "อิ+กม"
+   ],
+   "เพลา": [
+    "เพลา",
+    "เอา+กา"
+   ],
+   "กรรม": [
+    "กรรม",
+    "อำ+กา"
+   ],
+   "บ้านเมือง": [
+    "เมือง",
+    "เอือ+กง"
+   ],
+   "เศร้า": [
+    "เศร้า",
+    "เอา+กา"
+   ],
+   "ดีไซน์": [
+    "ไซน์",
+    "ไอ+กา"
+   ],
+   "เซลฟี่": [
+    "ฟี่",
+    "อี+กา"
+   ],
+   "ฟีลลิ่ง": [
+    "ลิ่ง",
+    "อิ+กง"
+   ]
+  },
+  "thai_pairs": {
+   "ใจ/ไป": "exact",
+   "ฝัน/วัน": "exact",
+   "รัก/จัก": "exact",
+   "รัก/หลัก": "exact",
+   "ตา/มา": "exact",
+   "ตาม/ตาน": "near",
+   "กลม/ลม": "exact",
+   "เธอ/เสมอ": "unverified",
+   "ดี/ปกติ": "near",
+   "สาย/ใจ": "different",
+   "ขาว/เจ้า": "different",
+   "เศร้า/เก่า": "exact",
+   "พอ/ก่อ": "exact",
+   "ได้/ไป": "exact",
+   "เคย/เอย": "exact",
+   "โอเค/เธอ": "different",
+   "คอมพิวเตอร์/เธอ": "exact",
+   "ฟีลลิ่ง/ใจ": "different"
+  },
+  "english_pairs(estimate_only)": {
+   "night/light": "exact",
+   "love/above": "exact",
+   "love/move": "exact",
+   "though/through": "exact",
+   "read/need": "different",
+   "heart/apart": "different",
+   "day/way": "exact",
+   "fire/desire": "exact",
+   "cat/bat": "exact",
+   "tear/fear": "exact",
+   "bright/write": "near",
+   "away/stay": "exact",
+   "blue/you": "different",
+   "you/through": "different"
+  },
+  "extra_lyrics": {
+   "ฉันเดินเรื่อยเปื่อยเลื่อนลอยตามลม\nเธอยิ้": [
+    "L2:ลม<->L3:จม exact end verified colourable=True"
+   ],
+   "I see the night, you hold me tight\nThe s": [
+    "L2:night<->L2:tight exact internal unverified colourable=False",
+    "L2:tight<->L3:tonight exact end unverified colourable=False",
+    "L3:bright<->L3:tonight exact internal unverified colourable=False"
+   ],
+   "เมื่อคืนฝันถึงเธอ night after night\nแสงไ": [
+    "L2:night<->L3:sight exact end unverified colourable=False",
+    "L3:light<->L3:sight exact internal unverified colourable=False"
+   ]
+  }
+ }
+}

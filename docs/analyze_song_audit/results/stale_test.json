@@ -1,0 +1,26 @@
+{
+ "same_lyrics": "ok",
+ "after_edit_of_one_line": "outdated",
+ "warning_shown": true,
+ "after_undo": "ok",
+ "suggestions": 4,
+ "suggestion_locate": [
+  [
+   "unchanged",
+   "found"
+  ],
+  [
+   "another line edited",
+   "found"
+  ],
+  [
+   "a line was inserted above",
+   "found"
+  ],
+  [
+   "its own line edited",
+   "The quoted text is not in the lyrics any more (it was changed), so this suggestion cannot "
+  ]
+ ],
+ "report_path_calls_that_write_lyrics": []
+}

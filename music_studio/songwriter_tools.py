@@ -969,4 +969,27 @@ def prepare_chat_markdown(text: str) -> str:
     def repl(m):
         return f"**{m.group(2)}**" if m.group(1) == "b" else m.group(2)
 
-    return re.sub(r"\{(red|green|amber|blue|purple|pink|gray|b)\}(.*?)\{/\}", repl, text, flags=re.DOTALL)
+    text = re.sub(r"\{(red|green|amber|blue|purple|pink|gray|b)\}(.*?)\{/\}", repl, text, flags=re.DOTALL)
+    return _no_indented_code(text)
+
+
+def _no_indented_code(text: str) -> str:
+    """A line indented 6 or more spaces right after a list line is an indented CODE block in Markdown (a grey box instead of the text the AI meant as a sub-point). The AI never means code there: the
+    indent is cut to 4 (a nested point). Fenced ``` blocks are left alone."""
+    out, in_list, fenced = [], False, False
+    for line in text.split("\n"):
+        if line.lstrip().startswith("```"):
+            fenced = not fenced
+        elif not fenced:
+            stripped = line.strip()
+            is_item = bool(re.match(r"\s*(?:[-*+]|\d+[.)])\s+", line))
+            if stripped and in_list and not is_item and re.match(r" {6,}\S", line):
+                line = "    " + stripped
+            elif stripped and is_item and re.match(r" {6,}\S", line):
+                line = "    " + stripped
+            if stripped:
+                in_list = is_item or (in_list and line.startswith(" "))
+            else:
+                in_list = in_list
+        out.append(line)
+    return "\n".join(out)

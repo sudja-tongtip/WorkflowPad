@@ -1,0 +1,60 @@
+PASS K1 the eight topic ids are the eight aspect keys of the report, in the same order
+PASS K2 all 8 lessons load in Thai and in English from the bundled files, valid, with no notice
+PASS K3 every lesson has the seven sections, none empty, in the fixed order of the standard
+PASS K4 Opening teaches the eight patterns of the report (technique ids = the pattern keys) and each one says who it suits, what it promises, strength / limit and what to do next  ['scene', 'declaration', 'question', 'in-medias-res', 'dialogue', 'contradiction', 'hook-first', 'atmospheric']
+PASS K5 Opening says the eight patterns are a learning grouping and not an academic classification (Thai and English)
+PASS K6 the techniques the brief names are there (Section Purpose six sections, Development six ways, Imagery six, Repetition six functions, Ending six forms, Hook five)
+PASS K7 every lesson has Source References: each [Rn] in the text is defined, each reference says what it supports, a checked one has a URL, a general one says it is not a citation
+PASS K8 the references keep the three kinds apart: principles from sources ([Rn] with a checked reference), our synthesis (untagged / general) and teaching examples (labelled)
+PASS K9 the examples are Thai lyric lines (in the English lessons too) and the lessons do not copy long text from a source (no section above 2,200 characters outside Examples / How to Use)  1059
+PASS K10 the Hook lesson says what the lyrics alone cannot show (melody hook / catchiness when sung) in both languages
+PASS K11 Repetition separates intention from effect and does not teach that much repetition is always bad or deliberate always good (both languages)
+PASS K12 Imagery says pretty words are not always depth and plain language can be strong; Section Purpose does not force one structure; Ending says a song need not answer every question
+PASS K13 reading all the lessons makes no LLM request
+PASS K14 the production Song Critic prompt is unchanged (equal to HEAD) and does not mention the lessons; no specialist module imports the academy
+PASS K15 first start: all 16 lesson files are installed in the user folder (README is not a lesson)  16
+PASS K16 a second start changes nothing
+PASS K17 the user edits a lesson: the edit is what the program shows (origin user)
+PASS K18 the program is updated: a lesson the user edited is NOT overwritten; one never edited is upgraded (the old one kept as a backup)  ['theme.md: upgraded to the new default']
+PASS K19 an invalid user file (no front matter) never stops the program: the default lesson is shown with a notice and the reason, and the user's file is left as it is  (('Your copy of opening.md cannot be used (The file has no front matter (a first line `---`, then id / aspect / version / title, then `---`).). The default lesson is show
+PASS K20 a file that is not UTF-8 is reported the same way (default lesson + notice)  ('opening.md: The file is not UTF-8 text. Save it again as UTF-8.',)
+PASS K21 an edit that loses the required sections / a missing `[R3]` reference is reported, not accepted
+PASS K22 the user deletes a lesson file: the default serves, and the file is made again at the next start
+PASS K23 a missing file with no default gives a short 'not available' lesson, never an exception; a missing English lesson falls back to the Thai one with a notice
+PASS K24 the lessons do not depend on a song: they are loaded by topic and language only and carry no song or sheet id
+PASS K25 the hand-off carries the lesson, the selected technique, the exercise, the Song Critic finding of this aspect, the numbered lyrics and the status; it says it is teaching data, not an instruction  SONGWRITING LESSON (given to you by the app because the user pressed "Discuss with Songwriter" on a lesson of the Song C
+PASS K26 with no report there is no finding block and no invented AI opinion: the text says none exists
+PASS K27 the token budget is a HARD limit at 400 / 500 / 700 / 1500 / 3500 and the selected technique (at least its short form) survives whenever something is sent  [(400, True, True), (500, True, True), (700, True, True), (1500, True, True), (3500, True, True)]
+PASS K28 when even the smallest useful hand-off does not fit nothing is built (refused before sending)
+PASS K29 an outdated report is labelled OUTDATED with what changed, the finding's line numbers are called OLD, and the current lyrics are the ones sent
+PASS K30 the hand-off never contains the other lessons (only the selected one)
+PASS U1 no report: the Song Critic page shows the Academy with the eight lessons, and no AI request was made to show them  8
+PASS U2 with no report no analysis text is shown for any aspect (no 'Strength' / 'Concern' status, no finding text): the page says the lessons are not an analysis
+PASS U3 every lesson tile is collapsed by default (also the technique tiles inside)
+PASS U4 opening a lesson is remembered after the page is drawn again, and closing too
+PASS U4 ... and closing is remembered too
+PASS U5 the lesson text comes from the Markdown file (Thai): section labels in Thai, the eight opening patterns by name, the sources
+PASS U6 no duplicate buttons: one 'Discuss this lesson' per lesson (8) and one per technique (8+6+4+6+5+6+6+6=47... counted from the files); nothing else offers Discuss on a page with no report  (8, 47)
+PASS U7 layout: no control has a fixed width above 280 px (the drawer is 320-560 px); the button and chip rows wrap
+PASS U8 the UI language English shows the English lesson (headings and text), the Thai lyric examples stay as they are
+PASS U9 every lesson file missing: the page still draws (a short 'not available' note per lesson, eight tiles)
+PASS U10 an older-format report keeps its findings and shows the Academy as a list under them (no aspect tiles of a Songcraft review)
+PASS U11 a Songcraft report: the eight aspect tiles each hold ONE collapsed lesson block, and the Academy list is not drawn a second time
+PASS U12 AI analysis and the lesson are told apart: the AI finding sits under the tile as before, the lesson says it is reference knowledge, not the AI's opinion
+PASS U13 no duplicate buttons on a Songcraft report: the AI-finding Discuss buttons are as before (whole report + one per aspect with a finding + one per action) and the lesson buttons are only lesson / technique ones  10
+PASS U14 an aspect the Song Critic did not review still has its lesson, and no analysis text is invented for it (it says 'not reviewed')
+PASS I1 Discuss a technique: ONE Songwriter request, no Song Critic request, the lyrics are not changed
+PASS I2 the request carries the topic, the technique, the exercise, the Song Critic's finding for THIS aspect (opening) and the numbered current lyrics, as data  SONGWRITING LESSON (given to you by the app because the user pressed "Discuss with Songwriter" on a lesson of the Song Critic page). This is TEACHING DATA for y
+PASS I3 only the selected lesson travels: no other lesson title or technique is in the request
+PASS I4 the Songwriter's session and chat are kept: the user's message and the answer are in the chat, with a note of what was sent
+PASS I5 nothing is applied or proposed automatically: no chat message carries an edit
+PASS I6 the Songwriter's system prompt is the normal one (the lesson is in the message, not in the system prompt)
+PASS I7 Discuss a whole lesson (no technique): the lesson and its exercise travel, 'the whole lesson' is said
+PASS I8 a song with NO Song Critic report can still discuss a lesson (the lessons need no analysis): no finding block, the text says no AI opinion exists
+PASS I9 a song with an older-format report: the hand-off says so and invents no finding for the aspect
+PASS I10 after the lyrics change the report is Outdated: the hand-off says OUTDATED, what changed, labels the old line numbers, and sends the CURRENT lyrics; the lyrics are not touched
+PASS I11 when the conversation has no room the lesson is refused BEFORE anything is sent: no request, no chat message
+PASS I12 with no AI backend the Discuss button says so and sends nothing
+PASS I13 the Song Critic request path is unchanged: Analyze still sends the production prompt (no lesson text in it) and reports the same legacy-or-Songcraft format as before
+
+58 / 58 passed

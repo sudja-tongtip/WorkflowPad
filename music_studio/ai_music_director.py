@@ -18,6 +18,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from . import arrangement_plan as AP
 from . import basic_caption as BC
 from . import clear_tags as CG
 from . import llm_chat as LC
@@ -70,6 +71,53 @@ language|<code or auto>
 
 [DONE]"""
 
+# V3 adds a bar plan and cue suggestions inside each direction. The production contract above is what a normal Analyze sends.
+# The length in seconds is never taken from the model: arrangement_plan calculates it. Lyrics, cues and settings still change only when the user confirms.
+CONTRACT_V3 = """HARD CONSTRAINTS (the program checks these; the guidance above says how to think)
+- The user owns the lyrics. Never rewrite, translate, shorten or extend them. Never copy lyric lines into a caption.
+- A Music Caption is English, one natural paragraph of at most 1200 characters. It has no brackets or section tags, no markup, no BPM / key / time signature, and no instruction to the model. The program never shortens or repairs a caption: one that breaks these rules is refused.
+- Settings use only valid values: BPM a number between 30 and 300; Key like "A minor" or "C major" (never "auto"; it is a recommended starting key, not a measured one); Time Signature one of 2/4, 3/4, 4/4, 6/8; Vocal one of: auto, male vocal, female vocal, duet vocals, choir; Energy one of: auto, low energy, medium energy, high energy; Mood one of: none, Melancholic, Happy, Energetic, Dreamy, Romantic, Dark, Calm, Nostalgic, Epic, Angry, Hopeful; Genre one of the genres the program knows (a common genre name); Language a code such as th, en, ja, ko, zh, or auto. genre and genre_enum must each be one of those names. A finer style belongs in the Music Caption. An unknown genre name is shown and is not applied, and it does not clear the user's genre.
+- Do not put a duration in Suggested Settings. Do not write seconds, minutes, or a clock time anywhere in the answer. The program calculates the length from the bars, the BPM and the time signature. The preferred duration is not a bar target and not a quota: do not add bars only to make the total match it.
+- Arrangement Plan lists every existing section from the request, copied exactly, plus any proposed instrumental row you insert between them. A row is the section name, a vertical bar, and a whole number of bars. After the bars you may add the role, the energy, the texture, the vocal, the next section, and the reason. Do not write a clock in those columns. Do not drop an existing section. Do not invent a sung section. Do not write a closing tag.
+- Cue Suggestions are optional. A row is the section name, a vertical bar, the cue, a vertical bar, the reason, a vertical bar, and keep, add, or replace. Use a cue the program already knows when one fits. A cue already on the section is keep. Omit the row when you have no cue. Never write none, null, or a dash as the cue. Do not rewrite the sung words.
+- The final output is read by Python: follow the format exactly.
+
+OUTPUT FORMAT. Answer with exactly three [STYLE] tags, numbered 1, 2 and 3, then [DONE]. Nothing before the first tag. No code fences, no extra commentary. Write every field name exactly as shown, in English. The Reason, the Vision, the Duration Reasoning and the Coaching sentences follow the reply language of the request. The direction Name, the Music Caption and every Suggested Settings value stay in English.
+
+[STYLE.1]
+Name: <short style name>
+Vision: <one or two sentences: the picture of the record>
+Reason: <one or two sentences: the key musical decision and why it suits this song>
+Music Caption: <the English caption, one paragraph>
+Suggested Settings:
+genre|<one supported genre name>
+genre_enum|<the same supported genre name>
+mood|<...>
+vocal|<...>
+energy|<...>
+bpm|<number>
+key|<recommended starting key, e.g. A minor>
+time_signature|<e.g. 4/4>
+language|<code or auto>
+Arrangement Plan:
+<section name>|<bars>|<role>|<energy>|<texture>|<vocal or no vocal>|<next section>|<why this many bars>
+Duration Reasoning: <why this bar plan fits the lyric and the request, with no clock time>
+Cue Suggestions:
+<section name>|<cue>|<why>|<keep, add, or replace>
+Coaching:
+strength|<what works>
+recommendation|<one next step>
+tradeoff|<what the choice gives and what it costs>
+Trade-offs: <one sentence>
+
+[STYLE.2]
+(same fields)
+
+[STYLE.3]
+(same fields)
+
+[DONE]"""
+
 REQUIRED_SETTINGS = ("genre", "mood", "vocal", "energy", "bpm", "keyscale", "timesignature")      # a V2 direction must give these (language may be left out: it is the user's)
 HARD_SETTINGS = ("bpm", "keyscale", "timesignature")                                              # a wrong TYPE / RANGE here refuses the answer; a value outside the program's choice lists (genre ...) is only shown, never applied
 
@@ -101,6 +149,23 @@ def prompt_version() -> str:
         return system_prompt()[1]
     except DirectorError:
         return ""
+
+
+def candidate_text() -> str:
+    """The V3.2 candidate file. It is not the prompt Analyze sends until it is promoted."""
+    from pathlib import Path
+    path = Path(__file__).resolve().parent / "prompts" / "candidates" / "ai_music_director_v3_2.md"
+    return path.read_text(encoding="utf-8-sig").replace("\r\n", "\n").rstrip()
+
+
+def candidate_system() -> tuple:
+    """(system prompt, hash of the candidate file). Raises DirectorError when the file is missing a required section. The production prompt is not read."""
+    from . import specialists as SP
+    text = candidate_text()
+    errors = SP.check(text)
+    if errors:
+        raise DirectorError("The director candidate is not valid: " + " ".join(errors), errors)
+    return text + "\n\n" + CONTRACT_V3, SP.text_hash(text)
 
 
 # Who sings: the user's own choice (key, label, the `vocal` setting it sets, how the AI is told). 'auto' = the AI decides, as before.
@@ -226,7 +291,7 @@ def stale_reason(snap: Snapshot, song_id: str, sheet_id: str, lyrics: str, setti
 
 
 # ── the request ──────────────────────────────────────────────────────────────────────────────────────────────
-def build_messages(snap: Snapshot, reply_language: str = "English") -> tuple:
+def build_messages(snap: Snapshot, reply_language: str = "English", variant: str = "production") -> tuple:
     g = lambda k: snap.setting(k)
     ref = ""
     if snap.reference:                                          # only when the user asked for it: their current style as a starting point, not as a limit
@@ -246,6 +311,17 @@ def build_messages(snap: Snapshot, reply_language: str = "English") -> tuple:
             + ref
             + f"\nLYRICS (read only):\n<<<\n{snap.lyrics.strip() or '(no lyrics yet)'}\n>>>\n\n"
             + MX.build_music_director_context(snap, "recommend") + "\n")
+    if variant == "candidate":
+        facts = AP.section_facts(snap.lyrics)
+        stance = "hard" if AP.hard_duration_request(snap.instructions) else "preferred"
+        user += ("ARRANGEMENT FACTS (copy each existing section name exactly; you may insert a proposed instrumental row between them; write a whole number of bars; do not write seconds):\n"
+                 + ("\n".join(facts) if facts else "- (no section tags; do not invent a bar plan)") + "\n"
+                 + f"PREFERRED DURATION: {g('duration') or '-'} seconds. Stance: {stance}. This number is not a bar target. Do not add or remove bars only to hit it. "
+                 + "A hard stance means the request keeps the length fixed, so stay inside it or say why a fitting arrangement cannot.\n"
+                 + "GENRE ENUM (genre and genre_enum must each be exactly one of these names; put a finer style in the Music Caption only): "
+                 + ", ".join(MO.GENRES) + "\n"
+                 + "Think in this order: what each section is for, how the energy moves, whether a new instrumental is earned, then the bars. Saying that no new instrumental is needed is allowed.\n")
+        return candidate_system()[0], user
     return system_prompt()[0], user
 
 
@@ -262,6 +338,13 @@ class Direction:
     raw: dict = field(default_factory=dict)         # field -> what the AI wrote
     notes: list = field(default_factory=list)
     warnings: list = field(default_factory=list)
+    vision: str = ""
+    duration_reasoning: str = ""
+    coaching: dict = field(default_factory=dict)
+    tradeoff: str = ""
+    bar_lines: list = field(default_factory=list)
+    cue_lines: list = field(default_factory=list)
+    plan: object = None                                          # arrangement_plan.Plan when this answer carried a bar plan or cue rows; None on a legacy answer
 
 
 @dataclass
@@ -408,7 +491,11 @@ def _settings_lines(text: str) -> dict:
         m = re.match(r"^\s*([A-Za-z_ ]{2,24}?)\s*[|:]\s*(.*)$", l)
         if not m:
             continue
-        name = _KEY_ALIAS.get(re.sub(r"\s+", "_", m.group(1).strip().lower()))
+        key = re.sub(r"\s+", "_", m.group(1).strip().lower())
+        if key == "genre_enum":
+            raw["genre_enum"] = m.group(2).strip()
+            continue
+        name = _KEY_ALIAS.get(key)
         if name and name != "style_prompt":
             raw[name] = m.group(2).strip()
     return raw
@@ -459,8 +546,21 @@ def _check_one(name: str, raw) -> tuple:
 
 
 def _check_values(raw: dict) -> tuple:
+    raw = dict(raw)
     values, problems, notes = {}, [], []
+    enum = raw.pop("genre_enum", None)
+    if enum is not None:
+        v, why = check_value("genre", enum)
+        if why:
+            problems.append(("genre", enum, why))
+        else:
+            values["genre"] = v
+            creative = raw.pop("genre", None)
+            if creative and creative.casefold() != str(v).casefold():
+                notes.append("The caption carries the finer genre. The genre setting uses the supported name.")
     for name, text in raw.items():
+        if name == "genre" and values.get("genre"):
+            continue
         v, why = check_value(name, text)
         if why:
             problems.append((name, text, why))
@@ -614,6 +714,74 @@ def parse(raw: str, lyrics: str = "") -> Proposal:
     return parse_v1(raw, lyrics) if is_legacy(raw) else parse_v2(raw, lyrics)
 
 
+_EXTRA_HEAD = re.compile(r"^\s*(Arrangement Plan|Duration Reasoning|Cue Suggestions|Coaching|Trade-offs|Tradeoffs)\s*:\s*(.*)$", re.IGNORECASE)
+_COACH_KEYS = {"strength": "strength", "concern": "concern", "recommendation": "recommendation", "tradeoff": "tradeoff", "trade-off": "tradeoff", "tradeoffs": "tradeoff"}
+
+
+def _is_v3(raw: str) -> bool:
+    """True when the answer itself carries a bar plan. A legacy answer does not, and stays all-or-nothing."""
+    return bool(re.search(r"(?m)^\s*Arrangement Plan\s*:", raw or ""))
+
+
+def _split_extra(block: str) -> tuple:
+    """(the direction block without the V3 sections, {heading: text}). A V2 block has no such heading and comes back unchanged."""
+    pre, cur, extra = [], None, {}
+    for line in (block or "").splitlines():
+        m = _EXTRA_HEAD.match(line)
+        if m:
+            cur = m.group(1).lower()
+            if cur == "tradeoffs":
+                cur = "trade-offs"
+            extra[cur] = [m.group(2).strip()] if m.group(2).strip() else []
+            continue
+        if cur is None:
+            pre.append(line)
+        elif line.strip():
+            extra[cur].append(line)
+    return "\n".join(pre), {k: "\n".join(v).strip() for k, v in extra.items()}
+
+
+_CONTROL_LINE = re.compile(r"^\[/?[A-Z][A-Z0-9]*(?:\.\d+)?\]$")
+_CONTROL_TOKEN = re.compile(r"\[/?[A-Z][A-Z0-9]*(?:\.\d+)?\]")
+
+
+def _strip_controls(text: str) -> str:
+    """Drop leaked control tags such as [/STYLE.1]. Lyric tags like [Chorus] are not control tags."""
+    kept = []
+    for line in (text or "").splitlines():
+        raw = line.strip()
+        if _CONTROL_LINE.match(raw):
+            continue
+        cleaned = _CONTROL_TOKEN.sub("", line).strip()
+        if cleaned:
+            kept.append(cleaned)
+    return "\n".join(kept).strip()
+
+
+def _coaching(text: str) -> dict:
+    """strength|text on its own line, or several key|text pairs packed onto one line."""
+    out = {}
+    for line in (text or "").splitlines():
+        if "|" in line:
+            parts = [p.strip() for p in line.split("|")]
+            i = 0
+            while i + 1 < len(parts):
+                name = _COACH_KEYS.get(parts[i].lower())
+                if name and parts[i + 1]:
+                    out[name] = parts[i + 1]
+                    i += 2
+                else:
+                    i += 1
+            continue
+        if ":" not in line:
+            continue
+        key, val = line.split(":", 1)
+        name = _COACH_KEYS.get(key.strip().lower())
+        if name and val.strip():
+            out[name] = val.strip()
+    return out
+
+
 def parse_v2(raw: str, lyrics: str = "") -> Proposal:
     original = raw or ""
     adapted, tag_notes = CG.unwrap(original, "style")
@@ -624,8 +792,8 @@ def parse_v2(raw: str, lyrics: str = "") -> Proposal:
     pos_names = ("name", "reason", "music caption", "suggested settings")
     directions, bad = [], []
     for i, marker in enumerate(M_DIRS, 1):
-        block = blocks.get(marker, "")
-        f = _fields_of(block, dir_names)
+        block, extra = _split_extra(blocks.get(marker, ""))
+        f = _fields_of(block, dir_names + ("vision",))
         if not any(f.get(n) for n in ("name", "reason", "music caption")):               # no English label at all (Thai labels): the format fixes the order, so the n-th label is the n-th field. Never mixed with English labels.
             f = _fill_by_position(f, block, pos_names)
         sm = re.search(r"^\s*Suggested Settings\s*:\s*(.*?)(?=\Z)", block, re.IGNORECASE | re.MULTILINE | re.DOTALL)
@@ -634,7 +802,10 @@ def parse_v2(raw: str, lyrics: str = "") -> Proposal:
         if not settings_raw:
             miss.append("Suggested Settings")
         else:
-            miss += [f"setting {LABELS.get(n, n)}" for n in REQUIRED_SETTINGS if n not in settings_raw]
+            known = set(settings_raw)
+            if "genre_enum" in known:
+                known.add("genre")
+            miss += [f"setting {LABELS.get(n, n)}" for n in REQUIRED_SETTINGS if n not in known]
         if miss:
             bad.append(f"Direction {i} is missing: {', '.join(miss)}.")
             continue
@@ -654,9 +825,18 @@ def parse_v2(raw: str, lyrics: str = "") -> Proposal:
             bad.append(f"Direction {i}: " + "; ".join(f"{LABELS.get(n, n)} '{t}' is {w}" for n, t, w in hard) + ".")
             continue
         d = Direction(i, f["name"][:60], f["reason"], "", cap, values, probs, settings_raw, notes, _caption_warnings(cap, lyrics))
+        d.vision = _strip_controls(f.get("vision") or "")[:400]
+        d.duration_reasoning = _strip_controls(extra.get("duration reasoning", ""))[:600]
+        d.coaching = _coaching(_strip_controls(extra.get("coaching", "")))
+        d.tradeoff = _strip_controls(extra.get("trade-offs", ""))[:400]
+        d.bar_lines = [ln for ln in _strip_controls(extra.get("arrangement plan", "")).splitlines() if ln.strip()]
+        d.cue_lines = [ln for ln in _strip_controls(extra.get("cue suggestions", "")).splitlines() if ln.strip()]
         directions.append(d)
     if bad:
-        raise DirectorError("The AI answer is incomplete.", bad, original)
+        if _is_v3(original) and directions:
+            warns.extend(bad)                                          # one broken direction does not throw away the directions that parsed
+        else:
+            raise DirectorError("The AI answer is incomplete.", bad, original)
     if len({d.caption.casefold() for d in directions}) < len(directions):
         raise DirectorError("Two directions have the same caption.", ["Two directions have the same caption."], original)
     overlap = caption_overlap_warning([d.caption for d in directions])
@@ -757,11 +937,12 @@ def parse_v1(raw: str, lyrics: str = "") -> Proposal:
     return prop
 
 
-def analyze(ask, snap: Snapshot, reply_language: str = "English", trace=None) -> Proposal:
+def analyze(ask, snap: Snapshot, reply_language: str = "English", trace=None, variant: str = "production") -> Proposal:
     """One question, one answer, no automatic retry. Raises DirectorError (carrying `raw`) when the answer cannot be used.
-    `trace(entry)` (optional) is called once, with what was asked and what came back, for the debug trace; it never changes the result and it is never given a key."""
+    `trace(entry)` (optional) is called once, with what was asked and what came back, for the debug trace; it never changes the result and it is never given a key.
+    `variant` 'candidate' sends the V3 candidate. The default is the production prompt."""
     import time
-    system, user = build_messages(snap, reply_language)
+    system, user = build_messages(snap, reply_language, variant=variant)
     t0 = time.time()
     raw, prop, err = "", None, None
     try:
@@ -777,7 +958,8 @@ def analyze(ask, snap: Snapshot, reply_language: str = "English", trace=None) ->
     finally:
         if trace is not None:
             try:
-                trace({"prompt_version": prompt_version(), "format": 2, "system": system, "user": user, "lyrics_chars": len(snap.lyrics or ""),
+                trace({"prompt_version": candidate_system()[1] if variant == "candidate" else prompt_version(), "format": 3 if variant == "candidate" else 2,
+                       "system": system, "user": user, "lyrics_chars": len(snap.lyrics or ""),
                        "prompt_tokens_estimate": LC.estimate_tokens(system + "\n" + user), "tokens_are_estimate": True, "output_chars": len(raw or ""), "seconds": round(time.time() - t0, 1),
                        "raw": raw, "ok": err is None, "problems": list(getattr(err, "problems", []) or ([str(err)] if err else [])),
                        "caption_warnings": [d.warnings for d in prop.directions] if prop is not None else [], "warnings": list(prop.warnings) if prop is not None else []})
@@ -806,6 +988,19 @@ def finish(raw: str, snap: Snapshot) -> Proposal:
         for extra in MX.review_caption(d.caption, snap):
             if extra not in d.warnings:
                 d.warnings.append(extra)
+        if d.bar_lines or d.cue_lines:
+            try:
+                bpm = float(d.values.get("bpm") or 0)
+            except (TypeError, ValueError):
+                bpm = 0.0
+            try:
+                target = float(snap.setting("duration") or 0)
+            except (TypeError, ValueError):
+                target = 0.0
+            d.plan = AP.build_plan(snap.lyrics, d.bar_lines, d.cue_lines, bpm, str(d.values.get("timesignature") or ""), target, str(snap.setting("language") or ""), hard_limit=AP.hard_duration_request(snap.instructions))
+            for note in d.plan.rejected:
+                if note not in d.warnings:
+                    d.warnings.append(note)
     return prop
 
 
@@ -836,6 +1031,16 @@ def suggested(prop: Proposal, d: Direction) -> dict:
     """The AI-suggested valid values of a direction: its own settings over the METADATA block, plus its caption (all of its words: see full_caption)."""
     out = {**prop.meta, **{k: v for k, v in d.values.items()}}
     out["style_prompt"] = full_caption(prop, d)
+    plan = getattr(d, "plan", None)
+    if plan is not None:
+        if plan.duration_ok and plan.clock is not None:
+            n, why = AP.duration_value(plan.clock.seconds)
+            if n is not None and not why:
+                out["duration"] = n
+            else:
+                out.pop("duration", None)
+        else:
+            out.pop("duration", None)
     return out
 
 
@@ -862,8 +1067,12 @@ def default_selection(snap: Snapshot, prop: Proposal, d: Direction) -> set:
         mine = user_value(snap, name)
         if name in ("vocal", "energy", "mood", "genre") and mine and mine != v:
             continue
-        if name == "language" and snap.setting("language", "auto") != v:
-            continue                                                  # Language stays as the user has it (Auto by default); the AI's pick is offered, never ticked
+        if name == "language":
+            continue                                                  # Language stays as the user has it. A direction never writes it.
+        if name == "duration":
+            plan = getattr(d, "plan", None)
+            if plan is None or not plan.duration_ok:
+                continue                                              # no checked bar plan: do not invent a length, and do not take the model's own seconds
         sel.add(name)
     return sel
 
@@ -897,6 +1106,35 @@ def plan_restore(previous: dict, applied: dict, current: dict) -> tuple:
         else:
             kept.append(k)
     return back, kept
+
+
+def music_direction_plan(snap: Snapshot, prop: Proposal, d: Direction, song_id: str, sheet_id: str, lyrics: str, current: dict, mode: str = "full") -> ApplyPlan:
+    """One card's music info, checked before anything is written. `full` includes the Python length when the bar plan is complete. `style` never writes a length.
+    Language, seed and the lyrics are never in the result. An incomplete plan raises instead of returning a partial set."""
+    plan = getattr(d, "plan", None)
+    if mode == "full" and plan is not None and not plan.duration_ok:
+        raise ApplyError("This arrangement plan is incomplete, so the music info was not changed.")
+    fields = set(default_selection(snap, prop, d))
+    sug = suggested(prop, d)
+    for name in ("style_prompt", "genre", "mood", "vocal", "energy", "bpm", "keyscale", "timesignature"):
+        if sug.get(name) not in (None, ""):
+            fields.add(name)                                          # a chosen card replaces these, including a value the user had set before
+    fields.discard("language")
+    if mode == "full" and plan is not None and plan.duration_ok and sug.get("duration") not in (None, ""):
+        fields.add("duration")
+    if mode != "full":
+        fields.discard("duration")
+    got = plan_apply(snap, prop, d, fields, song_id, sheet_id, lyrics, current)
+    if "language" in got.changes or "seed" in got.changes or "lyrics" in got.changes:
+        raise ApplyError("Language, seed and the lyrics stay as they are.")
+    if "duration" in got.changes:
+        if plan is None or plan.clock is None or not plan.duration_ok:
+            raise ApplyError("There is no checked length to store.")
+        n, why = AP.duration_value(plan.clock.seconds)
+        if why or n is None:
+            raise ApplyError(f"The planned length is {why}.")
+        got.changes["duration"] = n
+    return got
 
 
 def plan_apply(snap: Snapshot, prop: Proposal, d: Direction, selected: set, song_id: str, sheet_id: str, lyrics: str, current: dict) -> ApplyPlan:
